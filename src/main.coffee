@@ -17,8 +17,8 @@ document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
 
 view = new View
-viewToWorldX = (x)-> x - canvas.width/2
-viewToWorldY = (y)-> y - canvas.height/2
+viewToWorldX = (x)-> (x - canvas.width / 2) / view.scale + view.center_x
+viewToWorldY = (y)-> (y - canvas.height / 2) / view.scale + view.center_y
 
 editor = new Editor(entities)
 
@@ -33,6 +33,18 @@ addEventListener "mousedown", (e)->
 
 addEventListener "mouseup", (e)->
 	mouse.down = false
+
+handle_scroll = (e)->
+	# direction = if e.detail < 0 or e.wheelDelta > 0 then +1 else -1
+	zoom_factor = 1.2
+	if e.detail < 0 or e.wheelDelta > 0
+		view.scale_to *= zoom_factor
+	else
+		view.scale_to /= zoom_factor
+
+addEventListener "mousewheel", handle_scroll
+addEventListener "DOMMouseScroll", handle_scroll
+
 
 # addEventListener "mouseout", (e)->
 # 	mouse.x = -Infinity
@@ -50,11 +62,13 @@ do animate = ->
 	for entity in entities
 		entity.step()
 	
+	view.step()
 	editor.step(mouse)
 	
 	ctx.save()
-	ctx.translate(canvas.width/2, canvas.height/2)
+	ctx.translate(canvas.width / 2, canvas.height / 2)
 	ctx.translate(-view.center_x, -view.center_x)
+	ctx.scale(view.scale, view.scale)
 	
 	for entity in entities
 		ctx.save()
