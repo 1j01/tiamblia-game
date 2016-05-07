@@ -21,7 +21,9 @@ class @Editor
 		@hovered_entities = []
 		@mouse_down_last = no
 		@selection_box = null
-		# @selection_box = {x1: 0, y1: 0, x2: 0, y2: 0}
+		@editing_entity = null
+		@dragging_point = null
+		@dragging_segment = null
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
@@ -66,7 +68,23 @@ class @Editor
 					return false
 			return true
 		
-		if @selection_box
+		if @dragging_point
+			if mouse.down
+				relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
+				# moving_point = @dragging_point.x isnt relative_mouse.x or @dragging_point.y isnt relative_mouse.y
+				@dragging_point.x = relative_mouse.x
+				@dragging_point.y = relative_mouse.y
+				# if moving_point
+				# 	for [0..250]
+				# 		@editing_entity.structure.stepLayout()
+			else
+				@dragging_point = null
+		else if @dragging_segment
+			if mouse.down
+				# TODO
+			else
+				@dragging_segment = null
+		else if @selection_box
 			@selection_box.x2 = mouse.x
 			@selection_box.y2 = mouse.y
 			@hovered_entities = (entity for entity in @entities when entity_within_selection_box(entity))
@@ -80,51 +98,70 @@ class @Editor
 				for segment_name, segment of entity.structure.segments
 					if distToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
 						@hovered_entities = [entity]
-		
+			
 			if mouse.down and not @mouse_down_last
+				@dragging_point = null
+				@dragging_segment = null
 				if @hovered_entities.length
-					@selected_entities = (entity for entity in @hovered_entities)
+					if @hovered_entities[0] is @editing_entity
+						relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
+						for point_name, point of @editing_entity.structure.points
+							if dist2(relative_mouse, point) < 5 ** 2
+								@dragging_point = point
+						unless @dragging_point
+							for segment_name, segment of @editing_entity.structure.segments
+								if distToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
+									@dragging_segment = segment
+					else if @hovered_entities[0] in @selected_entities
+						@editing_entity = @hovered_entities[0]
+					else
+						@selected_entities = (entity for entity in @hovered_entities)
 				else
+					@editing_entity = null
 					@selected_entities = []
 					@selection_box = {x1: mouse.x, y1: mouse.y, x2: mouse.x, y2: mouse.y}
-				
 		
-		for entity in @selected_entities
-			entity.structure.stepLayout()
+		if @editing_entity
+			@editing_entity.structure.stepLayout() for [0..250]
 		
 		@mouse_down_last = mouse.down
 	
 	draw: (ctx)->
-		# @editing_entity?.debugDraw(ctx)
-		# @hovering_entity?.debugDraw(ctx)
 		
-		draw_points = (entity)->
+		draw_points = (entity, radius, fillStyle)->
 			for point_name, point of entity.structure.points
 				ctx.beginPath()
-				ctx.arc(point.x, point.y, 3, 0, Math.PI * 2)
-				ctx.fillStyle = "red"
+				ctx.arc(point.x, point.y, radius, 0, Math.PI * 2)
+				ctx.fillStyle = fillStyle
 				ctx.fill()
 		
-		draw_segments = (entity)->
+		draw_segments = (entity, lineWidth, strokeStyle)->
 			for segment_name, segment of entity.structure.segments
 				ctx.beginPath()
 				ctx.moveTo(segment.a.x, segment.a.y)
 				ctx.lineTo(segment.b.x, segment.b.y)
-				ctx.strokeStyle = "#fa0"
+				ctx.lineWidth = lineWidth
+				ctx.strokeStyle = strokeStyle
 				ctx.stroke()
 		
-		for entity in @selected_entities
+		if @editing_entity
 			ctx.save()
-			ctx.translate(entity.x, entity.y)
-			draw_points(entity)
-			draw_segments(entity)
+			ctx.translate(@editing_entity.x, @editing_entity.y)
+			draw_points(@editing_entity, 3, "rgba(255, 0, 0, 1)")
+			draw_segments(@editing_entity, 1, "rgba(255, 170, 0, 1)")
 			ctx.restore()
 		
-		for entity in @hovered_entities
+		for entity in @selected_entities when entity isnt @editing_entity
 			ctx.save()
 			ctx.translate(entity.x, entity.y)
-			ctx.globalAlpha = 0.5
-			draw_segments(entity)
+			draw_points(entity, 2, "rgba(255, 170, 0, 1)")
+			draw_segments(entity, 1, "rgba(255, 170, 0, 1)")
+			ctx.restore()
+		
+		for entity in @hovered_entities when entity not in @selected_entities
+			ctx.save()
+			ctx.translate(entity.x, entity.y)
+			draw_segments(entity, 1, "rgba(255, 170, 0, 0.5)")
 			ctx.restore()
 		
 		if @selection_box?

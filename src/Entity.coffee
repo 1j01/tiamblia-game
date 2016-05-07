@@ -6,7 +6,6 @@ class @Entity
 		@y = 0
 	
 	step: ->
-		# @structure.stepLayout()
 	
 	draw: (ctx)->
 		@debugDraw(ctx)

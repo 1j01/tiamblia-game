@@ -47,9 +47,9 @@ class @BoneStructure
 			point.y = y
 		
 		for [0..2000]
-			@stepLayout()
+			@stepLayout(center: yes, repel: yes)
 	
-	stepLayout: ->
+	stepLayout: ({center, repel}={})->
 		forces = {}
 		
 		center_around = {x: 0, y: 0}
@@ -57,19 +57,21 @@ class @BoneStructure
 		for point_name, point of @points
 			forces[point_name] = {x: 0, y: 0}
 			
-			dx = center_around.x - point.x
-			dy = center_around.y - point.y
-			dist = Math.sqrt(dx * dx + dy * dy)
-			forces[point_name].x += dx * dist / 100000
-			forces[point_name].y += dy * dist / 100000
-			
-			for other_point_name, other_point of @points
-				dx = other_point.x - point.x
-				dy = other_point.y - point.y
+			if center
+				dx = center_around.x - point.x
+				dy = center_around.y - point.y
 				dist = Math.sqrt(dx * dx + dy * dy)
-				dd = 5 - dist
-				forces[point_name].x += dx / dd / 1000
-				forces[point_name].y += dy / dd / 1000
+				forces[point_name].x += dx * dist / 100000
+				forces[point_name].y += dy * dist / 100000
+			
+			if repel
+				for other_point_name, other_point of @points
+					dx = other_point.x - point.x
+					dy = other_point.y - point.y
+					dist = Math.sqrt(dx * dx + dy * dy)
+					dd = 5 - dist
+					forces[point_name].x += dx / dd / 1000
+					forces[point_name].y += dy / dd / 1000
 		
 		for segment_name, segment of @segments
 			dx = segment.a.x - segment.b.x
