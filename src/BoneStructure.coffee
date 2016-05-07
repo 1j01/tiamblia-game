@@ -10,7 +10,6 @@ class @BoneStructure
 		@points[name] = {x: 0, y: 0, name}
 	
 	addSegment: (def)->
-		# {from, name, length, min_length, max_length} = def
 		{from, name} = def
 		if @segments[name]
 			throw new Error "segment '#{name}' already exists adding segment '#{name}'"
@@ -68,18 +67,9 @@ class @BoneStructure
 				dx = other_point.x - point.x
 				dy = other_point.y - point.y
 				dist = Math.sqrt(dx * dx + dy * dy)
-				
 				dd = 5 - dist
-				# console.log dist
-				# segment.a.x += dx * dd / 1000
-				# segment.a.y += dy * dd / 1000
-				# console.log segment.a.name, segment.b.name
-				# console.log dx * dd / 1000
 				forces[point_name].x += dx / dd / 1000
 				forces[point_name].y += dy / dd / 1000
-					# forces[other_point_name] ?= {x: 0, y: 0}
-				# forces[other_point_name].x -= dx * dd / 1000
-				# forces[other_point_name].y -= dy * dd / 1000
 		
 		for segment_name, segment of @segments
 			dx = segment.a.x - segment.b.x
@@ -88,23 +78,11 @@ class @BoneStructure
 			cx = (segment.a.x + segment.b.x) / 2
 			cy = (segment.a.y + segment.b.y) / 2
 			dd = (segment.length ? 50) - dist
-			# segment.a.x += dx * dd / 1000
-			# segment.a.y += dy * dd / 1000
-			# console.log segment.a.name, segment.b.name
-			# forces[segment.a.name] ?= {x: 0, y: 0}
-			# forces[segment.a.name].x -= dx * dd / 1000000
-			# forces[segment.a.name].y -= dy * dd / 1000000
-			# forces[segment.a.name].x -= dx * dd / dist / 1000
-			# forces[segment.a.name].y -= dy * dd / dist / 1000
-			# forces[segment.b.name] ?= {x: 0, y: 0}
-			# forces[segment.b.name].x += dx * dd / 1000
-			# forces[segment.b.name].y += dy * dd / 1000
 			forces[segment.a.name].x -= dx * dd / 1000000
 			forces[segment.a.name].y -= dy * dd / 1000000
 			forces[segment.b.name].x += dx * dd / 1000000
 			forces[segment.b.name].y += dy * dd / 1000000
 		
 		for point_name, force of forces
-			# console.log point_name, force
 			@points[point_name].x += force.x
 			@points[point_name].y += force.y
