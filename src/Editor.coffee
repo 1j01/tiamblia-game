@@ -112,24 +112,27 @@ class @Editor
 			if mouse.down and not @mouse_down_last
 				@dragging_point = null
 				@dragging_segment = null
-				if @hovered_entities.length
-					if @hovered_entities[0] is @editing_entity
-						relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
-						for point_name, point of @editing_entity.structure.points
-							if dist2(relative_mouse, point) < 5 ** 2
-								@dragging_point = point
-						unless @dragging_point
-							for segment_name, segment of @editing_entity.structure.segments
-								if distToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
-									@dragging_segment = segment
-					else if @hovered_entities[0] in @selected_entities
-						@editing_entity = @hovered_entities[0]
+				if @editing_entity
+					relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
+					for point_name, point of @editing_entity.structure.points
+						if dist2(relative_mouse, point) < 5 ** 2
+							@dragging_point = point
+					unless @dragging_point
+						for segment_name, segment of @editing_entity.structure.segments
+							if distToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
+								@dragging_segment = segment
+						unless @dragging_segment
+							@editing_entity = null
+				unless @editing_entity
+					if @hovered_entities.length
+						if @hovered_entities[0] in @selected_entities
+							@editing_entity = @hovered_entities[0]
+						else
+							@selected_entities = (entity for entity in @hovered_entities)
 					else
-						@selected_entities = (entity for entity in @hovered_entities)
-				else
-					@editing_entity = null
-					@selected_entities = []
-					@selection_box = {x1: mouse.x, y1: mouse.y, x2: mouse.x, y2: mouse.y}
+						@editing_entity = null
+						@selected_entities = []
+						@selection_box = {x1: mouse.x, y1: mouse.y, x2: mouse.x, y2: mouse.y}
 		
 		if @editing_entity
 			if @editing_entity.structure instanceof BoneStructure
