@@ -16,7 +16,7 @@ distToSegment = (p, v, w)->
 # TODO: undo/redo, saving/loading
 
 class @Editor
-	constructor: (@entities)->
+	constructor: (@entities, @view)->
 		@selected_entities = []
 		@hovered_entities = []
 		@mouse_down_last = no
@@ -143,20 +143,21 @@ class @Editor
 	
 	draw: (ctx)->
 		
-		draw_points = (entity, radius, fillStyle)->
+		draw_points = (entity, radius, fillStyle)=>
 			for point_name, point of entity.structure.points
 				ctx.beginPath()
-				ctx.arc(point.x, point.y, radius, 0, Math.PI * 2)
+				ctx.arc(point.x, point.y, radius / @view.scale, 0, Math.PI * 2)
 				ctx.fillStyle = fillStyle
 				ctx.fill()
 				# ctx.fillText(point_name, point.x + radius * 2, point.y)
 		
-		draw_segments = (entity, lineWidth, strokeStyle)->
+		draw_segments = (entity, lineWidth, strokeStyle)=>
 			for segment_name, segment of entity.structure.segments
 				ctx.beginPath()
 				ctx.moveTo(segment.a.x, segment.a.y)
 				ctx.lineTo(segment.b.x, segment.b.y)
-				ctx.lineWidth = lineWidth
+				ctx.lineWidth = lineWidth / @view.scale
+				ctx.lineCap = "round"
 				ctx.strokeStyle = strokeStyle
 				ctx.stroke()
 		
@@ -183,10 +184,11 @@ class @Editor
 		if @selection_box?
 			ctx.save()
 			ctx.beginPath()
-			ctx.translate(0.5, 0.5)
+			ctx.translate(0.5, 0.5) if @view.scale is 1
 			ctx.rect(@selection_box.x1, @selection_box.y1, @selection_box.x2 - @selection_box.x1, @selection_box.y2 - @selection_box.y1)
 			ctx.fillStyle = "rgba(0, 155, 255, 0.1)"
 			ctx.strokeStyle = "rgba(0, 155, 255, 0.4)"
+			ctx.lineWidth = 1 / @view.scale
 			ctx.fill()
 			ctx.stroke()
 			ctx.restore()
