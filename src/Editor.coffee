@@ -1,17 +1,4 @@
 
-dist2 = (v, w)-> (v.x - w.x) ** 2 + (v.y - w.y) ** 2
-distToSegmentSquared = (p, v, w)->
-	l2 = dist2(v, w)
-	return dist2(p, v) if l2 is 0
-	t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2
-	t = Math.max(0, Math.min(1, t))
-	dist2(p, {
-		x: v.x + t * (w.x - v.x)
-		y: v.y + t * (w.y - v.y)
-	})
-distToSegment = (p, v, w)->
-	Math.sqrt(distToSegmentSquared(p, v, w))
-
 # TODO: animation editing
 # TODO: undo/redo, saving/loading
 
@@ -53,10 +40,10 @@ class @Editor
 			relative_y1 = @selection_box.y1 - entity.y
 			relative_x2 = @selection_box.x2 - entity.x
 			relative_y2 = @selection_box.y2 - entity.y
-			relative_min_x = Math.min(relative_x1, relative_x2)
-			relative_max_x = Math.max(relative_x1, relative_x2)
-			relative_min_y = Math.min(relative_y1, relative_y2)
-			relative_max_y = Math.max(relative_y1, relative_y2)
+			relative_min_x = min(relative_x1, relative_x2)
+			relative_max_x = max(relative_x1, relative_x2)
+			relative_min_y = min(relative_y1, relative_y2)
+			relative_max_y = max(relative_y1, relative_y2)
 			return false if Object.keys(entity.structure.segments).length is 0
 			for segment_name, segment of entity.structure.segments
 				unless (
@@ -71,16 +58,16 @@ class @Editor
 		if @dragging_point
 			if mouse.down
 				relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
-				dx = relative_mouse.x - @dragging_point.x
-				dy = relative_mouse.y - @dragging_point.y
 				if @editing_entity.structure instanceof BoneStructure
 					# try to prevent physics breaking by limiting the movement of an individual point
 					# FIXME: physics can still break under some conditions so fix this in a different way
 					# plus dragging the GranddaddyLonglegs by its head feels really glitchy now
-					dist = Math.sqrt(dx * dx + dy * dy)
+					dist = distance(relative_mouse, @dragging_point)
+					dx = relative_mouse.x - @dragging_point.x
+					dy = relative_mouse.y - @dragging_point.y
 					max_point_drag_dist = 200
-					drag_entity_dist = Math.max(0, dist - max_point_drag_dist)
-					drag_point_dist = Math.max(0, dist - drag_entity_dist)
+					drag_entity_dist = max(0, dist - max_point_drag_dist)
+					drag_point_dist = max(0, dist - drag_entity_dist)
 					@dragging_point.x += dx / dist * drag_point_dist
 					@dragging_point.y += dy / dist * drag_point_dist
 					for point_name, point of @editing_entity.structure.points
@@ -108,7 +95,7 @@ class @Editor
 			for entity in @entities
 				relative_mouse = {x: mouse.x - entity.x, y: mouse.y - entity.y}
 				for segment_name, segment of entity.structure.segments
-					if distToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
+					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
 						@hovered_entities = [entity]
 			
 			if mouse.down and not @mouse_down_last
@@ -118,14 +105,14 @@ class @Editor
 					relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
 					closest_dist = Infinity
 					for point_name, point of @editing_entity.structure.points
-						dist = Math.sqrt(dist2(relative_mouse, point))
+						dist = distance(relative_mouse, point)
 						if dist < (5 + 5 / @view.scale) / 2 and dist < closest_dist
 							closest_dist = dist
 							@dragging_point = point
 					unless @dragging_point
 						closest_dist = Infinity
 						for segment_name, segment of @editing_entity.structure.segments
-							dist = distToSegment(relative_mouse, segment.a, segment.b)
+							dist = distanceToSegment(relative_mouse, segment.a, segment.b)
 							if dist < (segment.width ? 5) and dist < closest_dist
 								closest_dist = dist
 								@dragging_segment = segment
@@ -154,7 +141,7 @@ class @Editor
 		draw_points = (entity, radius, fillStyle)=>
 			for point_name, point of entity.structure.points
 				ctx.beginPath()
-				ctx.arc(point.x, point.y, radius / @view.scale, 0, Math.PI * 2)
+				ctx.arc(point.x, point.y, radius / @view.scale, 0, TAU)
 				ctx.fillStyle = fillStyle
 				ctx.fill()
 				# ctx.fillText(point_name, point.x + radius * 2, point.y)

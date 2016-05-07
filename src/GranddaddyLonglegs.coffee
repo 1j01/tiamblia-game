@@ -29,6 +29,6 @@ class @GranddaddyLonglegs extends Entity
 		ctx.beginPath()
 		ctx.translate(@structure.points.body.x, @structure.points.body.y)
 		ctx.scale(1, 0.7)
-		ctx.arc(0, 0, 10, 0, Math.PI * 2)
+		ctx.arc(0, 0, 10, 0, TAU)
 		ctx.fillStyle = "#6B422C" # "#C15723" #"brown"
 		ctx.fill()

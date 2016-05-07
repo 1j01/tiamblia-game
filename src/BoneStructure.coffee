@@ -63,7 +63,7 @@ class @BoneStructure
 			if center
 				dx = center_around.x - point.x
 				dy = center_around.y - point.y
-				dist = Math.sqrt(dx * dx + dy * dy)
+				dist = sqrt(dx * dx + dy * dy)
 				forces[point_name].x += dx * dist / 100000
 				forces[point_name].y += dy * dist / 100000
 			
@@ -71,7 +71,7 @@ class @BoneStructure
 				for other_point_name, other_point of @points
 					dx = other_point.x - point.x
 					dy = other_point.y - point.y
-					dist = Math.sqrt(dx * dx + dy * dy)
+					dist = sqrt(dx * dx + dy * dy)
 					dd = 5 - dist
 					forces[point_name].x += dx / dd / 1000
 					forces[point_name].y += dy / dd / 1000
@@ -79,7 +79,7 @@ class @BoneStructure
 		for segment_name, segment of @segments
 			dx = segment.a.x - segment.b.x
 			dy = segment.a.y - segment.b.y
-			dist = Math.sqrt(dx * dx + dy * dy)
+			dist = sqrt(dx * dx + dy * dy)
 			delta_dist = dist - (segment.length ? 50)
 			forces[segment.a.name].x -= dx * delta_dist / 1000
 			forces[segment.a.name].y -= dy * delta_dist / 1000
