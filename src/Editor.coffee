@@ -73,19 +73,20 @@ class @Editor
 				relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
 				dx = relative_mouse.x - @dragging_point.x
 				dy = relative_mouse.y - @dragging_point.y
-				# @dragging_point.x = relative_mouse.x
-				# @dragging_point.y = relative_mouse.y
-				# prevent physics breaking by limiting the movement of an individual point
-				dist = Math.sqrt(dx * dx + dy * dy)
-				max_point_drag_dist = 200
-				drag_entity_dist = Math.max(0, dist - max_point_drag_dist)
-				drag_point_dist = Math.max(0, dist - drag_entity_dist)
-				# console.log {dist, drag_point_dist, drag_entity_dist}
-				@dragging_point.x += dx / dist * drag_point_dist
-				@dragging_point.y += dy / dist * drag_point_dist
-				for point_name, point of @editing_entity.structure.points
-					point.x += dx / dist * drag_entity_dist
-					point.y += dy / dist * drag_entity_dist
+				if @editing_entity.structure instanceof BoneStructure
+					# prevent physics breaking by limiting the movement of an individual point
+					dist = Math.sqrt(dx * dx + dy * dy)
+					max_point_drag_dist = 200
+					drag_entity_dist = Math.max(0, dist - max_point_drag_dist)
+					drag_point_dist = Math.max(0, dist - drag_entity_dist)
+					@dragging_point.x += dx / dist * drag_point_dist
+					@dragging_point.y += dy / dist * drag_point_dist
+					for point_name, point of @editing_entity.structure.points
+						point.x += dx / dist * drag_entity_dist
+						point.y += dy / dist * drag_entity_dist
+				else
+					@dragging_point.x = relative_mouse.x
+					@dragging_point.y = relative_mouse.y
 			else
 				@dragging_point = null
 		else if @dragging_segment
@@ -131,7 +132,9 @@ class @Editor
 					@selection_box = {x1: mouse.x, y1: mouse.y, x2: mouse.x, y2: mouse.y}
 		
 		if @editing_entity
-			@editing_entity.structure.stepLayout() for [0..250]
+			if @editing_entity.structure instanceof BoneStructure
+				# TODO: and if there isn't an animation frame loaded
+				@editing_entity.structure.stepLayout() for [0..250]
 		
 		@mouse_down_last = mouse.down
 	

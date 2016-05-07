@@ -6,6 +6,4 @@ class @Entity
 		@y = 0
 	
 	step: ->
-	
 	draw: (ctx)->
-		@debugDraw(ctx)

@@ -12,6 +12,12 @@ player.x = -100
 player.y = 0
 player.structure.autoLayout()
 
+terrain = new Terrain
+entities.push terrain
+terrain.x = 0
+terrain.y = 0
+terrain.generate()
+
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
