@@ -3,13 +3,13 @@ class @GranddaddyLonglegs extends Entity
 	constructor: ->
 		super
 		@structure.addPoint("body")
-		for side in ["left", "right"]
-			for n in [1..4]
+		for leg_pair_n in [1..4]
+			for side in ["left", "right"]
 				previous = "body"
 				for segment in ["upper", "middle", "lower"]
 					previous = @structure.addSegment(
 						from: previous
-						name: "#{side} #{segment} leg #{n}"
+						name: "#{side} #{segment} leg #{leg_pair_n}"
 						length: 50
 						width: switch segment
 							when "upper" then 6

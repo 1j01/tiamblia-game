@@ -7,15 +7,17 @@ class @BoneStructure
 	addPoint: (name)->
 		if @points[name]
 			throw new Error "point/segment '#{name}' already exists adding point '#{name}'"
-		@points[name] = {x: 0, y: 0, name}
+		@points[name] = {x: 0, y: 0, name} # , uid_P: Math.random()
 	
 	addSegment: (def)->
 		{from, name} = def
 		if @segments[name]
 			throw new Error "segment '#{name}' already exists adding segment '#{name}'"
+		if @points[name]
+			throw new Error "point/segment '#{name}' already exists adding segment '#{name}'"
 		unless @points[from]
 			throw new Error "point/segment '#{from}' does not exist yet adding segment '#{name}'"
-		@points[name] ?= {x: 0, y: 0, name: from}
+		@points[name] = {x: 0, y: 0, name: name} # , uid_S: Math.random()
 		@segments[name] = {a: @points[from], b: @points[name]}
 		@segments[name][k] = v for k, v of def
 		return name
@@ -77,14 +79,32 @@ class @BoneStructure
 			dx = segment.a.x - segment.b.x
 			dy = segment.a.y - segment.b.y
 			dist = Math.sqrt(dx * dx + dy * dy)
-			cx = (segment.a.x + segment.b.x) / 2
-			cy = (segment.a.y + segment.b.y) / 2
-			dd = (segment.length ? 50) - dist
-			forces[segment.a.name].x -= dx * dd / 1000000
-			forces[segment.a.name].y -= dy * dd / 1000000
-			forces[segment.b.name].x += dx * dd / 1000000
-			forces[segment.b.name].y += dy * dd / 1000000
-		
+			# cx = (segment.a.x + segment.b.x) / 2
+			# cy = (segment.a.y + segment.b.y) / 2
+			# dd = (segment.length ? 50) - dist
+			# forces[segment.a.name].x -= dx * dd / 100000
+			# forces[segment.a.name].y -= dy * dd / 100000
+			# forces[segment.b.name].x += dx * dd / 100000
+			# forces[segment.b.name].y += dy * dd / 100000
+			# forces[segment.a.name].x -= dx * dd / dist / 1000
+			# forces[segment.a.name].y -= dy * dd / dist / 1000
+			# forces[segment.b.name].x += dx * dd / dist / 1000
+			# forces[segment.b.name].y += dy * dd / dist / 1000
+			# forces[segment.a.name].x -= dx * dd / dist / 10
+			# forces[segment.a.name].y -= dy * dd / dist / 10
+			# forces[segment.b.name].x += dx * dd / dist / 10
+			# forces[segment.b.name].y += dy * dd / dist / 10
+			delta_dist = dist - (segment.length ? 50)
+			# forces[segment.a.name].x -= dx * delta_dist / dist / 100000
+			# forces[segment.a.name].y -= dy * delta_dist / dist / 100000
+			# forces[segment.b.name].x += dx * delta_dist / dist / 100000
+			# forces[segment.b.name].y += dy * delta_dist / dist / 100000
+			forces[segment.a.name].x -= dx * delta_dist / 100000
+			forces[segment.a.name].y -= dy * delta_dist / 100000
+			forces[segment.b.name].x += dx * delta_dist / 100000
+			forces[segment.b.name].y += dy * delta_dist / 100000
+
 		for point_name, force of forces
+			# console.log point_name, force if point_name is "body"
 			@points[point_name].x += force.x
 			@points[point_name].y += force.y

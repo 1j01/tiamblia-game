@@ -134,6 +134,7 @@ class @Editor
 				ctx.arc(point.x, point.y, radius, 0, Math.PI * 2)
 				ctx.fillStyle = fillStyle
 				ctx.fill()
+				# ctx.fillText(point_name, point.x + radius * 2, point.y)
 		
 		draw_segments = (entity, lineWidth, strokeStyle)->
 			for segment_name, segment of entity.structure.segments
