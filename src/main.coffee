@@ -6,6 +6,12 @@ gdll.x = 500
 gdll.y = 500
 gdll.structure.autoLayout()
 
+player = new Player
+entities.push player
+player.x = 100
+player.y = 400
+player.structure.autoLayout()
+
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")

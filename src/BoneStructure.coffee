@@ -41,11 +41,13 @@ class @BoneStructure
 					y = ys[sideless_point_name]
 				else
 					y += 30
+					# y += 20 if point_name.match(/lower/)
 					ys[sideless_point_name] = y
 				if side is "left"
 					point.x = -1 * (lil_hash(sideless_point_name) % 100)
 				if side is "right"
 					point.x = +1 * (lil_hash(sideless_point_name) % 100)
+				point.x *= 0.7 if point_name.match(/lower/)
 			point.y = y
 		
 		for [0..2000]
@@ -80,10 +82,10 @@ class @BoneStructure
 			dy = segment.a.y - segment.b.y
 			dist = Math.sqrt(dx * dx + dy * dy)
 			delta_dist = dist - (segment.length ? 50)
-			forces[segment.a.name].x -= dx * delta_dist / 100000
-			forces[segment.a.name].y -= dy * delta_dist / 100000
-			forces[segment.b.name].x += dx * delta_dist / 100000
-			forces[segment.b.name].y += dy * delta_dist / 100000
+			forces[segment.a.name].x -= dx * delta_dist / 1000
+			forces[segment.a.name].y -= dy * delta_dist / 1000
+			forces[segment.b.name].x += dx * delta_dist / 1000
+			forces[segment.b.name].y += dy * delta_dist / 1000
 
 		for point_name, force of forces
 			@points[point_name].x += force.x
