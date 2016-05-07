@@ -95,7 +95,7 @@ class @Editor
 			for entity in @entities
 				relative_mouse = {x: mouse.x - entity.x, y: mouse.y - entity.y}
 				for segment_name, segment of entity.structure.segments
-					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
+					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / @view.scale
 						@hovered_entities = [entity]
 			
 			if mouse.down and not @mouse_down_last
@@ -104,9 +104,13 @@ class @Editor
 				if @editing_entity
 					relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
 					closest_dist = Infinity
+					# min_grab_dist = (5 + 5 / Math.min(@view.scale, 1)) / 2
+					# min_grab_dist = 8 / Math.min(@view.scale, 5)
+					min_grab_dist = 8 / @view.scale
+					# console.log @view.scale, min_grab_dist
 					for point_name, point of @editing_entity.structure.points
 						dist = distance(relative_mouse, point)
-						if dist < (5 + 5 / @view.scale) / 2 and dist < closest_dist
+						if dist < min_grab_dist and dist < closest_dist
 							closest_dist = dist
 							@dragging_point = point
 					unless @dragging_point
