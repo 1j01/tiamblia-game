@@ -73,66 +73,25 @@ class @Player extends Entity
 		ctx.save()
 		ctx.translate(neck.x, neck.y)
 		torso_angle = Math.atan2(hip.y - neck.y, hip.x - neck.x) - Math.PI/2
-		# left_leg_angle = Math.atan2(upper_left_leg.y - hip.y, upper_left_leg.x - hip.x) #- Math.PI/2
-		# right_leg_angle = Math.atan2(upper_right_leg.y - hip.y, upper_right_leg.x - hip.x) #- Math.PI/2
-		ctx.rotate(torso_angle)
 		dx = hip.x - neck.x
 		dy = hip.y - neck.y
-		dist = Math.sqrt(dx * dx + dy * dy)
-		# ctx.moveTo(-5, 0)
-		# ctx.lineTo(+5, 0)
-		ctx.moveTo(-3, 0)
-		ctx.lineTo(+3, 0)
-		# ctx.lineTo(+10, dist + 5)
-		# ctx.lineTo(-10, dist + 5)
-		# ctx.lineTo(+3 + 8 * Math.cos(left_leg_angle), dist + 5 * Math.sin(left_leg_angle))
-		# ctx.lineTo(-3 + 8 * Math.cos(right_leg_angle), dist + 5 * Math.sin(right_leg_angle))
-		
-		# # left_leg_angle = Math.atan2(upper_left_leg.y - hip.y, upper_left_leg.x - hip.x) - torso_angle
-		# # right_leg_angle = Math.atan2(upper_right_leg.y - hip.y, upper_right_leg.x - hip.x) - torso_angle
-		# # # left_leg_angle = Math.min(1, Math.max(-1, left_leg_angle))
-		# # ctx.lineTo(+3 + 8 * Math.cos(left_leg_angle), dist + 5 * Math.sin(left_leg_angle))
-		# # ctx.lineTo(-3 + 8 * Math.cos(right_leg_angle), dist + 5 * Math.sin(right_leg_angle))
-		# leg_angle_1 = Math.atan2(upper_left_leg.y - hip.y, upper_left_leg.x - hip.x) - torso_angle
-		# leg_angle_2 = Math.atan2(upper_right_leg.y - hip.y, upper_right_leg.x - hip.x) - torso_angle
-		# min_leg_angle = Math.min(leg_angle_1, leg_angle_2)
-		# max_leg_angle = Math.max(leg_angle_1, leg_angle_2)
-		# # # min_leg_angle = Math.max(min_leg_angle, 0)
-		# # # max_leg_angle = Math.min(max_leg_angle, 0)
-		# # console.log min_leg_angle, max_leg_angle
-		# 
-		# # ctx.lineTo(+3 + 8 * Math.cos(min_leg_angle), dist + 5 * Math.sin(min_leg_angle))
-		# # ctx.lineTo(-3 + 8 * Math.cos(max_leg_angle), dist + 5 * Math.sin(max_leg_angle))
-		# # ctx.lineTo(+3 + Math.max(0, 8 * Math.cos(min_leg_angle)), dist + 5 * Math.sin(min_leg_angle))
-		# # ctx.lineTo(-3 + Math.min(0, 8 * Math.cos(max_leg_angle)), dist + 5 * Math.sin(max_leg_angle))
-		# ctx.lineTo(+3 + Math.max(0, 8 * Math.cos(min_leg_angle)), dist + Math.max(3, 5 * Math.sin(min_leg_angle)))
-		# ctx.lineTo(-3 + Math.min(0, 8 * Math.cos(max_leg_angle)), dist + Math.max(3, 5 * Math.sin(max_leg_angle)))
-		# # ctx.lineTo(-8 + right_leg_angle, dist + 5)
-		
+		torso_length = Math.sqrt(dx * dx + dy * dy)
+		ctx.rotate(torso_angle)
 		leg_angle_1 = Math.atan2(upper_left_leg.y - hip.y, upper_left_leg.x - hip.x) - torso_angle
 		leg_angle_2 = Math.atan2(upper_right_leg.y - hip.y, upper_right_leg.x - hip.x) - torso_angle
-		
+		ctx.moveTo(-3, 0)
+		ctx.lineTo(+3, 0)
 		min_cos = Math.min(Math.cos(leg_angle_1), Math.cos(leg_angle_2))
 		max_cos = Math.max(Math.cos(leg_angle_1), Math.cos(leg_angle_2))
 		min_sin = Math.min(Math.sin(leg_angle_1), Math.sin(leg_angle_2))
 		max_sin = Math.max(Math.sin(leg_angle_1), Math.sin(leg_angle_2))
-		# ctx.lineTo(+3 + Math.max(0, 10 * max_cos), dist + Math.max(5, 7 * max_sin))
-		# ctx.lineTo(-3 + Math.min(0, 10 * min_cos), dist + Math.max(5, 7 * max_sin))
-		# ctx.lineTo(+4, dist/2)
-		# ctx.lineTo(+4 + Math.max(0, 9 * max_cos), dist + Math.max(5, 7 * max_sin))
-		# ctx.lineTo(-4 + Math.min(0, 9 * min_cos), dist + Math.max(5, 7 * max_sin))
-		# ctx.lineTo(-4, dist/2)
-		ctx.lineTo(+4 + Math.max(0, 1 * max_cos), dist/2)
-		ctx.lineTo(+4 + Math.max(0, 9 * max_cos), dist + Math.max(5, 7 * max_sin))
-		ctx.lineTo(-4 + Math.min(0, 9 * min_cos), dist + Math.max(5, 7 * max_sin))
-		ctx.lineTo(-4 + Math.min(0, 1 * min_cos), dist/2)
-
-		ctx.restore()
-		ctx.closePath()
-		# neck
-		# hip
+		ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length/2)
+		ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin))
+		ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
+		ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length/2)
 		ctx.fillStyle = "#ddffff"
 		ctx.fill()
+		ctx.restore()
 		
 		# head
 		ctx.save()
@@ -141,6 +100,6 @@ class @Player extends Entity
 		ctx.rotate(Math.atan2(head.y - neck.y, head.x - neck.x) - Math.PI/2)
 		ctx.scale(0.9, 1)
 		ctx.arc(0, 0, 6, 0, Math.PI * 2)
-		ctx.fillStyle = "#6B422C" # "#C15723" #"brown"
+		ctx.fillStyle = "#6B422C"
 		ctx.fill()
 		ctx.restore()

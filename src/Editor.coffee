@@ -74,7 +74,9 @@ class @Editor
 				dx = relative_mouse.x - @dragging_point.x
 				dy = relative_mouse.y - @dragging_point.y
 				if @editing_entity.structure instanceof BoneStructure
-					# prevent physics breaking by limiting the movement of an individual point
+					# try to prevent physics breaking by limiting the movement of an individual point
+					# FIXME: physics can still break under some conditions so fix this in a different way
+					# plus dragging the GranddaddyLonglegs by its head feels really glitchy now
 					dist = Math.sqrt(dx * dx + dy * dy)
 					max_point_drag_dist = 200
 					drag_entity_dist = Math.max(0, dist - max_point_drag_dist)

@@ -41,7 +41,6 @@ addEventListener "mouseup", (e)->
 	mouse.down = false
 
 handle_scroll = (e)->
-	# direction = if e.detail < 0 or e.wheelDelta > 0 then +1 else -1
 	zoom_factor = 1.2
 	if e.detail < 0 or e.wheelDelta > 0
 		view.scale_to *= zoom_factor
@@ -50,11 +49,6 @@ handle_scroll = (e)->
 
 addEventListener "mousewheel", handle_scroll
 addEventListener "DOMMouseScroll", handle_scroll
-
-
-# addEventListener "mouseout", (e)->
-# 	mouse.x = -Infinity
-# 	mouse.y = -Infinity
 
 do animate = ->
 	

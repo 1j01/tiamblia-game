@@ -41,7 +41,6 @@ class @BoneStructure
 					y = ys[sideless_point_name]
 				else
 					y += 30
-					# y += 20 if point_name.match(/lower/)
 					ys[sideless_point_name] = y
 				if side is "left"
 					point.x = -1 * (lil_hash(sideless_point_name) % 100)

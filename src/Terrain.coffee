@@ -22,7 +22,6 @@ class @Terrain extends Entity
 	
 	draw: (ctx)->
 		ctx.beginPath()
-		# ctx.moveTo()
 		for point_name, point of @structure.points
 			ctx.lineTo(point.x, point.y)
 		ctx.closePath()
