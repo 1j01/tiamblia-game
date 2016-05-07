@@ -93,6 +93,7 @@ class @Player extends Entity
 		ctx.save()
 		ctx.beginPath()
 		ctx.translate(head.x, head.y)
+		ctx.rotate(Math.atan2(head.y - neck.y, head.x - neck.x) - Math.PI/2)
 		ctx.scale(0.9, 1)
 		ctx.arc(0, 0, 6, 0, Math.PI * 2)
 		ctx.fillStyle = "#6B422C" # "#C15723" #"brown"

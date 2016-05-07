@@ -114,12 +114,18 @@ class @Editor
 				@dragging_segment = null
 				if @editing_entity
 					relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
+					closest_dist = Infinity
 					for point_name, point of @editing_entity.structure.points
-						if dist2(relative_mouse, point) < 5 ** 2
+						dist = Math.sqrt(dist2(relative_mouse, point))
+						if dist < (5 + 5 / @view.scale) / 2 and dist < closest_dist
+							closest_dist = dist
 							@dragging_point = point
 					unless @dragging_point
+						closest_dist = Infinity
 						for segment_name, segment of @editing_entity.structure.segments
-							if distToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? 5)
+							dist = distToSegment(relative_mouse, segment.a, segment.b)
+							if dist < (segment.width ? 5) and dist < closest_dist
+								closest_dist = dist
 								@dragging_segment = segment
 						unless @dragging_segment
 							@editing_entity = null
