@@ -71,12 +71,8 @@ class @Editor
 		if @dragging_point
 			if mouse.down
 				relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
-				# moving_point = @dragging_point.x isnt relative_mouse.x or @dragging_point.y isnt relative_mouse.y
 				@dragging_point.x = relative_mouse.x
 				@dragging_point.y = relative_mouse.y
-				# if moving_point
-				# 	for [0..250]
-				# 		@editing_entity.structure.stepLayout()
 			else
 				@dragging_point = null
 		else if @dragging_segment
