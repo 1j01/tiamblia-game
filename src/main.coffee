@@ -2,14 +2,14 @@
 entities = []
 gdll = new GranddaddyLonglegs
 entities.push gdll
-gdll.x = 500
-gdll.y = 500
+gdll.x = 200
+gdll.y = 50
 gdll.structure.autoLayout()
 
 player = new Player
 entities.push player
-player.x = 100
-player.y = 400
+player.x = -100
+player.y = 0
 player.structure.autoLayout()
 
 canvas = document.createElement("canvas")
@@ -17,14 +17,16 @@ document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
 
 view = new View
+viewToWorldX = (x)-> x - canvas.width/2
+viewToWorldY = (y)-> y - canvas.height/2
 
 editor = new Editor(entities)
 
 mouse = {x: -Infinity, y: -Infinity, down: no}
 
 addEventListener "mousemove", (e)->
-	mouse.x = e.clientX
-	mouse.y = e.clientY
+	mouse.x = viewToWorldX(e.clientX)
+	mouse.y = viewToWorldY(e.clientY)
 
 addEventListener "mousedown", (e)->
 	mouse.down = true
@@ -48,11 +50,18 @@ do animate = ->
 	for entity in entities
 		entity.step()
 	
+	editor.step(mouse)
+	
+	ctx.save()
+	ctx.translate(canvas.width/2, canvas.height/2)
+	ctx.translate(-view.center_x, -view.center_x)
+	
 	for entity in entities
 		ctx.save()
 		ctx.translate(entity.x, entity.y)
 		entity.draw(ctx)
 		ctx.restore()
 	
-	editor.step(mouse)
 	editor.draw(ctx)
+	
+	ctx.restore()

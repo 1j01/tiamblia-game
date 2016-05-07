@@ -17,7 +17,7 @@ class @View
 		@center_y += (@center_y_to - @center_y) / @follow_smoothness
 		@scale += (@scale_to - @scale) / @zoom_smoothness
 	
-	worldToViewX: (x)->
-	worldToViewY: (y)->
-	viewToWorldX: (x)->
-	viewToWorldY: (y)->
+	# fromWorldX: (x)->
+	# fromWorldY: (y)->
+	# toWorldX: (x)->
+	# toWorldY: (y)->
