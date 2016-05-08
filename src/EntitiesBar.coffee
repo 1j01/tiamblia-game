@@ -17,7 +17,6 @@ class @EntitiesBar
 			y += cell_height
 		
 		@hovered_cell = null
-		# @dragging_entity = null
 		@mouse_start = null
 	
 	step: (mouse)->
@@ -30,10 +29,8 @@ class @EntitiesBar
 				@hovered_cell = cell
 		if @mouse_start and mouse.down
 			if distance(@mouse_start, mouse) > 4
-				# unless @dragging_entity
-					@editor.undoable =>
+				@editor.undoable =>
 					entity = new @mouse_start.cell.EntityClass
-					# @dragging_entity = entity
 					@editor.world.entities.push entity
 					@editor.dragging_entity = entity
 					@editor.selected_entities = [entity]
@@ -42,10 +39,7 @@ class @EntitiesBar
 			@mouse_start = {x: mouse.x, y: mouse.y, cell: @hovered_cell}
 			@editor.selected_entities = []
 		else
-			# @dragging_entity = null
 			@mouse_start = null
-		# @dragging_entity?
-		# return no if @dragging_entity?
 		return no if @editor.dragging_entity?
 		@hovered_cell? or @mouse_start?
 	

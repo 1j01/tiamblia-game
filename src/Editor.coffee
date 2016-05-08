@@ -256,6 +256,7 @@ class @Editor
 		for entity in @hovered_entities when entity not in @selected_entities
 			ctx.save()
 			ctx.translate(entity.x, entity.y)
+			draw_points(entity, 2, "rgba(255, 170, 0, 0.2)")
 			draw_segments(entity, 1, "rgba(255, 170, 0, 0.5)")
 			ctx.restore()
 		
