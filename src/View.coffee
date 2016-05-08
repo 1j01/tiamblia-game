@@ -24,3 +24,7 @@ class @View
 	toWorld: (point)->
 		x: (point.x - @center_x - @width / 2) / @scale
 		y: (point.y - @center_y - @height / 2) / @scale
+	
+	fromWorld: (point)->
+		x: point.x * @scale + @center_x + @width / 2
+		y: point.y * @scale + @center_y + @height / 2

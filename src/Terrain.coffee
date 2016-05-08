@@ -37,27 +37,47 @@ class @Terrain extends Entity
 		ctx.fill()
 		Math.seedrandom(5)
 		random = Math.random
+		dark_blades = []
+		light_blades = []
 		for i in [0..@width]
 			x = @left + random() * @width
 			y = @bottom - random() * @max_height
 			# TODO: order tufts of grass based on y?
 			if view.testRect(x, y - 10, 0, 10, 15)
 				for j in [0..random()*3+1]
-					ctx.strokeStyle = if random() < 0.5 then "#B7863E" else "#D6AE77"
-					# FIXME: floating pieces of grass caused by finicky pointInPolygon
-					# TODO: optimize! pointInPolygon is really slow
-					if @structure.pointInPolygon(x, y)
-						# TODO: try to optimize by only beginning and stroking two paths?
-						ctx.beginPath()
-						ctx.moveTo(x, y)
-						ctx.lineTo(
-							x + @simplex.noise2D(i-x+y+78+Date.now()/2000, j-y+549)*5
-							y - (2 + @simplex.noise2D(i*40.45, j+340)) * 10
-						)
-						ctx.stroke()
-						x += (@simplex.noise2D(i+x+y, j+y) + 1) * 3
-						# x += (random() + 1) * 3
+					dark = random() < 0.5
+					# if @structure.pointInPolygon(x, y)
+					# if ctx.isPointInPath(x, y)
+					# if ctx.isPointInPath(x * view.scale, y * view.scale)
+					# if ctx.isPointInPath(x / view.scale, y / view.scale)
+					point = {x, y}
+					view_point = view.fromWorld(point)
+					if ctx.isPointInPath(view_point.x, view_point.y)
+						(if dark then dark_blades else light_blades).push(point)
+					# x += (@simplex.noise2D(i+x+y, j+y) + 1) * 3
+					x += (random() + 1) * 3
 			else
 				for j in [0..random()*3+1]
 					random()
-					# random()
+					random()
+		
+		ctx.beginPath()
+		for {x, y} in dark_blades
+			ctx.moveTo(x, y)
+			ctx.lineTo(
+				x + @simplex.noise2D(-x+y+78+Date.now()/2000, y+549)*5
+				y - (2 + @simplex.noise2D(y*40.45, x+340)) * 10
+			)
+		ctx.strokeStyle = "#B7863E"
+		ctx.stroke()
+		
+		ctx.beginPath()
+		for {x, y} in light_blades
+			ctx.moveTo(x, y)
+			ctx.lineTo(
+				x + @simplex.noise2D(-x+y+78+Date.now()/2000, y+549)*5
+				y - (2 + @simplex.noise2D(y*40.45, x+340)) * 10
+			)
+		ctx.strokeStyle = "#D6AE77"
+		ctx.stroke()
+		
