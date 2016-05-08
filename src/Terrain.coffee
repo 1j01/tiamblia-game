@@ -40,23 +40,24 @@ class @Terrain extends Entity
 		for i in [0..@width]
 			x = @left + random() * @width
 			y = @bottom - random() * @max_height
-			# FIXME: floating pieces of grass caused by finicky pointInPolygon
-			# TODO: order tufts of grass based on y
-			if view.testRect(x, y - 10, 0, 10, 15) and @structure.pointInPolygon(x, y)
+			# TODO: order tufts of grass based on y?
+			if view.testRect(x, y - 10, 0, 10, 15)
 				for j in [0..random()*3+1]
-					# TODO: check point in polygon for each blade
-					# TODO: try to optimize by only begining and stroking two paths
-					ctx.beginPath()
-					ctx.moveTo(x, y)
-					ctx.lineTo(
-						x + @simplex.noise2D(i-x+y+78+Date.now()/2000, j-y+549)*5
-						y - (2 + @simplex.noise2D(i*40.45, j+340)) * 10
-					)
-					ctx.strokeStyle = "#D6AE77"
-					ctx.strokeStyle = "#B7863E" if random() < 0.5
-					ctx.stroke()
-					x += (@simplex.noise2D(i+x+y, j+y) + 1) * 3
-					# TODO: use random() for the above
+					ctx.strokeStyle = if random() < 0.5 then "#B7863E" else "#D6AE77"
+					# FIXME: floating pieces of grass caused by finicky pointInPolygon
+					# TODO: optimize! pointInPolygon is really slow
+					if @structure.pointInPolygon(x, y)
+						# TODO: try to optimize by only beginning and stroking two paths?
+						ctx.beginPath()
+						ctx.moveTo(x, y)
+						ctx.lineTo(
+							x + @simplex.noise2D(i-x+y+78+Date.now()/2000, j-y+549)*5
+							y - (2 + @simplex.noise2D(i*40.45, j+340)) * 10
+						)
+						ctx.stroke()
+						x += (@simplex.noise2D(i+x+y, j+y) + 1) * 3
+						# x += (random() + 1) * 3
 			else
 				for j in [0..random()*3+1]
 					random()
+					# random()
