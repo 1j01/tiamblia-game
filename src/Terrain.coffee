@@ -4,6 +4,13 @@ class @Terrain extends Entity
 		@structure = new PolygonStructure
 		@simplex = new SimplexNoise
 	
+	toJSON: ->
+		{@structure, @width, @max_height, @left, @right, @bottom}
+	
+	fromJSON: (def)->
+		@[k] = v for k, v of def when k isnt "structure"
+		@structure.fromJSON(def.structure)
+	
 	generate: ->
 		@width = 5000
 		@left = -2500
@@ -11,8 +18,8 @@ class @Terrain extends Entity
 		@max_height = 400
 		@bottom = 300
 		res = 20
-		@structure.addVertex(@right, @bottom, "lower-right")
-		@structure.addVertex(@left, @bottom, "lower-left")
+		@structure.addVertex(@right, @bottom)
+		@structure.addVertex(@left, @bottom)
 		for x in [@left..@right] by res
 			noise =
 				@simplex.noise2D(x / 2400, 0) +
@@ -37,6 +44,7 @@ class @Terrain extends Entity
 			if view.testRect(x, y, 0, 10, 15) and @structure.pointInPolygon(x, y)
 				for j in [0..random()*3+1]
 					# TODO: check point in polygon for each blade
+					# TODO: try to optimize by only begining and stroking two paths
 					ctx.beginPath()
 					ctx.moveTo(x, y)
 					ctx.lineTo(x + @simplex.noise2D(i-x+y+78+Date.now()/2000, j-y+549)*5, y - (2 + @simplex.noise2D(i*40.45, j+340)) * 10)

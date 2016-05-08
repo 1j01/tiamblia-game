@@ -1,8 +1,5 @@
 
-class @BoneStructure
-	constructor: ->
-		@points = {}
-		@segments = {}
+class @BoneStructure extends Structure
 	
 	addPoint: (name)->
 		if @points[name]
@@ -19,7 +16,7 @@ class @BoneStructure
 		unless @points[from]
 			throw new Error "point/segment '#{from}' does not exist yet adding segment '#{name}'"
 		@points[to] = {x: 0, y: 0, name: to}
-		@segments[name] = {a: @points[from], b: @points[to]}
+		@segments[name] = {a: @points[from], b: @points[to], from, to, name}
 		@segments[name][k] = v for k, v of def
 		return name
 	

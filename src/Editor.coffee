@@ -34,6 +34,13 @@ class @Editor
 				when 86 # V
 					paste() if e.ctrlKey
 	
+	save: ->
+		json = JSON.stringify(@world)
+		localStorage["Tiamblia World"] = json
+	
+	load: ->
+		@world.fromJSON(JSON.parse(localStorage["Tiamblia World"]))
+	
 	step: (mouse)->
 		
 		entity_within_selection_box = (entity)=>
@@ -79,11 +86,13 @@ class @Editor
 					@dragging_point.y = relative_mouse.y
 			else
 				@dragging_point = null
+				@save()
 		else if @dragging_segment
 			if mouse.down
 				# TODO
 			else
 				@dragging_segment = null
+				@save()
 		else if @selection_box
 			@selection_box.x2 = mouse.x
 			@selection_box.y2 = mouse.y

@@ -52,11 +52,13 @@ class @Player extends Entity
 		)
 		@structure.addSegment(
 			from: "left knee"
+			to: "left foot"
 			name: "lower left leg"
 			length: 10
 		)
 		@structure.addSegment(
 			from: "right knee"
+			to: "right foot"
 			name: "lower right leg"
 			length: 10
 		)

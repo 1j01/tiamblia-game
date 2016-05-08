@@ -1,23 +1,46 @@
 
-class @PolygonStructure
+class @PolygonStructure extends Structure
 	constructor: ->
-		@points = {}
+		super
+		@id_counter = 0
+		@last_point_name = null
+		@first_point_name = null
+	
+	toJSON: ->
+		{@points}
+	
+	fromJSON: (def)->
+		@points = def.points
 		@segments = {}
-		@point_id_counter = 1
-		@last_name = null
-		@first_name = null
+		@id_counter = 0
+		@first_point_name = null
+		@last_point_name = null
+		for point_name, point of @points
+			if @first_point_name?
+				@segments[++@id_counter] = {
+					a: @points[@last_point_name]
+					b: @points[point_name]
+				}
+			else
+				@first_point_name = point_name
+			@last_point_name = point_name
+		
+		@segments.closing = {
+			a: @points[@first_point_name]
+			b: @points[@last_point_name]
+		}
 	
 	addVertex: (x, y, name)->
-		from = @last_name
-		name ?= ++@point_id_counter
-		@first_name ?= name
+		from = @last_point_name
+		name ?= ++@id_counter
+		@first_point_name ?= name
 		if @points[name]
 			throw new Error "point/segment '#{name}' already exists adding vertex '#{name}'"
 		@points[name] = {x, y, name}
 		if @points[from]
 			@segments[name] = {a: @points[from], b: @points[name]}
-			@segments["closing"] = {a: @points[@last_name], b: @points[@first_name]}
-		@last_name = name
+			@segments["closing"] = {a: @points[@last_point_name], b: @points[@first_point_name]}
+		@last_point_name = name
 	
 	pointInPolygon: (x, y)->
 		inside = no

@@ -29,7 +29,8 @@ view = new View
 viewToWorldX = (x)-> (x - canvas.width / 2) / view.scale + view.center_x
 viewToWorldY = (y)-> (y - canvas.height / 2) / view.scale + view.center_y
 
-editor = new Editor(world, view)
+@editor = new Editor(world, view)
+editor.load()
 
 mouse = {x: -Infinity, y: -Infinity, down: no}
 
