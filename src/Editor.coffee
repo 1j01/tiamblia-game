@@ -92,10 +92,6 @@ class @Editor
 			@hovered_entities = []
 			return
 		
-		# mouse_in_world =
-		# 	x: viewToWorldX(mouse.x)
-		# 	y: viewToWorldY(mouse.y)
-		
 		mouse_in_world = view.toWorld(mouse)
 		
 		entity_within_selection_box = (entity)=>
@@ -276,26 +272,4 @@ class @Editor
 			ctx.restore()
 	
 	drawAbsolute: (ctx)->
-		# # entities_bar = {width: 0, entity_classes: []}
-		# # for entity_class_name, EntityClass of entity_classes
-		# # 	entities_bar.entity_classes.push EntityClass
-		# # entities_bar.width = entities_bar.entity_classes.length
-		# # for EntityClass in entities_bar
-		# 
-		# cell_height = 20
-		# entity_class_names = Object.keys(entity_classes)
-		# height = entity_class_names.length * cell_height
-		# x = 0
-		# y = 10
-		# for entity_class_name in entity_class_names
-		# 	# ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
-		# 	# ctx.fillRect(x, y, random() * 50, cell_height)
-		# 	# ctx.fillStyle = "black"
-		# 	# ctx.font = "#{cell_height}px sans-serif"
-		# 	# ctx.fillText(entity_class_name, 60, y + cell_height)
-		# 	ctx.fillStyle = "black"
-		# 	ctx.font = "#{cell_height}px sans-serif"
-		# 	ctx.fillText(entity_class_name, 10, y + cell_height)
-		# 	y += cell_height
-		
 		@entities_bar.drawAbsolute(ctx)

@@ -3,9 +3,6 @@
 
 class @EntitiesBar
 	constructor: (@editor)->
-		# @cell_height = 20
-		# @entity_class_names = Object.keys(entity_classes)
-		# @height = @entity_class_names.length * @cell_height
 		x = 10
 		y = 10
 		cell_height = 20
@@ -20,7 +17,8 @@ class @EntitiesBar
 			y += cell_height
 		
 		@hovered_cell = null
-		@dragging_entity = null
+		# @dragging_entity = null
+		@mouse_start = null
 	
 	step: (mouse)->
 		@hovered_cell = null
@@ -30,27 +28,29 @@ class @EntitiesBar
 				cell.x <= mouse.x <= cell.x + cell.width
 			)
 				@hovered_cell = cell
-		if mouse.clicked and @hovered_cell
-			@editor.undoable =>
-				# FIXME: entity appears at (0, 0) before being dragged
-				# should instead only be created once dragged
-				entity = new @hovered_cell.EntityClass
-				@editor.world.entities.push entity
-				@editor.dragging_entity = entity
-				@editor.selected_entities = [entity]
+		if @mouse_start and mouse.down
+			if distance(@mouse_start, mouse) > 4
+				# unless @dragging_entity
+					@editor.undoable =>
+					entity = new @mouse_start.cell.EntityClass
+					# @dragging_entity = entity
+					@editor.world.entities.push entity
+					@editor.dragging_entity = entity
+					@editor.selected_entities = [entity]
+					@mouse_start = null
+		else if mouse.clicked and @hovered_cell
+			@mouse_start = {x: mouse.x, y: mouse.y, cell: @hovered_cell}
+			@editor.selected_entities = []
 		else
-			@dragging_entity = null
+			# @dragging_entity = null
+			@mouse_start = null
 		# @dragging_entity?
-		@hovered_cell?
+		# return no if @dragging_entity?
+		return no if @editor.dragging_entity?
+		@hovered_cell? or @mouse_start?
 	
 	drawAbsolute: (ctx)->
-		# x = 0
-		# y = 10
-		# for entity_class_name in @entity_class_names
-		# 	ctx.fillStyle = "black"
-		# 	ctx.font = "#{@cell_height}px sans-serif"
-		# 	ctx.fillText(entity_class_name, 10, y + @cell_height)
-		# 	y += @cell_height
+		return if @editor.dragging_entity?
 		for cell in @cells
 			ctx.font = "#{cell.height}px sans-serif"
 			cell.width = ctx.measureText(cell.name).width
