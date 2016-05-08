@@ -1,6 +1,12 @@
 
 # TODO: animation editing
-# TODO: undo/redo, saving/loading
+# TODO: reasonable terrain editing
+# TODO: add new entities
+# TODO: drag entities
+# TODO: shift+select (and alternatively ctrl+select)
+# TODO: select multiple points the same ways as entities
+# TODO: save to a file instead of just localStorage
+# (will need a server or nw.js/electron)
 
 class @Editor
 	constructor: (@world, @view)->

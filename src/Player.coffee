@@ -96,7 +96,7 @@ class @Player extends Entity
 		ctx.lineTo(+4 + max(0, 9 * max_cos), torso_length + max(5, 7 * max_sin))
 		ctx.lineTo(-4 + min(0, 9 * min_cos), torso_length + max(5, 7 * max_sin))
 		ctx.lineTo(-4 + min(0, 1 * min_cos), torso_length/2)
-		ctx.fillStyle = "#ddffff"
+		ctx.fillStyle = "#AAFFFF"
 		ctx.fill()
 		ctx.restore()
 		

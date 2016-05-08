@@ -11,10 +11,12 @@ class @GranddaddyLonglegs extends Entity
 						from: previous
 						name: "#{segment} #{side} leg #{leg_pair_n}"
 						length: 50
+						# NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
+						# often have vastly more spindly legs
 						width: switch segment
-							when "upper" then 6
-							when "middle" then 5
-							when "lower" then 3
+							when "upper" then 4
+							when "middle" then 3
+							when "lower" then 2
 					)
 	
 	draw: (ctx)->
@@ -24,11 +26,11 @@ class @GranddaddyLonglegs extends Entity
 			ctx.lineTo(segment.b.x, segment.b.y)
 			ctx.lineWidth = segment.width
 			ctx.lineCap = "round"
-			ctx.strokeStyle = "#6B422C" # "#2c1c0a" #"brown"
+			ctx.strokeStyle = "#2c1c0a" #"brown"
 			ctx.stroke()
 		ctx.beginPath()
 		ctx.translate(@structure.points.body.x, @structure.points.body.y)
 		ctx.scale(1, 0.7)
 		ctx.arc(0, 0, 10, 0, TAU)
-		ctx.fillStyle = "#6B422C" # "#C15723" #"brown"
+		ctx.fillStyle = "#2c1c0a" #"#C15723" #"brown"
 		ctx.fill()
