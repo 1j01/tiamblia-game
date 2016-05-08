@@ -1,7 +1,6 @@
 
 # TODO: animation editing
 # TODO: reasonable terrain editing
-# TODO: add new entities
 # TODO: drag entities
 # TODO: shift+select (and alternatively ctrl+select)
 # TODO: select multiple points the same ways as entities
@@ -9,16 +8,17 @@
 # (will need a server or nw.js/electron)
 
 class @Editor
-	constructor: (@world, @view)->
+	constructor: (@world)->
 		@selected_entities = []
 		@hovered_entities = []
-		@mouse_down_last = no
 		@selection_box = null
 		@editing_entity = null
 		@dragging_point = null
 		@dragging_segment = null
+		@dragging_entity = null
 		@undos = []
 		@redos = []
+		@entities_bar = new EntitiesBar(@)
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
@@ -37,11 +37,13 @@ class @Editor
 				when 89 # Y
 					@redo() if e.ctrlKey
 				when 88 # X
-					cut() if e.ctrlKey
+					TODO: cut() if e.ctrlKey
 				when 67 # C
-					copy() if e.ctrlKey
+					TODO: copy() if e.ctrlKey
 				when 86 # V
-					paste() if e.ctrlKey
+					TODO: paste() if e.ctrlKey
+				when 65 # A
+					TODO: select_all() if e.ctrlKey
 	
 	save: ->
 		json = JSON.stringify(@world)
@@ -83,7 +85,18 @@ class @Editor
 		@editing_entity = @world.getEntityByID(editing_entity_id)
 		@save()
 	
-	step: (mouse)->
+	step: (mouse, view)->
+		
+		mouse_in_use = @entities_bar.step(mouse)
+		if mouse_in_use
+			@hovered_entities = []
+			return
+		
+		# mouse_in_world =
+		# 	x: viewToWorldX(mouse.x)
+		# 	y: viewToWorldY(mouse.y)
+		
+		mouse_in_world = view.toWorld(mouse)
 		
 		entity_within_selection_box = (entity)=>
 			relative_x1 = @selection_box.x1 - entity.x
@@ -105,9 +118,21 @@ class @Editor
 					return false
 			return true
 		
-		if @dragging_point
+		
+		if @dragging_entity
 			if mouse.down
-				relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
+				@dragging_entity.x = mouse_in_world.x
+				@dragging_entity.y = mouse_in_world.y
+			else
+				@dragging_entity = null
+				@save()
+		else if @dragging_point
+			if mouse.down
+				# TODO: add helper in Entity
+				relative_mouse = {
+					x: mouse_in_world.x - @editing_entity.x
+					y: mouse_in_world.y - @editing_entity.y
+				}
 				if @editing_entity.structure instanceof BoneStructure
 					# try to prevent physics breaking by limiting the movement of an individual point
 					# FIXME: physics can still break under some conditions so fix this in a different way
@@ -136,8 +161,8 @@ class @Editor
 				@dragging_segment = null
 				@save()
 		else if @selection_box
-			@selection_box.x2 = mouse.x
-			@selection_box.y2 = mouse.y
+			@selection_box.x2 = mouse_in_world.x
+			@selection_box.y2 = mouse_in_world.y
 			@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
 			if not mouse.down
 				@selected_entities = (entity for entity in @hovered_entities)
@@ -145,21 +170,27 @@ class @Editor
 		else
 			@hovered_entities = []
 			for entity in @world.entities
-				relative_mouse = {x: mouse.x - entity.x, y: mouse.y - entity.y}
+				relative_mouse = {
+					x: mouse_in_world.x - entity.x
+					y: mouse_in_world.y - entity.y
+				}
 				for segment_name, segment of entity.structure.segments
-					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / @view.scale
+					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
 						@hovered_entities = [entity]
 			
-			if mouse.down and not @mouse_down_last
+			if mouse.clicked
 				@dragging_point = null
 				@dragging_segment = null
 				if @editing_entity
-					relative_mouse = {x: mouse.x - @editing_entity.x, y: mouse.y - @editing_entity.y}
+					relative_mouse = {
+						x: mouse_in_world.x - @editing_entity.x
+						y: mouse_in_world.y - @editing_entity.y
+					}
 					closest_dist = Infinity
-					# min_grab_dist = (5 + 5 / Math.min(@view.scale, 1)) / 2
-					# min_grab_dist = 8 / Math.min(@view.scale, 5)
-					min_grab_dist = 8 / @view.scale
-					# console.log @view.scale, min_grab_dist
+					# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
+					# min_grab_dist = 8 / Math.min(view.scale, 5)
+					min_grab_dist = 8 / view.scale
+					# console.log view.scale, min_grab_dist
 					for point_name, point of @editing_entity.structure.points
 						dist = distance(relative_mouse, point)
 						if dist < min_grab_dist and dist < closest_dist
@@ -185,21 +216,19 @@ class @Editor
 					else
 						@editing_entity = null
 						@selected_entities = []
-						@selection_box = {x1: mouse.x, y1: mouse.y, x2: mouse.x, y2: mouse.y}
+						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
 		if @editing_entity
 			if @editing_entity.structure instanceof BoneStructure
 				# TODO: and if there isn't an animation frame loaded
 				@editing_entity.structure.stepLayout() for [0..250]
-		
-		@mouse_down_last = mouse.down
 	
-	draw: (ctx)->
+	draw: (ctx, view)->
 		
 		draw_points = (entity, radius, fillStyle)=>
 			for point_name, point of entity.structure.points
 				ctx.beginPath()
-				ctx.arc(point.x, point.y, radius / @view.scale, 0, TAU)
+				ctx.arc(point.x, point.y, radius / view.scale, 0, TAU)
 				ctx.fillStyle = fillStyle
 				ctx.fill()
 				# ctx.fillText(point_name, point.x + radius * 2, point.y)
@@ -209,7 +238,7 @@ class @Editor
 				ctx.beginPath()
 				ctx.moveTo(segment.a.x, segment.a.y)
 				ctx.lineTo(segment.b.x, segment.b.y)
-				ctx.lineWidth = lineWidth / @view.scale
+				ctx.lineWidth = lineWidth / view.scale
 				ctx.lineCap = "round"
 				ctx.strokeStyle = strokeStyle
 				ctx.stroke()
@@ -237,11 +266,36 @@ class @Editor
 		if @selection_box?
 			ctx.save()
 			ctx.beginPath()
-			ctx.translate(0.5, 0.5) if @view.scale is 1
+			ctx.translate(0.5, 0.5) if view.scale is 1
 			ctx.rect(@selection_box.x1, @selection_box.y1, @selection_box.x2 - @selection_box.x1, @selection_box.y2 - @selection_box.y1)
 			ctx.fillStyle = "rgba(0, 155, 255, 0.1)"
-			ctx.strokeStyle = "rgba(0, 155, 255, 0.4)"
-			ctx.lineWidth = 1 / @view.scale
+			ctx.strokeStyle = "rgba(0, 155, 255, 0.8)"
+			ctx.lineWidth = 1 / view.scale
 			ctx.fill()
 			ctx.stroke()
 			ctx.restore()
+	
+	drawAbsolute: (ctx)->
+		# # entities_bar = {width: 0, entity_classes: []}
+		# # for entity_class_name, EntityClass of entity_classes
+		# # 	entities_bar.entity_classes.push EntityClass
+		# # entities_bar.width = entities_bar.entity_classes.length
+		# # for EntityClass in entities_bar
+		# 
+		# cell_height = 20
+		# entity_class_names = Object.keys(entity_classes)
+		# height = entity_class_names.length * cell_height
+		# x = 0
+		# y = 10
+		# for entity_class_name in entity_class_names
+		# 	# ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
+		# 	# ctx.fillRect(x, y, random() * 50, cell_height)
+		# 	# ctx.fillStyle = "black"
+		# 	# ctx.font = "#{cell_height}px sans-serif"
+		# 	# ctx.fillText(entity_class_name, 60, y + cell_height)
+		# 	ctx.fillStyle = "black"
+		# 	ctx.font = "#{cell_height}px sans-serif"
+		# 	ctx.fillText(entity_class_name, 10, y + cell_height)
+		# 	y += cell_height
+		
+		@entities_bar.drawAbsolute(ctx)

@@ -5,14 +5,14 @@ class @World
 	
 	fromJSON: (def)->
 		unless def.entities instanceof Array
-			throw new Error "Expected entities to be an array, got #{object.entities}"
+			throw new Error "Expected entities to be an array, got #{def.entities}"
 		@entities = for ent_def in def.entities
 			unless typeof ent_def._class_ is "string"
 				console.error "Erroneous entity definition:", ent_def
 				throw new Error "Expected entity to have a string _class_, _class_ is #{ent_def._class_}"
-			unless window[ent_def._class_]
+			unless entity_classes[ent_def._class_]
 				throw new Error "Entity class '#{ent_def._class_}' does not exist"
-			entity = new window[ent_def._class_]
+			entity = new entity_classes[ent_def._class_]
 			for k, v of ent_def when k isnt "_class_"
 				if entity[k]?.fromJSON
 					entity[k].fromJSON(v)

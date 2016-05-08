@@ -1,5 +1,6 @@
 
 class @Player extends Entity
+	add_Entity_class(@)
 	constructor: ->
 		super
 		@structure.addPoint("head")

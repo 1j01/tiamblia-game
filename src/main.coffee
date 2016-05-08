@@ -21,6 +21,12 @@ terrain.x = 0
 terrain.y = 0
 terrain.generate()
 
+tree = new Tree
+world.entities.push tree
+tree.x = -200
+tree.y = -50
+# tree.generate()
+
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
@@ -29,7 +35,7 @@ view = new View
 viewToWorldX = (x)-> (x - canvas.width / 2) / view.scale + view.center_x
 viewToWorldY = (y)-> (y - canvas.height / 2) / view.scale + view.center_y
 
-@editor = new Editor(world, view)
+@editor = new Editor(world)
 try
 	editor.load()
 catch e
@@ -38,11 +44,12 @@ catch e
 mouse = {x: -Infinity, y: -Infinity, down: no}
 
 addEventListener "mousemove", (e)->
-	mouse.x = viewToWorldX(e.clientX)
-	mouse.y = viewToWorldY(e.clientY)
+	mouse.x = e.clientX
+	mouse.y = e.clientY
 
 addEventListener "mousedown", (e)->
 	mouse.down = true
+	mouse.clicked = true
 
 addEventListener "mouseup", (e)->
 	mouse.down = false
@@ -70,7 +77,7 @@ do animate = ->
 	view.width = canvas.width
 	view.height = canvas.height
 	view.step()
-	editor.step(mouse)
+	editor.step(mouse, view)
 	
 	ctx.save()
 	ctx.translate(canvas.width / 2, canvas.height / 2)
@@ -81,3 +88,6 @@ do animate = ->
 	editor.draw(ctx, view)
 	
 	ctx.restore()
+	
+	editor.drawAbsolute(ctx)
+	mouse.clicked = false

@@ -1,5 +1,6 @@
 
 class @GranddaddyLonglegs extends Entity
+	add_Entity_class(@)
 	constructor: ->
 		super
 		@structure.addPoint("body")

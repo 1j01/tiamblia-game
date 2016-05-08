@@ -1,5 +1,6 @@
 
 class @Terrain extends Entity
+	add_Entity_class(@)
 	constructor: ->
 		super
 		@structure = new PolygonStructure
