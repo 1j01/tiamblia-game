@@ -6,35 +6,7 @@ class @PolygonStructure extends Structure
 		@last_point_name = null
 		@first_point_name = null
 	
-	# toJSON: ->
-	# 	{@points}
-	# 
-	# fromJSON: (def)->
-	# 	@points = def.points
-	# 	@segments = {}
-	# 	@id_counter = 0
-	# 	@first_point_name = null
-	# 	@last_point_name = null
-	# 	for point_name, point of @points
-	# 		if @first_point_name?
-	# 			@segments[++@id_counter] = {
-	# 				a: @points[@last_point_name]
-	# 				b: @points[point_name]
-	# 			}
-	# 		else
-	# 			@first_point_name = point_name
-	# 		@last_point_name = point_name
-	# 	
-	# 	@segments.closing = {
-	# 		a: @points[@first_point_name]
-	# 		b: @points[@last_point_name]
-	# 	}
-	
 	toJSON: ->
-		# for point_name, point of @points
-		# 	point_def = {}
-		# 	point_def[k] = v for k, v of point when k isnt "name"
-		# 	point_def
 		points: ({x, y} for point_name, {x, y} of @points)
 	
 	fromJSON: (def)->

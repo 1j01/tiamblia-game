@@ -4,6 +4,7 @@ class @Terrain extends Entity
 		super
 		@structure = new PolygonStructure
 		@simplex = new SimplexNoise
+		@seed = random()
 	
 	toJSON: ->
 		def = {}

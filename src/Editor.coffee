@@ -64,6 +64,7 @@ class @Editor
 		@hovered_entities = []
 		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
 		@editing_entity = @world.getEntityByID(editing_entity_id)
+		@save()
 	
 	redo: ->
 		return if @redos.length is 0
@@ -74,6 +75,7 @@ class @Editor
 		@hovered_entities = []
 		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
 		@editing_entity = @world.getEntityByID(editing_entity_id)
+		@save()
 	
 	step: (mouse)->
 		
