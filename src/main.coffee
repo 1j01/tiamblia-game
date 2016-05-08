@@ -1,4 +1,6 @@
 
+seedrandom("A world")
+
 entities = []
 gdll = new GranddaddyLonglegs
 entities.push gdll
@@ -62,6 +64,8 @@ do animate = ->
 	for entity in entities
 		entity.step()
 	
+	view.width = canvas.width
+	view.height = canvas.height
 	view.step()
 	editor.step(mouse)
 	
@@ -73,7 +77,7 @@ do animate = ->
 	for entity in entities
 		ctx.save()
 		ctx.translate(entity.x, entity.y)
-		entity.draw(ctx)
+		entity.draw(ctx, view)
 		ctx.restore()
 	
 	editor.draw(ctx)

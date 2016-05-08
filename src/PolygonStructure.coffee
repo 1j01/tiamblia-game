@@ -18,3 +18,20 @@ class @PolygonStructure
 			@segments[name] = {a: @points[from], b: @points[name]}
 			@segments["closing"] = {a: @points[@last_name], b: @points[@first_name]}
 		@last_name = name
+	
+	pointInPolygon: (x, y)->
+		inside = no
+		# for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+		# 	xi = vs[i][0], yi = vs[i][1]
+		# 	xj = vs[j][0], yj = vs[j][1]
+		for segment_name, segment of @segments
+			xi = segment.a.x
+			yi = segment.a.y
+			xj = segment.b.x
+			yj = segment.b.y
+			intersect =
+				((yi > y) isnt (yj > y)) and
+				(x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+			inside = not inside if intersect
+		
+		inside
