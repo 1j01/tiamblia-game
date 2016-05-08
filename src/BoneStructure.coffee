@@ -10,15 +10,16 @@ class @BoneStructure
 		@points[name] = {x: 0, y: 0, name}
 	
 	addSegment: (def)->
-		{from, name} = def
+		{from, to, name} = def
+		to ?= name
 		if @segments[name]
 			throw new Error "segment '#{name}' already exists adding segment '#{name}'"
-		if @points[name]
+		if @points[to]
 			throw new Error "point/segment '#{name}' already exists adding segment '#{name}'"
 		unless @points[from]
 			throw new Error "point/segment '#{from}' does not exist yet adding segment '#{name}'"
-		@points[name] = {x: 0, y: 0, name}
-		@segments[name] = {a: @points[from], b: @points[name]}
+		@points[to] = {x: 0, y: 0, name: to}
+		@segments[name] = {a: @points[from], b: @points[to]}
 		@segments[name][k] = v for k, v of def
 		return name
 	

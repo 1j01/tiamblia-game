@@ -10,54 +10,59 @@ class @Player extends Entity
 		)
 		@structure.addSegment(
 			from: "neck"
+			to: "left elbo"
 			name: "upper left arm"
 			length: 10
 		)
 		@structure.addSegment(
 			from: "neck"
+			to: "right elbo"
 			name: "upper right arm"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "upper left arm"
+			from: "left elbo"
+			to: "left hand"
 			name: "lower left arm"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "upper right arm"
+			from: "right elbo"
+			to: "right hand"
 			name: "lower right arm"
 			length: 10
 		)
 		@structure.addSegment(
 			from: "neck"
-			name: "hip"
+			to: "hip"
+			name: "torso"
 			length: 20
 		)
 		@structure.addSegment(
 			from: "hip"
+			to: "left knee"
 			name: "upper left leg"
 			length: 10
 		)
 		@structure.addSegment(
 			from: "hip"
+			to: "right knee"
 			name: "upper right leg"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "upper left leg"
+			from: "left knee"
 			name: "lower left leg"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "upper right leg"
+			from: "right knee"
 			name: "lower right leg"
 			length: 10
 		)
 	
 	draw: (ctx)->
-		{head, neck, hip} = @structure.points
-		upper_left_leg = @structure.points["upper left leg"]
-		upper_right_leg = @structure.points["upper right leg"]
+		{head, neck, hip, "left knee": left_knee, "right knee": right_knee} = @structure.points
 		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
@@ -77,8 +82,8 @@ class @Player extends Entity
 		dy = hip.y - neck.y
 		torso_length = sqrt(dx * dx + dy * dy)
 		ctx.rotate(torso_angle)
-		leg_angle_1 = atan2(upper_left_leg.y - hip.y, upper_left_leg.x - hip.x) - torso_angle
-		leg_angle_2 = atan2(upper_right_leg.y - hip.y, upper_right_leg.x - hip.x) - torso_angle
+		leg_angle_1 = atan2(left_knee.y - hip.y, left_knee.x - hip.x) - torso_angle
+		leg_angle_2 = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
 		ctx.moveTo(-3, 0)
 		ctx.lineTo(+3, 0)
 		min_cos = min(cos(leg_angle_1), cos(leg_angle_2))
