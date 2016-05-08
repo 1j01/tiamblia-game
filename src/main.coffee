@@ -1,21 +1,22 @@
 
 seedrandom("A world")
 
-entities = []
+world = new World
+
 gdll = new GranddaddyLonglegs
-entities.push gdll
+world.entities.push gdll
 gdll.x = 200
 gdll.y = 50
 gdll.structure.autoLayout()
 
 player = new Player
-entities.push player
+world.entities.push player
 player.x = -100
 player.y = 0
 player.structure.autoLayout()
 
 terrain = new Terrain
-entities.push terrain
+world.entities.push terrain
 terrain.x = 0
 terrain.y = 0
 terrain.generate()
@@ -28,7 +29,7 @@ view = new View
 viewToWorldX = (x)-> (x - canvas.width / 2) / view.scale + view.center_x
 viewToWorldY = (y)-> (y - canvas.height / 2) / view.scale + view.center_y
 
-editor = new Editor(entities, view)
+editor = new Editor(world, view)
 
 mouse = {x: -Infinity, y: -Infinity, down: no}
 
@@ -61,9 +62,7 @@ do animate = ->
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 	
-	for entity in entities
-		entity.step()
-	
+	world.step()
 	view.width = canvas.width
 	view.height = canvas.height
 	view.step()
@@ -74,12 +73,7 @@ do animate = ->
 	ctx.translate(-view.center_x, -view.center_x)
 	ctx.scale(view.scale, view.scale)
 	
-	for entity in entities
-		ctx.save()
-		ctx.translate(entity.x, entity.y)
-		entity.draw(ctx, view)
-		ctx.restore()
-	
-	editor.draw(ctx)
+	world.draw(ctx, view)
+	editor.draw(ctx, view)
 	
 	ctx.restore()

@@ -3,7 +3,7 @@
 # TODO: undo/redo, saving/loading
 
 class @Editor
-	constructor: (@entities, @view)->
+	constructor: (@world, @view)->
 		@selected_entities = []
 		@hovered_entities = []
 		@mouse_down_last = no
@@ -18,9 +18,10 @@ class @Editor
 				when 46 # Delete
 					# @editing_entity.destroy()
 					for entity in @selected_entities
-						index = @entities.indexOf(entity)
-						@entities.splice(index, 1) if index >= 0
+						index = @world.entities.indexOf(entity)
+						@world.entities.splice(index, 1) if index >= 0
 					@selected_entities = []
+					@editing_entity = null
 				when 90 # Z
 					if e.ctrlKey
 						if e.shiftKey then redo() else undo()
@@ -86,13 +87,13 @@ class @Editor
 		else if @selection_box
 			@selection_box.x2 = mouse.x
 			@selection_box.y2 = mouse.y
-			@hovered_entities = (entity for entity in @entities when entity_within_selection_box(entity))
+			@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
 			if not mouse.down
 				@selected_entities = (entity for entity in @hovered_entities)
 				@selection_box = null
 		else
 			@hovered_entities = []
-			for entity in @entities
+			for entity in @world.entities
 				relative_mouse = {x: mouse.x - entity.x, y: mouse.y - entity.y}
 				for segment_name, segment of entity.structure.segments
 					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / @view.scale

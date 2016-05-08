@@ -10,7 +10,7 @@ class @View
 		@width = 1
 		@height = 1
 		@follow_smoothness = 4
-		@zoom_smoothness = 40
+		@zoom_smoothness = 8
 	
 	step: ->
 		@center_x += (@center_x_to - @center_x) / @follow_smoothness
@@ -18,13 +18,8 @@ class @View
 		@scale += (@scale_to - @scale) / @zoom_smoothness
 	
 	testRect: (x, y, width, height, padding=0)->
-		# @center_x - @width / 2 + padding >= x >= @center_x + @width / 2 - padding and
-		# @center_y - @height / 2 + padding >= y >= @center_y + @height / 2 - padding
-		# @center_x - @width / 2 / @scale + padding / @scale <= x <= @center_x + @width / 2 / @scale - padding / @scale
-		# @center_x - @width / 2 + padding <= x * @scale <= @center_x + @width / 2 - padding
-		# @center_x - @width / 2 / @scale + padding <= x <= @center_x + @width / 2 / @scale - padding
-		# @center_x - @width / 2 - padding <= x * @scale <= @center_x + @width / 2 + padding
-		@center_x - @width / 2 / @scale - padding <= x <= @center_x + @width / 2 / @scale + padding
+		@center_x - @width / 2 / @scale - padding <= x <= @center_x + @width / 2 / @scale + padding and
+		@center_y - @height / 2 / @scale - padding <= y <= @center_y + @height / 2 / @scale + padding
 	
 	# fromWorldX: (x)->
 	# fromWorldY: (y)->
