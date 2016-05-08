@@ -3,22 +3,22 @@ class @World
 	constructor: ->
 		@entities = []
 	
-	toJSON: ->
-		entities: for entity in @entities
-			ent_def = entity.toJSON()
-			ent_def._class_ = Object.getPrototypeOf(entity).constructor.name
-			ent_def
-	
 	fromJSON: (def)->
 		unless def.entities instanceof Array
 			throw new Error "Expected entities to be an array, got #{object.entities}"
 		@entities = for ent_def in def.entities
 			unless typeof ent_def._class_ is "string"
-				throw new Error "Expected entitiy to have a _class_, _class_ is #{ent_def._class_}"
-			# console.log "create entity", ent_def._class_, ent_def
+				console.error "Erroneous entity definition:", ent_def
+				throw new Error "Expected entity to have a string _class_, _class_ is #{ent_def._class_}"
+			unless window[ent_def._class_]
+				throw new Error "Entity class '#{ent_def._class_}' does not exist"
 			entity = new window[ent_def._class_]
-			entity[k] = v for k, v of ent_def when k not in ["_class_", "structure"]
-			entity.fromJSON(ent_def)
+			for k, v of ent_def when k isnt "_class_"
+				if entity[k]?.fromJSON
+					entity[k].fromJSON(v)
+				else
+					entity[k] = v
+			entity.fromJSON?(ent_def)
 			entity
 	
 	getEntityByID: (id)->

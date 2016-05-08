@@ -42,7 +42,8 @@ class @Editor
 		localStorage["Tiamblia World"] = json
 	
 	load: ->
-		@world.fromJSON(JSON.parse(localStorage["Tiamblia World"]))
+		json = localStorage["Tiamblia World"]
+		@world.fromJSON(JSON.parse(json)) if json
 	
 	discardSave: ->
 		delete localStorage["Tiamblia World"]
@@ -60,12 +61,6 @@ class @Editor
 		editing_entity_id = @editing_entity?.id
 		@redos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@undos.pop()))
-		# entities_by_id = {}
-		# for entity in @world.entities
-		# 	entities_by_id[entity.id] = entity
-		# @hovered_entities = []
-		# @selected_entities = (entities_by_id[id] for id in selected_entity_ids)
-		# @editing_entity = entities_by_id[editing_entity_id]
 		@hovered_entities = []
 		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
 		@editing_entity = @world.getEntityByID(editing_entity_id)

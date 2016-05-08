@@ -6,11 +6,9 @@ class @Terrain extends Entity
 		@simplex = new SimplexNoise
 	
 	toJSON: ->
-		{@structure, @width, @max_height, @left, @right, @bottom}
-	
-	fromJSON: (def)->
-		@[k] = v for k, v of def when k isnt "structure"
-		@structure.fromJSON(def.structure)
+		def = {}
+		def[k] = v for k, v of @ when k isnt "simplex"
+		def
 	
 	generate: ->
 		@width = 5000
