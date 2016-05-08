@@ -42,13 +42,16 @@ class @Terrain extends Entity
 			y = @bottom - random() * @max_height
 			# FIXME: floating pieces of grass caused by finicky pointInPolygon
 			# TODO: order tufts of grass based on y
-			if view.testRect(x, y, 0, 10, 15) and @structure.pointInPolygon(x, y)
+			if view.testRect(x, y - 10, 0, 10, 15) and @structure.pointInPolygon(x, y)
 				for j in [0..random()*3+1]
 					# TODO: check point in polygon for each blade
 					# TODO: try to optimize by only begining and stroking two paths
 					ctx.beginPath()
 					ctx.moveTo(x, y)
-					ctx.lineTo(x + @simplex.noise2D(i-x+y+78+Date.now()/2000, j-y+549)*5, y - (2 + @simplex.noise2D(i*40.45, j+340)) * 10)
+					ctx.lineTo(
+						x + @simplex.noise2D(i-x+y+78+Date.now()/2000, j-y+549)*5
+						y - (2 + @simplex.noise2D(i*40.45, j+340)) * 10
+					)
 					ctx.strokeStyle = "#D6AE77"
 					ctx.strokeStyle = "#B7863E" if random() < 0.5
 					ctx.stroke()
