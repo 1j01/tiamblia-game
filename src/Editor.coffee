@@ -11,22 +11,25 @@ class @Editor
 		@editing_entity = null
 		@dragging_point = null
 		@dragging_segment = null
+		@undos = []
+		@redos = []
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
 			switch e.keyCode
 				when 46 # Delete
-					# @editing_entity.destroy()
-					for entity in @selected_entities
-						index = @world.entities.indexOf(entity)
-						@world.entities.splice(index, 1) if index >= 0
-					@selected_entities = []
-					@editing_entity = null
+					@undoable =>
+						# @editing_entity.destroy()
+						for entity in @selected_entities
+							index = @world.entities.indexOf(entity)
+							@world.entities.splice(index, 1) if index >= 0
+						@selected_entities = []
+						@editing_entity = null
 				when 90 # Z
 					if e.ctrlKey
-						if e.shiftKey then redo() else undo()
+						if e.shiftKey then @redo() else @undo()
 				when 89 # Y
-					redo() if e.ctrlKey
+					@redo() if e.ctrlKey
 				when 88 # X
 					cut() if e.ctrlKey
 				when 67 # C
@@ -40,6 +43,30 @@ class @Editor
 	
 	load: ->
 		@world.fromJSON(JSON.parse(localStorage["Tiamblia World"]))
+	
+	undoable: (fn)->
+		@undos.push(JSON.stringify(@world))
+		if fn?
+			do fn
+			@save()
+	
+	undo: ->
+		return if @undos.length is 0
+		@redos.push(JSON.stringify(@world))
+		@world.fromJSON(JSON.parse(@undos.pop()))
+		# TODO: keep selected entities / editing entity
+		@hovered_entities = []
+		@selected_entities = []
+		@editing_entity = null
+	
+	redo: ->
+		return if @redos.length is 0
+		@undos.push(JSON.stringify(@world))
+		@world.fromJSON(JSON.parse(@redos.pop()))
+		# TODO: keep selected entities / editing entity
+		@hovered_entities = []
+		@selected_entities = []
+		@editing_entity = null
 	
 	step: (mouse)->
 		
@@ -130,8 +157,10 @@ class @Editor
 							if dist < (segment.width ? 5) and dist < closest_dist
 								closest_dist = dist
 								@dragging_segment = segment
-						unless @dragging_segment
-							@editing_entity = null
+					if @dragging_point or @dragging_segment
+						@undoable()
+					else
+						@editing_entity = null
 				unless @editing_entity
 					if @hovered_entities.length
 						if @hovered_entities[0] in @selected_entities
