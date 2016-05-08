@@ -37,6 +37,8 @@ class @Terrain extends Entity
 		ctx.fill()
 		Math.seedrandom(5)
 		random = Math.random
+		# TODO: try layers of chained triangles
+		# like https://jsfiddle.net/evarildo/ds2ajjks/
 		dark_blades = []
 		light_blades = []
 		for i in [0..@width]
@@ -46,10 +48,6 @@ class @Terrain extends Entity
 			if view.testRect(x, y - 10, 0, 10, 15)
 				for j in [0..random()*3+1]
 					dark = random() < 0.5
-					# if @structure.pointInPolygon(x, y)
-					# if ctx.isPointInPath(x, y)
-					# if ctx.isPointInPath(x * view.scale, y * view.scale)
-					# if ctx.isPointInPath(x / view.scale, y / view.scale)
 					point = {x, y}
 					view_point = view.fromWorld(point)
 					if ctx.isPointInPath(view_point.x, view_point.y)

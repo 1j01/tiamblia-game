@@ -3,21 +3,28 @@ class @Tree extends Entity
 	add_Entity_class(@)
 	constructor: ->
 		super
+		@leaf_point_names = []
 		@structure.addPoint("base")
-		@branch(from: "base", to: "1", juice: 5)
+		@branch(from: "base", to: "1", juice: 5, angle: -TAU/2)
 	
-	branch: ({from, to, juice})->
-		name = to#if isNaN(from) then 1 else from + 1
-		@structure.addSegment({
-			from, name
-			length: 50
-			width: sqrt(juice * 10) + 1
-		})
-		@structure.points[name].x = @structure.points[from].x + (random() - 1/2) * 30
-		@structure.points[name].y = @structure.points[from].y - 20 - random() * sqrt(juice * 10)
+	branch: ({from, to, juice, angle})->
+		name = to
+		length = sqrt(juice * 1000)
+		width = sqrt(juice * 20) + 1
+		@structure.addSegment({from, name, length, width})
+		@structure.points[name].x = @structure.points[from].x + sin(angle) * length
+		@structure.points[name].y = @structure.points[from].y + cos(angle) * length
 		if --juice > 0
-			@branch({from: name, to: "#{to}-a", juice})
-			@branch({from: name, to: "#{to}-b", juice})
+			# @branch({from: name, to: "#{to}-a", juice, angle: angle + (random() - 1/2) * TAU/4})
+			# @branch({from: name, to: "#{to}-b", juice, angle: angle + (random() - 1/2) * TAU/4}})
+			@branch({from: name, to: "#{to}-a", juice, angle: angle + random() * TAU/6})
+			@branch({from: name, to: "#{to}-b", juice, angle: angle - random() * TAU/6})
+		else
+			@leaf_point_names.push(name)
+			leaf = @structure.points[name]
+			leaf.r = random() * 5 + 5
+			leaf.scale_x = 2
+			leaf.scale_y = 1
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
@@ -28,3 +35,16 @@ class @Tree extends Entity
 			ctx.lineCap = "round"
 			ctx.strokeStyle = "brown"
 			ctx.stroke()
+		
+		for leaf_point_name in @leaf_point_names
+			leaf = @structure.points[leaf_point_name]
+			# ctx.beginPath()
+			# ctx.arc(leaf.x, leaf.y, leaf.r, 0, TAU)
+			ctx.save()
+			ctx.beginPath()
+			ctx.translate(leaf.x, leaf.y)
+			ctx.scale(leaf.scale_x, leaf.scale_y)
+			ctx.arc(0, 0, leaf.r, 0, TAU)
+			ctx.fillStyle = "green"
+			ctx.fill()
+			ctx.restore()
