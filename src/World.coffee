@@ -21,6 +21,10 @@ class @World
 			entity.fromJSON(ent_def)
 			entity
 	
+	getEntityByID: (id)->
+		for entity in @entities
+			return entity if entity.id is id
+	
 	step: ->
 		for entity in @entities
 			entity.step()

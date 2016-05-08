@@ -44,7 +44,11 @@ class @Editor
 	load: ->
 		@world.fromJSON(JSON.parse(localStorage["Tiamblia World"]))
 	
+	discardSave: ->
+		delete localStorage["Tiamblia World"]
+	
 	undoable: (fn)->
+		# TODO: store the current selection and editing entity in the undo state
 		@undos.push(JSON.stringify(@world))
 		if fn?
 			do fn
@@ -52,21 +56,29 @@ class @Editor
 	
 	undo: ->
 		return if @undos.length is 0
+		selected_entity_ids = (entity.id for entity in @selected_entities)
+		editing_entity_id = @editing_entity?.id
 		@redos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@undos.pop()))
-		# TODO: keep selected entities / editing entity
+		# entities_by_id = {}
+		# for entity in @world.entities
+		# 	entities_by_id[entity.id] = entity
+		# @hovered_entities = []
+		# @selected_entities = (entities_by_id[id] for id in selected_entity_ids)
+		# @editing_entity = entities_by_id[editing_entity_id]
 		@hovered_entities = []
-		@selected_entities = []
-		@editing_entity = null
+		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
+		@editing_entity = @world.getEntityByID(editing_entity_id)
 	
 	redo: ->
 		return if @redos.length is 0
+		selected_entity_ids = (entity.id for entity in @selected_entities)
+		editing_entity_id = @editing_entity?.id
 		@undos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@redos.pop()))
-		# TODO: keep selected entities / editing entity
 		@hovered_entities = []
-		@selected_entities = []
-		@editing_entity = null
+		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
+		@editing_entity = @world.getEntityByID(editing_entity_id)
 	
 	step: (mouse)->
 		

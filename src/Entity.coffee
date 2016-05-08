@@ -4,6 +4,7 @@ class @Entity
 		@structure = new BoneStructure
 		@x = 0
 		@y = 0
+		@id = uuid()
 	
 	# toJSON: ->
 	# 	console.trace @structure

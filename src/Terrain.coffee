@@ -1,6 +1,7 @@
 
 class @Terrain extends Entity
 	constructor: ->
+		super
 		@structure = new PolygonStructure
 		@simplex = new SimplexNoise
 	
