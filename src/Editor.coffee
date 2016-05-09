@@ -59,6 +59,7 @@ class @Editor
 	undoable: (fn)->
 		# TODO: store the current selection and editing entity in the undo state
 		@undos.push(JSON.stringify(@world))
+		@redos = []
 		if fn?
 			do fn
 			@save()
@@ -70,7 +71,10 @@ class @Editor
 		@redos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@undos.pop()))
 		@hovered_entities = []
-		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
+		@selected_entities = []
+		for id in selected_entity_ids
+			entity = @world.getEntityByID(id)
+			@selected_entities.push entity if entity?
 		@editing_entity = @world.getEntityByID(editing_entity_id)
 		@save()
 	
@@ -81,7 +85,9 @@ class @Editor
 		@undos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@redos.pop()))
 		@hovered_entities = []
-		@selected_entities = (@world.getEntityByID(id) for id in selected_entity_ids)
+		for id in selected_entity_ids
+			entity = @world.getEntityByID(id)
+			@selected_entities.push entity if entity?
 		@editing_entity = @world.getEntityByID(editing_entity_id)
 		@save()
 	

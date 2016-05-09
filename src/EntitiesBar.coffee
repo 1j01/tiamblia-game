@@ -31,6 +31,9 @@ class @EntitiesBar
 			if distance(@mouse_start, mouse) > 4
 				@editor.undoable =>
 					entity = new @mouse_start.cell.EntityClass
+					if entity.structure instanceof BoneStructure
+						unless entity instanceof Tree
+							entity.structure.autoLayout() # because we don't have animations or anything yet
 					@editor.world.entities.push entity
 					@editor.dragging_entity = entity
 					@editor.selected_entities = [entity]

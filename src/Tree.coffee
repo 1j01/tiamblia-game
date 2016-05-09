@@ -27,7 +27,7 @@ class @Tree extends Entity
 			leaf.r = random() * 15 + 15
 			leaf.scale_x = 2
 			leaf.scale_y = 1
-			leaf.color = "#363D1B"
+			leaf.color = "#627318" #"#363D1B"
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
