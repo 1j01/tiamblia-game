@@ -42,6 +42,16 @@ catch e
 	console?.error? "Failed to load save:", e
 
 mouse = {x: -Infinity, y: -Infinity, down: no}
+# mouse.setCursor = (cursor)->
+# 	# console.log cursor
+# 	if cursor is "grab"
+# 		canvas.style.cursor = "-moz-grab"
+# 		canvas.style.cursor = "-webkit-grab"
+# 	if cursor is "grabbing"
+# 		canvas.style.cursor = "-moz-grabbing"
+# 		canvas.style.cursor = "-webkit-grabbing"
+# 	canvas.style.cursor = cursor
+# 	# console.log canvas.style.cursor
 
 addEventListener "mousemove", (e)->
 	mouse.x = e.clientX
@@ -72,6 +82,16 @@ do animate = ->
 	canvas.height = innerHeight unless canvas.height is innerHeight
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
+	
+	# mouse.setCursor("default")
+	# if editor.dragging_entity
+	# 	canvas.classList.add("dragging")
+	# else
+	# 	canvas.classList.remove("dragging")
+	if editor.entities_bar.hovered_cell
+		canvas.classList.add("grabbable")
+	else
+		canvas.classList.remove("grabbable")
 	
 	world.step()
 	view.width = canvas.width

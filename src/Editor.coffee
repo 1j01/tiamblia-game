@@ -2,6 +2,7 @@
 # TODO: animation editing
 # TODO: reasonable terrain editing
 # TODO: drag entities
+# TODO: cursors
 # TODO: shift+select (and alternatively ctrl+select)
 # TODO: select multiple points the same ways as entities
 # TODO: save to a file instead of just localStorage
@@ -122,6 +123,7 @@ class @Editor
 		
 		
 		if @dragging_entity
+			# mouse.setCursor("grabbing")
 			if mouse.down
 				@dragging_entity.x = mouse_in_world.x
 				@dragging_entity.y = mouse_in_world.y

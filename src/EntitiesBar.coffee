@@ -1,11 +1,9 @@
 
-# TODO: drag cursor
-
 class @EntitiesBar
 	constructor: (@editor)->
 		x = 10
 		y = 10
-		cell_height = 20
+		cell_height = 25
 		@cells = []
 		for entity_class_name, EntityClass of entity_classes
 			@cells.push {
@@ -18,6 +16,7 @@ class @EntitiesBar
 		
 		@hovered_cell = null
 		@mouse_start = null
+		@gui_alpha = 0
 	
 	step: (mouse)->
 		@hovered_cell = null
@@ -43,19 +42,43 @@ class @EntitiesBar
 			@editor.selected_entities = []
 		else
 			@mouse_start = null
+		# if @hovered_cell
+		# 	mouse.setCursor("grab")
 		return no if @editor.dragging_entity?
 		@hovered_cell? or @mouse_start?
 	
 	drawAbsolute: (ctx)->
-		return if @editor.dragging_entity?
+		show_gui = not @editor.dragging_entity?
+		@gui_alpha += (show_gui - @gui_alpha) / 3
+		width = 0
+		width = Math.max(width, cell.width) for cell in @cells
+		width = 0 if isNaN(width) # because we calculate cell.width(s) below
+		height = @cells.length * @cells[0].height
+		width += @cells[0].x * 2
+		height += @cells[0].y * 2
+		# ctx.
+		grd1 = ctx.createLinearGradient(0, 0, 0, height*2)
+		grd1.addColorStop(0, "rgba(0, 0, 0, 0.1)");
+		grd1.addColorStop(1, "rgba(0, 0, 0, 0)")
+		grd2 = ctx.createLinearGradient(0, 0, width*2, 0)
+		grd2.addColorStop(0, "rgba(0, 0, 0, 0.4)");
+		grd2.addColorStop(1, "rgba(0, 0, 0, 0)")
+		ctx.globalAlpha = @gui_alpha
+		ctx.fillStyle = grd1
+		ctx.fillRect(0, 0, width, height*2)
+		ctx.fillStyle = grd2
+		ctx.fillRect(0, 0, width*2, height)
+		ctx.globalAlpha = 1
 		for cell in @cells
-			ctx.font = "#{cell.height}px sans-serif"
+			ctx.font = "20px sans-serif"
+			ctx.textBaseline = "bottom"
 			cell.width = ctx.measureText(cell.name).width
 			if cell is @hovered_cell
-				# ctx.fillStyle = "black"
+				# ctx.fillStyle = "rgba(0, 0, 0, #{@gui_alpha}"
 				# ctx.fillRect(cell.x, cell.y, cell.width, cell.height)
-				ctx.fillStyle = "white"
+				ctx.fillStyle = "rgba(255, 255, 255, #{@gui_alpha})"
 			else
-				ctx.fillStyle = "black"
+				# ctx.fillStyle = "rgba(255, 255, 255, #{@gui_alpha*0.6})"
+				ctx.fillStyle = "rgba(200, 200, 200, #{@gui_alpha})"
 			ctx.fillText(cell.name, cell.x, cell.y + cell.height)
 
