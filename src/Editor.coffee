@@ -17,6 +17,7 @@ class @Editor
 		@dragging_point = null
 		@dragging_segment = null
 		@dragging_entity = null
+		@view_drag_start_in_world = null
 		@undos = []
 		@redos = []
 		@entities_bar = new EntitiesBar(@)
@@ -121,17 +122,33 @@ class @Editor
 					return false
 			return true
 		
-		
-		if @dragging_entity
+		if @view_drag_start_in_world
+			if mouse.MMB.down
+				# view.center_x = mouse_in_world.x - @view_drag_start_in_world.x
+				# view.center_y = mouse_in_world.y - @view_drag_start_in_world.y
+				# view.center_x += mouse_in_world.x - @view_drag_start_in_world.x - view.center_x
+				# view.center_y += mouse_in_world.y - @view_drag_start_in_world.y - view.center_y
+				# view.center_x += mouse_in_world.x - @view_drag_start_in_world.x
+				# view.center_y += mouse_in_world.y - @view_drag_start_in_world.y
+				view.center_x -= mouse_in_world.x - @view_drag_start_in_world.x #- view.center_x
+				view.center_y -= mouse_in_world.y - @view_drag_start_in_world.y #- view.center_y
+				view.center_x_to = view.center_x
+				view.center_y_to = view.center_y
+				# @view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
+			else
+				@view_drag_start_in_world = null
+		else if mouse.MMB.pressed
+			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
+		else if @dragging_entity
 			# mouse.setCursor("grabbing")
-			if mouse.down
+			if mouse.LMB.down
 				@dragging_entity.x = mouse_in_world.x
 				@dragging_entity.y = mouse_in_world.y
 			else
 				@dragging_entity = null
 				@save()
 		else if @dragging_point
-			if mouse.down
+			if mouse.LMB.down
 				# TODO: add helper in Entity
 				relative_mouse = {
 					x: mouse_in_world.x - @editing_entity.x
@@ -159,16 +176,17 @@ class @Editor
 				@dragging_point = null
 				@save()
 		else if @dragging_segment
-			if mouse.down
+			if mouse.LMB.down
 				# TODO
 			else
 				@dragging_segment = null
 				@save()
 		else if @selection_box
-			@selection_box.x2 = mouse_in_world.x
-			@selection_box.y2 = mouse_in_world.y
-			@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
-			if not mouse.down
+			if mouse.LMB.down
+				@selection_box.x2 = mouse_in_world.x
+				@selection_box.y2 = mouse_in_world.y
+				@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
+			else 
 				@selected_entities = (entity for entity in @hovered_entities)
 				@selection_box = null
 		else
@@ -182,7 +200,7 @@ class @Editor
 					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
 						@hovered_entities = [entity]
 			
-			if mouse.clicked
+			if mouse.LMB.pressed
 				@dragging_point = null
 				@dragging_segment = null
 				if @editing_entity

@@ -22,9 +22,13 @@ class @View
 		@center_y - @height / 2 / @scale - padding <= y <= @center_y + @height / 2 / @scale + padding
 	
 	toWorld: (point)->
-		x: (point.x - @center_x - @width / 2) / @scale
-		y: (point.y - @center_y - @height / 2) / @scale
+		# x: (point.x + @center_x - @width / 2) / @scale
+		# y: (point.y + @center_y - @height / 2) / @scale
+		x: (point.x - @width / 2) / @scale + @center_x
+		y: (point.y - @height / 2) / @scale + @center_y
 	
 	fromWorld: (point)->
-		x: point.x * @scale + @center_x + @width / 2
-		y: point.y * @scale + @center_y + @height / 2
+		# x: point.x * @scale + @center_x + @width / 2
+		# y: point.y * @scale + @center_y + @height / 2
+		x: (point.x - @center_x) * @scale + @width / 2
+		y: (point.y - @center_y) * @scale + @height / 2

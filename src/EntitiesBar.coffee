@@ -26,7 +26,7 @@ class @EntitiesBar
 				cell.x <= mouse.x <= cell.x + cell.width
 			)
 				@hovered_cell = cell
-		if @mouse_start and mouse.down
+		if @mouse_start and mouse.LMB.down
 			if distance(@mouse_start, mouse) > 4
 				@editor.undoable =>
 					entity = new @mouse_start.cell.EntityClass
@@ -37,7 +37,7 @@ class @EntitiesBar
 					@editor.dragging_entity = entity
 					@editor.selected_entities = [entity]
 					@mouse_start = null
-		else if mouse.clicked and @hovered_cell
+		else if mouse.LMB.pressed and @hovered_cell
 			@mouse_start = {x: mouse.x, y: mouse.y, cell: @hovered_cell}
 			@editor.selected_entities = []
 		else
