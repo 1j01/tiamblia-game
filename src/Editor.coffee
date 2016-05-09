@@ -18,6 +18,7 @@ class @Editor
 		@dragging_segment = null
 		@dragging_entity = null
 		@view_drag_start_in_world = null
+		@view_drag_momentum = {x: 0, y: 0}
 		@undos = []
 		@redos = []
 		@entities_bar = new EntitiesBar(@)
@@ -122,20 +123,24 @@ class @Editor
 					return false
 			return true
 		
+		view.center_x -= @view_drag_momentum.x
+		view.center_y -= @view_drag_momentum.y
+		view.center_x_to = view.center_x
+		view.center_y_to = view.center_y
+		@view_drag_momentum.x *= 0.8
+		@view_drag_momentum.y *= 0.8
+		
 		if @view_drag_start_in_world
 			if mouse.MMB.down
-				# view.center_x = mouse_in_world.x - @view_drag_start_in_world.x
-				# view.center_y = mouse_in_world.y - @view_drag_start_in_world.y
-				# view.center_x += mouse_in_world.x - @view_drag_start_in_world.x - view.center_x
-				# view.center_y += mouse_in_world.y - @view_drag_start_in_world.y - view.center_y
-				# view.center_x += mouse_in_world.x - @view_drag_start_in_world.x
-				# view.center_y += mouse_in_world.y - @view_drag_start_in_world.y
-				view.center_x -= mouse_in_world.x - @view_drag_start_in_world.x #- view.center_x
-				view.center_y -= mouse_in_world.y - @view_drag_start_in_world.y #- view.center_y
+				view.center_x -= mouse_in_world.x - @view_drag_start_in_world.x
+				view.center_y -= mouse_in_world.y - @view_drag_start_in_world.y
 				view.center_x_to = view.center_x
 				view.center_y_to = view.center_y
-				# @view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
+				@view_drag_momentum.x = 0
+				@view_drag_momentum.y = 0
 			else
+				@view_drag_momentum.x = mouse_in_world.x - @view_drag_start_in_world.x
+				@view_drag_momentum.y = mouse_in_world.y - @view_drag_start_in_world.y
 				@view_drag_start_in_world = null
 		else if mouse.MMB.pressed
 			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
