@@ -16,22 +16,22 @@ class @Player extends Entity
 		)
 		@structure.addSegment(
 			from: "sternum"
-			name: "left sholder"
+			name: "left shoulder"
 			length: 2
 		)
 		@structure.addSegment(
 			from: "sternum"
-			name: "right sholder"
+			name: "right shoulder"
 			length: 2
 		)
 		@structure.addSegment(
-			from: "left sholder"
+			from: "left shoulder"
 			to: "left elbo"
 			name: "upper left arm"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "right sholder"
+			from: "right shoulder"
 			to: "right elbo"
 			name: "upper right arm"
 			length: 10
@@ -80,11 +80,11 @@ class @Player extends Entity
 		)
 	
 	draw: (ctx)->
-		{head, sternum, hip, "left knee": left_knee, "right knee": right_knee, "left sholder": left_sholder, "right sholder": right_sholder} = @structure.points
+		{head, sternum, hip, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		
 		# sternum ?= {x: 0, y: 0}
-		# left_sholder ?= {x: 0, y: 0}
-		# right_sholder ?= {x: 0, y: 0}
+		# left_shoulder ?= {x: 0, y: 0}
+		# right_shoulder ?= {x: 0, y: 0}
 		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
@@ -106,19 +106,19 @@ class @Player extends Entity
 		ctx.rotate(torso_angle)
 		leg_angle_1 = atan2(left_knee.y - hip.y, left_knee.x - hip.x) - torso_angle
 		leg_angle_2 = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
-		sholder_angle_1 = atan2(left_sholder.y - sternum.y, left_sholder.x - sternum.x) - torso_angle
-		sholder_angle_2 = atan2(right_sholder.y - sternum.y, right_sholder.x - sternum.x) - torso_angle
-		sholder_distance = distance(left_sholder, sternum)
-		min_cos = min(cos(sholder_angle_1), cos(sholder_angle_2))
-		max_cos = max(cos(sholder_angle_1), cos(sholder_angle_2))
-		# ctx.lineTo(+3 + max(0, 1 * max_cos), sin(sholder_angle_1))
-		# ctx.lineTo(-3 + min(0, 1 * min_cos), sin(sholder_angle_2))
-		# ctx.lineTo(-3, sin(sholder_angle_2))
-		# ctx.lineTo(+3, sin(sholder_angle_1))
-		ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) * sholder_distance - 1.5)
-		ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) * sholder_distance - 1.5)
-		# ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) - 1)
-		# ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) - 1)
+		shoulder_angle_1 = atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
+		shoulder_angle_2 = atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
+		shoulder_distance = distance(left_shoulder, sternum)
+		min_cos = min(cos(shoulder_angle_1), cos(shoulder_angle_2))
+		max_cos = max(cos(shoulder_angle_1), cos(shoulder_angle_2))
+		# ctx.lineTo(+3 + max(0, 1 * max_cos), sin(shoulder_angle_1))
+		# ctx.lineTo(-3 + min(0, 1 * min_cos), sin(shoulder_angle_2))
+		# ctx.lineTo(-3, sin(shoulder_angle_2))
+		# ctx.lineTo(+3, sin(shoulder_angle_1))
+		ctx.lineTo(-2 + min(0, 1 * min_cos), sin(shoulder_angle_2) * shoulder_distance - 1.5)
+		ctx.lineTo(+2 + max(0, 1 * max_cos), sin(shoulder_angle_1) * shoulder_distance - 1.5)
+		# ctx.lineTo(-2 + min(0, 1 * min_cos), sin(shoulder_angle_2) - 1)
+		# ctx.lineTo(+2 + max(0, 1 * max_cos), sin(shoulder_angle_1) - 1)
 		# ctx.moveTo(-3, 0)
 		# ctx.lineTo(+3, 0)
 		min_cos = min(cos(leg_angle_1), cos(leg_angle_2))
