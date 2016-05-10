@@ -164,18 +164,14 @@ class @Editor
 				@save()
 		else if @dragging_point
 			if mouse.LMB.down
-				# TODO: add helper in Entity
-				relative_mouse = {
-					x: mouse_in_world.x - @editing_entity.x
-					y: mouse_in_world.y - @editing_entity.y
-				}
+				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 				if @editing_entity.structure instanceof BoneStructure
 					# try to prevent physics breaking by limiting the movement of an individual point
 					# FIXME: physics can still break under some conditions so fix this in a different way
 					# plus dragging the GranddaddyLonglegs by its head feels really glitchy now
-					dist = distance(relative_mouse, @dragging_point)
-					dx = relative_mouse.x - @dragging_point.x
-					dy = relative_mouse.y - @dragging_point.y
+					dist = distance(local_mouse_position, @dragging_point)
+					dx = local_mouse_position.x - @dragging_point.x
+					dy = local_mouse_position.y - @dragging_point.y
 					max_point_drag_dist = 200
 					drag_entity_dist = max(0, dist - max_point_drag_dist)
 					drag_point_dist = max(0, dist - drag_entity_dist)
@@ -185,8 +181,8 @@ class @Editor
 						point.x += dx / dist * drag_entity_dist
 						point.y += dy / dist * drag_entity_dist
 				else
-					@dragging_point.x = relative_mouse.x
-					@dragging_point.y = relative_mouse.y
+					@dragging_point.x = local_mouse_position.x
+					@dragging_point.y = local_mouse_position.y
 			else
 				@dragging_point = null
 				@save()
@@ -207,36 +203,30 @@ class @Editor
 		else
 			@hovered_entities = []
 			for entity in @world.entities
-				relative_mouse = {
-					x: mouse_in_world.x - entity.x
-					y: mouse_in_world.y - entity.y
-				}
+				local_mouse_position = entity.fromWorld(mouse_in_world)
 				for segment_name, segment of entity.structure.segments
-					if distanceToSegment(relative_mouse, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
+					if distanceToSegment(local_mouse_position, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
 						@hovered_entities = [entity]
 			
 			if mouse.LMB.pressed
 				@dragging_point = null
 				@dragging_segment = null
 				if @editing_entity
-					relative_mouse = {
-						x: mouse_in_world.x - @editing_entity.x
-						y: mouse_in_world.y - @editing_entity.y
-					}
+					local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 					closest_dist = Infinity
 					# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
 					# min_grab_dist = 8 / Math.min(view.scale, 5)
 					min_grab_dist = 8 / view.scale
 					# console.log view.scale, min_grab_dist
 					for point_name, point of @editing_entity.structure.points
-						dist = distance(relative_mouse, point)
+						dist = distance(local_mouse_position, point)
 						if dist < min_grab_dist and dist < closest_dist
 							closest_dist = dist
 							@dragging_point = point
 					unless @dragging_point
 						closest_dist = Infinity
 						for segment_name, segment of @editing_entity.structure.segments
-							dist = distanceToSegment(relative_mouse, segment.a, segment.b)
+							dist = distanceToSegment(local_mouse_position, segment.a, segment.b)
 							if dist < (segment.width ? 5) and dist < closest_dist
 								closest_dist = dist
 								@dragging_segment = segment

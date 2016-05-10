@@ -7,5 +7,13 @@ class @Entity
 		@id = uuid()
 		@_class_ = Object.getPrototypeOf(@).constructor.name
 	
+	toWorld: (point)->
+		x: point.x + @x
+		y: point.y + @y
+	
+	fromWorld: (point)->
+		x: point.x - @x
+		y: point.y - @y
+	
 	step: ->
 	draw: (ctx)->
