@@ -34,12 +34,10 @@ class @World
 		ctx.fillRect(0, 0, view.width, view.height)
 	
 	draw: (ctx, view)->
-		# ctx.fillStyle = "#32C8FF" # "#96B8E6" # "#32C8FF"
-		# # ctx.fillRect(-view.center_x, -view.center_y, view.width, view.height)
-		# # ctx.fillRect(-view.width/2, -view.height/2, view.width, view.height)
-		# {x, y} = view.toWorld({x: 10, y: 10})
+		# ctx.fillStyle = "#32C8FF"
+		# {x, y} = view.toWorld({x: 0, y: 0})
 		# {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
-		# ctx.fillRect(x, y, width, height)
+		# ctx.fillRect(x, y, width-x, height-y)
 		for entity in @entities
 			ctx.save()
 			ctx.translate(entity.x, entity.y)
