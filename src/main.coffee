@@ -3,29 +3,11 @@ seedrandom("A world")
 
 world = new World
 
-gdll = new GranddaddyLonglegs
-world.entities.push gdll
-gdll.x = 200
-gdll.y = 50
-gdll.structure.autoLayout()
-
-player = new Player
-world.entities.push player
-player.x = -100
-player.y = 0
-player.structure.autoLayout()
-
 terrain = new Terrain
 world.entities.push terrain
 terrain.x = 0
 terrain.y = 0
 terrain.generate()
-
-tree = new Tree
-world.entities.push tree
-tree.x = -200
-tree.y = -50
-# tree.generate()
 
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)

@@ -38,17 +38,19 @@ class @BoneStructure extends Structure
 				if ys[sideless_point_name]
 					y = ys[sideless_point_name]
 				else
-					y += 30
+					y += 10
 					ys[sideless_point_name] = y
 				if side is "left"
-					point.x = -1 * (lil_hash(sideless_point_name) % 100)
+					point.x = -5.5 #* (lil_hash(sideless_point_name) % 60)
 				if side is "right"
-					point.x = +1 * (lil_hash(sideless_point_name) % 100)
+					point.x = +5.5 #* (lil_hash(sideless_point_name) % 60)
 				point.x *= 0.7 if point_name.match(/lower/)
 			point.y = y
 		
 		for [0..2000]
 			@stepLayout(center: yes, repel: yes)
+		for [0..4000]
+			@stepLayout()
 	
 	stepLayout: ({center, repel}={})->
 		forces = {}
