@@ -5,8 +5,9 @@
 # TODO: cursors
 # TODO: shift+select (and alternatively ctrl+select)
 # TODO: select multiple points the same ways as entities
-# TODO: save to a file instead of just localStorage
-# (will need a server or nw.js/electron)
+
+fs = require? "fs"
+path = require? "path"
 
 class @Editor
 	constructor: (@world)->
@@ -22,6 +23,9 @@ class @Editor
 		@undos = []
 		@redos = []
 		@entities_bar = new EntitiesBar(@)
+		if fs?
+			@save_path = "world.json"
+			# @save_path = path.join(nw.App.dataPath, "world.json")
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
@@ -49,11 +53,17 @@ class @Editor
 					TODO: select_all() if e.ctrlKey
 	
 	save: ->
-		json = JSON.stringify(@world)
-		localStorage["Tiamblia World"] = json
+		json = JSON.stringify(@world, null, "\t")
+		if fs?
+			fs.writeFileSync @save_path, json
+		else
+			localStorage["Tiamblia World"] = json
 	
 	load: ->
-		json = localStorage["Tiamblia World"]
+		if fs?
+			json = fs.readFileSync @save_path
+		else
+			json = localStorage["Tiamblia World"]
 		@world.fromJSON(JSON.parse(json)) if json
 	
 	discardSave: ->
