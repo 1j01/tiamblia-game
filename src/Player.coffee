@@ -108,14 +108,15 @@ class @Player extends Entity
 		leg_angle_2 = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
 		sholder_angle_1 = atan2(left_sholder.y - sternum.y, left_sholder.x - sternum.x) - torso_angle
 		sholder_angle_2 = atan2(right_sholder.y - sternum.y, right_sholder.x - sternum.x) - torso_angle
+		sholder_distance = distance(left_sholder, sternum)
 		min_cos = min(cos(sholder_angle_1), cos(sholder_angle_2))
 		max_cos = max(cos(sholder_angle_1), cos(sholder_angle_2))
 		# ctx.lineTo(+3 + max(0, 1 * max_cos), sin(sholder_angle_1))
 		# ctx.lineTo(-3 + min(0, 1 * min_cos), sin(sholder_angle_2))
 		# ctx.lineTo(-3, sin(sholder_angle_2))
 		# ctx.lineTo(+3, sin(sholder_angle_1))
-		ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) - 1.2)
-		ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) - 1.2)
+		ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) * sholder_distance - 1.5)
+		ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) * sholder_distance - 1.5)
 		# ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) - 1)
 		# ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) - 1)
 		# ctx.moveTo(-3, 0)
