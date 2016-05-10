@@ -1,7 +1,6 @@
 
 # TODO: animation editing
 # TODO: reasonable terrain editing
-# TODO: drag entities
 # TODO: cursors
 # TODO: shift+select (and alternatively ctrl+select)
 # TODO: select multiple points the same ways as entities
@@ -13,11 +12,15 @@ class @Editor
 	constructor: (@world)->
 		@selected_entities = []
 		@hovered_entities = []
+		@selected_points = []
+		@hovered_points = []
 		@selection_box = null
 		@editing_entity = null
-		@dragging_point = null
-		@dragging_segment = null
-		@dragging_entity = null
+		@last_click_time = null
+		@dragging_points = []
+		@dragging_segments = []
+		@dragging_entities = []
+		@drag_offsets = []
 		@view_drag_start_in_world = null
 		@view_drag_momentum = {x: 0, y: 0}
 		@undos = []
@@ -37,6 +40,11 @@ class @Editor
 							index = @world.entities.indexOf(entity)
 							@world.entities.splice(index, 1) if index >= 0
 						@selected_entities = []
+						# @selected_segments = []
+						@selected_points = []
+						@dragging_points = []
+						# @dragging_segments = []
+						@dragging_entities = []
 						@editing_entity = null
 				when 90 # Z
 					if e.ctrlKey
@@ -84,12 +92,16 @@ class @Editor
 		@redos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@undos.pop()))
 		@hovered_entities = []
+		@hovered_points = []
 		@selected_entities = []
+		@selected_points = []
 		for id in selected_entity_ids
 			entity = @world.getEntityByID(id)
 			@selected_entities.push entity if entity?
+		# TODO: save for selected points
 		@editing_entity = @world.getEntityByID(editing_entity_id)
 		@save()
+		# TODO: DRY
 	
 	redo: ->
 		return if @redos.length is 0
@@ -98,11 +110,16 @@ class @Editor
 		@undos.push(JSON.stringify(@world))
 		@world.fromJSON(JSON.parse(@redos.pop()))
 		@hovered_entities = []
+		@hovered_points = []
+		@selected_entities = []
+		@selected_points = []
 		for id in selected_entity_ids
 			entity = @world.getEntityByID(id)
 			@selected_entities.push entity if entity?
+		# TODO: save for selected points
 		@editing_entity = @world.getEntityByID(editing_entity_id)
 		@save()
+		# TODO: DRY
 	
 	step: (mouse, view)->
 		
@@ -154,100 +171,144 @@ class @Editor
 				@view_drag_start_in_world = null
 		else if mouse.MMB.pressed
 			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
-		else if @dragging_entity
+		else if @dragging_entities.length
 			if mouse.LMB.down
-				@dragging_entity.x = mouse_in_world.x
-				@dragging_entity.y = mouse_in_world.y
+				for entity, i in @dragging_entities
+					entity.x = mouse_in_world.x + @drag_offsets[i].x
+					entity.y = mouse_in_world.y + @drag_offsets[i].y
 			else
-				@dragging_entity = null
+				@dragging_entities = []
 				@save()
-		else if @dragging_point
+		else if @dragging_points.length
 			if mouse.LMB.down
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 				if @editing_entity.structure instanceof BoneStructure
 					# try to prevent physics breaking by limiting the movement of an individual point
 					# FIXME: physics can still break under some conditions so fix this in a different way
 					# plus dragging the GranddaddyLonglegs by its head feels really glitchy now
-					dist = distance(local_mouse_position, @dragging_point)
-					dx = local_mouse_position.x - @dragging_point.x
-					dy = local_mouse_position.y - @dragging_point.y
+					dist = distance(local_mouse_position, @dragging_points[0])
+					dx = local_mouse_position.x - @dragging_points[0].x
+					dy = local_mouse_position.y - @dragging_points[0].y
 					max_point_drag_dist = 200
 					drag_entity_dist = max(0, dist - max_point_drag_dist)
 					drag_point_dist = max(0, dist - drag_entity_dist)
-					@dragging_point.x += dx / dist * drag_point_dist
-					@dragging_point.y += dy / dist * drag_point_dist
+					@dragging_points[0].x += dx / dist * drag_point_dist
+					@dragging_points[0].y += dy / dist * drag_point_dist
 					for point_name, point of @editing_entity.structure.points
 						point.x += dx / dist * drag_entity_dist
 						point.y += dy / dist * drag_entity_dist
 				else
-					@dragging_point.x = local_mouse_position.x
-					@dragging_point.y = local_mouse_position.y
+					@dragging_points[0].x = local_mouse_position.x
+					@dragging_points[0].y = local_mouse_position.y
 			else
-				@dragging_point = null
+				@dragging_points = []
 				@save()
-		else if @dragging_segment
+		else if @dragging_segments.length
 			if mouse.LMB.down
 				# TODO
 			else
-				@dragging_segment = null
+				@dragging_segments = []
 				@save()
 		else if @selection_box
 			if mouse.LMB.down
 				@selection_box.x2 = mouse_in_world.x
 				@selection_box.y2 = mouse_in_world.y
-				@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
-			else 
-				@selected_entities = (entity for entity in @hovered_entities)
+				if @editing_entity
+					# TODO
+					@hovered_points = (point for point in @editing_entity.structure.points when point_within_selection_box(point))
+				else
+					@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
+			else
+				if @editing_entity
+					@selected_points = (entity for entity in @hovered_points)
+				else
+					@selected_entities = (entity for entity in @hovered_entities)
 				@selection_box = null
 		else
 			@hovered_entities = []
-			for entity in @world.entities
-				local_mouse_position = entity.fromWorld(mouse_in_world)
-				for segment_name, segment of entity.structure.segments
-					if distanceToSegment(local_mouse_position, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
-						@hovered_entities = [entity]
+			@hovered_points = []
+			if @editing_entity
+				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
+				closest_dist = Infinity
+				# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
+				# min_grab_dist = 8 / Math.min(view.scale, 5)
+				min_grab_dist = 8 / view.scale
+				# console.log view.scale, min_grab_dist
+				for point_name, point of @editing_entity.structure.points
+					dist = distance(local_mouse_position, point)
+					if dist < min_grab_dist and dist < closest_dist
+						closest_dist = dist
+						@hovered_points = [point]
+				unless @hovered_points.length
+					closest_dist = Infinity
+					for segment_name, segment of @editing_entity.structure.segments
+						dist = distanceToSegment(local_mouse_position, segment.a, segment.b)
+						if dist < (segment.width ? 5) and dist < closest_dist
+							closest_dist = dist
+							@hovered_segments = [segment]
+			else
+				for entity in @world.entities
+					local_mouse_position = entity.fromWorld(mouse_in_world)
+					for segment_name, segment of entity.structure.segments
+						if distanceToSegment(local_mouse_position, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
+							@hovered_entities = [entity]
 			
 			if mouse.LMB.pressed
-				@dragging_point = null
-				@dragging_segment = null
-				if @editing_entity
-					local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
-					closest_dist = Infinity
-					# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
-					# min_grab_dist = 8 / Math.min(view.scale, 5)
-					min_grab_dist = 8 / view.scale
-					# console.log view.scale, min_grab_dist
-					for point_name, point of @editing_entity.structure.points
-						dist = distance(local_mouse_position, point)
-						if dist < min_grab_dist and dist < closest_dist
-							closest_dist = dist
-							@dragging_point = point
-					unless @dragging_point
-						closest_dist = Infinity
-						for segment_name, segment of @editing_entity.structure.segments
-							dist = distanceToSegment(local_mouse_position, segment.a, segment.b)
-							if dist < (segment.width ? 5) and dist < closest_dist
-								closest_dist = dist
-								@dragging_segment = segment
-					if @dragging_point or @dragging_segment
-						@undoable()
-					else
-						@editing_entity = null
-				unless @editing_entity
-					if @hovered_entities.length
-						if @hovered_entities[0] in @selected_entities
+				@dragging_points = []
+				@dragging_segments = []
+				
+				if @hovered_points.length # or @hovered_segment
+					@selected_points = (point for point in @hovered_points)
+					# @selected_segments = (segment for segment in @hovered_segments)
+					@undoable()
+					@dragging_points = (point for point in @hovered_points)
+					# @dragging_segments = (segment for segment in @hovered_segments)
+					@drag_offsets =
+						for point in @hovered_points
+							x: point.x - mouse_in_world.x
+							y: point.y - mouse_in_world.y
+				else
+					# @editing_entity = null
+					@selected_points = []
+				
+				if @hovered_entities.length
+					if @hovered_entities[0] in @selected_entities
+						if mouse.double_clicked
 							@editing_entity = @hovered_entities[0]
 						else
-							@selected_entities = (entity for entity in @hovered_entities)
+							# @selected_entities = (entity for entity in @selected_entities)
+							@undoable()
+							@dragging_entities = (entity for entity in @selected_entities)
+							@drag_offsets =
+								for entity in @selected_entities
+									x: entity.x - mouse_in_world.x
+									y: entity.y - mouse_in_world.y
 					else
+						@selected_entities = (entity for entity in @hovered_entities)
+						@undoable()
+						@dragging_entities = (entity for entity in @hovered_entities)
+						@drag_offsets =
+							for entity in @dragging_entities
+								x: entity.x - mouse_in_world.x
+								y: entity.y - mouse_in_world.y
+				else
+					@selected_entities = []
+					@selected_points = []
+					# console.log @last_click_time?, @last_click_time > Date.now() - 300, Date.now() - @last_click_time
+					if mouse.double_clicked
+						console.log "exit"
 						@editing_entity = null
-						@selected_entities = []
+						@dragging_entities = []
+						@dragging_points = []
+					else
+						console.log "sel;ect"
 						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
 		if @editing_entity
 			if @editing_entity.structure instanceof BoneStructure
-				# TODO: and if there isn't an animation frame loaded
+			# TODO: and if there isn't an animation frame loaded
 				@editing_entity.structure.stepLayout() for [0..250]
+				# TODO: save afterwards at some point
 	
 	draw: (ctx, view)->
 		

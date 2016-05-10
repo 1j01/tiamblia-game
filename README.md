@@ -20,15 +20,16 @@ and more!
 <!--
 while editing an entity
 	drag outside of the entity to select points (w/ a selection box)
-	click outside of the entity to stop editing the entity
-		(another entity you click on may be selected--not sure if this is good)
+	double click outside of the entity to stop editing the entity
+		(another entity you click on should not be selected)
 	drag on a point to move all selected points
 	click on a point to select that point
 	shift+click or ctrl+click on a point to toggle the selected state of that point
 	shift+drag from anywhere to select points (w/ a selection box)
 with selected entities
 	drag on a selected entity to move all selected entities
-	click on a selected entity to edit the entity
+	double click on a selected entity to edit the entity
+	click on a selected entity to make it the only selected entity
 drag outside of any entity to select entities (w/ a selection box)
 click on an entity to select that entity
 shift+click or ctrl+click on an entity to toggle the selected state of that entity
@@ -43,6 +44,12 @@ when there are multiple things within the minimum range for dragging, the closes
 only what will be dragged should ever be shown as hovered
 
 while dragging an entity, the entities bar should be hidden
+
+when starting editing an entity, you should not also start dragging a point
+
+delete, undo, redo, etc. should work while dragging entities or points
+minimum drag distances should be based on view positions, not world positions
+undo states should only be created once a drag starts
 -->
 
 <!--

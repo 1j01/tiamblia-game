@@ -34,8 +34,9 @@ class @EntitiesBar
 						unless entity instanceof Tree
 							entity.structure.autoLayout() # because we don't have animations or anything yet
 					@editor.world.entities.push entity
-					@editor.dragging_entity = entity
 					@editor.selected_entities = [entity]
+					@editor.dragging_entities = [entity]
+					@editor.drag_offsets = [{x: 0, y: 0}]
 					@mouse_start = null
 		else if mouse.LMB.pressed and @hovered_cell
 			@mouse_start = {x: mouse.x, y: mouse.y, cell: @hovered_cell}

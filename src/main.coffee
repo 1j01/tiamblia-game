@@ -26,7 +26,9 @@ mouse = {
 	LMB: {down: no, pressed: no}
 	MMB: {down: no, pressed: no}
 	RMB: {down: no, pressed: no}
+	double_clicked: no
 }
+last_click_time = null
 mouse_drag_start_in_world = null
 
 addEventListener "mousemove", (e)->
@@ -37,6 +39,8 @@ addEventListener "mousedown", (e)->
 	MB = mouse["#{"LMR"[e.button]}MB"]
 	MB.down = true
 	MB.pressed = true
+	mouse.double_clicked = (last_click_time? and Date.now() - last_click_time < 300)
+	last_click_time = Date.now()
 
 addEventListener "mouseup", (e)->
 	MB = mouse["#{"LMR"[e.button]}MB"]
@@ -63,7 +67,7 @@ addEventListener "mousewheel", handle_scroll
 addEventListener "DOMMouseScroll", handle_scroll
 
 do animate = ->
-	
+	return if window.CRASHED
 	requestAnimationFrame(animate)
 	
 	canvas.width = innerWidth unless canvas.width is innerWidth

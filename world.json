@@ -4,7 +4,7 @@
 			"structure": {
 				"points": {
 					"body": {
-						"x": 8.845890239862587e-7,
+						"x": 8.845890241055666e-7,
 						"y": 16.63861516191269,
 						"name": "body"
 					},
@@ -44,7 +44,7 @@
 						"name": "upper left leg 2"
 					},
 					"middle left leg 2": {
-						"x": 1.5857536375351524,
+						"x": 1.5857536375351522,
 						"y": 5.7436425596198895,
 						"name": "middle left leg 2"
 					},
@@ -3359,128 +3359,128 @@
 			"structure": {
 				"points": {
 					"body": {
-						"x": -1.1180871987917986e-14,
-						"y": -28.650033048802705,
+						"x": -2.1771245450724275e-14,
+						"y": -28.776585843053322,
 						"name": "body"
 					},
 					"upper left leg 1": {
-						"x": -46.17257902637862,
-						"y": -46.67989611443305,
+						"x": -46.6453417964288,
+						"y": -46.782476231876885,
 						"name": "upper left leg 1"
 					},
 					"middle left leg 1": {
-						"x": -37.26584317564361,
-						"y": 2.405431004701561,
+						"x": -37.238242003512184,
+						"y": 2.3246156539811937,
 						"name": "middle left leg 1"
 					},
 					"lower left leg 1": {
-						"x": 12.195332720781359,
-						"y": 10.122469792499441,
+						"x": 12.151042076935827,
+						"y": 10.115547435277053,
 						"name": "lower left leg 1"
 					},
 					"upper right leg 1": {
-						"x": 46.17257902637859,
-						"y": -46.67989611443306,
+						"x": 46.64534179642875,
+						"y": -46.78247623187691,
 						"name": "upper right leg 1"
 					},
 					"middle right leg 1": {
-						"x": 37.2658431756436,
-						"y": 2.4054310047015517,
+						"x": 37.23824200351216,
+						"y": 2.3246156539811653,
 						"name": "middle right leg 1"
 					},
 					"lower right leg 1": {
-						"x": -12.19533272078136,
-						"y": 10.122469792499441,
+						"x": -12.151042076935848,
+						"y": 10.115547435277055,
 						"name": "lower right leg 1"
 					},
 					"upper left leg 2": {
-						"x": -48.57845917999422,
-						"y": -17.30335872360445,
+						"x": -48.66619884716066,
+						"y": -17.304834025278204,
 						"name": "upper left leg 2"
 					},
 					"middle left leg 2": {
-						"x": -30.57079975043434,
-						"y": 29.272103396882585,
+						"x": -30.545211224670908,
+						"y": 29.295914977131318,
 						"name": "middle left leg 2"
 					},
 					"lower left leg 2": {
-						"x": 18.465963786933518,
-						"y": 39.281840184052285,
+						"x": 18.44819304681948,
+						"y": 39.2782162093274,
 						"name": "lower left leg 2"
 					},
 					"upper right leg 2": {
-						"x": 48.578459179994205,
-						"y": -17.303358723604468,
+						"x": 48.66619884716062,
+						"y": -17.30483402527823,
 						"name": "upper right leg 2"
 					},
 					"middle right leg 2": {
-						"x": 30.570799750434343,
-						"y": 29.272103396882574,
+						"x": 30.545211224670926,
+						"y": 29.29591497713131,
 						"name": "middle right leg 2"
 					},
 					"lower right leg 2": {
-						"x": -18.465963786933507,
-						"y": 39.2818401840523,
+						"x": -18.44819304681946,
+						"y": 39.27821620932742,
 						"name": "lower right leg 2"
 					},
 					"upper left leg 3": {
-						"x": -7.8300666421112775,
-						"y": 20.566472859821314,
+						"x": -7.413803273931815,
+						"y": 20.670714599088456,
 						"name": "upper left leg 3"
 					},
 					"middle left leg 3": {
-						"x": -52.583846621258736,
-						"y": 41.67915084571178,
+						"x": -52.67612011653826,
+						"y": 41.91507088586503,
 						"name": "middle left leg 3"
 					},
 					"lower left leg 3": {
-						"x": -2.345141672029607,
-						"y": 43.99908863083395,
+						"x": -2.718891043184602,
+						"y": 43.98274187334549,
 						"name": "lower left leg 3"
 					},
 					"upper right leg 3": {
-						"x": 7.830066642111284,
-						"y": 20.56647285982131,
+						"x": 7.413803273931794,
+						"y": 20.670714599088456,
 						"name": "upper right leg 3"
 					},
 					"middle right leg 3": {
-						"x": 52.583846621258736,
-						"y": 41.67915084571178,
+						"x": 52.67612011653826,
+						"y": 41.91507088586499,
 						"name": "middle right leg 3"
 					},
 					"lower right leg 3": {
-						"x": 2.3451416720296057,
-						"y": 43.99908863083395,
+						"x": 2.7188910431846023,
+						"y": 43.98274187334549,
 						"name": "lower right leg 3"
 					},
 					"upper left leg 4": {
-						"x": -2.5898641509498153,
-						"y": 21.31165470492837,
+						"x": -2.465982404031113,
+						"y": 21.162566440330604,
 						"name": "upper left leg 4"
 					},
 					"middle left leg 4": {
-						"x": -46.98861539936144,
-						"y": 43.66422550493873,
+						"x": -47.08349941032579,
+						"y": 43.729736759025975,
 						"name": "middle left leg 4"
 					},
 					"lower left leg 4": {
-						"x": 1.7942999327189502,
-						"y": 54.382360619880615,
+						"x": 1.7697061045069622,
+						"y": 54.377004527120974,
 						"name": "lower left leg 4"
 					},
 					"upper right leg 4": {
-						"x": 2.5898641509498215,
-						"y": 21.311654704928365,
+						"x": 2.4659824040311347,
+						"y": 21.1625664403306,
 						"name": "upper right leg 4"
 					},
 					"middle right leg 4": {
-						"x": 46.98861539936144,
-						"y": 43.66422550493874,
+						"x": 47.08349941032581,
+						"y": 43.72973675902598,
 						"name": "middle right leg 4"
 					},
 					"lower right leg 4": {
-						"x": -1.794299932718952,
-						"y": 54.38236061988062,
+						"x": -1.769706104506941,
+						"y": 54.37700452712099,
 						"name": "lower right leg 4"
 					}
 				},
@@ -4879,166 +4879,6 @@
 			"y": -48.5,
 			"id": "d7b02d5b-720b-4995-9cad-db7e285115aa",
 			"_class_": "GranddaddyLonglegs"
-		},
-		{
-			"structure": {
-				"points": {
-					"head": {
-						"x": 6.762061456711138e-14,
-						"y": -7.733032045932271,
-						"name": "head"
-					},
-					"neck": {
-						"x": -2.7163349774067694e-14,
-						"y": -2.7237075217123294,
-						"name": "neck"
-					},
-					"sternum": {
-						"x": -5.2009559948810184e-15,
-						"y": -0.6812397565152434,
-						"name": "sternum"
-					},
-					"left shoulder": {
-						"x": -1.9004731507128938,
-						"y": 0.1779438717426678,
-						"name": "left shoulder"
-					},
-					"right shoulder": {
-						"x": 1.9004731507128836,
-						"y": 0.1779438717426699,
-						"name": "right shoulder"
-					},
-					"left elbo": {
-						"x": -10.443948364381239,
-						"y": 5.398385403897152,
-						"name": "left elbo"
-					},
-					"right elbo": {
-						"x": 10.443948364381233,
-						"y": 5.398385403897147,
-						"name": "right elbo"
-					},
-					"left hand": {
-						"x": -17.01401733942083,
-						"y": 12.945245968265546,
-						"name": "left hand"
-					},
-					"right hand": {
-						"x": 17.014017339420825,
-						"y": 12.945245968265539,
-						"name": "right hand"
-					},
-					"hip": {
-						"x": 1.1089097026874167e-14,
-						"y": 19.31624734113016,
-						"name": "hip"
-					},
-					"left knee": {
-						"x": -5.728953111414441,
-						"y": 27.509699452375646,
-						"name": "left knee"
-					},
-					"right knee": {
-						"x": 5.728953111414442,
-						"y": 27.50969945237566,
-						"name": "right knee"
-					},
-					"left foot": {
-						"x": -9.285935487068162,
-						"y": 36.85445315400663,
-						"name": "left foot"
-					},
-					"right foot": {
-						"x": 9.285935487068148,
-						"y": 36.85445315400665,
-						"name": "right foot"
-					}
-				},
-				"segments": {
-					"neck": {
-						"from": "head",
-						"to": "neck",
-						"name": "neck",
-						"length": 5
-					},
-					"sternum": {
-						"from": "neck",
-						"to": "sternum",
-						"name": "sternum",
-						"length": 2
-					},
-					"left shoulder": {
-						"from": "sternum",
-						"to": "left shoulder",
-						"name": "left shoulder",
-						"length": 2
-					},
-					"right shoulder": {
-						"from": "sternum",
-						"to": "right shoulder",
-						"name": "right shoulder",
-						"length": 2
-					},
-					"upper left arm": {
-						"from": "left shoulder",
-						"to": "left elbo",
-						"name": "upper left arm",
-						"length": 10
-					},
-					"upper right arm": {
-						"from": "right shoulder",
-						"to": "right elbo",
-						"name": "upper right arm",
-						"length": 10
-					},
-					"lower left arm": {
-						"from": "left elbo",
-						"to": "left hand",
-						"name": "lower left arm",
-						"length": 10
-					},
-					"lower right arm": {
-						"from": "right elbo",
-						"to": "right hand",
-						"name": "lower right arm",
-						"length": 10
-					},
-					"torso": {
-						"from": "sternum",
-						"to": "hip",
-						"name": "torso",
-						"length": 20
-					},
-					"upper left leg": {
-						"from": "hip",
-						"to": "left knee",
-						"name": "upper left leg",
-						"length": 10
-					},
-					"upper right leg": {
-						"from": "hip",
-						"to": "right knee",
-						"name": "upper right leg",
-						"length": 10
-					},
-					"lower left leg": {
-						"from": "left knee",
-						"to": "left foot",
-						"name": "lower left leg",
-						"length": 10
-					},
-					"lower right leg": {
-						"from": "right knee",
-						"to": "right foot",
-						"name": "lower right leg",
-						"length": 10
-					}
-				}
-			},
-			"x": 356.6625914903971,
-			"y": 60.581033796804704,
-			"id": "796048a5-c120-42e3-8569-3e6a6d969bb6",
-			"_class_": "Player"
 		}
 	]
 }
