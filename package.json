@@ -41,7 +41,7 @@
     "icon": "app/img/cube.png"
   },
   "devDependencies": {
-    "nw-dev": "^2.0.0"
+    "nw-dev": "^3.0.0"
   },
   "dependencies": {
     "nw": "0.15.0-beta2sdk-2"
