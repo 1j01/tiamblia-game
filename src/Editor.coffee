@@ -155,7 +155,6 @@ class @Editor
 		else if mouse.MMB.pressed
 			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
 		else if @dragging_entity
-			# mouse.setCursor("grabbing")
 			if mouse.LMB.down
 				@dragging_entity.x = mouse_in_world.x
 				@dragging_entity.y = mouse_in_world.y

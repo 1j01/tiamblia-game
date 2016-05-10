@@ -45,17 +45,6 @@ mouse = {
 	MMB: {down: no, pressed: no}
 	RMB: {down: no, pressed: no}
 }
-# mouse.setCursor = (cursor)->
-# 	# console.log cursor
-# 	if cursor is "grab"
-# 		canvas.style.cursor = "-moz-grab"
-# 		canvas.style.cursor = "-webkit-grab"
-# 	if cursor is "grabbing"
-# 		canvas.style.cursor = "-moz-grabbing"
-# 		canvas.style.cursor = "-webkit-grabbing"
-# 	canvas.style.cursor = cursor
-# 	# console.log canvas.style.cursor
-
 mouse_drag_start_in_world = null
 
 addEventListener "mousemove", (e)->
@@ -100,11 +89,6 @@ do animate = ->
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 	
-	# mouse.setCursor("default")
-	# if editor.dragging_entity
-	# 	canvas.classList.add("dragging")
-	# else
-	# 	canvas.classList.remove("dragging")
 	if editor.entities_bar.hovered_cell
 		canvas.classList.add("grabbable")
 	else
