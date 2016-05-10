@@ -104,27 +104,25 @@ class @Player extends Entity
 		dy = hip.y - sternum.y
 		torso_length = sqrt(dx * dx + dy * dy)
 		ctx.rotate(torso_angle)
-		leg_angle_1 = atan2(left_knee.y - hip.y, left_knee.x - hip.x) - torso_angle
-		leg_angle_2 = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
-		shoulder_angle_1 = atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
-		shoulder_angle_2 = atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
+		left_leg_angle = atan2(left_knee.y - hip.y, left_knee.x - hip.x) - torso_angle
+		right_leg_angle = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
+		left_shoulder_angle = atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
+		right_shoulder_angle = atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
 		shoulder_distance = distance(left_shoulder, sternum)
-		min_cos = min(cos(shoulder_angle_1), cos(shoulder_angle_2))
-		max_cos = max(cos(shoulder_angle_1), cos(shoulder_angle_2))
-		# ctx.lineTo(+3 + max(0, 1 * max_cos), sin(shoulder_angle_1))
-		# ctx.lineTo(-3 + min(0, 1 * min_cos), sin(shoulder_angle_2))
-		# ctx.lineTo(-3, sin(shoulder_angle_2))
-		# ctx.lineTo(+3, sin(shoulder_angle_1))
-		ctx.lineTo(-2 + min(0, 1 * min_cos), sin(shoulder_angle_2) * shoulder_distance - 1.5)
-		ctx.lineTo(+2 + max(0, 1 * max_cos), sin(shoulder_angle_1) * shoulder_distance - 1.5)
-		# ctx.lineTo(-2 + min(0, 1 * min_cos), sin(shoulder_angle_2) - 1)
-		# ctx.lineTo(+2 + max(0, 1 * max_cos), sin(shoulder_angle_1) - 1)
-		# ctx.moveTo(-3, 0)
-		# ctx.lineTo(+3, 0)
-		min_cos = min(cos(leg_angle_1), cos(leg_angle_2))
-		max_cos = max(cos(leg_angle_1), cos(leg_angle_2))
-		min_sin = min(sin(leg_angle_1), sin(leg_angle_2))
-		max_sin = max(sin(leg_angle_1), sin(leg_angle_2))
+		min_shoulder_cos = min(cos(left_shoulder_angle), cos(right_shoulder_angle))
+		max_shoulder_cos = max(cos(left_shoulder_angle), cos(right_shoulder_angle))
+		if cos(left_shoulder_angle) < cos(right_shoulder_angle)
+			min_cos_shoulder_angle = left_shoulder_angle
+			max_cos_shoulder_angle = right_shoulder_angle
+		else
+			min_cos_shoulder_angle = right_shoulder_angle
+			max_cos_shoulder_angle = left_shoulder_angle
+		ctx.lineTo(-2 + min(0, 1 * min_shoulder_cos), sin(min_cos_shoulder_angle) * shoulder_distance - 1.5)
+		ctx.lineTo(+2 + max(0, 1 * max_shoulder_cos), sin(max_cos_shoulder_angle) * shoulder_distance - 1.5)
+		min_cos = min(cos(left_leg_angle), cos(right_leg_angle))
+		max_cos = max(cos(left_leg_angle), cos(right_leg_angle))
+		min_sin = min(sin(left_leg_angle), sin(right_leg_angle))
+		max_sin = max(sin(left_leg_angle), sin(right_leg_angle))
 		ctx.lineTo(+4 + max(0, 1 * max_cos), torso_length/2)
 		ctx.lineTo(+4 + max(0, 9 * max_cos), torso_length + max(5, 7 * max_sin))
 		ctx.lineTo(-4 + min(0, 9 * min_cos), torso_length + max(5, 7 * max_sin))
