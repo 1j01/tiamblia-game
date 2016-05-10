@@ -11,12 +11,27 @@ class @Player extends Entity
 		)
 		@structure.addSegment(
 			from: "neck"
+			name: "sternum"
+			length: 2
+		)
+		@structure.addSegment(
+			from: "sternum"
+			name: "left sholder"
+			length: 2
+		)
+		@structure.addSegment(
+			from: "sternum"
+			name: "right sholder"
+			length: 2
+		)
+		@structure.addSegment(
+			from: "left sholder"
 			to: "left elbo"
 			name: "upper left arm"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "neck"
+			from: "right sholder"
 			to: "right elbo"
 			name: "upper right arm"
 			length: 10
@@ -34,7 +49,7 @@ class @Player extends Entity
 			length: 10
 		)
 		@structure.addSegment(
-			from: "neck"
+			from: "sternum"
 			to: "hip"
 			name: "torso"
 			length: 20
@@ -65,7 +80,11 @@ class @Player extends Entity
 		)
 	
 	draw: (ctx)->
-		{head, neck, hip, "left knee": left_knee, "right knee": right_knee} = @structure.points
+		{head, sternum, hip, "left knee": left_knee, "right knee": right_knee, "left sholder": left_sholder, "right sholder": right_sholder} = @structure.points
+		
+		# sternum ?= {x: 0, y: 0}
+		# left_sholder ?= {x: 0, y: 0}
+		# right_sholder ?= {x: 0, y: 0}
 		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
@@ -79,16 +98,28 @@ class @Player extends Entity
 		# dress
 		ctx.beginPath()
 		ctx.save()
-		ctx.translate(neck.x, neck.y)
-		torso_angle = atan2(hip.y - neck.y, hip.x - neck.x) - TAU/4
-		dx = hip.x - neck.x
-		dy = hip.y - neck.y
+		ctx.translate(sternum.x, sternum.y)
+		torso_angle = atan2(hip.y - sternum.y, hip.x - sternum.x) - TAU/4
+		dx = hip.x - sternum.x
+		dy = hip.y - sternum.y
 		torso_length = sqrt(dx * dx + dy * dy)
 		ctx.rotate(torso_angle)
 		leg_angle_1 = atan2(left_knee.y - hip.y, left_knee.x - hip.x) - torso_angle
 		leg_angle_2 = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
-		ctx.moveTo(-3, 0)
-		ctx.lineTo(+3, 0)
+		sholder_angle_1 = atan2(left_sholder.y - sternum.y, left_sholder.x - sternum.x) - torso_angle
+		sholder_angle_2 = atan2(right_sholder.y - sternum.y, right_sholder.x - sternum.x) - torso_angle
+		min_cos = min(cos(sholder_angle_1), cos(sholder_angle_2))
+		max_cos = max(cos(sholder_angle_1), cos(sholder_angle_2))
+		# ctx.lineTo(+3 + max(0, 1 * max_cos), sin(sholder_angle_1))
+		# ctx.lineTo(-3 + min(0, 1 * min_cos), sin(sholder_angle_2))
+		# ctx.lineTo(-3, sin(sholder_angle_2))
+		# ctx.lineTo(+3, sin(sholder_angle_1))
+		ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) - 1.2)
+		ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) - 1.2)
+		# ctx.lineTo(-2 + min(0, 1 * min_cos), sin(sholder_angle_2) - 1)
+		# ctx.lineTo(+2 + max(0, 1 * max_cos), sin(sholder_angle_1) - 1)
+		# ctx.moveTo(-3, 0)
+		# ctx.lineTo(+3, 0)
 		min_cos = min(cos(leg_angle_1), cos(leg_angle_2))
 		max_cos = max(cos(leg_angle_1), cos(leg_angle_2))
 		min_sin = min(sin(leg_angle_1), sin(leg_angle_2))
@@ -105,9 +136,9 @@ class @Player extends Entity
 		ctx.save()
 		ctx.beginPath()
 		ctx.translate(head.x, head.y)
-		ctx.rotate(atan2(head.y - neck.y, head.x - neck.x) - TAU/4)
+		ctx.rotate(atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
 		ctx.scale(0.9, 1)
-		ctx.arc(0, 0, 6, 0, TAU)
+		ctx.arc(0, 0, 5.5, 0, TAU)
 		ctx.fillStyle = "#6B422C"
 		ctx.fill()
 		ctx.restore()
