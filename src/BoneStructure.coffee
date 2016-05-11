@@ -72,15 +72,17 @@ class @BoneStructure extends Structure
 					dx = other_point.x - point.x
 					dy = other_point.y - point.y
 					dist = sqrt(dx * dx + dy * dy)
-					dd = 5 - dist
-					forces[point_name].x += dx / dd / 1000
-					forces[point_name].y += dy / dd / 1000
+					delta_dist = 5 - dist
+					unless delta_dist is 0 #-1 <= delta_dist <= +1
+						forces[point_name].x += dx / delta_dist / 1000
+						forces[point_name].y += dy / delta_dist / 1000
 		
 		for segment_name, segment of @segments
 			dx = segment.a.x - segment.b.x
 			dy = segment.a.y - segment.b.y
 			dist = sqrt(dx * dx + dy * dy)
 			delta_dist = dist - (segment.length ? 50)
+			delta_dist = min(delta_dist, 100)
 			forces[segment.a.name].x -= dx * delta_dist / 1000
 			forces[segment.a.name].y -= dy * delta_dist / 1000
 			forces[segment.b.name].x += dx * delta_dist / 1000

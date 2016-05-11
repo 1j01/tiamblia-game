@@ -182,24 +182,8 @@ class @Editor
 		else if @dragging_points.length
 			if mouse.LMB.down
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
-				if @editing_entity.structure instanceof BoneStructure
-					# try to prevent physics breaking by limiting the movement of an individual point
-					# FIXME: physics can still break under some conditions so fix this in a different way
-					# plus dragging the GranddaddyLonglegs by its head feels really glitchy now
-					dist = distance(local_mouse_position, @dragging_points[0])
-					dx = local_mouse_position.x - @dragging_points[0].x
-					dy = local_mouse_position.y - @dragging_points[0].y
-					max_point_drag_dist = 200
-					drag_entity_dist = max(0, dist - max_point_drag_dist)
-					drag_point_dist = max(0, dist - drag_entity_dist)
-					@dragging_points[0].x += dx / dist * drag_point_dist
-					@dragging_points[0].y += dy / dist * drag_point_dist
-					for point_name, point of @editing_entity.structure.points
-						point.x += dx / dist * drag_entity_dist
-						point.y += dy / dist * drag_entity_dist
-				else
-					@dragging_points[0].x = local_mouse_position.x
-					@dragging_points[0].y = local_mouse_position.y
+				@dragging_points[0].x = local_mouse_position.x
+				@dragging_points[0].y = local_mouse_position.y
 			else
 				@dragging_points = []
 				@save()
@@ -294,14 +278,11 @@ class @Editor
 				else
 					@selected_entities = []
 					@selected_points = []
-					# console.log @last_click_time?, @last_click_time > Date.now() - 300, Date.now() - @last_click_time
 					if mouse.double_clicked
-						console.log "exit"
 						@editing_entity = null
 						@dragging_entities = []
 						@dragging_points = []
 					else
-						console.log "sel;ect"
 						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
 		if @editing_entity
