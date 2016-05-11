@@ -1,7 +1,6 @@
 
 # TODO: animation editing
 # TODO: reasonable terrain editing
-# TODO: cursors
 # TODO: shift+select (and alternatively ctrl+select)
 # TODO: select multiple points the same ways as entities
 

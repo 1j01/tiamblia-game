@@ -21,14 +21,6 @@ class @BoneStructure extends Structure
 		return name
 	
 	autoLayout: ->
-		
-		lil_hash = (str)->
-			hash = 0
-			for char, i in str
-				hash = ((hash<<5)-hash)+str.charCodeAt(i)
-				hash = hash & hash # Convert to 32bit integer
-			hash
-		
 		ys = {}
 		y = 0
 		for point_name, point of @points
@@ -41,9 +33,9 @@ class @BoneStructure extends Structure
 					y += 10
 					ys[sideless_point_name] = y
 				if side is "left"
-					point.x = -5.5 #* (lil_hash(sideless_point_name) % 60)
+					point.x = -5.5
 				if side is "right"
-					point.x = +5.5 #* (lil_hash(sideless_point_name) % 60)
+					point.x = +5.5
 				point.x *= 0.7 if point_name.match(/lower/)
 			point.y = y
 		
@@ -73,7 +65,7 @@ class @BoneStructure extends Structure
 					dy = other_point.y - point.y
 					dist = sqrt(dx * dx + dy * dy)
 					delta_dist = 5 - dist
-					unless delta_dist is 0 #-1 <= delta_dist <= +1
+					unless delta_dist is 0
 						forces[point_name].x += dx / delta_dist / 1000
 						forces[point_name].y += dy / delta_dist / 1000
 		

@@ -75,7 +75,7 @@ do animate = ->
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 	
-	if editor.entities_bar.hovered_cell
+	if editor.entities_bar.hovered_cell or editor.hovered_points.length or editor.hovered_entities.length
 		canvas.classList.add("grabbable")
 	else
 		canvas.classList.remove("grabbable")

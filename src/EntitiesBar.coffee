@@ -43,8 +43,6 @@ class @EntitiesBar
 			@editor.selected_entities = []
 		else
 			@mouse_start = null
-		# if @hovered_cell
-		# 	mouse.setCursor("grab")
 		return no if @editor.dragging_entity?
 		@hovered_cell? or @mouse_start?
 	
