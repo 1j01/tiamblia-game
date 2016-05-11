@@ -22,6 +22,7 @@ while editing an entity
 	drag outside of the entity to select points (w/ a selection box)
 	double click outside of the entity to stop editing the entity
 		(another entity you click on should not be selected)
+		(the entity should be deselected)
 	drag on a point to move all selected points
 	click on a point to select that point
 	shift+click or ctrl+click on a point to toggle the selected state of that point
@@ -51,6 +52,10 @@ when starting editing an entity, you should not also start dragging a point
 delete, undo, redo, etc. should work while dragging entities or points
 minimum drag distances should be based on view positions, not world positions
 undo states should only be created once a drag starts
+
+esc should cancel dragging or exit edit mode
+
+entities and points should have hover styles
 -->
 
 <!--

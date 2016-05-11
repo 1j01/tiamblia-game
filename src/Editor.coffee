@@ -270,7 +270,7 @@ class @Editor
 				else
 					# @editing_entity = null
 					@selected_points = []
-				
+					
 					if @hovered_entities.length
 						if @hovered_entities[0] in @selected_entities
 							if mouse.double_clicked
@@ -293,10 +293,10 @@ class @Editor
 									x: entity.x - mouse_in_world.x
 									y: entity.y - mouse_in_world.y
 					else
-						# @selected_entities = []
-						# @selected_points = []
 						if mouse.double_clicked
 							@editing_entity = null
+							@selected_entities = []
+							@selected_points = []
 							@dragging_entities = []
 							@dragging_points = []
 						else
@@ -314,6 +314,9 @@ class @Editor
 			for point_name, point of entity.structure.points
 				ctx.beginPath()
 				ctx.arc(point.x, point.y, radius / view.scale, 0, TAU)
+				# ctx.lineWidth = 1 / view.scale
+				# ctx.strokeStyle = "black"
+				# ctx.stroke()
 				ctx.fillStyle = fillStyle
 				ctx.fill()
 				# ctx.fillText(point_name, point.x + radius * 2, point.y)
