@@ -2233,8 +2233,8 @@
 					}
 				}
 			},
-			"x": 466,
-			"y": 99.5,
+			"x": 453.0000000000123,
+			"y": 89.5,
 			"id": "88614134-ffc6-4630-bcdb-87f047b35b12",
 			"_class_": "Tree",
 			"leaf_point_names": [
@@ -3359,128 +3359,128 @@
 			"structure": {
 				"points": {
 					"body": {
-						"x": -2.178689519489976e-14,
-						"y": -28.776585843053322,
+						"x": -0.3423294248970279,
+						"y": -30.19947902624486,
 						"name": "body"
 					},
 					"upper left leg 1": {
-						"x": -46.6453417964288,
-						"y": -46.782476231876885,
+						"x": -47.4868262685007,
+						"y": -46.85470095101805,
 						"name": "upper left leg 1"
 					},
 					"middle left leg 1": {
-						"x": -37.238242003512184,
-						"y": 2.3246156539811937,
+						"x": -37.244321883073304,
+						"y": 2.084967048616971,
 						"name": "middle left leg 1"
 					},
 					"lower left leg 1": {
-						"x": 12.151042076935827,
-						"y": 10.115547435277053,
+						"x": 12.10769209648714,
+						"y": 10.108601895821126,
 						"name": "lower left leg 1"
 					},
 					"upper right leg 1": {
-						"x": 46.64534179642875,
-						"y": -46.78247623187691,
+						"x": 46.82015639934272,
+						"y": -46.803693276801404,
 						"name": "upper right leg 1"
 					},
 					"middle right leg 1": {
-						"x": 37.23824200351216,
-						"y": 2.3246156539811653,
+						"x": 37.239498447170284,
+						"y": 2.269833121894212,
 						"name": "middle right leg 1"
 					},
 					"lower right leg 1": {
-						"x": -12.151042076935848,
-						"y": 10.115547435277055,
+						"x": -12.141356596152573,
+						"y": 10.114012823452365,
 						"name": "lower right leg 1"
 					},
 					"upper left leg 2": {
-						"x": -48.66619884716066,
-						"y": -17.304834025278204,
+						"x": -48.65133479439412,
+						"y": -17.30606984907605,
 						"name": "upper left leg 2"
 					},
 					"middle left leg 2": {
-						"x": -30.545211224670908,
-						"y": 29.295914977131318,
+						"x": -30.544738612670063,
+						"y": 29.300272795589535,
 						"name": "middle left leg 2"
 					},
 					"lower left leg 2": {
-						"x": 18.44819304681948,
-						"y": 39.2782162093274,
+						"x": 18.449499176263732,
+						"y": 39.27848222821864,
 						"name": "lower left leg 2"
 					},
 					"upper right leg 2": {
-						"x": 48.66619884716062,
-						"y": -17.30483402527823,
+						"x": 48.02177006330842,
+						"y": -17.5142955157487,
 						"name": "upper right leg 2"
 					},
 					"middle right leg 2": {
-						"x": 30.545211224670926,
-						"y": 29.29591497713131,
+						"x": 30.54151283914366,
+						"y": 29.330561271064486,
 						"name": "middle right leg 2"
 					},
 					"lower right leg 2": {
-						"x": -18.44819304681946,
-						"y": 39.27821620932742,
+						"x": -18.458511656395512,
+						"y": 39.28031500854787,
 						"name": "lower right leg 2"
 					},
 					"upper left leg 3": {
-						"x": -7.413803273931815,
-						"y": 20.670714599088456,
+						"x": -14.28551891158489,
+						"y": 17.81705424031149,
 						"name": "upper left leg 3"
 					},
 					"middle left leg 3": {
-						"x": -52.67612011653826,
-						"y": 41.91507088586503,
+						"x": -61.206700511909304,
+						"y": 35.09139119515217,
 						"name": "middle left leg 3"
 					},
 					"lower left leg 3": {
-						"x": -2.718891043184602,
-						"y": 43.98274187334549,
+						"x": -13.733537061678268,
+						"y": 50.78529931351611,
 						"name": "lower left leg 3"
 					},
 					"upper right leg 3": {
-						"x": 7.413803273931794,
-						"y": 20.670714599088456,
+						"x": 7.717782667298845,
+						"y": 19.146590655759613,
 						"name": "upper right leg 3"
 					},
 					"middle right leg 3": {
-						"x": 52.67612011653826,
-						"y": 41.91507088586499,
+						"x": 52.38152068025069,
+						"y": 41.62214419088755,
 						"name": "middle right leg 3"
 					},
 					"lower right leg 3": {
-						"x": 2.7188910431846023,
-						"y": 43.98274187334549,
+						"x": 2.437868567941397,
+						"y": 43.99524631355809,
 						"name": "lower right leg 3"
 					},
 					"upper left leg 4": {
-						"x": -2.465982404031113,
-						"y": 21.162566440330604,
+						"x": 8.853641381033965,
+						"y": 18.947587223293052,
 						"name": "upper left leg 4"
 					},
 					"middle left leg 4": {
-						"x": -47.08349941032579,
-						"y": 43.729736759025975,
+						"x": -21.59397890767038,
+						"y": 58.60792533020889,
 						"name": "middle left leg 4"
 					},
 					"lower left leg 4": {
-						"x": 1.7697061045069622,
-						"y": 54.377004527120974,
+						"x": 28.163967736300428,
+						"y": 53.693991491037856,
 						"name": "lower left leg 4"
 					},
 					"upper right leg 4": {
-						"x": 2.4659824040311347,
-						"y": 21.1625664403306,
+						"x": 2.8274275590549505,
+						"y": 19.69994622758636,
 						"name": "upper right leg 4"
 					},
 					"middle right leg 4": {
-						"x": 47.08349941032581,
-						"y": 43.72973675902598,
+						"x": 46.82467663912565,
+						"y": 43.453726419088895,
 						"name": "middle right leg 4"
 					},
 					"lower right leg 4": {
-						"x": -1.769706104506941,
-						"y": 54.37700452712099,
+						"x": -1.9581940069380122,
+						"y": 54.41874039670972,
 						"name": "lower right leg 4"
 					}
 				},
@@ -3655,8 +3655,8 @@
 					}
 				}
 			},
-			"x": 216,
-			"y": -121.5,
+			"x": 127.23923830983261,
+			"y": -20.909362508433915,
 			"id": "247bae0f-6bb0-415d-8070-995736b66eb5",
 			"_class_": "GranddaddyLonglegs"
 		},
@@ -4570,8 +4570,8 @@
 					}
 				}
 			},
-			"x": 688,
-			"y": -48.5,
+			"x": 636.6498937409491,
+			"y": -41.8023653269768,
 			"id": "d7b02d5b-720b-4995-9cad-db7e285115aa",
 			"_class_": "GranddaddyLonglegs"
 		},
@@ -4878,6 +4878,849 @@
 			"x": 397,
 			"y": 37.5,
 			"id": "c4534283-7afa-44ef-a68d-b034430f4659",
+			"_class_": "GranddaddyLonglegs"
+		},
+		{
+			"structure": {
+				"points": {
+					"1": {
+						"x": -1.6175551823815872,
+						"y": -120.63183543442443,
+						"name": "1"
+					},
+					"base": {
+						"x": 0.008633688395517904,
+						"y": 2.5546280734935243,
+						"name": "base"
+					},
+					"1-a": {
+						"x": -83.26003532343256,
+						"y": -213.70140472601088,
+						"name": "1-a"
+					},
+					"1-a-a": {
+						"x": -123.10620747902526,
+						"y": -260.28321963236203,
+						"name": "1-a-a"
+					},
+					"1-a-a-a": {
+						"x": -184.05456440729108,
+						"y": -294.9860226542795,
+						"name": "1-a-a-a"
+					},
+					"1-a-a-a-a": {
+						"x": -232.83130156049478,
+						"y": -307.0456754488998,
+						"name": "1-a-a-a-a",
+						"r": 28.35464468005966,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-a-a-b": {
+						"x": -205.0956496653529,
+						"y": -327.3117071574766,
+						"name": "1-a-a-a-b",
+						"r": 23.28352267275436,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-a-b": {
+						"x": -150.2135980138762,
+						"y": -309.9433783947738,
+						"name": "1-a-a-b"
+					},
+					"1-a-a-b-a": {
+						"x": -187.95946822199707,
+						"y": -320.81000161538265,
+						"name": "1-a-a-b-a",
+						"r": 22.689278684918328,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-a-b-b": {
+						"x": -151.29826686036398,
+						"y": -356.53608206835355,
+						"name": "1-a-a-b-b",
+						"r": 18.462495133516473,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-b": {
+						"x": -67.57804021078101,
+						"y": -280.29262110214296,
+						"name": "1-a-b"
+					},
+					"1-a-b-a": {
+						"x": -111.04752238237135,
+						"y": -347.68439652128393,
+						"name": "1-a-b-a"
+					},
+					"1-a-b-a-a": {
+						"x": -164.9908269558379,
+						"y": -367.3415859406418,
+						"name": "1-a-b-a-a",
+						"r": 19.032451469074264,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-b-a-b": {
+						"x": -127.34474937225357,
+						"y": -386.23291055766737,
+						"name": "1-a-b-a-b",
+						"r": 20.982483811359693,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-b-b": {
+						"x": -34.5074680221237,
+						"y": -333.0665337663567,
+						"name": "1-a-b-b"
+					},
+					"1-a-b-b-a": {
+						"x": -14.343067521080242,
+						"y": -374.62876834172727,
+						"name": "1-a-b-b-a",
+						"r": 26.19875670065557,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-b-b-b": {
+						"x": 8.132465313066266,
+						"y": -353.3604420854231,
+						"name": "1-a-b-b-b",
+						"r": 24.32557025934134,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-a-b-b-c": {
+						"x": -17.18457832904981,
+						"y": -364.95559639079676,
+						"name": "1-a-b-b-c",
+						"r": 24.380158188526096,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b": {
+						"x": 1.5343284613876325,
+						"y": -223.2651685425629,
+						"name": "1-b"
+					},
+					"1-b-a": {
+						"x": -20.145519099385464,
+						"y": -285.48175597814736,
+						"name": "1-b-a"
+					},
+					"1-b-a-a": {
+						"x": -84.80475066583953,
+						"y": -329.92385144783265,
+						"name": "1-b-a-a"
+					},
+					"1-b-a-a-a": {
+						"x": -139.37466699044754,
+						"y": -345.833336854452,
+						"name": "1-b-a-a-a",
+						"r": 20.53181103886377,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-a-a-b": {
+						"x": -105.36766536888867,
+						"y": -382.5558557996689,
+						"name": "1-b-a-a-b",
+						"r": 29.85716533632545,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-a-b": {
+						"x": -48.67187455086549,
+						"y": -368.86418030949346,
+						"name": "1-b-a-b"
+					},
+					"1-b-a-b-a": {
+						"x": -80.5361455088216,
+						"y": -391.30392850621587,
+						"name": "1-b-a-b-a",
+						"r": 22.347913269033448,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-a-b-b": {
+						"x": -39.606001561171865,
+						"y": -402.35887439610957,
+						"name": "1-b-a-b-b",
+						"r": 20.18067420565852,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-b": {
+						"x": 77.29234786877659,
+						"y": -288.8259603892129,
+						"name": "1-b-b"
+					},
+					"1-b-b-a": {
+						"x": 52.58664101403875,
+						"y": -365.5836330401628,
+						"name": "1-b-b-a"
+					},
+					"1-b-b-a-a": {
+						"x": 84.23556149875203,
+						"y": -411.87751485846945,
+						"name": "1-b-b-a-a",
+						"r": 23.182560741273072,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-b-a-b": {
+						"x": 79.00375587793218,
+						"y": -393.35514688285855,
+						"name": "1-b-b-a-b",
+						"r": 16.28852610890936,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-b-b": {
+						"x": 105.3701016421519,
+						"y": -331.2423151289725,
+						"name": "1-b-b-b"
+					},
+					"1-b-b-b-a": {
+						"x": 120.94320852981167,
+						"y": -359.2389191130403,
+						"name": "1-b-b-b-a",
+						"r": 15.173253421028862,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-b-b-b": {
+						"x": 139.0511533080616,
+						"y": -337.6766149080166,
+						"name": "1-b-b-b-b",
+						"r": 26.34041747709086,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					},
+					"1-b-b-b-c": {
+						"x": 159.25955926422773,
+						"y": -361.44687239310235,
+						"name": "1-b-b-b-c",
+						"r": 26.90333493055011,
+						"scale_x": 2,
+						"scale_y": 1,
+						"color": "#627318"
+					}
+				},
+				"segments": {
+					"1": {
+						"from": "base",
+						"to": "1",
+						"name": "1",
+						"length": 123.19719672878534,
+						"width": 101,
+						"color": "#926B2E"
+					},
+					"1-a": {
+						"from": "1",
+						"to": "1-a",
+						"name": "1-a",
+						"length": 123.80403584578053,
+						"width": 81,
+						"color": "#926B2E"
+					},
+					"1-a-a": {
+						"from": "1-a",
+						"to": "1-a-a",
+						"name": "1-a-a",
+						"length": 61.29912654698034,
+						"width": 61,
+						"color": "#926B2E"
+					},
+					"1-a-a-a": {
+						"from": "1-a-a",
+						"to": "1-a-a-a",
+						"name": "1-a-a-a",
+						"length": 70.13548851924602,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-a-a-a-a": {
+						"from": "1-a-a-a",
+						"to": "1-a-a-a-a",
+						"name": "1-a-a-a-a",
+						"length": 50.24545066809049,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-a-a-b": {
+						"from": "1-a-a-a",
+						"to": "1-a-a-a-b",
+						"name": "1-a-a-a-b",
+						"length": 38.57041803555286,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-a-b": {
+						"from": "1-a-a",
+						"to": "1-a-a-b",
+						"name": "1-a-a-b",
+						"length": 56.576867975497976,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-a-a-b-a": {
+						"from": "1-a-a-b",
+						"to": "1-a-a-b-a",
+						"name": "1-a-a-b-a",
+						"length": 39.27892842208161,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-a-b-b": {
+						"from": "1-a-a-b",
+						"to": "1-a-a-b-b",
+						"name": "1-a-a-b-b",
+						"length": 46.60532740063743,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-b": {
+						"from": "1-a",
+						"to": "1-a-b",
+						"name": "1-a-b",
+						"length": 68.41282825001518,
+						"width": 61,
+						"color": "#926B2E"
+					},
+					"1-a-b-a": {
+						"from": "1-a-b",
+						"to": "1-a-b-a",
+						"name": "1-a-b-a",
+						"length": 80.19505766822623,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-a-b-a-a": {
+						"from": "1-a-b-a",
+						"to": "1-a-b-a-a",
+						"name": "1-a-b-a-a",
+						"length": 57.413284213449074,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-b-a-b": {
+						"from": "1-a-b-a",
+						"to": "1-a-b-a-b",
+						"name": "1-a-b-a-b",
+						"length": 41.85197178118334,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-b-b": {
+						"from": "1-a-b",
+						"to": "1-a-b-b",
+						"name": "1-a-b-b",
+						"length": 62.279600213675344,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-a-b-b-a": {
+						"from": "1-a-b-b",
+						"to": "1-a-b-b-a",
+						"name": "1-a-b-b-a",
+						"length": 46.19548019519448,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-b-b-b": {
+						"from": "1-a-b-b",
+						"to": "1-a-b-b-b",
+						"name": "1-a-b-b-b",
+						"length": 47.222946008186675,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-a-b-b-c": {
+						"from": "1-a-b-b",
+						"to": "1-a-b-b-c",
+						"name": "1-a-b-b-c",
+						"length": 36.29042328747155,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b": {
+						"from": "1",
+						"to": "1-b",
+						"name": "1-b",
+						"length": 102.68171909054679,
+						"width": 81,
+						"color": "#926B2E"
+					},
+					"1-b-a": {
+						"from": "1-b",
+						"to": "1-b-a",
+						"name": "1-b-a",
+						"length": 65.88565505774426,
+						"width": 61,
+						"color": "#926B2E"
+					},
+					"1-b-a-a": {
+						"from": "1-b-a",
+						"to": "1-b-a-a",
+						"name": "1-b-a-a",
+						"length": 78.45964616604483,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-b-a-a-a": {
+						"from": "1-b-a-a",
+						"to": "1-b-a-a-a",
+						"name": "1-b-a-a-a",
+						"length": 56.84177595376619,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-a-a-b": {
+						"from": "1-b-a-a",
+						"to": "1-b-a-a-b",
+						"name": "1-b-a-a-b",
+						"length": 56.50629472170828,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-a-b": {
+						"from": "1-b-a",
+						"to": "1-b-a-b",
+						"name": "1-b-a-b",
+						"length": 88.1270766717971,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-b-a-b-a": {
+						"from": "1-b-a-b",
+						"to": "1-b-a-b-a",
+						"name": "1-b-a-b-a",
+						"length": 38.9727348644451,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-a-b-b": {
+						"from": "1-b-a-b",
+						"to": "1-b-a-b-b",
+						"name": "1-b-a-b-b",
+						"length": 34.69992197428164,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-b": {
+						"from": "1-b",
+						"to": "1-b-b",
+						"name": "1-b-b",
+						"length": 100.18729925539506,
+						"width": 61,
+						"color": "#926B2E"
+					},
+					"1-b-b-a": {
+						"from": "1-b-b",
+						"to": "1-b-b-a",
+						"name": "1-b-b-a",
+						"length": 80.635676111648,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-b-b-a-a": {
+						"from": "1-b-b-a",
+						"to": "1-b-b-a-a",
+						"name": "1-b-b-a-a",
+						"length": 56.07831721490101,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-b-a-b": {
+						"from": "1-b-b-a",
+						"to": "1-b-b-a-b",
+						"name": "1-b-b-a-b",
+						"length": 38.32911346283876,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-b-b": {
+						"from": "1-b-b",
+						"to": "1-b-b-b",
+						"name": "1-b-b-b",
+						"length": 50.867547674006914,
+						"width": 41,
+						"color": "#926B2E"
+					},
+					"1-b-b-b-a": {
+						"from": "1-b-b-b",
+						"to": "1-b-b-b-a",
+						"name": "1-b-b-b-a",
+						"length": 32.0364088620303,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-b-b-b": {
+						"from": "1-b-b-b",
+						"to": "1-b-b-b-b",
+						"name": "1-b-b-b-b",
+						"length": 34.29013640929806,
+						"width": 21,
+						"color": "#926B2E"
+					},
+					"1-b-b-b-c": {
+						"from": "1-b-b-b",
+						"to": "1-b-b-b-c",
+						"name": "1-b-b-b-c",
+						"length": 61.77692872200425,
+						"width": 21,
+						"color": "#926B2E"
+					}
+				}
+			},
+			"x": -2287.692344313662,
+			"y": 176.99557117712112,
+			"id": "135dd953-1283-4e06-a9ac-80771c70b5ec",
+			"_class_": "Tree",
+			"leaf_point_names": [
+				"1-a-a-a-a",
+				"1-a-a-a-b",
+				"1-a-a-b-a",
+				"1-a-a-b-b",
+				"1-a-b-a-a",
+				"1-a-b-a-b",
+				"1-a-b-b-a",
+				"1-a-b-b-b",
+				"1-a-b-b-c",
+				"1-b-a-a-a",
+				"1-b-a-a-b",
+				"1-b-a-b-a",
+				"1-b-a-b-b",
+				"1-b-b-a-a",
+				"1-b-b-a-b",
+				"1-b-b-b-a",
+				"1-b-b-b-b",
+				"1-b-b-b-c"
+			]
+		},
+		{
+			"structure": {
+				"points": {
+					"body": {
+						"x": -1.6095581873273014e-15,
+						"y": -22.068123698429307,
+						"name": "body"
+					},
+					"upper left leg 1": {
+						"x": -24.540445724068803,
+						"y": -65.63148586968539,
+						"name": "upper left leg 1"
+					},
+					"middle left leg 1": {
+						"x": -23.71740385425862,
+						"y": -15.638260307810096,
+						"name": "middle left leg 1"
+					},
+					"lower left leg 1": {
+						"x": -0.04613523803985419,
+						"y": 28.403436322756,
+						"name": "lower left leg 1"
+					},
+					"upper right leg 1": {
+						"x": 24.540445724068775,
+						"y": -65.6314858696854,
+						"name": "upper right leg 1"
+					},
+					"middle right leg 1": {
+						"x": 23.717403854258613,
+						"y": -15.63826030781011,
+						"name": "middle right leg 1"
+					},
+					"lower right leg 1": {
+						"x": 0.04613523803984705,
+						"y": 28.403436322755987,
+						"name": "lower right leg 1"
+					},
+					"upper left leg 2": {
+						"x": -31.587029037325895,
+						"y": 16.690870052636093,
+						"name": "upper left leg 2"
+					},
+					"middle left leg 2": {
+						"x": 13.795184767416876,
+						"y": -4.296141887623918,
+						"name": "middle left leg 2"
+					},
+					"lower left leg 2": {
+						"x": -0.7783241204993764,
+						"y": 43.53285390670388,
+						"name": "lower left leg 2"
+					},
+					"upper right leg 2": {
+						"x": 31.58702903732586,
+						"y": 16.690870052636114,
+						"name": "upper right leg 2"
+					},
+					"middle right leg 2": {
+						"x": -13.795184767416906,
+						"y": -4.296141887623912,
+						"name": "middle right leg 2"
+					},
+					"lower right leg 2": {
+						"x": 0.7783241204993621,
+						"y": 43.53285390670388,
+						"name": "lower right leg 2"
+					},
+					"upper left leg 3": {
+						"x": 23.108134910554604,
+						"y": 22.27163386693866,
+						"name": "upper left leg 3"
+					},
+					"middle left leg 3": {
+						"x": -26.397870006660995,
+						"y": 29.282730581192812,
+						"name": "middle left leg 3"
+					},
+					"lower left leg 3": {
+						"x": 19.534216978479357,
+						"y": 49.03730942229941,
+						"name": "lower left leg 3"
+					},
+					"upper right leg 3": {
+						"x": -23.108134910554586,
+						"y": 22.271633866938675,
+						"name": "upper right leg 3"
+					},
+					"middle right leg 3": {
+						"x": 26.397870006661016,
+						"y": 29.28273058119278,
+						"name": "middle right leg 3"
+					},
+					"lower right leg 3": {
+						"x": -19.534216978479325,
+						"y": 49.0373094222994,
+						"name": "lower right leg 3"
+					},
+					"upper left leg 4": {
+						"x": -18.641827110669293,
+						"y": 24.326728192442292,
+						"name": "upper left leg 4"
+					},
+					"middle left leg 4": {
+						"x": 2.1553240522629156,
+						"y": 69.79626198712886,
+						"name": "middle left leg 4"
+					},
+					"lower left leg 4": {
+						"x": -37.519260898698114,
+						"y": 39.36720828891178,
+						"name": "lower left leg 4"
+					},
+					"upper right leg 4": {
+						"x": 18.641827110669293,
+						"y": 24.326728192442296,
+						"name": "upper right leg 4"
+					},
+					"middle right leg 4": {
+						"x": -2.1553240522629036,
+						"y": 69.79626198712887,
+						"name": "middle right leg 4"
+					},
+					"lower right leg 4": {
+						"x": 37.519260898698114,
+						"y": 39.367208288911776,
+						"name": "lower right leg 4"
+					}
+				},
+				"segments": {
+					"upper left leg 1": {
+						"from": "body",
+						"to": "upper left leg 1",
+						"name": "upper left leg 1",
+						"length": 50,
+						"width": 4
+					},
+					"middle left leg 1": {
+						"from": "upper left leg 1",
+						"to": "middle left leg 1",
+						"name": "middle left leg 1",
+						"length": 50,
+						"width": 3
+					},
+					"lower left leg 1": {
+						"from": "middle left leg 1",
+						"to": "lower left leg 1",
+						"name": "lower left leg 1",
+						"length": 50,
+						"width": 2
+					},
+					"upper right leg 1": {
+						"from": "body",
+						"to": "upper right leg 1",
+						"name": "upper right leg 1",
+						"length": 50,
+						"width": 4
+					},
+					"middle right leg 1": {
+						"from": "upper right leg 1",
+						"to": "middle right leg 1",
+						"name": "middle right leg 1",
+						"length": 50,
+						"width": 3
+					},
+					"lower right leg 1": {
+						"from": "middle right leg 1",
+						"to": "lower right leg 1",
+						"name": "lower right leg 1",
+						"length": 50,
+						"width": 2
+					},
+					"upper left leg 2": {
+						"from": "body",
+						"to": "upper left leg 2",
+						"name": "upper left leg 2",
+						"length": 50,
+						"width": 4
+					},
+					"middle left leg 2": {
+						"from": "upper left leg 2",
+						"to": "middle left leg 2",
+						"name": "middle left leg 2",
+						"length": 50,
+						"width": 3
+					},
+					"lower left leg 2": {
+						"from": "middle left leg 2",
+						"to": "lower left leg 2",
+						"name": "lower left leg 2",
+						"length": 50,
+						"width": 2
+					},
+					"upper right leg 2": {
+						"from": "body",
+						"to": "upper right leg 2",
+						"name": "upper right leg 2",
+						"length": 50,
+						"width": 4
+					},
+					"middle right leg 2": {
+						"from": "upper right leg 2",
+						"to": "middle right leg 2",
+						"name": "middle right leg 2",
+						"length": 50,
+						"width": 3
+					},
+					"lower right leg 2": {
+						"from": "middle right leg 2",
+						"to": "lower right leg 2",
+						"name": "lower right leg 2",
+						"length": 50,
+						"width": 2
+					},
+					"upper left leg 3": {
+						"from": "body",
+						"to": "upper left leg 3",
+						"name": "upper left leg 3",
+						"length": 50,
+						"width": 4
+					},
+					"middle left leg 3": {
+						"from": "upper left leg 3",
+						"to": "middle left leg 3",
+						"name": "middle left leg 3",
+						"length": 50,
+						"width": 3
+					},
+					"lower left leg 3": {
+						"from": "middle left leg 3",
+						"to": "lower left leg 3",
+						"name": "lower left leg 3",
+						"length": 50,
+						"width": 2
+					},
+					"upper right leg 3": {
+						"from": "body",
+						"to": "upper right leg 3",
+						"name": "upper right leg 3",
+						"length": 50,
+						"width": 4
+					},
+					"middle right leg 3": {
+						"from": "upper right leg 3",
+						"to": "middle right leg 3",
+						"name": "middle right leg 3",
+						"length": 50,
+						"width": 3
+					},
+					"lower right leg 3": {
+						"from": "middle right leg 3",
+						"to": "lower right leg 3",
+						"name": "lower right leg 3",
+						"length": 50,
+						"width": 2
+					},
+					"upper left leg 4": {
+						"from": "body",
+						"to": "upper left leg 4",
+						"name": "upper left leg 4",
+						"length": 50,
+						"width": 4
+					},
+					"middle left leg 4": {
+						"from": "upper left leg 4",
+						"to": "middle left leg 4",
+						"name": "middle left leg 4",
+						"length": 50,
+						"width": 3
+					},
+					"lower left leg 4": {
+						"from": "middle left leg 4",
+						"to": "lower left leg 4",
+						"name": "lower left leg 4",
+						"length": 50,
+						"width": 2
+					},
+					"upper right leg 4": {
+						"from": "body",
+						"to": "upper right leg 4",
+						"name": "upper right leg 4",
+						"length": 50,
+						"width": 4
+					},
+					"middle right leg 4": {
+						"from": "upper right leg 4",
+						"to": "middle right leg 4",
+						"name": "middle right leg 4",
+						"length": 50,
+						"width": 3
+					},
+					"lower right leg 4": {
+						"from": "middle right leg 4",
+						"to": "lower right leg 4",
+						"name": "lower right leg 4",
+						"length": 50,
+						"width": 2
+					}
+				}
+			},
+			"x": 512.7067340905934,
+			"y": 11.921206567262558,
+			"id": "90d66d76-7032-4fed-a157-e97d54aa6f3e",
 			"_class_": "GranddaddyLonglegs"
 		}
 	]

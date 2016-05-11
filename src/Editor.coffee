@@ -211,6 +211,11 @@ class @Editor
 		
 		mouse_in_world = view.toWorld(mouse)
 		
+		# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
+		# min_grab_dist = 8 / Math.min(view.scale, 5)
+		min_grab_dist = 8 / view.scale
+		# console.log view.scale, min_grab_dist
+		
 		point_within_selection_box = (entity, point)=>
 			relative_x1 = @selection_box.x1 - entity.x
 			relative_y1 = @selection_box.y1 - entity.y
@@ -323,10 +328,6 @@ class @Editor
 			if @editing_entity
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 				closest_dist = Infinity
-				# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
-				# min_grab_dist = 8 / Math.min(view.scale, 5)
-				min_grab_dist = 8 / view.scale
-				# console.log view.scale, min_grab_dist
 				for point_name, point of @editing_entity.structure.points
 					dist = distance(local_mouse_position, point)
 					if dist < min_grab_dist and dist < closest_dist
@@ -340,10 +341,12 @@ class @Editor
 							closest_dist = dist
 							@hovered_segments = [segment]
 			else
+				closest_dist = Infinity
 				for entity in @world.entities
-					# TODO: find closest to mouse
-					if @isMouseOverEntity(entity, mouse_in_world)
+					dist = @distanceToEntity(entity, mouse_in_world)
+					if dist < min_grab_dist and dist < closest_dist
 						@hovered_entities = [entity]
+						closest_dist = dist
 			
 			if mouse.LMB.pressed
 				@dragging_points = []
@@ -371,18 +374,21 @@ class @Editor
 				@editing_entity.structure.stepLayout() for [0..250]
 				# TODO: save afterwards at some point
 	
-	# TODO: function distanceToEntity instead
-	isMouseOverEntity: (entity, mouse_in_world)->
-		local_mouse_position = entity.fromWorld(mouse_in_world)
+	distanceToEntity: (entity, from_point_in_world)->
+		from_point = entity.fromWorld(from_point_in_world)
+		closest_dist = Infinity
+		
 		for segment_name, segment of entity.structure.segments
-			min_grab_dist = Math.max(segment.width ? 0, 8) / view.scale
-			if distanceToSegment(local_mouse_position, segment.a, segment.b) < min_grab_dist
-				return yes
+			dist = distanceToSegment(from_point, segment.a, segment.b)
+			# dist = max(0, dist - segment.width / 2) if segment.width?
+			closest_dist = min(closest_dist, dist)
+			
 		for point_name, point of entity.structure.points
-			min_grab_dist = 8 / view.scale
-			if distance(local_mouse_position, point) < min_grab_dist
-				return yes
-		no
+			dist = distance(from_point, point)
+			# dist = max(0, dist - segment.radius) if segment.radius?
+			closest_dist = min(closest_dist, dist)
+		
+		closest_dist
 	
 	dragPoints: (points, mouse_in_world)->
 		@selected_points = (point for point in points)
