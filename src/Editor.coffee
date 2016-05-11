@@ -23,6 +23,7 @@ class @Editor
 		@view_drag_momentum = {x: 0, y: 0}
 		@undos = []
 		@redos = []
+		@clipboard = {}
 		@entities_bar = new EntitiesBar(@)
 		if fs?
 			@save_path = "world.json"
@@ -32,49 +33,18 @@ class @Editor
 			# console.log e.keyCode
 			switch e.keyCode
 				when 46 # Delete
-					if @selected_points.length
-						plural = @selected_points.length > 1
-						@undoable =>
-							for segment_name, segment of @editing_entity.structure.segments
-								if (segment.a in @selected_points) or (segment.b in @selected_points)
-									delete @editing_entity.structure.segments[segment_name]
-							for point_name, point of @editing_entity.structure.points
-								if point in @selected_points
-									delete @editing_entity.structure.points[point_name]
-							@selected_points = []
-							@dragging_points = []
-						try
-							@editing_entity.draw(document.createElement("canvas").getContext("2d"), new View)
-						catch e
-							@undo()
-							if plural
-								alert("Entity needs one or more of those points to render")
-							else
-								alert("Entity needs that point to render")
-					else
-						@undoable =>
-							# @editing_entity.destroy()
-							for entity in @selected_entities
-								index = @world.entities.indexOf(entity)
-								@world.entities.splice(index, 1) if index >= 0
-							@selected_entities = []
-							# @selected_segments = []
-							@selected_points = []
-							@dragging_points = []
-							# @dragging_segments = []
-							@dragging_entities = []
-							@editing_entity = null
+					@delete()
 				when 90 # Z
 					if e.ctrlKey
 						if e.shiftKey then @redo() else @undo()
 				when 89 # Y
 					@redo() if e.ctrlKey
 				when 88 # X
-					TODO: cut() if e.ctrlKey
+					@cut() if e.ctrlKey
 				when 67 # C
-					TODO: copy() if e.ctrlKey
+					@copy() if e.ctrlKey
 				when 86 # V
-					TODO: paste() if e.ctrlKey
+					@paste() if e.ctrlKey
 				when 65 # A
 					@selectAll() if e.ctrlKey
 	
@@ -146,6 +116,64 @@ class @Editor
 			@selected_points = (point for point_name, point of @editing_entity.structure.points)
 		else
 			@selected_entities = (entity for entity in @world.entities)
+	
+	delete: ->
+		if @selected_points.length
+			plural = @selected_points.length > 1
+			@undoable =>
+				for segment_name, segment of @editing_entity.structure.segments
+					if (segment.a in @selected_points) or (segment.b in @selected_points)
+						delete @editing_entity.structure.segments[segment_name]
+				for point_name, point of @editing_entity.structure.points
+					if point in @selected_points
+						delete @editing_entity.structure.points[point_name]
+				@selected_points = []
+				@dragging_points = []
+			try
+				@editing_entity.draw(document.createElement("canvas").getContext("2d"), new View)
+			catch e
+				@undo()
+				if plural
+					alert("Entity needs one or more of those points to render")
+				else
+					alert("Entity needs that point to render")
+		else
+			@undoable =>
+				# @editing_entity.destroy()
+				for entity in @selected_entities
+					index = @world.entities.indexOf(entity)
+					@world.entities.splice(index, 1) if index >= 0
+				@selected_entities = []
+				# @selected_segments = []
+				@selected_points = []
+				@dragging_points = []
+				# @dragging_segments = []
+				@dragging_entities = []
+				@editing_entity = null
+	
+	cut: ->
+		@copy()
+		@delete()
+	
+	copy: ->
+		if @selected_points.length
+			alert("Copying points is not supported")
+			# clipboard.point_positions = {}
+		else
+			@clipboard.entities =
+				for entity in @selected_entities
+					json: JSON.stringify(entity)
+	
+	paste: ->
+		@selected_entities = []
+		for {json} in @clipboard.entities
+			ent_def = JSON.parse(json)
+			# ent_def.id = uuid()
+			delete ent_def.id
+			entity = Entity.fromJSON(ent_def)
+			@world.entities.push(entity)
+			@selected_entities.push(entity)
+		# TODO: paste at mouse with positions relative to the center or centroid of the entities
 	
 	step: (mouse, view)->
 		
