@@ -267,39 +267,19 @@ class @Editor
 				@dragging_points = []
 				@dragging_segments = []
 				
-				if @hovered_points.length # or @hovered_segment
-					unless @hovered_points[0] in @selected_points
-						@selected_points = (point for point in @hovered_points)
-					# @selected_segments = (segment for segment in @hovered_segments)
-					@undoable()
-					@dragging_points = (point for point in @selected_points)
-					# @dragging_segments = (segment for segment in @hovered_segments)
-					local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
-					@drag_offsets =
-						for point in @dragging_points
-							x: point.x - local_mouse_position.x
-							y: point.y - local_mouse_position.y
+				if @hovered_points.length
+					if @hovered_points[0] in @selected_points
+						@dragPoints(@selected_points, mouse_in_world)
+					else
+						@dragPoints(@hovered_points, mouse_in_world)
 				else
-					# @editing_entity = null
 					@selected_points = []
 					
 					if @hovered_entities.length
 						if @hovered_entities[0] in @selected_entities
-							# @selected_entities = (entity for entity in @selected_entities)
-							@undoable()
-							@dragging_entities = (entity for entity in @selected_entities)
-							@drag_offsets =
-								for entity in @selected_entities
-									x: entity.x - mouse_in_world.x
-									y: entity.y - mouse_in_world.y
+							@dragEntities(@selected_entities, mouse_in_world)
 						else
-							@selected_entities = (entity for entity in @hovered_entities)
-							@undoable()
-							@dragging_entities = (entity for entity in @hovered_entities)
-							@drag_offsets =
-								for entity in @dragging_entities
-									x: entity.x - mouse_in_world.x
-									y: entity.y - mouse_in_world.y
+							@dragEntities(@hovered_entities, mouse_in_world)
 					else
 						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
@@ -308,6 +288,28 @@ class @Editor
 			# TODO: and if there isn't an animation frame loaded
 				@editing_entity.structure.stepLayout() for [0..250]
 				# TODO: save afterwards at some point
+	
+	dragPoints: (points, mouse_in_world)->
+		@selected_points = (point for point in points)
+		@undoable()
+		@dragging_points = (point for point in points)
+		local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
+		@drag_offsets =
+			for point in @dragging_points
+				x: point.x - local_mouse_position.x
+				y: point.y - local_mouse_position.y
+	
+	dragEntities: (entities, mouse_in_world)->
+		@selected_entities = (entity for entity in entities)
+		@undoable()
+		@dragging_entities = (entity for entity in entities)
+		@drag_offsets =
+			for entity in @dragging_entities
+				if mouse_in_world?
+					x: entity.x - mouse_in_world.x
+					y: entity.y - mouse_in_world.y
+				else
+					{x: 0, y: 0}
 	
 	draw: (ctx, view)->
 		

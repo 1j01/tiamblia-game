@@ -34,9 +34,7 @@ class @EntitiesBar
 						unless entity instanceof Tree
 							entity.structure.autoLayout() # because we don't have animations or anything yet
 					@editor.world.entities.push entity
-					@editor.selected_entities = [entity]
-					@editor.dragging_entities = [entity]
-					@editor.drag_offsets = [{x: 0, y: 0}]
+					@editor.dragEntities([entity])
 					@mouse_start = null
 		else if mouse.LMB.pressed and @hovered_cell
 			@mouse_start = {x: mouse.x, y: mouse.y, cell: @hovered_cell}
@@ -55,7 +53,6 @@ class @EntitiesBar
 		height = @cells.length * @cells[0].height
 		width += @cells[0].x * 2
 		height += @cells[0].y * 2
-		# ctx.
 		grd1 = ctx.createLinearGradient(0, 0, 0, height*2)
 		grd1.addColorStop(0, "rgba(0, 0, 0, 0.1)");
 		grd1.addColorStop(1, "rgba(0, 0, 0, 0)")
