@@ -341,6 +341,7 @@ class @Editor
 							@hovered_segments = [segment]
 			else
 				for entity in @world.entities
+					# TODO: find closest to mouse
 					if @isMouseOverEntity(entity, mouse_in_world)
 						@hovered_entities = [entity]
 			
@@ -370,14 +371,17 @@ class @Editor
 				@editing_entity.structure.stepLayout() for [0..250]
 				# TODO: save afterwards at some point
 	
+	# TODO: function distanceToEntity instead
 	isMouseOverEntity: (entity, mouse_in_world)->
 		local_mouse_position = entity.fromWorld(mouse_in_world)
-		default_segment_width = if entity.structure instanceof PolygonStructure then 10 else 5
 		for segment_name, segment of entity.structure.segments
-			min_dist = (segment.width ? default_segment_width) / view.scale
-			if distanceToSegment(local_mouse_position, segment.a, segment.b) < min_dist
+			min_grab_dist = Math.max(segment.width ? 0, 8) / view.scale
+			if distanceToSegment(local_mouse_position, segment.a, segment.b) < min_grab_dist
 				return yes
-		# TODO: look at points too
+		for point_name, point of entity.structure.points
+			min_grab_dist = 8 / view.scale
+			if distance(local_mouse_position, point) < min_grab_dist
+				return yes
 		no
 	
 	dragPoints: (points, mouse_in_world)->
