@@ -176,21 +176,6 @@ class @Editor
 					@selected_entities.push(entity)
 					entity
 			
-			# centroid = {x: 0, y: 0}
-			# divisor = 0
-			# for entity in new_entities
-			# 	# centroid.x += entity.x
-			# 	# centroid.y += entity.y
-			# 	for point_name, point of entity.structure.points
-			# 		point_in_world = entity.toWorld(point)
-			# 		centroid.x += point_in_world.x
-			# 		centroid.y += point_in_world.y
-			# 		divisor += 1
-			# # centroid.x /= new_entities.length
-			# # centroid.y /= new_entities.length
-			# centroid.x /= divisor
-			# centroid.y /= divisor
-			
 			centroids =
 				for entity in new_entities
 					centroid = {x: 0, y: 0}
@@ -288,9 +273,7 @@ class @Editor
 						@editing_entity = @hovered_entities[0]
 						@selected_entities = [@editing_entity]
 			else
-				# TODO: extract entity hover checking to a function,
-				# make it so you can select something with just points and no segments,
-				# and return here if the @editing_entity is hovered
+				# TODO: return here if the @editing_entity is hovered
 				@editing_entity = null
 				@selected_entities = []
 				@selected_points = []
@@ -358,10 +341,8 @@ class @Editor
 							@hovered_segments = [segment]
 			else
 				for entity in @world.entities
-					local_mouse_position = entity.fromWorld(mouse_in_world)
-					for segment_name, segment of entity.structure.segments
-						if distanceToSegment(local_mouse_position, segment.a, segment.b) < (segment.width ? if entity.structure instanceof PolygonStructure then 10 else 5) / view.scale
-							@hovered_entities = [entity]
+					if @isMouseOverEntity(entity, mouse_in_world)
+						@hovered_entities = [entity]
 			
 			if mouse.LMB.pressed
 				@dragging_points = []
@@ -388,6 +369,16 @@ class @Editor
 			# TODO: and if there isn't an animation frame loaded
 				@editing_entity.structure.stepLayout() for [0..250]
 				# TODO: save afterwards at some point
+	
+	isMouseOverEntity: (entity, mouse_in_world)->
+		local_mouse_position = entity.fromWorld(mouse_in_world)
+		default_segment_width = if entity.structure instanceof PolygonStructure then 10 else 5
+		for segment_name, segment of entity.structure.segments
+			min_dist = (segment.width ? default_segment_width) / view.scale
+			if distanceToSegment(local_mouse_position, segment.a, segment.b) < min_dist
+				return yes
+		# TODO: look at points too
+		no
 	
 	dragPoints: (points, mouse_in_world)->
 		@selected_points = (point for point in points)
