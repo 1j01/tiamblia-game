@@ -29,6 +29,7 @@ while editing an entity
 with selected entities
 	drag on a selected entity to move all selected entities
 	double click on a selected entity to edit the entity
+		(should always make it the only selected entity)
 	click on a selected entity to make it the only selected entity
 drag outside of any entity to select entities (w/ a selection box)
 click on an entity to select that entity

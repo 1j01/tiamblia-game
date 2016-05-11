@@ -2,7 +2,6 @@
 # TODO: animation editing
 # TODO: reasonable terrain editing
 # TODO: shift+select (and alternatively ctrl+select)
-# TODO: select multiple points the same ways as entities
 
 fs = require? "fs"
 path = require? "path"
@@ -34,17 +33,18 @@ class @Editor
 			switch e.keyCode
 				when 46 # Delete
 					@undoable =>
-						# @editing_entity.destroy()
-						for entity in @selected_entities
-							index = @world.entities.indexOf(entity)
-							@world.entities.splice(index, 1) if index >= 0
-						@selected_entities = []
-						# @selected_segments = []
-						@selected_points = []
-						@dragging_points = []
-						# @dragging_segments = []
-						@dragging_entities = []
-						@editing_entity = null
+						unless @selected_points.length
+							# @editing_entity.destroy()
+							for entity in @selected_entities
+								index = @world.entities.indexOf(entity)
+								@world.entities.splice(index, 1) if index >= 0
+							@selected_entities = []
+							# @selected_segments = []
+							@selected_points = []
+							@dragging_points = []
+							# @dragging_segments = []
+							@dragging_entities = []
+							@editing_entity = null
 				when 90 # Z
 					if e.ctrlKey
 						if e.shiftKey then @redo() else @undo()
@@ -129,6 +129,20 @@ class @Editor
 		
 		mouse_in_world = view.toWorld(mouse)
 		
+		point_within_selection_box = (entity, point)=>
+			relative_x1 = @selection_box.x1 - entity.x
+			relative_y1 = @selection_box.y1 - entity.y
+			relative_x2 = @selection_box.x2 - entity.x
+			relative_y2 = @selection_box.y2 - entity.y
+			relative_min_x = min(relative_x1, relative_x2)
+			relative_max_x = max(relative_x1, relative_x2)
+			relative_min_y = min(relative_y1, relative_y2)
+			relative_max_y = max(relative_y1, relative_y2)
+			relative_min_x <= point.x <= relative_max_x and
+			relative_min_y <= point.y <= relative_max_y and
+			relative_min_x <= point.x <= relative_max_x and
+			relative_min_y <= point.y <= relative_max_y
+		
 		entity_within_selection_box = (entity)=>
 			relative_x1 = @selection_box.x1 - entity.x
 			relative_y1 = @selection_box.y1 - entity.y
@@ -181,8 +195,9 @@ class @Editor
 		else if @dragging_points.length
 			if mouse.LMB.down
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
-				@dragging_points[0].x = local_mouse_position.x
-				@dragging_points[0].y = local_mouse_position.y
+				for point, i in @dragging_points
+					point.x = local_mouse_position.x + @drag_offsets[i].x
+					point.y = local_mouse_position.y + @drag_offsets[i].y
 			else
 				@dragging_points = []
 				@save()
@@ -198,7 +213,7 @@ class @Editor
 				@selection_box.y2 = mouse_in_world.y
 				if @editing_entity
 					# TODO
-					@hovered_points = (point for point in @editing_entity.structure.points when point_within_selection_box(point))
+					@hovered_points = (point for point_name, point of @editing_entity.structure.points when point_within_selection_box(@editing_entity, point))
 				else
 					@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
 			else
@@ -241,48 +256,51 @@ class @Editor
 				@dragging_segments = []
 				
 				if @hovered_points.length # or @hovered_segment
-					@selected_points = (point for point in @hovered_points)
+					unless @hovered_points[0] in @selected_points
+						@selected_points = (point for point in @hovered_points)
 					# @selected_segments = (segment for segment in @hovered_segments)
 					@undoable()
-					@dragging_points = (point for point in @hovered_points)
+					@dragging_points = (point for point in @selected_points)
 					# @dragging_segments = (segment for segment in @hovered_segments)
+					local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 					@drag_offsets =
-						for point in @hovered_points
-							x: point.x - mouse_in_world.x
-							y: point.y - mouse_in_world.y
+						for point in @dragging_points
+							x: point.x - local_mouse_position.x
+							y: point.y - local_mouse_position.y
 				else
 					# @editing_entity = null
 					@selected_points = []
 				
-				if @hovered_entities.length
-					if @hovered_entities[0] in @selected_entities
-						if mouse.double_clicked
-							@editing_entity = @hovered_entities[0]
+					if @hovered_entities.length
+						if @hovered_entities[0] in @selected_entities
+							if mouse.double_clicked
+								@editing_entity = @hovered_entities[0]
+								@selected_entities = [@editing_entity]
+							else
+								# @selected_entities = (entity for entity in @selected_entities)
+								@undoable()
+								@dragging_entities = (entity for entity in @selected_entities)
+								@drag_offsets =
+									for entity in @selected_entities
+										x: entity.x - mouse_in_world.x
+										y: entity.y - mouse_in_world.y
 						else
-							# @selected_entities = (entity for entity in @selected_entities)
+							@selected_entities = (entity for entity in @hovered_entities)
 							@undoable()
-							@dragging_entities = (entity for entity in @selected_entities)
+							@dragging_entities = (entity for entity in @hovered_entities)
 							@drag_offsets =
-								for entity in @selected_entities
+								for entity in @dragging_entities
 									x: entity.x - mouse_in_world.x
 									y: entity.y - mouse_in_world.y
 					else
-						@selected_entities = (entity for entity in @hovered_entities)
-						@undoable()
-						@dragging_entities = (entity for entity in @hovered_entities)
-						@drag_offsets =
-							for entity in @dragging_entities
-								x: entity.x - mouse_in_world.x
-								y: entity.y - mouse_in_world.y
-				else
-					@selected_entities = []
-					@selected_points = []
-					if mouse.double_clicked
-						@editing_entity = null
-						@dragging_entities = []
-						@dragging_points = []
-					else
-						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
+						# @selected_entities = []
+						# @selected_points = []
+						if mouse.double_clicked
+							@editing_entity = null
+							@dragging_entities = []
+							@dragging_points = []
+						else
+							@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
 		if @editing_entity
 			if @editing_entity.structure instanceof BoneStructure
@@ -329,6 +347,20 @@ class @Editor
 			ctx.translate(entity.x, entity.y)
 			draw_points(entity, 2, "rgba(255, 170, 0, 0.2)")
 			draw_segments(entity, 1, "rgba(255, 170, 0, 0.5)")
+			ctx.restore()
+		
+		if @editing_entity?
+			ctx.save()
+			ctx.translate(@editing_entity.x, @editing_entity.y)
+			# draw_points(@selected_points, 2, "rgba(255, 170, 0, 0.2)")
+			for point in @selected_points
+				ctx.beginPath()
+				ctx.arc(point.x, point.y, 3 / view.scale, 0, TAU)
+				ctx.fillStyle = "rgba(255, 0, 0, 1)"
+				ctx.fill()
+				ctx.lineWidth = 1.5 / view.scale
+				ctx.strokeStyle = "rgba(255, 170, 0, 1)"
+				ctx.stroke()
 			ctx.restore()
 		
 		if @selection_box?
