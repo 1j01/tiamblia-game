@@ -15,12 +15,6 @@ ctx = canvas.getContext("2d")
 
 @view = new View
 
-@editor = new Editor(world)
-try
-	editor.load()
-catch e
-	console?.error? "Failed to load save:", e
-
 mouse = {
 	x: -Infinity, y: -Infinity
 	LMB: {down: no, pressed: no}
@@ -67,6 +61,12 @@ handle_scroll = (e)->
 
 addEventListener "mousewheel", handle_scroll
 addEventListener "DOMMouseScroll", handle_scroll
+
+@editor = new Editor(world, view, mouse)
+try
+	editor.load()
+catch e
+	console?.error? "Failed to load save:", e
 
 do animate = ->
 	return if window.CRASHED

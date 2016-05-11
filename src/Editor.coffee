@@ -7,7 +7,7 @@ fs = require? "fs"
 path = require? "path"
 
 class @Editor
-	constructor: (@world)->
+	constructor: (@world, @view, @mouse)->
 		@selected_entities = []
 		@hovered_entities = []
 		@selected_points = []
@@ -165,15 +165,57 @@ class @Editor
 					json: JSON.stringify(entity)
 	
 	paste: ->
-		@selected_entities = []
-		for {json} in @clipboard.entities
-			ent_def = JSON.parse(json)
-			# ent_def.id = uuid()
-			delete ent_def.id
-			entity = Entity.fromJSON(ent_def)
-			@world.entities.push(entity)
-			@selected_entities.push(entity)
-		# TODO: paste at mouse with positions relative to the center or centroid of the entities
+		@undoable =>
+			@selected_entities = []
+			new_entities =
+				for {json} in @clipboard.entities
+					ent_def = JSON.parse(json)
+					delete ent_def.id
+					entity = Entity.fromJSON(ent_def)
+					@world.entities.push(entity)
+					@selected_entities.push(entity)
+					entity
+			
+			# centroid = {x: 0, y: 0}
+			# divisor = 0
+			# for entity in new_entities
+			# 	# centroid.x += entity.x
+			# 	# centroid.y += entity.y
+			# 	for point_name, point of entity.structure.points
+			# 		point_in_world = entity.toWorld(point)
+			# 		centroid.x += point_in_world.x
+			# 		centroid.y += point_in_world.y
+			# 		divisor += 1
+			# # centroid.x /= new_entities.length
+			# # centroid.y /= new_entities.length
+			# centroid.x /= divisor
+			# centroid.y /= divisor
+			
+			centroids =
+				for entity in new_entities
+					centroid = {x: 0, y: 0}
+					divisor = 0
+					for point_name, point of entity.structure.points
+						centroid.x += point.x
+						centroid.y += point.y
+						divisor += 1
+					centroid.x /= divisor
+					centroid.y /= divisor
+					centroid_in_world = entity.toWorld(centroid)
+					centroid_in_world
+			
+			center = {x: 0, y: 0}
+			for centroid in centroids
+				center.x += centroid.x
+				center.y += centroid.y
+			center.x /= centroids.length
+			center.y /= centroids.length
+			
+			mouse_in_world = @view.toWorld(@mouse)
+			
+			for entity in new_entities
+				entity.x += mouse_in_world.x - center.x
+				entity.y += mouse_in_world.y - center.y
 	
 	step: (mouse, view)->
 		
