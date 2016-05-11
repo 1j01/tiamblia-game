@@ -28,6 +28,7 @@ class @PolygonStructure extends Structure
 		if @points[from]
 			@segments[name] = {a: @points[from], b: @points[name]}
 			@segments["closing"] = {a: @points[@last_point_name], b: @points[@first_point_name]}
+			# FIXME
 		@last_point_name = name
 	
 	pointInPolygon: (x, y)->

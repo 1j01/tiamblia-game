@@ -76,7 +76,7 @@ class @Editor
 				when 86 # V
 					TODO: paste() if e.ctrlKey
 				when 65 # A
-					TODO: select_all() if e.ctrlKey
+					@selectAll() if e.ctrlKey
 	
 	save: ->
 		json = JSON.stringify(@world, null, "\t")
@@ -140,6 +140,12 @@ class @Editor
 		redos.push(JSON.stringify(@))
 		@fromJSON(JSON.parse(undos.pop()))
 		@save()
+	
+	selectAll: ->
+		if @editing_entity
+			@selected_points = (point for point_name, point of @editing_entity.structure.points)
+		else
+			@selected_entities = (entity for entity in @world.entities)
 	
 	step: (mouse, view)->
 		
