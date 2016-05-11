@@ -85,29 +85,17 @@ class @Editor
 			@save()
 	
 	undo: ->
-		return if @undos.length is 0
-		selected_entity_ids = (entity.id for entity in @selected_entities)
-		editing_entity_id = @editing_entity?.id
-		@redos.push(JSON.stringify(@world))
-		@world.fromJSON(JSON.parse(@undos.pop()))
-		@hovered_entities = []
-		@hovered_points = []
-		@selected_entities = []
-		@selected_points = []
-		for id in selected_entity_ids
-			entity = @world.getEntityByID(id)
-			@selected_entities.push entity if entity?
-		# TODO: save for selected points
-		@editing_entity = @world.getEntityByID(editing_entity_id)
-		@save()
-		# TODO: DRY
+		@undo_or_redo(@undos, @redos)
 	
 	redo: ->
-		return if @redos.length is 0
+		@undo_or_redo(@redos, @undos)
+	
+	undo_or_redo: (undos, redos)->
+		return if undos.length is 0
 		selected_entity_ids = (entity.id for entity in @selected_entities)
 		editing_entity_id = @editing_entity?.id
-		@undos.push(JSON.stringify(@world))
-		@world.fromJSON(JSON.parse(@redos.pop()))
+		redos.push(JSON.stringify(@world))
+		@world.fromJSON(JSON.parse(undos.pop()))
 		@hovered_entities = []
 		@hovered_points = []
 		@selected_entities = []
@@ -115,10 +103,9 @@ class @Editor
 		for id in selected_entity_ids
 			entity = @world.getEntityByID(id)
 			@selected_entities.push entity if entity?
-		# TODO: save for selected points
+		# TODO: same for selected points
 		@editing_entity = @world.getEntityByID(editing_entity_id)
 		@save()
-		# TODO: DRY
 	
 	step: (mouse, view)->
 		
