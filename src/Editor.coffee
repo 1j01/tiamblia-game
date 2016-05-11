@@ -73,12 +73,35 @@ class @Editor
 			json = localStorage["Tiamblia World"]
 		@world.fromJSON(JSON.parse(json)) if json
 	
+	toJSON: ->
+		selected_entity_ids = (entity.id for entity in @selected_entities)
+		editing_entity_id = @editing_entity?.id
+		selected_point_names = []
+		if @editing_entity?
+			for point_name, point of @editing_entity.structure.points
+				if point in @selected_points
+					selected_point_names.push(point_name)
+		{@world, selected_entity_ids, editing_entity_id, selected_point_names}
+	
+	fromJSON: (state)->
+		@world.fromJSON(state.world)
+		@hovered_entities = []
+		@hovered_points = []
+		@selected_entities = []
+		@selected_points = []
+		for entity_id in state.selected_entity_ids
+			entity = @world.getEntityByID(entity_id)
+			@selected_entities.push entity if entity?
+		@editing_entity = @world.getEntityByID(state.editing_entity_id)
+		if @editing_entity?
+			for point_name in state.selected_point_names
+				@selected_points.push(@editing_entity.structure.points[point_name])
+	
 	discardSave: ->
 		delete localStorage["Tiamblia World"]
 	
 	undoable: (fn)->
-		# TODO: store the current selection and editing entity in the undo state
-		@undos.push(JSON.stringify(@world))
+		@undos.push(JSON.stringify(@))
 		@redos = []
 		if fn?
 			do fn
@@ -92,19 +115,8 @@ class @Editor
 	
 	undo_or_redo: (undos, redos)->
 		return if undos.length is 0
-		selected_entity_ids = (entity.id for entity in @selected_entities)
-		editing_entity_id = @editing_entity?.id
-		redos.push(JSON.stringify(@world))
-		@world.fromJSON(JSON.parse(undos.pop()))
-		@hovered_entities = []
-		@hovered_points = []
-		@selected_entities = []
-		@selected_points = []
-		for id in selected_entity_ids
-			entity = @world.getEntityByID(id)
-			@selected_entities.push entity if entity?
-		# TODO: same for selected points
-		@editing_entity = @world.getEntityByID(editing_entity_id)
+		redos.push(JSON.stringify(@))
+		@fromJSON(JSON.parse(undos.pop()))
 		@save()
 	
 	step: (mouse, view)->
