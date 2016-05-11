@@ -42,6 +42,7 @@ class @EntitiesBar
 		else
 			@mouse_start = null
 		return no if @editor.dragging_entity?
+		# FIXME
 		@hovered_cell? or @mouse_start?
 	
 	drawAbsolute: (ctx)->

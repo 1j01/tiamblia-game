@@ -26,6 +26,7 @@ while editing an entity
 	double clicking on the entity should not stop editing the entity
 	drag on a point to move all selected points
 	click on a point to select that point
+		(even when it's one of multiple points in the selection)
 	shift+click or ctrl+click on a point to toggle the selected state of that point
 	shift+drag from anywhere to select points (w/ a selection box)
 with selected entities

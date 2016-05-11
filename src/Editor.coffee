@@ -32,8 +32,27 @@ class @Editor
 			# console.log e.keyCode
 			switch e.keyCode
 				when 46 # Delete
-					@undoable =>
-						unless @selected_points.length
+					if @selected_points.length
+						plural = @selected_points.length > 1
+						@undoable =>
+							for segment_name, segment of @editing_entity.structure.segments
+								if (segment.a in @selected_points) or (segment.b in @selected_points)
+									delete @editing_entity.structure.segments[segment_name]
+							for point_name, point of @editing_entity.structure.points
+								if point in @selected_points
+									delete @editing_entity.structure.points[point_name]
+							@selected_points = []
+							@dragging_points = []
+						try
+							@editing_entity.draw(document.createElement("canvas").getContext("2d"), new View)
+						catch e
+							@undo()
+							if plural
+								alert("Entity needs one or more of those points to render")
+							else
+								alert("Entity needs that point to render")
+					else
+						@undoable =>
 							# @editing_entity.destroy()
 							for entity in @selected_entities
 								index = @world.entities.indexOf(entity)
@@ -68,10 +87,16 @@ class @Editor
 	
 	load: ->
 		if fs?
-			json = fs.readFileSync @save_path
+			json = fs.readFileSync(@save_path)
 		else
 			json = localStorage["Tiamblia World"]
 		@world.fromJSON(JSON.parse(json)) if json
+	
+	discardSave: ->
+		if fs?
+			fs.unlinkSync(@save_path)
+		else
+			delete localStorage["Tiamblia World"]
 	
 	toJSON: ->
 		selected_entity_ids = (entity.id for entity in @selected_entities)
@@ -96,9 +121,6 @@ class @Editor
 		if @editing_entity?
 			for point_name in state.selected_point_names
 				@selected_points.push(@editing_entity.structure.points[point_name])
-	
-	discardSave: ->
-		delete localStorage["Tiamblia World"]
 	
 	undoable: (fn)->
 		@undos.push(JSON.stringify(@))
@@ -190,6 +212,9 @@ class @Editor
 						@editing_entity = @hovered_entities[0]
 						@selected_entities = [@editing_entity]
 			else
+				# TODO: extract entity hover checking to a function,
+				# make it so you can select something with just points and no segments,
+				# and return here if the @editing_entity is hovered
 				@editing_entity = null
 				@selected_entities = []
 				@selected_points = []
