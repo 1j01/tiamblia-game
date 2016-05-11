@@ -278,7 +278,10 @@ class @Editor
 						@editing_entity = @hovered_entities[0]
 						@selected_entities = [@editing_entity]
 			else
-				# TODO: return here if the @editing_entity is hovered
+				# TODO: don't exit editing mode if the entity being edited is hovered
+				# except there needs to be a visual indication of hover for the editing entity
+				# (there would be with the cursor if you could drag segments)
+				# unless @editing_entity? and @distanceToEntity(@editing_entity, mouse_in_world) < min_grab_dist
 				@editing_entity = null
 				@selected_entities = []
 				@selected_points = []

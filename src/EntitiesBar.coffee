@@ -41,12 +41,11 @@ class @EntitiesBar
 			@editor.selected_entities = []
 		else
 			@mouse_start = null
-		return no if @editor.dragging_entity?
-		# FIXME
+		return no if @editor.dragging_entities.length
 		@hovered_cell? or @mouse_start?
 	
 	drawAbsolute: (ctx)->
-		show_gui = not @editor.dragging_entity?
+		show_gui = @editor.dragging_entities.length is 0
 		@gui_alpha += (show_gui - @gui_alpha) / 3
 		width = 0
 		width = Math.max(width, cell.width) for cell in @cells
