@@ -28,7 +28,6 @@ mouse = {
 	RMB: {down: no, pressed: no}
 	double_clicked: no
 }
-last_click_time = null
 mouse_drag_start_in_world = null
 
 addEventListener "mousemove", (e)->
@@ -39,12 +38,15 @@ addEventListener "mousedown", (e)->
 	MB = mouse["#{"LMR"[e.button]}MB"]
 	MB.down = true
 	MB.pressed = true
-	mouse.double_clicked = (last_click_time? and Date.now() - last_click_time < 300)
-	last_click_time = Date.now()
 
 addEventListener "mouseup", (e)->
 	MB = mouse["#{"LMR"[e.button]}MB"]
 	MB.down = false
+
+addEventListener "dblclick", (e)->
+	MB = mouse["#{"LMR"[e.button]}MB"]
+	MB.pressed = true
+	mouse.double_clicked = true
 
 handle_scroll = (e)->
 	mouse.x = e.clientX
@@ -103,6 +105,7 @@ do animate = ->
 	mouse.LMB.pressed = false
 	mouse.MMB.pressed = false
 	mouse.RMB.pressed = false
+	mouse.double_clicked = false
 
 # index = 0
 # setInterval ->

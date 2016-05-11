@@ -23,6 +23,7 @@ while editing an entity
 	double click outside of the entity to stop editing the entity
 		(another entity you click on should not be selected)
 		(the entity should be deselected)
+	double clicking on the entity should not stop editing the entity
 	drag on a point to move all selected points
 	click on a point to select that point
 	shift+click or ctrl+click on a point to toggle the selected state of that point

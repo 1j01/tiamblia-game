@@ -184,6 +184,18 @@ class @Editor
 				@view_drag_start_in_world = null
 		else if mouse.MMB.pressed
 			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
+		else if mouse.double_clicked
+			if @hovered_entities.length
+				if @hovered_entities[0] in @selected_entities
+					if mouse.double_clicked
+						@editing_entity = @hovered_entities[0]
+						@selected_entities = [@editing_entity]
+			else
+				@editing_entity = null
+				@selected_entities = []
+				@selected_points = []
+				@dragging_entities = []
+				@dragging_points = []
 		else if @dragging_entities.length
 			if mouse.LMB.down
 				for entity, i in @dragging_entities
@@ -273,17 +285,13 @@ class @Editor
 					
 					if @hovered_entities.length
 						if @hovered_entities[0] in @selected_entities
-							if mouse.double_clicked
-								@editing_entity = @hovered_entities[0]
-								@selected_entities = [@editing_entity]
-							else
-								# @selected_entities = (entity for entity in @selected_entities)
-								@undoable()
-								@dragging_entities = (entity for entity in @selected_entities)
-								@drag_offsets =
-									for entity in @selected_entities
-										x: entity.x - mouse_in_world.x
-										y: entity.y - mouse_in_world.y
+							# @selected_entities = (entity for entity in @selected_entities)
+							@undoable()
+							@dragging_entities = (entity for entity in @selected_entities)
+							@drag_offsets =
+								for entity in @selected_entities
+									x: entity.x - mouse_in_world.x
+									y: entity.y - mouse_in_world.y
 						else
 							@selected_entities = (entity for entity in @hovered_entities)
 							@undoable()
@@ -293,14 +301,7 @@ class @Editor
 									x: entity.x - mouse_in_world.x
 									y: entity.y - mouse_in_world.y
 					else
-						if mouse.double_clicked
-							@editing_entity = null
-							@selected_entities = []
-							@selected_points = []
-							@dragging_entities = []
-							@dragging_points = []
-						else
-							@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
+						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
 		if @editing_entity
 			if @editing_entity.structure instanceof BoneStructure
