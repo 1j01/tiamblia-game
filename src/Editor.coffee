@@ -137,6 +137,16 @@ class @Editor
 					alert("Entity needs one or more of those points to render")
 				else
 					alert("Entity needs that point to render")
+				return
+			try
+				@editing_entity.step()
+			catch e
+				@undo()
+				if plural
+					alert("Entity needs one or more of those points to step")
+				else
+					alert("Entity needs that point to step")
+				return
 		else
 			@undoable =>
 				# @editing_entity.destroy()

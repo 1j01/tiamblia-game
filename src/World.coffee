@@ -12,10 +12,6 @@ class @World
 		for entity in @entities
 			return entity if entity.id is id
 	
-	step: ->
-		for entity in @entities
-			entity.step()
-	
 	drawBackground: (ctx, view)->
 		ctx.fillStyle = "#32C8FF"
 		ctx.fillRect(0, 0, view.width, view.height)

@@ -82,7 +82,9 @@ do animate = ->
 	else
 		canvas.classList.remove("grabbable")
 	
-	world.step()
+	for entity in world.entities when entity isnt editor.editing_entity
+		entity.step(world, terrain)
+	
 	view.width = canvas.width
 	view.height = canvas.height
 	# view.center_x_to = player.x

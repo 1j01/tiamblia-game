@@ -19,6 +19,15 @@ class @GranddaddyLonglegs extends Entity
 							when "middle" then 3
 							when "lower" then 2
 					)
+		
+		@step_index = 0
+	
+	step: (world, terrain)->
+		collision = (point)-> terrain.structure.pointInPolygon(terrain.fromWorld(point))
+		for point_name, point of @structure.points
+			point.y += (random() - 1/2) * 30
+			point.x += (random() - 1/2) * 30
+		@structure.stepLayout() for [0..100]
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
