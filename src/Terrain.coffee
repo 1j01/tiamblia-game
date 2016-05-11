@@ -45,13 +45,14 @@ class @Terrain extends Entity
 			x = @left + random() * @width
 			y = @bottom - random() * @max_height
 			# TODO: order tufts of grass based on y?
-			if view.testRect(x, y - 10, 0, 10, 15)
+			point = @toWorld({x, y})
+			if view.testRect(point.x, point.y - 10, 0, 10, 15)
 				for j in [0..random()*3+1]
 					dark = random() < 0.5
-					point = {x, y}
+					point = @toWorld({x, y})
 					view_point = view.fromWorld(point)
 					if ctx.isPointInPath(view_point.x, view_point.y)
-						(if dark then dark_blades else light_blades).push(point)
+						(if dark then dark_blades else light_blades).push({x, y})
 					# x += (@simplex.noise2D(i+x+y, j+y) + 1) * 3
 					x += (random() + 1) * 3
 			else
