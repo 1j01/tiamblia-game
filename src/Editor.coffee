@@ -60,7 +60,16 @@ class @Editor
 			json = fs.readFileSync(@save_path)
 		else
 			json = localStorage["Tiamblia World"]
-		@world.fromJSON(JSON.parse(json)) if json
+			if json
+				@world.fromJSON(JSON.parse(json)) if json
+			else
+				req = new XMLHttpRequest()
+				req.addEventListener "load", (e)=>
+					json = req.responseText
+					@world.fromJSON(JSON.parse(json)) if json
+				req.open("GET", "world.json")
+				req.send()
+
 	
 	discardSave: ->
 		if fs?
