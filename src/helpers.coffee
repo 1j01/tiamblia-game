@@ -18,5 +18,5 @@ distanceToSegmentSquared = (p, v, w)->
 	sqrt(distanceToSegmentSquared(p, v, w))
 
 @entity_classes = {}
-@add_Entity_class = (constructor)->
+@addEntityClass = (constructor)->
 	entity_classes[constructor.name] = constructor

@@ -1,6 +1,6 @@
 
-class @Player extends Entity
-	add_Entity_class(@)
+class @Player extends SimpleActor
+	addEntityClass(@)
 	constructor: ->
 		super
 		@structure.addPoint("head")

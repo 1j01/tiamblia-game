@@ -303,8 +303,12 @@ class @Editor
 					entity.x = mouse_in_world.x + @drag_offsets[i].x
 					entity.y = mouse_in_world.y + @drag_offsets[i].y
 			else
-				@dragging_entities = []
 				@save()
+				for entity, i in @dragging_entities
+					if entity.vx? and entity.vy?
+						entity.vx = (mouse_in_world.x + @drag_offsets[i].x - entity.x) / 3
+						entity.vy = (mouse_in_world.y + @drag_offsets[i].y - entity.y) / 3
+				@dragging_entities = []
 		else if @dragging_points.length
 			if mouse.LMB.down
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)

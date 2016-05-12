@@ -26,3 +26,9 @@ class @World
 			ctx.translate(entity.x, entity.y)
 			entity.draw(ctx, view)
 			ctx.restore()
+	
+	collision: (point)->
+		for entity in @entities when entity instanceof Terrain
+			if entity.structure.pointInPolygon(entity.fromWorld(point))
+				return true
+		no

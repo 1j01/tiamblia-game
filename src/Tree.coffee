@@ -1,6 +1,6 @@
 
 class @Tree extends Entity
-	add_Entity_class(@)
+	addEntityClass(@) # TODO: only add subclasses
 	constructor: ->
 		super
 		@leaf_point_names = []

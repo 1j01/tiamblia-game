@@ -83,7 +83,7 @@ do animate = ->
 		canvas.classList.remove("grabbable")
 	
 	for entity in world.entities when entity isnt editor.editing_entity
-		entity.step(world, terrain)
+		entity.step(world)
 	
 	view.width = canvas.width
 	view.height = canvas.height
@@ -99,8 +99,23 @@ do animate = ->
 	ctx.translate(-view.center_x, -view.center_y)
 	
 	world.draw(ctx, view)
-	# console.log(terrain.structure.pointInPolygon(terrain.fromWorld(view.toWorld(mouse))))
 	editor.draw(ctx, view)
+	
+	# mouse_in_world = view.toWorld(mouse)
+	# for x in [0..1000] by 10
+	# 	for y in [0..200] by 10
+	# 		# ctx.beginPath()
+	# 		# ctx.arc(x, y, 5, 0, TAU)
+	# 		# ctx.fillStyle = if terrain.structure.pointInPolygon({x, y}) then "lime" else "rgba(255, 0, 0, 0.5)"
+	# 		# ctx.fill()
+	# 		
+	# 		# ctx.fillStyle = if terrain.structure.pointInPolygon({x, y}) then "rgba(0, 255, 0, 0.5)" else "rgba(255, 0, 0, 0.5)"
+	# 		# ctx.fillRect(x, y, 5, 5)
+	# 		# ctx.fillStyle = if terrain.structure.pointInPolygon({x: x + mouse_in_world.x, y: y + mouse_in_world.y}) then "rgba(0, 255, 0, 0.5)" else "rgba(255, 0, 0, 0.5)"
+	# 		# ctx.fillRect(x + mouse_in_world.x, y + mouse_in_world.y, 5, 5)
+	# 		ctx.fillStyle = if world.collision({x: x + mouse_in_world.x, y: y + mouse_in_world.y}) then "rgba(0, 255, 0, 0.5)" else "rgba(255, 0, 0, 0.5)"
+	# 		ctx.fillRect(x + mouse_in_world.x, y + mouse_in_world.y, 5, 5)
+			
 	
 	ctx.restore()
 	

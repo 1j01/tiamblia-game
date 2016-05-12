@@ -1,6 +1,6 @@
 
 class @GranddaddyLonglegs extends Entity
-	add_Entity_class(@)
+	addEntityClass(@)
 	constructor: ->
 		super
 		@structure.addPoint("body")
@@ -35,10 +35,7 @@ class @GranddaddyLonglegs extends Entity
 		for point_name in @foot_point_names
 			@next_foot_positions[point_name] = {x: 0, y: 0}
 	
-	step: (world, terrain)->
-		collision = (point)=>
-			# terrain.structure.pointInPolygon(terrain.fromWorld(@toWorld(point)))
-			terrain.structure.pointInPolygon(@toWorld(point))
+	step: (world)->
 		# for point_name, point of @structure.points
 		# 	point.y += (random() - 1/2) * 30
 		# 	point.x += (random() - 1/2) * 30
@@ -57,7 +54,7 @@ class @GranddaddyLonglegs extends Entity
 				next_foot_pos.y += 5
 				# console.log collision(next_foot_pos)
 				# window.collision = collision
-				if collision(next_foot_pos)
+				if world.collision(@toWorld(next_foot_pos))
 					next_foot_pos.y -= 5
 					break
 			# current_foot_pos.x = next_foot_pos.x
