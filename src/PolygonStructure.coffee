@@ -31,7 +31,7 @@ class @PolygonStructure extends Structure
 			# FIXME
 		@last_point_name = name
 	
-	pointInPolygon: (x, y)->
+	pointInPolygon: ({x, y})->
 		inside = no
 		# for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
 		# 	xi = vs[i][0], yi = vs[i][1]

@@ -99,6 +99,7 @@ do animate = ->
 	ctx.translate(-view.center_x, -view.center_y)
 	
 	world.draw(ctx, view)
+	# console.log(terrain.structure.pointInPolygon(terrain.fromWorld(view.toWorld(mouse))))
 	editor.draw(ctx, view)
 	
 	ctx.restore()

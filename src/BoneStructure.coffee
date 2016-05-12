@@ -17,7 +17,8 @@ class @BoneStructure extends Structure
 			throw new Error "point/segment '#{from}' does not exist yet adding segment '#{name}'"
 		@points[to] = {x: 0, y: 0, name: to}
 		@segments[name] = {a: @points[from], b: @points[to], from, to, name}
-		@segments[name][k] = v for k, v of def
+		# console.log def
+		@segments[name][k] = v for k, v of def when v?
 		return name
 	
 	autoLayout: ->
