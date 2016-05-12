@@ -25,11 +25,10 @@ class @PolygonStructure extends Structure
 		if @points[name]
 			throw new Error "point/segment '#{name}' already exists adding vertex '#{name}'"
 		@points[name] = {x, y, name}
+		@last_point_name = name
 		if @points[from]
 			@segments[name] = {a: @points[from], b: @points[name]}
 			@segments["closing"] = {a: @points[@last_point_name], b: @points[@first_point_name]}
-			# FIXME
-		@last_point_name = name
 	
 	pointInPolygon: ({x, y})->
 		inside = no
