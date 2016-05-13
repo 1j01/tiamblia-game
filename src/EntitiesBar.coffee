@@ -8,7 +8,7 @@ class @EntitiesBar
 		for entity_class_name, EntityClass of entity_classes
 			@cells.push {
 				EntityClass
-				name: entity_class_name
+				name: entity_class_name.replace(/[a-z][A-Z]/g, (m)-> "#{m[0]} #{m[1]}")
 				height: cell_height
 				x, y
 			}
