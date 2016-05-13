@@ -3,7 +3,7 @@ class @SavannaGrass extends Terrain
 	addEntityClass(@)
 	constructor: ->
 		super
-		@bbox_padding = 20
+		@bbox_padding = 30
 		@grass_tiles = new Map
 		@grass_tiles.fromJSON = (map_obj)=>
 			# @grass_tiles = new Map(map_obj)
@@ -120,15 +120,12 @@ class @SavannaGrass extends Terrain
 								x += (random() + 1) * 3
 						@grass_tiles.set(tile_name, tile)
 					
-					# ctx.save()
-					ctx.strokeStyle = "#f0f"
-					# ctx.lineWidth = 1 / view.scale
-					ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
-					ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
-					ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
-					# ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
-					# ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
-					# ctx.restore()
+					# ctx.strokeStyle = "#f0f"
+					# ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
+					# ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
+					# ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
+					# # ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
+					# # ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
 					
 					for shade in ["dark", "light"]
 						for blade in tile["#{shade}_blades"]
