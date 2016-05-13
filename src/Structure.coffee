@@ -4,6 +4,10 @@ class @Structure
 		@points = {}
 		@segments = {}
 	
+	clear: ->
+		@points = {}
+		@segments = {}
+	
 	toJSON: ->
 		{points} = @
 		segments = {}

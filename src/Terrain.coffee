@@ -5,6 +5,15 @@ class @Terrain extends Entity
 		@structure = new PolygonStructure
 		@simplex = new SimplexNoise
 		@seed = random()
+		radius = 30
+		for theta in [0..TAU] by TAU/15
+			point_x = sin(theta) * radius
+			point_y = cos(theta) * radius
+			non_squished_point_y_component = max(point_y, -radius*0.5)
+			point_y = non_squished_point_y_component + (point_y - non_squished_point_y_component) * 0.4
+			# point_y = non_squished_point_y_component + pow(0.9, point_y - non_squished_point_y_component)
+			# point_y = non_squished_point_y_component + pow(point_y - non_squished_point_y_component, 0.9)
+			@structure.addVertex(point_x, point_y)
 	
 	toJSON: ->
 		def = {}
@@ -18,6 +27,7 @@ class @Terrain extends Entity
 		@max_height = 400
 		@bottom = 300
 		res = 20
+		@structure.clear()
 		@structure.addVertex(@right, @bottom)
 		@structure.addVertex(@left, @bottom)
 		for x in [@left..@right] by res
