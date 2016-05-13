@@ -1,21 +1,37 @@
 # Tiamblia
 
 With a simple visual style,
-Tiamblia is an exploration adventure game
-where you talk to spirits, hunt them and gain their powers,
-and also there'll be a story and music too.
-Maybe even day/night transitions and weather.
+Tiamblia is an immersive 2D exploration adventure game
+where you can talk to spirits, hunt them, and gain their powers.
+Also there'll be a story, music, inverse kinematics, day/night transitions and maybe even weather.
 
-Friendly painted beetles,
+Stay tuned to potentially interact with
+the Spirit of the Hunt,
+friendly painted beetles,
 fancy lions,
 a walled garden (that's a snake fyi),
-the Spirit of the Hunt,
-living lanterns,
+living lanterns (that eat fireflies),
 tiny birds,
 cheeky trees,
+a spider dojo,
+a charitable castle,
 and more!
 
+Follow the game [on GameJolt](http://gamejolt.com/games/tiamblia/147746)
+and/or watch the repository on GitHub.
+
 [#AdvJam2016](http://jams.gamejolt.io/adventurejam2016)
+but let's be honest this isn't gonna be finished by the deadline.
+
+I'm making a custom engine where everything is based on points
+and an integrated level editor that can manipulate these points.
+There will be an animation editor, and terrain-specific editing features.
+The core editor is basically done.
+
+The game has only just begun.
+Except that it basically hasn't even begun yet.
+There's like a character, a type of tree, and a type of ground, none of which are done yet.
+But this is happening.
 
 <!--
 while editing an entity
@@ -44,8 +60,10 @@ click on an entity in the bar to create it and have it placed randomly offscreen
 	(or not)
 	(the cursor should be enough indication that you need to drag)
 
-when there are multiple things within the minimum range for dragging, the closest will be hovered
 only what will be dragged should ever be shown as hovered
+when there are multiple points within the minimum range for dragging, the closest should be hovered
+when there are multiple entities within the minimum range for dragging, the one on top should probably be hovered
+	you can drag a selection to access entities that are behind large entities such as terrain or a large tree
 
 while dragging an entity, the entities bar should be hidden
 
@@ -58,6 +76,8 @@ undo states should only be created once a drag starts
 esc should cancel dragging or exit edit mode
 
 entities and points should have hover styles
+
+double clicks where the first click was not on the same entity as the second should be rejected
 -->
 
 <!--

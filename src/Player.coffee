@@ -78,13 +78,13 @@ class @Player extends SimpleActor
 			name: "lower right leg"
 			length: 10
 		)
+		# TODO: hips
+		# FIXME: arms are too long compared to legs
 	
 	draw: (ctx)->
 		{head, sternum, hip, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
-		
-		# sternum ?= {x: 0, y: 0}
-		# left_shoulder ?= {x: 0, y: 0}
-		# right_shoulder ?= {x: 0, y: 0}
+		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
+		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good
 		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
@@ -94,6 +94,13 @@ class @Player extends SimpleActor
 			ctx.lineCap = "round"
 			ctx.strokeStyle = "#6B422C"
 			ctx.stroke()
+		
+		# TODO: depth
+		# @drawStructure
+		# 	segments:
+		# 		torso: ->
+		# 	points:
+		# 		head: ->
 		
 		# dress
 		ctx.beginPath()

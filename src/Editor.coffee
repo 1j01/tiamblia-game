@@ -69,7 +69,6 @@ class @Editor
 				@world.fromJSON(JSON.parse(json)) if json
 			req.open("GET", "world.json")
 			req.send()
-
 	
 	discardSave: ->
 		if fs?
@@ -148,7 +147,9 @@ class @Editor
 					alert("Entity needs that point to render")
 				return
 			try
-				@editing_entity.step()
+				@editing_entity.step(@world)
+				# FIXME: shouldn't actually step
+				# I guess it could save the JSON beforehand and reapply it
 			catch e
 				@undo()
 				if plural
