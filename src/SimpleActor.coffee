@@ -14,6 +14,7 @@ class @SimpleActor extends Entity
 		@run_speed = 4
 	
 	step: (world)->
+		return if @y > 400
 		@vy += 0.5
 		# @x += @vx *= 0.9
 		# @y += @vy *= 0.99

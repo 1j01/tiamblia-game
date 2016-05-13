@@ -56,6 +56,7 @@ class @Editor
 			MB.pressed = true
 			@mouse.double_clicked = true
 			# TODO: reject double clicks where the first click was not on the same entity
+			# TODO: reject double click and drag
 		
 		handle_scroll = (e)=>
 			# TODO: zoom to/from mouse, i.e. keep the mouse's position anchored in the world
@@ -412,7 +413,7 @@ class @Editor
 				unless @hovered_points.length
 					closest_dist = Infinity
 					for segment_name, segment of @editing_entity.structure.segments
-						dist = distanceToSegment(local_mouse_position, segment.a, segment.b)
+						dist = distanceToLineSegment(local_mouse_position, segment.a, segment.b)
 						if dist < (segment.width ? 5) and dist < closest_dist
 							closest_dist = dist
 							@hovered_segments = [segment]
@@ -460,7 +461,7 @@ class @Editor
 		closest_dist = Infinity
 		
 		for segment_name, segment of entity.structure.segments
-			dist = distanceToSegment(from_point, segment.a, segment.b)
+			dist = distanceToLineSegment(from_point, segment.a, segment.b)
 			# dist = max(0, dist - segment.width / 2) if segment.width?
 			closest_dist = min(closest_dist, dist)
 			

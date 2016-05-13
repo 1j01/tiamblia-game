@@ -568,16 +568,16 @@
 						"y": -404.5633731876232
 					},
 					{
-						"x": -363.40154978491415,
-						"y": -824.0865463706481
+						"x": 194.08546395695646,
+						"y": -181.23467336382987
 					},
 					{
-						"x": 812.5978825880617,
-						"y": -786.9755383956966
+						"x": -476.9259150611558,
+						"y": -836.0566714615132
 					},
 					{
-						"x": 320,
-						"y": 24.28730539853757
+						"x": 1003.5319886175081,
+						"y": -801.2399662164541
 					},
 					{
 						"x": 340,
@@ -760,16 +760,16 @@
 						"y": 7.080082585064247
 					},
 					{
-						"x": 1240,
-						"y": 2.6641055119347357
+						"x": 1133,
+						"y": -215.33589448806526
 					},
 					{
-						"x": 1260,
-						"y": 2.858398204136563
+						"x": 2051.059940894324,
+						"y": -573.7905269692998
 					},
 					{
-						"x": 1280,
-						"y": -0.7011256884183581
+						"x": 1091.2919898894183,
+						"y": -81.56799765353166
 					},
 					{
 						"x": 1300,
@@ -1017,8 +1017,8 @@
 					}
 				]
 			},
-			"x": -3.1787935988119216,
-			"y": 11.14998042387117,
+			"x": 72.77484853324188,
+			"y": 31.51139202545312,
 			"id": "726f17dd-95ab-471d-b496-c7f66bce50f5",
 			"_class_": "SavannaGrass",
 			"bbox_padding": 20,
@@ -4230,196 +4230,6 @@
 		},
 		{
 			"structure": {
-				"points": {
-					"head": {
-						"x": -0.03288897581159195,
-						"y": -5.655036781027405,
-						"name": "head"
-					},
-					"neck": {
-						"x": -0.798260077182615,
-						"y": -0.7139633390074694,
-						"name": "neck"
-					},
-					"sternum": {
-						"x": -2.1731246245934686,
-						"y": 0.7385334003489308,
-						"name": "sternum"
-					},
-					"left shoulder": {
-						"x": -3.989899627165956,
-						"y": -0.09772468312803445,
-						"name": "left shoulder"
-					},
-					"right shoulder": {
-						"x": -0.37221556762369157,
-						"y": -0.13136677998814464,
-						"name": "right shoulder"
-					},
-					"left elbo": {
-						"x": -13.33722457080667,
-						"y": -3.6512462905704615,
-						"name": "left elbo"
-					},
-					"right elbo": {
-						"x": 7.090155236128196,
-						"y": 6.525435901161081,
-						"name": "right elbo"
-					},
-					"left hand": {
-						"x": -15.935338424433388,
-						"y": -13.307840111582589,
-						"name": "left hand"
-					},
-					"right hand": {
-						"x": 16.20802048408907,
-						"y": 2.4187908825360123,
-						"name": "right hand"
-					},
-					"pelvis": {
-						"x": 0.09130855859560848,
-						"y": 20.60992845104012,
-						"name": "pelvis"
-					},
-					"left hip": {
-						"x": -1.6490198580437723,
-						"y": 21.595451722907185,
-						"name": "left hip"
-					},
-					"right hip": {
-						"x": 1.6861112741702593,
-						"y": 21.816826631268587,
-						"name": "right hip"
-					},
-					"left knee": {
-						"x": -7.167163554605223,
-						"y": 29.935121356724828,
-						"name": "left knee"
-					},
-					"right knee": {
-						"x": 6.454944438018457,
-						"y": 30.60649270385507,
-						"name": "right knee"
-					},
-					"left foot": {
-						"x": -9.249344204639561,
-						"y": 39.71594563054178,
-						"name": "left foot"
-					},
-					"right foot": {
-						"x": 3.007781757533361,
-						"y": 39.99356196163181,
-						"name": "right foot"
-					}
-				},
-				"segments": {
-					"neck": {
-						"from": "head",
-						"to": "neck",
-						"name": "neck",
-						"length": 5
-					},
-					"sternum": {
-						"from": "neck",
-						"to": "sternum",
-						"name": "sternum",
-						"length": 2
-					},
-					"left shoulder": {
-						"from": "sternum",
-						"to": "left shoulder",
-						"name": "left shoulder",
-						"length": 2
-					},
-					"right shoulder": {
-						"from": "sternum",
-						"to": "right shoulder",
-						"name": "right shoulder",
-						"length": 2
-					},
-					"upper left arm": {
-						"from": "left shoulder",
-						"to": "left elbo",
-						"name": "upper left arm",
-						"length": 10
-					},
-					"upper right arm": {
-						"from": "right shoulder",
-						"to": "right elbo",
-						"name": "upper right arm",
-						"length": 10
-					},
-					"lower left arm": {
-						"from": "left elbo",
-						"to": "left hand",
-						"name": "lower left arm",
-						"length": 10
-					},
-					"lower right arm": {
-						"from": "right elbo",
-						"to": "right hand",
-						"name": "lower right arm",
-						"length": 10
-					},
-					"torso": {
-						"from": "sternum",
-						"to": "pelvis",
-						"name": "torso",
-						"length": 20
-					},
-					"left hip": {
-						"from": "pelvis",
-						"to": "left hip",
-						"name": "left hip",
-						"length": 2
-					},
-					"right hip": {
-						"from": "pelvis",
-						"to": "right hip",
-						"name": "right hip",
-						"length": 2
-					},
-					"upper left leg": {
-						"from": "left hip",
-						"to": "left knee",
-						"name": "upper left leg",
-						"length": 10
-					},
-					"upper right leg": {
-						"from": "right hip",
-						"to": "right knee",
-						"name": "upper right leg",
-						"length": 10
-					},
-					"lower left leg": {
-						"from": "left knee",
-						"to": "left foot",
-						"name": "lower left leg",
-						"length": 10
-					},
-					"lower right leg": {
-						"from": "right knee",
-						"to": "right foot",
-						"name": "lower right leg",
-						"length": 10
-					}
-				}
-			},
-			"x": -1267.3700067883135,
-			"y": 190.82518859127455,
-			"id": "78f6d580-6102-4284-a170-b1a9cd96db01",
-			"_class_": "Player",
-			"bbox_padding": 10,
-			"vx": -3.789561257387201e-13,
-			"vy": 0.5,
-			"width": 10,
-			"height": 40,
-			"jump_height": 10,
-			"walk_speed": 4,
-			"run_speed": 4
-		},
-		{
-			"structure": {
 				"points": [
 					{
 						"x": 0,
@@ -4492,7 +4302,8 @@
 			"id": "1fc86465-c5ee-4367-8ff1-7d2d6b628c9c",
 			"_class_": "SavannaGrass",
 			"bbox_padding": 20,
-			"seed": 0.5699811352742534
+			"seed": 0.5699811352742534,
+			"grass_tiles": {}
 		},
 		{
 			"structure": {
