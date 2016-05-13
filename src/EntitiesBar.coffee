@@ -86,12 +86,12 @@ class @EntitiesBar
 		ctx.fillRect(0, 0, @width*2, @height)
 		
 		for cell in @cells
-			# ctx.fillStyle = "rgba(50, 200, 255, 0.8)" #"rgb(61, 168, 216)" #"rgba(50, 200, 255, 0.9)" #"rgba(255, 255, 255, 0.5)"
+			cell.preview_width = @width - cell.x * 2
 			if cell is @hovered_cell
 				ctx.fillStyle = "rgba(50, 200, 255, 1)"
 			else
 				ctx.fillStyle = "rgba(50, 200, 255, 0.7)"
-			ctx.fillRect(cell.x, cell.y + cell.padding_height, @width - cell.x * 2, cell.preview_height)
+			ctx.fillRect(cell.x, cell.y + cell.padding_height, cell.preview_width, cell.preview_height)
 			
 			# TODO: draw the entity preview to a canvas so it can fade in/out better
 			# (and won't be affected by entities that decide to use globalAlpha)
@@ -99,8 +99,12 @@ class @EntitiesBar
 			ctx.translate(@width/2, cell.y + cell.padding_height + cell.preview_height/2)
 			ctx.scale(cell.preview_scale, cell.preview_scale)
 			ctx.translate(0, -cell.preview_center_y)
-			fake_view = testRect: -> yes
-			cell.preview_entity.draw(ctx, fake_view)
+			preview_view = new View
+			preview_view.width = cell.preview_width
+			preview_view.height = cell.preview_height
+			preview_view.scale = cell.preview_scale
+			preview_view.is_preview = true
+			cell.preview_entity.draw(ctx, preview_view)
 			ctx.restore()
 			
 			ctx.font = "20px sans-serif"
