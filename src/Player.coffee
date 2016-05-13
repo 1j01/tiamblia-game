@@ -50,18 +50,28 @@ class @Player extends SimpleActor
 		)
 		@structure.addSegment(
 			from: "sternum"
-			to: "hip"
+			to: "pelvis"
 			name: "torso"
 			length: 20
 		)
 		@structure.addSegment(
-			from: "hip"
+			from: "pelvis"
+			name: "left hip"
+			length: 2
+		)
+		@structure.addSegment(
+			from: "pelvis"
+			name: "right hip"
+			length: 2
+		)
+		@structure.addSegment(
+			from: "left hip"
 			to: "left knee"
 			name: "upper left leg"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "hip"
+			from: "right hip"
 			to: "right knee"
 			name: "upper right leg"
 			length: 10
@@ -78,8 +88,9 @@ class @Player extends SimpleActor
 			name: "lower right leg"
 			length: 10
 		)
-		# TODO: hips
 		# FIXME: arms are too long compared to legs
+		# TODO: add some constraints to hips, shoulders, and neck
+		# TODO: min/max_length for psuedo-3D purposes
 	
 	draw: (ctx)->
 		{head, sternum, hip, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points

@@ -4387,296 +4387,129 @@
 		{
 			"structure": {
 				"points": {
-					"head": {
-						"x": 6.969558303590485,
-						"y": -0.2116609104772521,
-						"name": "head"
-					},
-					"neck": {
-						"x": 5.8564195356204065,
-						"y": 4.662861835718237,
-						"name": "neck"
-					},
-					"sternum": {
-						"x": 5.374470243071267,
-						"y": 6.603947723702047,
-						"name": "sternum"
-					},
-					"left shoulder": {
-						"x": 3.5097915106124504,
-						"y": 7.32713929950868,
-						"name": "left shoulder"
-					},
-					"right shoulder": {
-						"x": 7.013635471765167,
-						"y": 7.749881160326664,
-						"name": "right shoulder"
-					},
-					"left elbo": {
-						"x": -0.8200634417673188,
-						"y": 16.341149024811674,
-						"name": "left elbo"
-					},
-					"right elbo": {
-						"x": 11.502932981698926,
-						"y": 16.685552488472066,
-						"name": "right elbo"
-					},
-					"left hand": {
-						"x": 1.298221375291904,
-						"y": 26.114217926784427,
-						"name": "left hand"
-					},
-					"right hand": {
-						"x": 8.78541822968097,
-						"y": 26.30922741498682,
-						"name": "right hand"
-					},
-					"hip": {
-						"x": 2.0974323660927143,
-						"y": 26.333648117359026,
-						"name": "hip"
-					},
-					"left knee": {
-						"x": -1.5392748656152913,
-						"y": 35.64892496578509,
-						"name": "left knee"
-					},
-					"right knee": {
-						"x": 2.5328268371895897,
-						"y": 36.32416642062957,
-						"name": "right knee"
-					},
-					"left foot": {
-						"x": -2.262698574691145,
-						"y": 45.62272410933046,
-						"name": "left foot"
-					},
-					"right foot": {
-						"x": 3.783407535468133,
-						"y": 46.245661303181706,
-						"name": "right foot"
-					}
-				},
-				"segments": {
-					"neck": {
-						"from": "head",
-						"to": "neck",
-						"name": "neck",
-						"length": 5
-					},
-					"sternum": {
-						"from": "neck",
-						"to": "sternum",
-						"name": "sternum",
-						"length": 2
-					},
-					"left shoulder": {
-						"from": "sternum",
-						"to": "left shoulder",
-						"name": "left shoulder",
-						"length": 2
-					},
-					"right shoulder": {
-						"from": "sternum",
-						"to": "right shoulder",
-						"name": "right shoulder",
-						"length": 2
-					},
-					"upper left arm": {
-						"from": "left shoulder",
-						"to": "left elbo",
-						"name": "upper left arm",
-						"length": 10
-					},
-					"upper right arm": {
-						"from": "right shoulder",
-						"to": "right elbo",
-						"name": "upper right arm",
-						"length": 10
-					},
-					"lower left arm": {
-						"from": "left elbo",
-						"to": "left hand",
-						"name": "lower left arm",
-						"length": 10
-					},
-					"lower right arm": {
-						"from": "right elbo",
-						"to": "right hand",
-						"name": "lower right arm",
-						"length": 10
-					},
-					"torso": {
-						"from": "sternum",
-						"to": "hip",
-						"name": "torso",
-						"length": 20
-					},
-					"upper left leg": {
-						"from": "hip",
-						"to": "left knee",
-						"name": "upper left leg",
-						"length": 10
-					},
-					"upper right leg": {
-						"from": "hip",
-						"to": "right knee",
-						"name": "upper right leg",
-						"length": 10
-					},
-					"lower left leg": {
-						"from": "left knee",
-						"to": "left foot",
-						"name": "lower left leg",
-						"length": 10
-					},
-					"lower right leg": {
-						"from": "right knee",
-						"to": "right foot",
-						"name": "lower right leg",
-						"length": 10
-					}
-				}
-			},
-			"x": -974.3137606121664,
-			"y": 87.19171249795333,
-			"id": "d85ddfc2-9b6e-48a4-a286-286c85bac80c",
-			"_class_": "Player",
-			"vx": -0.00015788620366189812,
-			"vy": 0.5,
-			"width": 10,
-			"height": 40,
-			"jump_height": 10,
-			"walk_speed": 4,
-			"run_speed": 4
-		},
-		{
-			"structure": {
-				"points": {
 					"body": {
-						"x": 388.1040380100473,
-						"y": 377.72856036219713,
+						"x": 3226.791003406992,
+						"y": 1900.1101429752532,
 						"name": "body"
 					},
 					"upper left leg 1": {
-						"x": 351.956438004956,
-						"y": 412.2774699623961,
+						"x": 3194.03897881395,
+						"y": 1937.8055998653028,
 						"name": "upper left leg 1"
 					},
 					"middle left leg 1": {
-						"x": 393.8932660907625,
-						"y": 439.50418730788766,
+						"x": 3229.1525106842428,
+						"y": 1973.3962411034743,
 						"name": "middle left leg 1"
 					},
 					"left foot 1": {
-						"x": 443.7987442105735,
-						"y": 442.58082546044864,
+						"x": 3271.400665805235,
+						"y": 2000.134700981561,
 						"name": "left foot 1"
 					},
 					"upper right leg 1": {
-						"x": 390.7766075182061,
-						"y": 427.6647808477486,
+						"x": 3221.3797764051274,
+						"y": 1949.5743540491944,
 						"name": "upper right leg 1"
 					},
 					"middle right leg 1": {
-						"x": 440.76479714258704,
-						"y": 426.3123077395814,
+						"x": 3262.168056423871,
+						"y": 1978.308116607889,
 						"name": "middle right leg 1"
 					},
 					"right foot 1": {
-						"x": 490.351012321893,
-						"y": 419.8433997019513,
+						"x": 3306.9388286389476,
+						"y": 2000.4303422532676,
 						"name": "right foot 1"
 					},
 					"upper left leg 2": {
-						"x": 368.67965694964215,
-						"y": 423.79196240548896,
+						"x": 3247.0888420333504,
+						"y": 1945.2084770714855,
 						"name": "upper left leg 2"
 					},
 					"middle left leg 2": {
-						"x": 418.09720803580706,
-						"y": 431.4867296587193,
+						"x": 3286.81396411509,
+						"y": 1974.9829735210967,
 						"name": "middle left leg 2"
 					},
 					"left foot 2": {
-						"x": 467.9725198740083,
-						"y": 427.79032395456386,
+						"x": 3331.938144115358,
+						"y": 1996.0899833257808,
 						"name": "left foot 2"
 					},
 					"upper right leg 2": {
-						"x": 365.1535528049964,
-						"y": 422.1278538065453,
+						"x": 3248.253269890815,
+						"y": 1948.2200796623008,
 						"name": "upper right leg 2"
 					},
 					"middle right leg 2": {
-						"x": 413.59829767885856,
-						"y": 434.5959841430629,
+						"x": 3272.000995319369,
+						"y": 1994.7455609508456,
 						"name": "middle right leg 2"
 					},
 					"right foot 2": {
-						"x": 463.48141780477874,
-						"y": 430.87857360921123,
+						"x": 3294.9871215698076,
+						"y": 2040.5992519495387,
 						"name": "right foot 2"
 					},
 					"upper left leg 3": {
-						"x": 355.4825705687912,
-						"y": 415.62736721041927,
+						"x": 3238.8759059168697,
+						"y": 1947.966911100503,
 						"name": "upper left leg 3"
 					},
 					"middle left leg 3": {
-						"x": 399.1306518596701,
-						"y": 440.01397019594947,
+						"x": 3279.8151258005664,
+						"y": 1975.927776967603,
 						"name": "middle left leg 3"
 					},
 					"left foot 3": {
-						"x": 449.1294967374288,
-						"y": 440.16473021150387,
+						"x": 3317.0438617398213,
+						"y": 2008.9398590449146,
 						"name": "left foot 3"
 					},
 					"upper right leg 3": {
-						"x": 355.44170885647486,
-						"y": 415.5919039343506,
+						"x": 3248.845517624595,
+						"y": 1943.4812048791684,
 						"name": "upper right leg 3"
 					},
 					"middle right leg 3": {
-						"x": 398.73999458224444,
-						"y": 440.5946508547914,
+						"x": 3280.2180731481785,
+						"y": 1981.144107842818,
 						"name": "middle right leg 3"
 					},
 					"right foot 3": {
-						"x": 448.6593217674793,
-						"y": 443.4196345887851,
+						"x": 3320.6045041145817,
+						"y": 2009.749849612577,
 						"name": "right foot 3"
 					},
 					"upper left leg 4": {
-						"x": 355.3203594238714,
-						"y": 415.4870112247488,
+						"x": 3180.550724865822,
+						"y": 1919.5644799012116,
 						"name": "upper left leg 4"
 					},
 					"middle left leg 4": {
-						"x": 399.72031775577824,
-						"y": 438.4761731004517,
+						"x": 3145.0916910564197,
+						"y": 1954.9658146559877,
 						"name": "middle left leg 4"
 					},
 					"left foot 4": {
-						"x": 449.6696455228857,
-						"y": 440.70646428351165,
+						"x": 3147.6771128951627,
+						"y": 2004.9399931548714,
 						"name": "left foot 4"
 					},
 					"upper right leg 4": {
-						"x": 357.28574997306976,
-						"y": 417.10702316162053,
+						"x": 3180.899573162269,
+						"y": 1920.0496015678832,
 						"name": "upper right leg 4"
 					},
 					"middle right leg 4": {
-						"x": 402.80709239965176,
-						"y": 437.78848630427115,
+						"x": 3194.8689482429268,
+						"y": 1968.0636588704397,
 						"name": "middle right leg 4"
 					},
 					"right foot 4": {
-						"x": 452.73311466704257,
-						"y": 440.5003877921336,
+						"x": 3231.4949782262715,
+						"y": 2002.1052674832588,
 						"name": "right foot 4"
 					}
 				},
@@ -4851,8 +4684,8 @@
 					}
 				}
 			},
-			"x": 47,
-			"y": -472.5,
+			"x": -3231.5443444129683,
+			"y": -2608.374635718247,
 			"id": "d95f50ce-66c3-4ad2-bfe7-0df202348e45",
 			"_class_": "GranddaddyLonglegs",
 			"foot_point_names": [
@@ -4865,42 +4698,231 @@
 				"left foot 4",
 				"right foot 4"
 			],
-			"step_index": 75,
-			"step_timer": 1,
+			"step_index": 531,
+			"step_timer": 2,
 			"next_foot_positions": {
 				"left foot 1": {
-					"x": 446.8534455339218,
-					"y": 442.7154170530476
+					"x": 3274.6205482012015,
+					"y": 2002.1102398090723
 				},
 				"right foot 1": {
-					"x": 501.17206923371987,
-					"y": 418.2765558436793
+					"x": 3314.878072059974,
+					"y": 2004.113119323278
 				},
 				"left foot 2": {
-					"x": 488.43985634582253,
-					"y": 425.07557922507516
+					"x": 3350.198479848199,
+					"y": 2003.2228853418649
 				},
 				"right foot 2": {
-					"x": 506.659406337308,
-					"y": 420.3495096155591
+					"x": 3356.796968566452,
+					"y": 2209.829806845949
 				},
 				"left foot 3": {
-					"x": 449.03714638956274,
-					"y": 440.1644176580038
+					"x": 3314.143342126198,
+					"y": 2006.3933318086035
 				},
 				"right foot 3": {
-					"x": 448.81197968362244,
-					"y": 443.4284134721114
+					"x": 3314.4023249289294,
+					"y": 2004.9671311608456
 				},
 				"left foot 4": {
-					"x": 450.22954641185885,
-					"y": 440.73056285419034
+					"x": 3147.82712546254,
+					"y": 2006.620667016643
 				},
 				"right foot 4": {
-					"x": 454.35738136210995,
-					"y": 440.5776361738677
+					"x": 3232.5691166798047,
+					"y": 2003.0792948599576
 				}
 			}
+		},
+		{
+			"structure": {
+				"points": {
+					"head": {
+						"x": -13.471330095259724,
+						"y": -5.111721248353222,
+						"name": "head"
+					},
+					"neck": {
+						"x": -11.758999638357706,
+						"y": -0.4140703028321433,
+						"name": "neck"
+					},
+					"sternum": {
+						"x": -11.032784299861259,
+						"y": 1.449424071028126,
+						"name": "sternum"
+					},
+					"left shoulder": {
+						"x": -12.464335258596838,
+						"y": 2.846085036234687,
+						"name": "left shoulder"
+					},
+					"right shoulder": {
+						"x": -9.077079322288775,
+						"y": 1.0308335312778885,
+						"name": "right shoulder"
+					},
+					"left elbo": {
+						"x": -15.237249269023437,
+						"y": 12.453943688941035,
+						"name": "left elbo"
+					},
+					"right elbo": {
+						"x": -0.07999616758312823,
+						"y": 5.39574987720957,
+						"name": "right elbo"
+					},
+					"left hand": {
+						"x": -25.080759884408437,
+						"y": 14.216129480709386,
+						"name": "left hand"
+					},
+					"right hand": {
+						"x": 0.9116363737396984,
+						"y": 15.346461655916558,
+						"name": "right hand"
+					},
+					"hip": {
+						"x": -5.141343161760275,
+						"y": 20.56200948787109,
+						"name": "hip"
+					},
+					"left hip": {
+						"x": -6.963832968390105,
+						"y": 21.385739361442,
+						"name": "left hip"
+					},
+					"right hip": {
+						"x": -3.142046743914973,
+						"y": 20.508963908692394,
+						"name": "right hip"
+					},
+					"left knee": {
+						"x": -7.987117219157688,
+						"y": 31.33324605116547,
+						"name": "left knee"
+					},
+					"right knee": {
+						"x": -1.17834980216291,
+						"y": 30.314263206569162,
+						"name": "right knee"
+					},
+					"left foot": {
+						"x": -1.8777877235721656,
+						"y": 39.25006947437978,
+						"name": "left foot"
+					},
+					"right foot": {
+						"x": 8.794667679219023,
+						"y": 31.048376492137947,
+						"name": "right foot"
+					}
+				},
+				"segments": {
+					"neck": {
+						"from": "head",
+						"to": "neck",
+						"name": "neck",
+						"length": 5
+					},
+					"sternum": {
+						"from": "neck",
+						"to": "sternum",
+						"name": "sternum",
+						"length": 2
+					},
+					"left shoulder": {
+						"from": "sternum",
+						"to": "left shoulder",
+						"name": "left shoulder",
+						"length": 2
+					},
+					"right shoulder": {
+						"from": "sternum",
+						"to": "right shoulder",
+						"name": "right shoulder",
+						"length": 2
+					},
+					"upper left arm": {
+						"from": "left shoulder",
+						"to": "left elbo",
+						"name": "upper left arm",
+						"length": 10
+					},
+					"upper right arm": {
+						"from": "right shoulder",
+						"to": "right elbo",
+						"name": "upper right arm",
+						"length": 10
+					},
+					"lower left arm": {
+						"from": "left elbo",
+						"to": "left hand",
+						"name": "lower left arm",
+						"length": 10
+					},
+					"lower right arm": {
+						"from": "right elbo",
+						"to": "right hand",
+						"name": "lower right arm",
+						"length": 10
+					},
+					"torso": {
+						"from": "sternum",
+						"to": "hip",
+						"name": "torso",
+						"length": 20
+					},
+					"left hip": {
+						"from": "hip",
+						"to": "left hip",
+						"name": "left hip",
+						"length": 2
+					},
+					"right hip": {
+						"from": "hip",
+						"to": "right hip",
+						"name": "right hip",
+						"length": 2
+					},
+					"upper left leg": {
+						"from": "left hip",
+						"to": "left knee",
+						"name": "upper left leg",
+						"length": 10
+					},
+					"upper right leg": {
+						"from": "right hip",
+						"to": "right knee",
+						"name": "upper right leg",
+						"length": 10
+					},
+					"lower left leg": {
+						"from": "left knee",
+						"to": "left foot",
+						"name": "lower left leg",
+						"length": 10
+					},
+					"lower right leg": {
+						"from": "right knee",
+						"to": "right foot",
+						"name": "lower right leg",
+						"length": 10
+					}
+				}
+			},
+			"x": 28.204039339155674,
+			"y": 27.95348833989834,
+			"id": "adb80bf0-c5e1-48aa-a332-ff46b1fb6944",
+			"_class_": "Player",
+			"vx": 0,
+			"vy": 0,
+			"width": 10,
+			"height": 40,
+			"jump_height": 10,
+			"walk_speed": 4,
+			"run_speed": 4
 		}
 	]
 }
