@@ -15,63 +15,7 @@ ctx = canvas.getContext("2d")
 
 @view = new View
 
-mouse = {
-	x: -Infinity, y: -Infinity
-	LMB: {down: no, pressed: no}
-	MMB: {down: no, pressed: no}
-	RMB: {down: no, pressed: no}
-	double_clicked: no
-}
-mouse_drag_start_in_world = null
-
-addEventListener "mousemove", (e)->
-	mouse.x = e.clientX
-	mouse.y = e.clientY
-
-addEventListener "mousedown", (e)->
-	MB = mouse["#{"LMR"[e.button]}MB"]
-	MB.down = true
-	MB.pressed = true
-
-addEventListener "mouseup", (e)->
-	MB = mouse["#{"LMR"[e.button]}MB"]
-	MB.down = false
-
-addEventListener "dblclick", (e)->
-	MB = mouse["#{"LMR"[e.button]}MB"]
-	MB.pressed = true
-	mouse.double_clicked = true
-	# TODO: reject double clicks where the first click was not on the same entity
-
-# TODO: should the editor be setting up this mouse instead of main?
-# it's the only thing using it, so yes, probably, yes
-# it doesn't even need access to the canvas or anything because these are all global event listeners
-# although we might want mousewheel to zoom in the game
-# probably not, mousewheel in the editor should zoom to/from the mouse
-# whereas in the game we just want a key to "look far"
-# and the zoom in other situations can be handled cinematically/automatically
-
-handle_scroll = (e)->
-	mouse.x = e.clientX
-	mouse.y = e.clientY
-	pivot = view.toWorld(mouse)
-	zoom_factor = 1.2
-	current_scale = view.scale
-	new_scale_to =
-		if e.detail < 0 or e.wheelDelta > 0
-			view.scale_to * zoom_factor
-		else
-			view.scale_to / zoom_factor
-	
-	# view.scale = new_scale_to
-	# view.toWorld(mouse)
-	view.scale = current_scale
-	view.scale_to = new_scale_to
-
-addEventListener "mousewheel", handle_scroll
-addEventListener "DOMMouseScroll", handle_scroll
-
-@editor = new Editor(world, view, mouse)
+@editor = new Editor(world, view)
 try
 	editor.load()
 catch e
@@ -99,7 +43,7 @@ do animate = ->
 	# view.center_x_to = player.x
 	# view.center_y_to = player.y
 	view.step()
-	editor.step(mouse, view)
+	editor.step()
 	
 	world.drawBackground(ctx, view)
 	ctx.save()
@@ -113,10 +57,6 @@ do animate = ->
 	ctx.restore()
 	
 	editor.drawAbsolute(ctx)
-	mouse.LMB.pressed = false
-	mouse.MMB.pressed = false
-	mouse.RMB.pressed = false
-	mouse.double_clicked = false
 
 # index = 0
 # setInterval ->

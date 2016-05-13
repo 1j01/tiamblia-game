@@ -34,6 +34,10 @@ There's like a character, a type of tree, and a type of ground, none of which ar
 But this is happening.
 
 <!--
+drag with the middle mouse button to pan the view
+	(with momentum, wee!)
+zoom towards the mouse with mousewheel
+
 while editing an entity
 	drag outside of the entity to select points (w/ a selection box)
 	double click outside of the entity to stop editing the entity

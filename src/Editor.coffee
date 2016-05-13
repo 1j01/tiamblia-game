@@ -7,7 +7,7 @@ fs = require? "fs"
 path = require? "path"
 
 class @Editor
-	constructor: (@world, @view, @mouse)->
+	constructor: (@world, @view)->
 		@selected_entities = []
 		@hovered_entities = []
 		@selected_points = []
@@ -28,6 +28,55 @@ class @Editor
 		if fs?
 			@save_path = "world.json"
 			# @save_path = path.join(nw.App.dataPath, "world.json")
+		
+		@mouse = {
+			x: -Infinity, y: -Infinity
+			LMB: {down: no, pressed: no}
+			MMB: {down: no, pressed: no}
+			RMB: {down: no, pressed: no}
+			double_clicked: no
+		}
+		@mouse_drag_start_in_world = null
+		
+		addEventListener "mousemove", (e)=>
+			@mouse.x = e.clientX
+			@mouse.y = e.clientY
+		
+		addEventListener "mousedown", (e)=>
+			MB = @mouse["#{"LMR"[e.button]}MB"]
+			MB.down = true
+			MB.pressed = true
+		
+		addEventListener "mouseup", (e)=>
+			MB = @mouse["#{"LMR"[e.button]}MB"]
+			MB.down = false
+		
+		addEventListener "dblclick", (e)=>
+			MB = @mouse["#{"LMR"[e.button]}MB"]
+			MB.pressed = true
+			@mouse.double_clicked = true
+			# TODO: reject double clicks where the first click was not on the same entity
+		
+		handle_scroll = (e)=>
+			# TODO: zoom to/from mouse, i.e. keep the mouse's position anchored in the world
+			@mouse.x = e.clientX
+			@mouse.y = e.clientY
+			pivot = @view.toWorld(@mouse)
+			zoom_factor = 1.2
+			current_scale = @view.scale
+			new_scale_to =
+				if e.detail < 0 or e.wheelDelta > 0
+					@view.scale_to * zoom_factor
+				else
+					@view.scale_to / zoom_factor
+			
+			# @view.scale = new_scale_to
+			# @view.toWorld(@mouse)
+			@view.scale = current_scale
+			@view.scale_to = new_scale_to
+		
+		addEventListener "mousewheel", handle_scroll
+		addEventListener "DOMMouseScroll", handle_scroll
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
@@ -223,19 +272,19 @@ class @Editor
 				entity.x += mouse_in_world.x - center.x
 				entity.y += mouse_in_world.y - center.y
 	
-	step: (mouse, view)->
+	step: ->
 		
-		mouse_in_use = @entities_bar.step(mouse)
+		mouse_in_use = @entities_bar.step(@mouse)
 		if mouse_in_use
 			@hovered_entities = []
 			return
 		
-		mouse_in_world = view.toWorld(mouse)
+		mouse_in_world = @view.toWorld(@mouse)
 		
-		# min_grab_dist = (5 + 5 / Math.min(view.scale, 1)) / 2
-		# min_grab_dist = 8 / Math.min(view.scale, 5)
-		min_grab_dist = 8 / view.scale
-		# console.log view.scale, min_grab_dist
+		# min_grab_dist = (5 + 5 / Math.min(@view.scale, 1)) / 2
+		# min_grab_dist = 8 / Math.min(@view.scale, 5)
+		min_grab_dist = 8 / @view.scale
+		# console.log @view.scale, min_grab_dist
 		
 		point_within_selection_box = (entity, point)=>
 			relative_x1 = @selection_box.x1 - entity.x
@@ -271,31 +320,31 @@ class @Editor
 					return false
 			return true
 		
-		view.center_x -= @view_drag_momentum.x
-		view.center_y -= @view_drag_momentum.y
-		view.center_x_to = view.center_x
-		view.center_y_to = view.center_y
+		@view.center_x -= @view_drag_momentum.x
+		@view.center_y -= @view_drag_momentum.y
+		@view.center_x_to = @view.center_x
+		@view.center_y_to = @view.center_y
 		@view_drag_momentum.x *= 0.8
 		@view_drag_momentum.y *= 0.8
 		
 		if @view_drag_start_in_world
-			if mouse.MMB.down
-				view.center_x -= mouse_in_world.x - @view_drag_start_in_world.x
-				view.center_y -= mouse_in_world.y - @view_drag_start_in_world.y
-				view.center_x_to = view.center_x
-				view.center_y_to = view.center_y
+			if @mouse.MMB.down
+				@view.center_x -= mouse_in_world.x - @view_drag_start_in_world.x
+				@view.center_y -= mouse_in_world.y - @view_drag_start_in_world.y
+				@view.center_x_to = @view.center_x
+				@view.center_y_to = @view.center_y
 				@view_drag_momentum.x = 0
 				@view_drag_momentum.y = 0
 			else
 				@view_drag_momentum.x = mouse_in_world.x - @view_drag_start_in_world.x
 				@view_drag_momentum.y = mouse_in_world.y - @view_drag_start_in_world.y
 				@view_drag_start_in_world = null
-		else if mouse.MMB.pressed
+		else if @mouse.MMB.pressed
 			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
-		else if mouse.double_clicked
+		else if @mouse.double_clicked
 			if @hovered_entities.length
 				if @hovered_entities[0] in @selected_entities
-					if mouse.double_clicked
+					if @mouse.double_clicked
 						@editing_entity = @hovered_entities[0]
 						@selected_entities = [@editing_entity]
 			else
@@ -309,7 +358,7 @@ class @Editor
 				@dragging_entities = []
 				@dragging_points = []
 		else if @dragging_entities.length
-			if mouse.LMB.down
+			if @mouse.LMB.down
 				for entity, i in @dragging_entities
 					entity.x = mouse_in_world.x + @drag_offsets[i].x
 					entity.y = mouse_in_world.y + @drag_offsets[i].y
@@ -321,7 +370,7 @@ class @Editor
 						entity.vy = (mouse_in_world.y + @drag_offsets[i].y - entity.y) / 3
 				@dragging_entities = []
 		else if @dragging_points.length
-			if mouse.LMB.down
+			if @mouse.LMB.down
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 				for point, i in @dragging_points
 					point.x = local_mouse_position.x + @drag_offsets[i].x
@@ -330,13 +379,13 @@ class @Editor
 				@dragging_points = []
 				@save()
 		else if @dragging_segments.length
-			if mouse.LMB.down
+			if @mouse.LMB.down
 				# TODO
 			else
 				@dragging_segments = []
 				@save()
 		else if @selection_box
-			if mouse.LMB.down
+			if @mouse.LMB.down
 				@selection_box.x2 = mouse_in_world.x
 				@selection_box.y2 = mouse_in_world.y
 				if @editing_entity
@@ -376,7 +425,7 @@ class @Editor
 						@hovered_entities = [entity]
 						closest_dist = dist
 			
-			if mouse.LMB.pressed
+			if @mouse.LMB.pressed
 				@dragging_points = []
 				@dragging_segments = []
 				
@@ -401,6 +450,11 @@ class @Editor
 			# TODO: and if there isn't an animation frame loaded
 				@editing_entity.structure.stepLayout() for [0..250]
 				# TODO: save afterwards at some point
+		
+		@mouse.LMB.pressed = false
+		@mouse.MMB.pressed = false
+		@mouse.RMB.pressed = false
+		@mouse.double_clicked = false
 	
 	distanceToEntity: (entity, from_point_in_world)->
 		from_point = entity.fromWorld(from_point_in_world)
