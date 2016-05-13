@@ -1,4 +1,11 @@
 
+keys = {}
+addEventListener "keydown", (e)->
+	keys[e.keyCode] = true
+	console.log e.keyCode
+addEventListener "keyup", (e)->
+	delete keys[e.keyCode]
+
 class @Player extends SimpleActor
 	addEntityClass(@)
 	constructor: ->
@@ -93,7 +100,18 @@ class @Player extends SimpleActor
 		# TODO: min/max_length for psuedo-3D purposes
 		@bbox_padding = 10
 	
+	step: ->
+		left = keys[65]? or keys[37]?
+		right = keys[68]? or keys[39]?
+		@jump = keys[87]? or keys[38]?
+		# TODO: press to jump
+		# TODO: gamepad support
+		# TODO: configurable controls
+		@move_x = right - left
+		super
+	
 	draw: (ctx)->
+		ctx.scale(-1, 1) if @facing_x > 0
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good
