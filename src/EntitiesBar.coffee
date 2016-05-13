@@ -3,17 +3,34 @@ class @EntitiesBar
 	constructor: (@editor)->
 		x = 10
 		y = 10
-		cell_height = 25
+		padding_height = 10
+		cell_text_height = 25
+		max_cell_preview_height = 100
+		cell_preview_height = 50
 		@cells = []
 		for entity_class_name, EntityClass of entity_classes
+			preview_entity = new EntityClass
+			if preview_entity.structure instanceof BoneStructure
+				unless preview_entity instanceof Tree
+					preview_entity.structure.autoLayout() # because we don't have animations or anything yet
+			preview_entity_bbox = preview_entity.bbox()
+			preview_center_y = preview_entity_bbox.y + preview_entity_bbox.height / 2
+			cell_preview_height = min(preview_entity_bbox.height, max_cell_preview_height)
+			preview_scale = cell_preview_height / preview_entity_bbox.height
+			cell_height = cell_preview_height + cell_text_height + padding_height
 			@cells.push {
 				EntityClass
+				preview_entity
 				name: entity_class_name.replace(/[a-z][A-Z]/g, (m)-> "#{m[0]} #{m[1]}")
 				height: cell_height
+				padding_height
+				preview_height: cell_preview_height
+				text_height: cell_text_height
+				preview_scale
+				preview_center_y
 				x, y
 			}
 			y += cell_height
-		
 		@hovered_cell = null
 		@mouse_start = null
 		@gui_alpha = 0
@@ -23,7 +40,8 @@ class @EntitiesBar
 		for cell in @cells
 			if (
 				cell.y <= mouse.y <= cell.y + cell.height and
-				cell.x <= mouse.x <= cell.x + cell.width
+				# cell.x <= mouse.x <= cell.x + cell.width
+				0 <= mouse.x <= @width
 			)
 				@hovered_cell = cell
 		if @mouse_start and mouse.LMB.down
@@ -47,34 +65,43 @@ class @EntitiesBar
 	drawAbsolute: (ctx)->
 		show_gui = @editor.dragging_entities.length is 0
 		@gui_alpha += (show_gui - @gui_alpha) / 3
-		width = 0
-		width = Math.max(width, cell.width) for cell in @cells
-		width = 0 if isNaN(width) # because we calculate cell.width(s) below
-		height = @cells.length * @cells[0].height
-		width += @cells[0].x * 2
-		height += @cells[0].y * 2
-		grd1 = ctx.createLinearGradient(0, 0, 0, height*2)
+		@width = 0
+		@width = Math.max(@width, cell.width) for cell in @cells
+		@width = 0 if isNaN(@width) # because we calculate cell.width(s) below
+		@height = 0
+		@height += cell.height for cell in @cells
+		@width += @cells[0].x * 2
+		@height += @cells[0].y * 2
+		ctx.save()
+		grd1 = ctx.createLinearGradient(0, 0, 0, @height*2)
 		grd1.addColorStop(0, "rgba(0, 0, 0, 0.1)");
 		grd1.addColorStop(1, "rgba(0, 0, 0, 0)")
-		grd2 = ctx.createLinearGradient(0, 0, width*2, 0)
+		grd2 = ctx.createLinearGradient(0, 0, @width*2, 0)
 		grd2.addColorStop(0, "rgba(0, 0, 0, 0.4)");
 		grd2.addColorStop(1, "rgba(0, 0, 0, 0)")
 		ctx.globalAlpha = @gui_alpha
 		ctx.fillStyle = grd1
-		ctx.fillRect(0, 0, width, height*2)
+		ctx.fillRect(0, 0, @width, @height*2)
 		ctx.fillStyle = grd2
-		ctx.fillRect(0, 0, width*2, height)
-		ctx.globalAlpha = 1
+		ctx.fillRect(0, 0, @width*2, @height)
+		
 		for cell in @cells
+			ctx.save()
+			ctx.translate(@width/2, cell.y + cell.padding_height + cell.preview_height/2)
+			ctx.scale(cell.preview_scale, cell.preview_scale)
+			ctx.translate(0, -cell.preview_center_y)
+			fake_view = testRect: -> yes
+			cell.preview_entity.draw(ctx, fake_view)
+			ctx.restore()
+			
 			ctx.font = "20px sans-serif"
 			ctx.textBaseline = "bottom"
+			ctx.textAlign = "center"
 			cell.width = ctx.measureText(cell.name).width
 			if cell is @hovered_cell
-				# ctx.fillStyle = "rgba(0, 0, 0, #{@gui_alpha}"
-				# ctx.fillRect(cell.x, cell.y, cell.width, cell.height)
-				ctx.fillStyle = "rgba(255, 255, 255, #{@gui_alpha})"
+				ctx.fillStyle = "rgb(255, 255, 255)"
 			else
-				# ctx.fillStyle = "rgba(255, 255, 255, #{@gui_alpha*0.6})"
-				ctx.fillStyle = "rgba(200, 200, 200, #{@gui_alpha})"
-			ctx.fillText(cell.name, cell.x, cell.y + cell.height)
-
+				ctx.fillStyle = "rgb(200, 200, 200)"
+			ctx.fillText(cell.name, @width/2, cell.y + cell.height)
+		
+		ctx.restore()

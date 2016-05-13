@@ -6,6 +6,7 @@ class @Entity
 		@y = 0
 		@id = uuid()
 		@_class_ = Object.getPrototypeOf(@).constructor.name
+		@bbox_padding = 2
 		# TODO: depth system
 		# @drawing_pieces = {}
 	
@@ -35,6 +36,29 @@ class @Entity
 	fromWorld: (point)->
 		x: point.x - @x
 		y: point.y - @y
+	
+	bbox: ->
+		min_point = {x: +Infinity, y: +Infinity}
+		max_point = {x: -Infinity, y: -Infinity}
+		for point_name, point of @structure.points
+			min_point.x = min(min_point.x, point.x)
+			min_point.y = min(min_point.y, point.y)
+			max_point.x = max(max_point.x, point.x)
+			max_point.y = max(max_point.y, point.y)
+		min_point.x = @x unless isFinite(min_point.x)
+		min_point.y = @y unless isFinite(min_point.y)
+		max_point.x = @x unless isFinite(max_point.x)
+		max_point.y = @y unless isFinite(max_point.y)
+		min_point.x -= @bbox_padding
+		min_point.y -= @bbox_padding
+		max_point.x += @bbox_padding
+		max_point.y += @bbox_padding
+		min_point_in_world = @toWorld(min_point)
+		max_point_in_world = @toWorld(max_point)
+		x: min_point.x
+		y: min_point.y
+		width: max_point.x - min_point.x
+		height: max_point.y - min_point.y
 	
 	step: (world)->
 	draw: (ctx)->

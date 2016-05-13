@@ -85,6 +85,14 @@ esc should cancel dragging or exit edit mode
 entities and points should have hover styles
 
 double clicks where the first click was not on the same entity as the second should be rejected
+
+MMB-dragging from the entities bar should either work or not
+	it should not start a drag but not drag until you mouse off of the entities bar
+
+there should be a way to regenerate an entity
+	it could be something like right click
+	it should work for both placed entities and entities in the entities bar
+	entity previews in the entities bar could show the exact random entity you would receive and then generate a new one once you place it
 -->
 
 <!--

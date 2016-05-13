@@ -91,9 +91,10 @@ class @Player extends SimpleActor
 		# FIXME: arms are too long compared to legs
 		# TODO: add some constraints to hips, shoulders, and neck
 		# TODO: min/max_length for psuedo-3D purposes
+		@bbox_padding = 10
 	
 	draw: (ctx)->
-		{head, sternum, hip, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
+		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good
 		
@@ -117,13 +118,13 @@ class @Player extends SimpleActor
 		ctx.beginPath()
 		ctx.save()
 		ctx.translate(sternum.x, sternum.y)
-		torso_angle = atan2(hip.y - sternum.y, hip.x - sternum.x) - TAU/4
-		dx = hip.x - sternum.x
-		dy = hip.y - sternum.y
+		torso_angle = atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU/4
+		dx = pelvis.x - sternum.x
+		dy = pelvis.y - sternum.y
 		torso_length = sqrt(dx * dx + dy * dy)
 		ctx.rotate(torso_angle)
-		left_leg_angle = atan2(left_knee.y - hip.y, left_knee.x - hip.x) - torso_angle
-		right_leg_angle = atan2(right_knee.y - hip.y, right_knee.x - hip.x) - torso_angle
+		left_leg_angle = atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle
+		right_leg_angle = atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle
 		left_shoulder_angle = atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
 		right_shoulder_angle = atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
 		shoulder_distance = distance(left_shoulder, sternum)
