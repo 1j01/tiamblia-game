@@ -1,37 +1,27 @@
 # Tiamblia
 
-With a simple visual style,
-Tiamblia is an immersive 2D exploration adventure game
-where you can talk to spirits, hunt them, and gain their powers.
-Also there'll be a story, music, inverse kinematics, day/night transitions and maybe even weather.
+With a simple visual style, Tiamblia is an immersive 2D exploration adventure game where you can talk to spirits, hunt them, and gain their powers. Also there'll be a story, original music, inverse kinematics, day/night transitions and maybe even weather.
 
-Stay tuned to potentially interact with
-the Spirit of the Hunt,
-friendly painted beetles,
-fancy lions,
-a walled garden (that's a snake fyi),
-living lanterns (that eat fireflies),
-tiny birds,
-cheeky trees,
-a spider dojo,
-a charitable castle,
-and more!
+Stay tuned to potentially interact with...
+* the Spirit of the Hunt,
+* friendly painted beetles,
+* fancy lions,
+* a walled garden (that's a snake fyi),
+* living lanterns (that eat fireflies),
+* tiny birds,
+* cheeky trees,
+* a spider dojo,
+* a charitable castle,
+* and more!
 
-Follow the game [on GameJolt](http://gamejolt.com/games/tiamblia/147746)
-and/or watch the repository on GitHub.
+Follow [the game on GameJolt](http://gamejolt.com/games/tiamblia/147746)
+and/or watch [the repository on GitHub](https://github.com/1j01/tiamblia-advjam2016).
 
-[#AdvJam2016](http://jams.gamejolt.io/adventurejam2016)
+I'm making this because of [Adventure Jam 2016](http://jams.gamejolt.io/adventurejam2016) ([#AdvJam2016](http://gamejolt.com/tag/AdvJam2016))
 but let's be honest this isn't gonna be finished by the deadline.
 
-I'm making a custom engine where everything is based on points
-and an integrated level editor that can manipulate these points.
-There will be an animation editor, and terrain-specific editing features.
-The core editor is basically done.
-
-The game has only just begun.
-Except that it basically hasn't even begun yet.
-There's like a character, a type of tree, and a type of ground, none of which are done yet.
-But this is happening.
+I'm making a custom engine where everything is based on points and an integrated editor that can manipulate these points.
+The core editor is basically done, but there will be an animation editor, as well as terrain-specific editing features.
 
 <!--
 ## Editor Behavior
