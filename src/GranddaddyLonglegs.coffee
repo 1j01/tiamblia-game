@@ -36,7 +36,7 @@ class @GranddaddyLonglegs extends Entity
 			@next_foot_positions[point_name] = {x: 0, y: 0}
 	
 	step: (world)->
-		# TODO: prevent from walking off the edge of the world and falling infinitely
+		return if @toWorld(@structure.points[@foot_point_names[0]]).y > 400
 		# for point_name, point of @structure.points
 		# 	point.y += (random() - 1/2) * 30
 		# 	point.x += (random() - 1/2) * 30
