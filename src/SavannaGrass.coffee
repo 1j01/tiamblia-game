@@ -9,6 +9,14 @@ class @SavannaGrass extends Terrain
 			# @grass_tiles = new Map(map_obj)
 		@grass_tiles.toJSON = (map_obj)=>
 			{}
+		@structure.onchange = =>
+			# console.log "onchange!"
+			# @dirty = true
+			@grass_tiles.forEach (tile)=>
+				for shade in ["dark", "light"]
+					for blade in tile["#{shade}_blades"]
+						# console.log blade, blade.visible
+						delete blade.visible
 	
 	draw: (ctx, view)->
 		
@@ -112,19 +120,22 @@ class @SavannaGrass extends Terrain
 								x += (random() + 1) * 3
 						@grass_tiles.set(tile_name, tile)
 					
+					# ctx.save()
 					ctx.strokeStyle = "#f0f"
+					# ctx.lineWidth = 1 / view.scale
 					ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
 					ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
 					ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
 					# ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
 					# ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
+					# ctx.restore()
 					
 					for shade in ["dark", "light"]
 						for blade in tile["#{shade}_blades"]
 							point = @toWorld(blade)
 							if view.testRect(point.x, point.y - 10, 0, 10, 15)
 								view_point = view.fromWorld(point)
-								if ctx.isPointInPath(view_point.x, view_point.y)
+								if blade.visible ?= ctx.isPointInPath(view_point.x, view_point.y)
 								# if (not contains_any_points) or ctx.isPointInPath(view_point.x, view_point.y)
 									(if shade is "dark" then dark_blades else light_blades).push(blade)
 		

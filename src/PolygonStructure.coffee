@@ -9,6 +9,7 @@ class @PolygonStructure extends Structure
 	clear: ->
 		super
 		@constructor()
+		@onchange?()
 	
 	toJSON: ->
 		points: ({x, y} for point_name, {x, y} of @points)
@@ -33,6 +34,7 @@ class @PolygonStructure extends Structure
 		if @points[from]
 			@segments[name] = {a: @points[from], b: @points[name]}
 			@segments["closing"] = {a: @points[@last_point_name], b: @points[@first_point_name]}
+		@onchange?()
 	
 	pointInPolygon: ({x, y})->
 		inside = no

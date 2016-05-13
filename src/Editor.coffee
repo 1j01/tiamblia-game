@@ -376,6 +376,7 @@ class @Editor
 				for point, i in @dragging_points
 					point.x = local_mouse_position.x + @drag_offsets[i].x
 					point.y = local_mouse_position.y + @drag_offsets[i].y
+				@editing_entity.structure.onchange?()
 			else
 				@dragging_points = []
 				@save()
