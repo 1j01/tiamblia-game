@@ -3,13 +3,14 @@
 # SimpleActors have rectangular collision boxes and basic physics.
 
 class @SimpleActor extends Entity
+	gravity = 0.5
 	constructor: ->
 		super
 		@vx = 0
 		@vy = 0
 		@width = 10
 		@height = 40
-		@jump_height = 10
+		@jump_height = 20
 		@walk_speed = 4
 		@run_speed = 4
 		@move_x = 0
@@ -21,7 +22,7 @@ class @SimpleActor extends Entity
 		@grounded = no
 		return if @y > 400
 		@vx += @move_x
-		@vy += 0.5
+		@vy += gravity
 		@vx *= 0.9
 		# @vy *= 0.99
 		move_x = @vx
@@ -47,5 +48,6 @@ class @SimpleActor extends Entity
 				break
 			move_y -= go
 			@y += go
+		# @jump_height = @y - view.toWorld(editor.mouse).y
 		if @grounded and @jump
-			@vy = -7 # TODO: calculate from @jump_height
+			@vy = -sqrt(2 * gravity * @jump_height)
