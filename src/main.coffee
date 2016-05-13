@@ -3,7 +3,7 @@ seedrandom("A world")
 
 world = new World
 
-terrain = new Terrain
+terrain = new SavannaGrass
 world.entities.push terrain
 terrain.x = 0
 terrain.y = 0

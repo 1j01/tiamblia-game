@@ -1,11 +1,9 @@
 
 class @Tree extends Entity
-	addEntityClass(@) # TODO: only add subclasses
 	constructor: ->
 		super
 		@leaf_point_names = []
 		@structure.addPoint("base")
-		@branch(from: "base", to: "1", juice: 5, angle: -TAU/2)
 	
 	branch: ({from, to, juice, angle})->
 		name = to
@@ -22,12 +20,16 @@ class @Tree extends Entity
 			if random() < 0.2
 				@branch({from: name, to: "#{to}-c", juice, angle})
 		else
-			@leaf_point_names.push(name)
-			leaf = @structure.points[name]
-			leaf.r = random() * 15 + 15
-			leaf.scale_x = 2
-			leaf.scale_y = 1
-			leaf.color = "#627318" #"#363D1B"
+			leaf_point = @structure.points[name]
+			leaf = @leaf(leaf_point)
+			@leaf_point_names.push(name) if leaf?
+	
+	leaf: (leaf)->
+		leaf.radius = random() * 15 + 15
+		leaf.scale_x = 2
+		leaf.scale_y = 1
+		leaf.color = "#627318" #"#363D1B"
+		leaf
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
@@ -41,13 +43,13 @@ class @Tree extends Entity
 		
 		for leaf_point_name in @leaf_point_names
 			leaf = @structure.points[leaf_point_name]
-			# ctx.beginPath()
-			# ctx.arc(leaf.x, leaf.y, leaf.r, 0, TAU)
-			ctx.save()
 			ctx.beginPath()
-			ctx.translate(leaf.x, leaf.y)
-			ctx.scale(leaf.scale_x, leaf.scale_y)
-			ctx.arc(0, 0, leaf.r, 0, TAU)
-			ctx.fillStyle = leaf.color
-			ctx.fill()
-			ctx.restore()
+			ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
+			# ctx.save()
+			# ctx.beginPath()
+			# ctx.translate(leaf.x, leaf.y)
+			# ctx.scale(leaf.scale_x, leaf.scale_y)
+			# ctx.arc(0, 0, leaf.radius, 0, TAU)
+			# ctx.fillStyle = leaf.color
+			# ctx.fill()
+			# ctx.restore()

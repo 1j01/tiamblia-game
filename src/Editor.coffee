@@ -389,7 +389,6 @@ class @Editor
 				@selection_box.x2 = mouse_in_world.x
 				@selection_box.y2 = mouse_in_world.y
 				if @editing_entity
-					# TODO
 					@hovered_points = (point for point_name, point of @editing_entity.structure.points when point_within_selection_box(@editing_entity, point))
 				else
 					@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
