@@ -3,7 +3,7 @@ class @EntitiesBar
 	constructor: (@editor)->
 		x = 10
 		y = 10
-		padding_height = 10
+		padding_height = 20
 		cell_text_height = 25
 		max_cell_preview_height = 100
 		cell_preview_height = 50
@@ -74,10 +74,10 @@ class @EntitiesBar
 		@height += @cells[0].y * 2
 		ctx.save()
 		grd1 = ctx.createLinearGradient(0, 0, 0, @height*2)
-		grd1.addColorStop(0, "rgba(0, 0, 0, 0.1)");
+		grd1.addColorStop(0, "rgba(0, 0, 0, 0.2)");
 		grd1.addColorStop(1, "rgba(0, 0, 0, 0)")
 		grd2 = ctx.createLinearGradient(0, 0, @width*2, 0)
-		grd2.addColorStop(0, "rgba(0, 0, 0, 0.4)");
+		grd2.addColorStop(0, "rgba(0, 0, 0, 0.5)");
 		grd2.addColorStop(1, "rgba(0, 0, 0, 0)")
 		ctx.globalAlpha = @gui_alpha
 		ctx.fillStyle = grd1
@@ -86,6 +86,15 @@ class @EntitiesBar
 		ctx.fillRect(0, 0, @width*2, @height)
 		
 		for cell in @cells
+			# ctx.fillStyle = "rgba(50, 200, 255, 0.8)" #"rgb(61, 168, 216)" #"rgba(50, 200, 255, 0.9)" #"rgba(255, 255, 255, 0.5)"
+			if cell is @hovered_cell
+				ctx.fillStyle = "rgba(50, 200, 255, 1)"
+			else
+				ctx.fillStyle = "rgba(50, 200, 255, 0.7)"
+			ctx.fillRect(cell.x, cell.y + cell.padding_height, @width - cell.x * 2, cell.preview_height)
+			
+			# TODO: draw the entity preview to a canvas so it can fade in/out better
+			# (and won't be affected by entities that decide to use globalAlpha)
 			ctx.save()
 			ctx.translate(@width/2, cell.y + cell.padding_height + cell.preview_height/2)
 			ctx.scale(cell.preview_scale, cell.preview_scale)
