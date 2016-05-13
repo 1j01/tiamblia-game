@@ -34,6 +34,8 @@ class @GranddaddyLonglegs extends Entity
 		@next_foot_positions = {}
 		for point_name in @foot_point_names
 			@next_foot_positions[point_name] = {x: 0, y: 0}
+		
+		@bbox_padding = 20
 	
 	step: (world)->
 		return if @toWorld(@structure.points[@foot_point_names[0]]).y > 400

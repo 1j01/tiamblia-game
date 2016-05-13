@@ -34,9 +34,13 @@ There's like a character, a type of tree, and a type of ground, none of which ar
 But this is happening.
 
 <!--
+## Editor Behavior
+These could become tests if this were to be a reusable game engine and editor.
+
 drag with the middle mouse button to pan the view
 	(with momentum, wee!)
 zoom towards the mouse with mousewheel
+	(i.e. with the mouse anchored in the w
 
 while editing an entity
 	drag outside of the entity to select points (w/ a selection box)
@@ -44,7 +48,8 @@ while editing an entity
 		(another entity you click on should not be selected)
 		(the entity should be deselected)
 	double clicking on the entity should not stop editing the entity
-	drag on a point to move all selected points
+	drag on a selected point to move all selected points
+	drag on a non-selected point to select that point and move it
 	click on a point to select that point
 		(even when it's one of multiple points in the selection)
 	shift+click or ctrl+click on a point to toggle the selected state of that point
@@ -57,6 +62,7 @@ otherwise
 		double click on a selected entity to edit the entity
 			(should always make it the only selected entity)
 		click on a selected entity to make it the only selected entity
+	drag on a non-selected entity to select that entity and move it
 	drag outside of any entity to select entities (w/ a selection box)
 	click on an entity to select that entity
 	shift+click or ctrl+click on an entity to toggle the selected state of that entity
@@ -93,6 +99,8 @@ there should be a way to regenerate an entity
 	it could be something like right click
 	it should work for both placed entities and entities in the entities bar
 	entity previews in the entities bar could show the exact random entity you would receive and then generate a new one once you place it
+
+context menus
 -->
 
 <!--

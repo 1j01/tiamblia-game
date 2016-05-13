@@ -4,7 +4,7 @@ class @Tree extends Entity
 		super
 		@leaf_point_names = []
 		@structure.addPoint("base")
-		@bbox_padding = 30
+		@bbox_padding = 60
 	
 	branch: ({from, to, juice, angle})->
 		name = to

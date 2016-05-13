@@ -3,7 +3,7 @@ class @SavannaGrass extends Terrain
 	addEntityClass(@)
 	constructor: ->
 		super
-		@bbox_padding = 15
+		@bbox_padding = 20
 	draw: (ctx, view)->
 		ctx.beginPath()
 		for point_name, point of @structure.points

@@ -45,20 +45,21 @@ class @Entity
 			min_point.y = min(min_point.y, point.y)
 			max_point.x = max(max_point.x, point.x)
 			max_point.y = max(max_point.y, point.y)
-		min_point.x = @x unless isFinite(min_point.x)
-		min_point.y = @y unless isFinite(min_point.y)
-		max_point.x = @x unless isFinite(max_point.x)
-		max_point.y = @y unless isFinite(max_point.y)
+		min_point.x = 0 unless isFinite(min_point.x)
+		min_point.y = 0 unless isFinite(min_point.y)
+		max_point.x = 0 unless isFinite(max_point.x)
+		max_point.y = 0 unless isFinite(max_point.y)
+		# console.log @bbox_padding
 		min_point.x -= @bbox_padding
 		min_point.y -= @bbox_padding
 		max_point.x += @bbox_padding
 		max_point.y += @bbox_padding
 		min_point_in_world = @toWorld(min_point)
 		max_point_in_world = @toWorld(max_point)
-		x: min_point.x
-		y: min_point.y
-		width: max_point.x - min_point.x
-		height: max_point.y - min_point.y
+		x: min_point_in_world.x
+		y: min_point_in_world.y
+		width: max_point_in_world.x - min_point_in_world.x
+		height: max_point_in_world.y - min_point_in_world.y
 	
 	step: (world)->
 	draw: (ctx)->

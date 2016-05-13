@@ -6,6 +6,10 @@ class @PolygonStructure extends Structure
 		@last_point_name = null
 		@first_point_name = null
 	
+	clear: ->
+		super
+		@constructor()
+	
 	toJSON: ->
 		points: ({x, y} for point_name, {x, y} of @points)
 	

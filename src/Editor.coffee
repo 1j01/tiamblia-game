@@ -551,6 +551,12 @@ class @Editor
 				ctx.stroke()
 			ctx.restore()
 		
+		for entity in @selected_entities
+			ctx.strokeStyle = "rgba(255, 170, 0, 1)"
+			bbox = entity.bbox()
+			ctx.lineWidth = 1 / view.scale
+			ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height)
+		
 		if @selection_box?
 			ctx.save()
 			ctx.beginPath()
