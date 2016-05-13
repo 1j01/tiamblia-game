@@ -147,11 +147,12 @@ class @Editor
 					alert("Entity needs that point to render")
 				return
 			try
+				ent_def = JSON.parse(JSON.stringify(@editing_entity))
 				@editing_entity.step(@world)
-				# FIXME: shouldn't actually step
-				# I guess it could save the JSON beforehand and reapply it
+				@editing_entity.fromJSON(ent_def)
 			catch e
 				@undo()
+				console.warn "Entity failed to step after deletion, with", e
 				if plural
 					alert("Entity needs one or more of those points to step")
 				else

@@ -45,15 +45,18 @@ while editing an entity
 		(even when it's one of multiple points in the selection)
 	shift+click or ctrl+click on a point to toggle the selected state of that point
 	shift+drag from anywhere to select points (w/ a selection box)
-with selected entities
-	drag on a selected entity to move all selected entities
-	double click on a selected entity to edit the entity
-		(should always make it the only selected entity)
-	click on a selected entity to make it the only selected entity
-drag outside of any entity to select entities (w/ a selection box)
-click on an entity to select that entity
-shift+click or ctrl+click on an entity to toggle the selected state of that entity
-shift+drag from anywhere to select entities (w/ a selection box)
+	press delete to delete selected points
+otherwise
+	press delete to delete selected entities
+	with selected entities
+		drag on a selected entity to move all selected entities
+		double click on a selected entity to edit the entity
+			(should always make it the only selected entity)
+		click on a selected entity to make it the only selected entity
+	drag outside of any entity to select entities (w/ a selection box)
+	click on an entity to select that entity
+	shift+click or ctrl+click on an entity to toggle the selected state of that entity
+	shift+drag from anywhere to select entities (w/ a selection box)
 
 drag from the entities bar to create and place an entity
 click on an entity in the bar to create it and have it placed randomly offscreen in the middle of nowhere

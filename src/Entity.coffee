@@ -16,13 +16,17 @@ class @Entity
 		unless entity_classes[def._class_]
 			throw new Error "Entity class '#{def._class_}' does not exist"
 		entity = new entity_classes[def._class_]
-		for k, v of def when k isnt "_class_"
-			if entity[k]?.fromJSON
-				entity[k].fromJSON(v)
-			else
-				entity[k] = v
-		entity.fromJSON?(def)
+		entity.fromJSON(def)
 		entity
+	
+	fromJSON: (def)->
+		if def._class_ isnt @_class_
+			throw new Error "Tried to initialize #{@_class_} entity from JSON with _class_ #{JSON.stringify(def._class_)}"
+		for k, v of def when k isnt "_class_"
+			if @[k]?.fromJSON
+				@[k].fromJSON(v)
+			else
+				@[k] = v
 	
 	toWorld: (point)->
 		x: point.x + @x
