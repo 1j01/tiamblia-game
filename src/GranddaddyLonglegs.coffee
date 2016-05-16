@@ -9,29 +9,29 @@ class @GranddaddyLonglegs extends Entity
 		@legs = []
 		for leg_pair_n in [1..4]
 			for side in ["left", "right"]
-				leg = {point_names: {}}
+				leg = {point_names_by_segment_name: {}}
 				@legs.push(leg)
 				previous = "body"
-				for segment in ["upper", "middle", "lower"]
+				for segment_name in ["upper", "middle", "lower"]
 					point_name =
-						if segment is "lower"
+						if segment_name is "lower"
 							foot_point_name = "#{side} foot #{leg_pair_n}"
 						else
 							foot_point_name = undefined
-							"#{segment} #{side} leg #{leg_pair_n}"
+							"#{segment_name} #{side} leg #{leg_pair_n}"
 					previous = @structure.addSegment(
 						from: previous
 						to: foot_point_name
-						name: "#{segment} #{side} leg #{leg_pair_n}"
+						name: "#{segment_name} #{side} leg #{leg_pair_n}"
 						length: 50
 						# NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
 						# often have vastly more spindly legs
-						width: switch segment
+						width: switch segment_name
 							when "upper" then 4
 							when "middle" then 3
 							when "lower" then 2
 					)
-					leg.point_names[segment] = point_name
+					leg.point_names_by_segment_name[segment_name] = point_name
 					leg.foot_point_name = foot_point_name
 					if foot_point_name?
 						# @feet.push(@structure.points[foot_point_name])
@@ -81,15 +81,17 @@ class @GranddaddyLonglegs extends Entity
 			foot_point = @structure.points[leg.foot_point_name]
 			next_foot_pos = @next_foot_positions[leg.foot_point_name]
 			# console.log foot_point_name, next_foot_pos
-			for point_name in leg.point_names
-				@structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 2
+			# console.log leg.point_names_by_segment_name, leg
+			for segment_name, point_name of leg.point_names_by_segment_name
+				@structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 200
+				# console.log point_name, point_name in @foot_point_names
 				unless point_name in @foot_point_names
-					@structure.points[point_name].vy -= 2
+					@structure.points[point_name].vy -= 0.5
 			dist = distance(next_foot_pos, foot_point)
-			foot_point.vx += (next_foot_pos.x - foot_point.x) / dist / 3
-			foot_point.vy += (next_foot_pos.y - foot_point.y) / dist / 3
+			foot_point.vx += (next_foot_pos.x - foot_point.x) / dist / 2
+			foot_point.vy += (next_foot_pos.y - foot_point.y) / dist / 2
 		# @structure.points["body"].x += 2
-		@structure.points["body"].vy -= 2
+		@structure.points["body"].vy -= 1.5
 		# @structure.stepLayout() for [0..100]
 		collision = (point)=> world.collision(@toWorld(point))
 		@structure.stepLayout({gravity: 0.5, collision})
