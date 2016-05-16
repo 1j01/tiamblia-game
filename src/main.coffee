@@ -35,7 +35,7 @@ do animate = ->
 	else
 		canvas.classList.remove("grabbable")
 	
-	for entity in world.entities when entity isnt editor.editing_entity
+	for entity in world.entities when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 		entity.step(world)
 	
 	view.width = canvas.width

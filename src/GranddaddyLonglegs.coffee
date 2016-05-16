@@ -44,6 +44,10 @@ class @GranddaddyLonglegs extends Entity
 		for point_name in @foot_point_names
 			@next_foot_positions[point_name] = {x: 0, y: 0}
 		
+		# for point_name, point of @structure.points
+		# 	point.vx = 0
+		# 	point.vy = 0
+		
 		@bbox_padding = 20
 	
 	step: (world)->
@@ -78,13 +82,19 @@ class @GranddaddyLonglegs extends Entity
 			next_foot_pos = @next_foot_positions[leg.foot_point_name]
 			# console.log foot_point_name, next_foot_pos
 			for point_name in leg.point_names
-				@structure.points[point_name].x += (next_foot_pos.x - foot_point.x) / 2
-			foot_point.x += (next_foot_pos.x - foot_point.x) / 3
-			foot_point.y += (next_foot_pos.y - foot_point.y) / 3
+				@structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 2
+				unless point_name in @foot_point_names
+					@structure.points[point_name].vy -= 2
+			dist = distance(next_foot_pos, foot_point)
+			foot_point.vx += (next_foot_pos.x - foot_point.x) / dist / 3
+			foot_point.vy += (next_foot_pos.y - foot_point.y) / dist / 3
 		# @structure.points["body"].x += 2
-		# @structure.points["body"].y -= 2
+		@structure.points["body"].vy -= 2
 		# @structure.stepLayout() for [0..100]
-		@structure.stepLayout({gravity: 0.5, world})
+		collision = (point)=> world.collision(@toWorld(point))
+		@structure.stepLayout({gravity: 0.5, collision})
+		@structure.stepLayout() for [0..10]
+		@structure.stepLayout({collision}) for [0..4]
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
