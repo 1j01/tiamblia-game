@@ -45,7 +45,7 @@ class @BoneStructure extends Structure
 		for [0..4000]
 			@stepLayout()
 	
-	stepLayout: ({center, repel}={})->
+	stepLayout: ({center, repel, gravity, world, velocity}={})->
 		forces = {}
 		
 		center_around = {x: 0, y: 0}
@@ -69,6 +69,9 @@ class @BoneStructure extends Structure
 					unless delta_dist is 0
 						forces[point_name].x += dx / delta_dist / 1000
 						forces[point_name].y += dy / delta_dist / 1000
+			
+			if gravity
+				forces[point_name].y += gravity
 		
 		for segment_name, segment of @segments
 			dx = segment.a.x - segment.b.x
@@ -82,5 +85,34 @@ class @BoneStructure extends Structure
 			forces[segment.b.name].y += dy * delta_dist / 1000
 
 		for point_name, force of forces
-			@points[point_name].x += force.x
-			@points[point_name].y += force.y
+			point = @points[point_name]
+			if world
+				point.vx ?= 0
+				point.vy ?= 0
+				point.vx += force.x
+				point.vy += force.y
+				# point.x += force.x
+				# point.y += force.y
+				move_x = point.vx
+				move_y = point.vy
+				resolution = 0.5
+				while abs(move_x) > resolution
+					go = sign(move_x) * resolution
+					if world.collision({x: point.x + go, y: point.y})
+						point.vx *= 0.99
+						if world.collision({x: point.x + go, y: point.y - 1})
+							break
+						else
+							point.y -= 1
+					move_x -= go
+					point.x += go
+				while abs(move_y) > resolution
+					go = sign(move_y) * resolution
+					if world.collision({x: point.x, y: point.y + go})
+						point.vy *= 0.9 # as opposed to `point.vy = 0` so it sticks to the ground when going downhill
+						break
+					move_y -= go
+					point.y += go
+			else
+				point.x += force.x
+				point.y += force.y

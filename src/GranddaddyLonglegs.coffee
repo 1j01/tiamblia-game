@@ -6,15 +6,22 @@ class @GranddaddyLonglegs extends Entity
 		@structure.addPoint("body")
 		# @feet = []
 		@foot_point_names = []
+		@legs = []
 		for leg_pair_n in [1..4]
 			for side in ["left", "right"]
+				leg = {point_names: {}}
+				@legs.push(leg)
 				previous = "body"
 				for segment in ["upper", "middle", "lower"]
-					foot_name = if segment is "lower"
-						"#{side} foot #{leg_pair_n}"
+					point_name =
+						if segment is "lower"
+							foot_point_name = "#{side} foot #{leg_pair_n}"
+						else
+							foot_point_name = undefined
+							"#{segment} #{side} leg #{leg_pair_n}"
 					previous = @structure.addSegment(
 						from: previous
-						to: foot_name
+						to: foot_point_name
 						name: "#{segment} #{side} leg #{leg_pair_n}"
 						length: 50
 						# NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
@@ -24,9 +31,11 @@ class @GranddaddyLonglegs extends Entity
 							when "middle" then 3
 							when "lower" then 2
 					)
-					if foot_name?
-						# @feet.push(@structure.points[foot_name])
-						@foot_point_names.push(foot_name)
+					leg.point_names[segment] = point_name
+					leg.foot_point_name = foot_point_name
+					if foot_point_name?
+						# @feet.push(@structure.points[foot_point_name])
+						@foot_point_names.push(foot_point_name)
 		
 		@step_index = 0
 		@step_timer = 0
@@ -46,10 +55,10 @@ class @GranddaddyLonglegs extends Entity
 			@step_timer = 0
 			@step_index += 1
 			# current_foot_pos = @feet[@step_index %% @feet.length]
-			current_foot_name = @foot_point_names[@step_index %% @foot_point_names.length]
-			current_foot_pos = @structure.points[current_foot_name]
+			current_foot_point_name = @foot_point_names[@step_index %% @foot_point_names.length]
+			current_foot_pos = @structure.points[current_foot_point_name]
 			# console.log @feet, @step_index, current_foot_pos
-			# console.log @foot_point_names, @step_index, current_foot_name, current_foot_pos
+			# console.log @foot_point_names, @step_index, current_foot_point_name, current_foot_pos
 			next_foot_pos = {x: current_foot_pos.x, y: current_foot_pos.y}
 			next_foot_pos.x += 50
 			next_foot_pos.y -= 50
@@ -62,17 +71,20 @@ class @GranddaddyLonglegs extends Entity
 					break
 			# current_foot_pos.x = next_foot_pos.x
 			# current_foot_pos.y = next_foot_pos.y
-			@next_foot_positions[current_foot_name] = next_foot_pos
+			@next_foot_positions[current_foot_point_name] = next_foot_pos
 		# console.log @next_foot_positions
-		for foot_name in @foot_point_names
-			foot_point = @structure.points[foot_name]
-			next_foot_pos = @next_foot_positions[foot_name]
-			# console.log foot_name, next_foot_pos
-			foot_point.x += (next_foot_pos.x - foot_point.x) / 5
-			foot_point.y += (next_foot_pos.y - foot_point.y) / 5
-		@structure.points["body"].x += 2
-		@structure.points["body"].y -= 2
-		@structure.stepLayout() for [0..100]
+		for leg in @legs
+			foot_point = @structure.points[leg.foot_point_name]
+			next_foot_pos = @next_foot_positions[leg.foot_point_name]
+			# console.log foot_point_name, next_foot_pos
+			for point_name in leg.point_names
+				@structure.points[point_name].x += (next_foot_pos.x - foot_point.x) / 2
+			foot_point.x += (next_foot_pos.x - foot_point.x) / 3
+			foot_point.y += (next_foot_pos.y - foot_point.y) / 3
+		# @structure.points["body"].x += 2
+		# @structure.points["body"].y -= 2
+		# @structure.stepLayout() for [0..100]
+		@structure.stepLayout({gravity: 0.5, world})
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments

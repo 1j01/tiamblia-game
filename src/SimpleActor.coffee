@@ -10,7 +10,7 @@ class @SimpleActor extends Entity
 		@vy = 0
 		@width = 10
 		@height = 40
-		@jump_height = 20
+		@jump_height = 50
 		@walk_speed = 4
 		@run_speed = 4
 		@move_x = 0
