@@ -4,7 +4,6 @@ class @GranddaddyLonglegs extends Entity
 	constructor: ->
 		super
 		@structure.addPoint("body")
-		# @feet = []
 		@foot_point_names = []
 		@legs = []
 		for leg_pair_n in [1..4]
@@ -34,65 +33,48 @@ class @GranddaddyLonglegs extends Entity
 					leg.point_names_by_segment_name[segment_name] = point_name
 					leg.foot_point_name = foot_point_name
 					if foot_point_name?
-						# @feet.push(@structure.points[foot_point_name])
 						@foot_point_names.push(foot_point_name)
 		
 		@step_index = 0
 		@step_timer = 0
-		# @next_foot_positions = ({x: 0, y: 0} for point_name in @foot_point_names)
 		@next_foot_positions = {}
 		for point_name in @foot_point_names
 			@next_foot_positions[point_name] = {x: 0, y: 0}
 		
-		# for point_name, point of @structure.points
-		# 	point.vx = 0
-		# 	point.vy = 0
+		for point_name, point of @structure.points
+			point.vx = 0
+			point.vy = 0
 		
 		@bbox_padding = 20
 	
 	step: (world)->
 		return if @toWorld(@structure.points[@foot_point_names[0]]).y > 400
-		# for point_name, point of @structure.points
-		# 	point.y += (random() - 1/2) * 30
-		# 	point.x += (random() - 1/2) * 30
 		if ++@step_timer >= 10
 			@step_timer = 0
 			@step_index += 1
-			# current_foot_pos = @feet[@step_index %% @feet.length]
 			current_foot_point_name = @foot_point_names[@step_index %% @foot_point_names.length]
 			current_foot_pos = @structure.points[current_foot_point_name]
-			# console.log @feet, @step_index, current_foot_pos
-			# console.log @foot_point_names, @step_index, current_foot_point_name, current_foot_pos
 			next_foot_pos = {x: current_foot_pos.x, y: current_foot_pos.y}
 			next_foot_pos.x += 50
 			next_foot_pos.y -= 50
 			for [0..50]
 				next_foot_pos.y += 5
-				# console.log collision(next_foot_pos)
-				# window.collision = collision
 				if world.collision(@toWorld(next_foot_pos))
 					next_foot_pos.y -= 5
 					break
-			# current_foot_pos.x = next_foot_pos.x
-			# current_foot_pos.y = next_foot_pos.y
 			@next_foot_positions[current_foot_point_name] = next_foot_pos
-		# console.log @next_foot_positions
 		for leg in @legs
 			foot_point = @structure.points[leg.foot_point_name]
 			next_foot_pos = @next_foot_positions[leg.foot_point_name]
-			# console.log foot_point_name, next_foot_pos
-			# console.log leg.point_names_by_segment_name, leg
 			for segment_name, point_name of leg.point_names_by_segment_name
 				@structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 200
-				# console.log point_name, point_name in @foot_point_names
 				unless point_name in @foot_point_names
-					@structure.points[point_name].vy -= 0.5
+					@structure.points[point_name].vy -= 0.6
 			dist = distance(next_foot_pos, foot_point)
-			foot_point.vx += (next_foot_pos.x - foot_point.x) / dist / 2
-			foot_point.vy += (next_foot_pos.y - foot_point.y) / dist / 2
-		# @structure.points["body"].x += 2
-		@structure.points["body"].vy -= 1.5
-		# @structure.stepLayout() for [0..100]
+			force = 2
+			foot_point.vx += (next_foot_pos.x - foot_point.x) / dist * force
+			foot_point.vy += (next_foot_pos.y - foot_point.y) / dist * force
+		@structure.points["body"].vy -= 0.2
 		collision = (point)=> world.collision(@toWorld(point))
 		@structure.stepLayout({gravity: 0.5, collision})
 		@structure.stepLayout() for [0..10]
