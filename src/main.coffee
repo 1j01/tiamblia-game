@@ -57,6 +57,8 @@ do animate = ->
 	ctx.restore()
 	
 	editor.drawAbsolute(ctx)
+	
+	keyboard.endStep()
 
 # index = 0
 # setInterval ->

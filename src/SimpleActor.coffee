@@ -12,18 +12,35 @@ class @SimpleActor extends Entity
 		@height = 40
 		@jump_height = 50
 		@walk_speed = 4
-		@run_speed = 4
+		@run_speed = 6
 		@move_x = 0
 		@jump = no
 		@grounded = no
 		@facing_x = 0
 	
 	step: (world)->
-		@grounded = no
 		return if @y > 400
-		@vx += @move_x
+		
+		@grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+		
+		if @grounded
+			# if abs(@vx) >= 1
+			# 	@vx -= sign(@vx)
+			# else
+			# 	@vx = 0
+			# @vx += @move_x
+			if @move_x is 0
+				@vx *= 0.7
+			else
+				@vx += @move_x
+			@vy += abs(@vx)
+			if @jump
+					@vy = -sqrt(2 * gravity * @jump_height)
+		else
+			@vx += @move_x * 0.7
+		@vx = min(+@run_speed, max(-@run_speed, @vx))
 		@vy += gravity
-		@vx *= 0.9
+		@grounded = no
 		# @vy *= 0.99
 		move_x = @vx
 		move_y = @vy
@@ -38,16 +55,30 @@ class @SimpleActor extends Entity
 					break
 				else
 					@y -= 1
+					if @vy > 0
+						console.log "slow vy"
+						# @vy *= 0.9
+						# @vy *= 0.3
+						@vy = 0
 			move_x -= go
 			@x += go
 		while abs(move_y) > resolution
 			go = sign(move_y) * resolution
 			if world.collision({@x, y: @y + go + @height})
-				@vy *= 0.9 # as opposed to `@vy = 0` so the actor sticks to the ground when going downhill
+				# @vy *= 0.999 # as opposed to `@vy = 0` so the actor sticks to the ground when going downhill
 				@grounded = yes
 				break
 			move_y -= go
 			@y += go
 		# @jump_height = @y - view.toWorld(editor.mouse).y
-		if @grounded and @jump
-			@vy = -sqrt(2 * gravity * @jump_height)
+		
+		# if @jump
+		# 	console.log world.collision({@x, y: @y + i + @height}) for i in [0..5]
+		# 	console.log @vy, world.collision({@x, y: @y + @vy + @height})
+		
+		# console.log "RES", world.collision({@x, y: @y + resolution + @height})
+		
+		# @grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+		# 
+		# if @grounded and @jump
+		# 	@vy = -sqrt(2 * gravity * @jump_height)

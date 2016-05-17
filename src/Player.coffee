@@ -1,11 +1,4 @@
 
-keys = {}
-addEventListener "keydown", (e)->
-	keys[e.keyCode] = true
-	console.log e.keyCode
-addEventListener "keyup", (e)->
-	delete keys[e.keyCode]
-
 class @Player extends SimpleActor
 	addEntityClass(@)
 	constructor: ->
@@ -101,10 +94,9 @@ class @Player extends SimpleActor
 		@bbox_padding = 10
 	
 	step: ->
-		left = keys[65]? or keys[37]?
-		right = keys[68]? or keys[39]?
-		@jump = keys[87]? or keys[38]?
-		# TODO: press to jump
+		left = keyboard.isHeld("A") or keyboard.isHeld("left")
+		right = keyboard.isHeld("D") or keyboard.isHeld("right")
+		@jump = keyboard.wasPressed("W") or keyboard.wasPressed("up")
 		# TODO: gamepad support
 		# TODO: configurable controls
 		@move_x = right - left
