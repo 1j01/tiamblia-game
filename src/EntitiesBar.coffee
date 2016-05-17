@@ -21,6 +21,8 @@ class @EntitiesBar extends Bar
 			preview_view.width = cell_preview_width
 			preview_view.height = cell_preview_height
 			preview_view.scale = preview_scale
+			preview_view.center_x = 0
+			preview_view.center_y = preview_center_y
 			preview_view.is_preview = true
 			preview_canvas = document.createElement("canvas")
 			preview_ctx = preview_canvas.getContext("2d")
@@ -41,8 +43,6 @@ class @EntitiesBar extends Bar
 				preview_view
 				preview_canvas
 				preview_ctx
-				preview_scale
-				preview_center_y
 				element: cell_el
 			}
 			
@@ -76,7 +76,7 @@ class @EntitiesBar extends Bar
 			cell.preview_canvas.height = cell.preview_height
 			cell.preview_ctx.save()
 			cell.preview_ctx.translate(cell.preview_width/2, cell.preview_height/2)
-			cell.preview_ctx.scale(cell.preview_scale, cell.preview_scale)
-			cell.preview_ctx.translate(0, -cell.preview_center_y)
+			cell.preview_ctx.scale(cell.preview_view.scale, cell.preview_view.scale)
+			cell.preview_ctx.translate(-cell.preview_view.center_x, -cell.preview_view.center_y)
 			cell.preview_entity.draw(cell.preview_ctx, cell.preview_view)
 			cell.preview_ctx.restore()
