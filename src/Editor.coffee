@@ -43,7 +43,7 @@ class @Editor
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
 		
-		# TODO: mousedown only on canvas; handle dragging differently/better
+		# TODO: mousedown only on canvas
 		# in order to FIXME: entities bar shows and hides annoyingly when just clicking on entities
 		# or TODO: just always show a sidebar, and make it less of an overlay
 		# i.e. the canvas should be pushed over by it, and maybe you should be able to drag entities to it to delete them
@@ -55,6 +55,26 @@ class @Editor
 		addEventListener "mouseup", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
 			MB.down = false
+			mouse_in_world = @view.toWorld(@mouse)
+			
+			if @dragging_points.length
+				@dragging_points = []
+				@save()
+			
+			if @dragging_entities.length
+				@save()
+				for entity, i in @dragging_entities
+					if entity.vx? and entity.vy?
+						entity.vx = (mouse_in_world.x + @drag_offsets[i].x - entity.x) / 3
+						entity.vy = (mouse_in_world.y + @drag_offsets[i].y - entity.y) / 3
+				@dragging_entities = []
+			
+			if @selection_box
+				if @editing_entity
+					@selected_points = (entity for entity in @hovered_points)
+				else
+					@selected_entities = (entity for entity in @hovered_entities)
+				@selection_box = null
 		
 		addEventListener "dblclick", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
@@ -70,19 +90,54 @@ class @Editor
 			if @hovered_entities.length and @hovered_entities[0] not in @selected_entities
 				@selected_entities = (entity for entity in @hovered_entities)
 			
-			menu.append(new nw.MenuItem(label: 'Undo', click: (=> @undo()), enabled: @undos.length))
-			menu.append(new nw.MenuItem(label: 'Redo', click: (=> @redo()), enabled: @redos.length))
+			menu.append(new nw.MenuItem(
+				label: 'Undo'
+				click: => @undo()
+				enabled: @undos.length
+			))
+			menu.append(new nw.MenuItem(
+				label: 'Redo'
+				click: => @redo()
+				enabled: @redos.length
+			))
 			menu.append(new nw.MenuItem(type: 'separator'))
-			menu.append(new nw.MenuItem(label: 'Cut', click: (=> @cut()), enabled: @selected_entities.length))
-			menu.append(new nw.MenuItem(label: 'Copy', click: (=> @copy()), enabled: @selected_points.length or @selected_entities.length))
-			menu.append(new nw.MenuItem(label: 'Paste', click: (=> @paste()), enabled: if @editing_entity then @clipboard.point_positions? else @clipboard.entities?.length))
-			menu.append(new nw.MenuItem(label: 'Delete', click: (=> @delete()), enabled: @selected_entities.length))
-			menu.append(new nw.MenuItem(label: 'Select All', click: (=> @selectAll()), enabled: @world.entities.length))
+			menu.append(new nw.MenuItem(
+				label: 'Cut'
+				click: => @cut()
+				enabled: @selected_entities.length
+			))
+			menu.append(new nw.MenuItem(
+				label: 'Copy'
+				click: => @copy()
+				enabled: @selected_points.length or @selected_entities.length
+			))
+			menu.append(new nw.MenuItem(
+				label: 'Paste'
+				click: => @paste()
+				enabled: if @editing_entity then @clipboard.point_positions? else @clipboard.entities?.length
+			))
+			menu.append(new nw.MenuItem(
+				label: 'Delete'
+				click: => @delete()
+				enabled: @selected_entities.length
+			))
+			menu.append(new nw.MenuItem(
+				label: 'Select All'
+				click: => @selectAll()
+				enabled: @world.entities.length
+			))
 			menu.append(new nw.MenuItem(type: 'separator'))
 			if @editing_entity
-				menu.append(new nw.MenuItem(label: 'Finish Editing Entity', click: (=> @finishEditingEntity())))
+				menu.append(new nw.MenuItem(
+					label: 'Finish Editing Entity'
+					click: => @finishEditingEntity()
+				))
 			else
-				menu.append(new nw.MenuItem(label: 'Edit Entity', click: (=> @editEntity(@selected_entities[0])), enabled: @selected_entities.length))
+				menu.append(new nw.MenuItem(
+					label: 'Edit Entity'
+					click: => @editEntity(@selected_entities[0])
+					enabled: @selected_entities.length
+				))
 			
 			e.preventDefault()
 			menu.popup(e.x, e.y)
@@ -377,47 +432,24 @@ class @Editor
 				# unless @editing_entity? and @distanceToEntity(@editing_entity, mouse_in_world) < min_grab_dist
 				@finishEditingEntity()
 		else if @dragging_entities.length
-			if @mouse.LMB.down
-				for entity, i in @dragging_entities
-					entity.x = mouse_in_world.x + @drag_offsets[i].x
-					entity.y = mouse_in_world.y + @drag_offsets[i].y
-			else
-				@save()
-				for entity, i in @dragging_entities
-					if entity.vx? and entity.vy?
-						entity.vx = (mouse_in_world.x + @drag_offsets[i].x - entity.x) / 3
-						entity.vy = (mouse_in_world.y + @drag_offsets[i].y - entity.y) / 3
-				@dragging_entities = []
+			for entity, i in @dragging_entities
+				entity.x = mouse_in_world.x + @drag_offsets[i].x
+				entity.y = mouse_in_world.y + @drag_offsets[i].y
 		else if @dragging_points.length
-			if @mouse.LMB.down
-				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
-				for point, i in @dragging_points
-					point.x = local_mouse_position.x + @drag_offsets[i].x
-					point.y = local_mouse_position.y + @drag_offsets[i].y
-				@editing_entity.structure.onchange?()
-			else
-				@dragging_points = []
-				@save()
+			local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
+			for point, i in @dragging_points
+				point.x = local_mouse_position.x + @drag_offsets[i].x
+				point.y = local_mouse_position.y + @drag_offsets[i].y
+			@editing_entity.structure.onchange?()
 		else if @dragging_segments.length
-			if @mouse.LMB.down
-				# TODO
-			else
-				@dragging_segments = []
-				@save()
+			# TODO
 		else if @selection_box
-			if @mouse.LMB.down
-				@selection_box.x2 = mouse_in_world.x
-				@selection_box.y2 = mouse_in_world.y
-				if @editing_entity
-					@hovered_points = (point for point_name, point of @editing_entity.structure.points when point_within_selection_box(@editing_entity, point))
-				else
-					@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
+			@selection_box.x2 = mouse_in_world.x
+			@selection_box.y2 = mouse_in_world.y
+			if @editing_entity
+				@hovered_points = (point for point_name, point of @editing_entity.structure.points when point_within_selection_box(@editing_entity, point))
 			else
-				if @editing_entity
-					@selected_points = (entity for entity in @hovered_points)
-				else
-					@selected_entities = (entity for entity in @hovered_entities)
-				@selection_box = null
+				@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
 		else
 			@hovered_entities = []
 			@hovered_points = []
