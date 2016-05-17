@@ -63,6 +63,31 @@ class @Editor
 			# TODO: reject double clicks where the first click was not on the same entity
 			# TODO: reject double click and drag
 		
+		addEventListener "contextmenu", (e)=>
+			menu = new nw.Menu
+			
+			# if @selected_entities.length is 0
+			if @hovered_entities.length and @hovered_entities[0] not in @selected_entities
+				@selected_entities = (entity for entity in @hovered_entities)
+			
+			menu.append(new nw.MenuItem(label: 'Undo', click: (=> @undo()), enabled: @undos.length))
+			menu.append(new nw.MenuItem(label: 'Redo', click: (=> @redo()), enabled: @redos.length))
+			menu.append(new nw.MenuItem(type: 'separator'))
+			menu.append(new nw.MenuItem(label: 'Cut', click: (=> @cut()), enabled: @selected_entities.length))
+			menu.append(new nw.MenuItem(label: 'Copy', click: (=> @copy()), enabled: @selected_points.length or @selected_entities.length))
+			menu.append(new nw.MenuItem(label: 'Paste', click: (=> @paste()), enabled: if @editing_entity then @clipboard.point_positions? else @clipboard.entities?.length))
+			menu.append(new nw.MenuItem(label: 'Delete', click: (=> @delete()), enabled: @selected_entities.length))
+			menu.append(new nw.MenuItem(label: 'Select All', click: (=> @selectAll()), enabled: @world.entities.length))
+			menu.append(new nw.MenuItem(type: 'separator'))
+			if @editing_entity
+				menu.append(new nw.MenuItem(label: 'Finish Editing Entity', click: (=> @finishEditingEntity())))
+			else
+				menu.append(new nw.MenuItem(label: 'Edit Entity', click: (=> @editEntity(@selected_entities[0])), enabled: @selected_entities.length))
+			
+			e.preventDefault()
+			menu.popup(e.x, e.y)
+			return false
+		
 		handle_scroll = (e)=>
 			# TODO: zoom to/from mouse, i.e. keep the mouse's position anchored in the world
 			@mouse.x = e.clientX
@@ -215,17 +240,12 @@ class @Editor
 				return
 		else
 			@undoable =>
-				# @editing_entity.destroy()
 				for entity in @selected_entities
+					# entity.destroy()
 					index = @world.entities.indexOf(entity)
 					@world.entities.splice(index, 1) if index >= 0
 				@selected_entities = []
-				# @selected_segments = []
-				@selected_points = []
-				@dragging_points = []
-				# @dragging_segments = []
-				@dragging_entities = []
-				@editing_entity = null
+				@finishEditingEntity()
 	
 	cut: ->
 		@copy()
@@ -241,42 +261,45 @@ class @Editor
 					json: JSON.stringify(entity)
 	
 	paste: ->
-		@undoable =>
-			@selected_entities = []
-			new_entities =
-				for {json} in @clipboard.entities
-					ent_def = JSON.parse(json)
-					delete ent_def.id
-					entity = Entity.fromJSON(ent_def)
-					@world.entities.push(entity)
-					@selected_entities.push(entity)
-					entity
-			
-			centroids =
+		if @editing_entity
+			alert("Pasting points is not supported")
+		else
+			@undoable =>
+				@selected_entities = []
+				new_entities =
+					for {json} in @clipboard.entities
+						ent_def = JSON.parse(json)
+						delete ent_def.id
+						entity = Entity.fromJSON(ent_def)
+						@world.entities.push(entity)
+						@selected_entities.push(entity)
+						entity
+				
+				centroids =
+					for entity in new_entities
+						centroid = {x: 0, y: 0}
+						divisor = 0
+						for point_name, point of entity.structure.points
+							centroid.x += point.x
+							centroid.y += point.y
+							divisor += 1
+						centroid.x /= divisor
+						centroid.y /= divisor
+						centroid_in_world = entity.toWorld(centroid)
+						centroid_in_world
+				
+				center = {x: 0, y: 0}
+				for centroid in centroids
+					center.x += centroid.x
+					center.y += centroid.y
+				center.x /= centroids.length
+				center.y /= centroids.length
+				
+				mouse_in_world = @view.toWorld(@mouse)
+				
 				for entity in new_entities
-					centroid = {x: 0, y: 0}
-					divisor = 0
-					for point_name, point of entity.structure.points
-						centroid.x += point.x
-						centroid.y += point.y
-						divisor += 1
-					centroid.x /= divisor
-					centroid.y /= divisor
-					centroid_in_world = entity.toWorld(centroid)
-					centroid_in_world
-			
-			center = {x: 0, y: 0}
-			for centroid in centroids
-				center.x += centroid.x
-				center.y += centroid.y
-			center.x /= centroids.length
-			center.y /= centroids.length
-			
-			mouse_in_world = @view.toWorld(@mouse)
-			
-			for entity in new_entities
-				entity.x += mouse_in_world.x - center.x
-				entity.y += mouse_in_world.y - center.y
+					entity.x += mouse_in_world.x - center.x
+					entity.y += mouse_in_world.y - center.y
 	
 	step: ->
 		
@@ -346,18 +369,13 @@ class @Editor
 			if @hovered_entities.length
 				if @hovered_entities[0] in @selected_entities
 					if @mouse.double_clicked
-						@editing_entity = @hovered_entities[0]
-						@selected_entities = [@editing_entity]
+						@editEntity(@hovered_entities[0])
 			else
 				# TODO: don't exit editing mode if the entity being edited is hovered
 				# except there needs to be a visual indication of hover for the editing entity
 				# (there would be with the cursor if you could drag segments)
 				# unless @editing_entity? and @distanceToEntity(@editing_entity, mouse_in_world) < min_grab_dist
-				@editing_entity = null
-				@selected_entities = []
-				@selected_points = []
-				@dragging_entities = []
-				@dragging_points = []
+				@finishEditingEntity()
 		else if @dragging_entities.length
 			if @mouse.LMB.down
 				for entity, i in @dragging_entities
@@ -456,6 +474,17 @@ class @Editor
 		@mouse.MMB.pressed = false
 		@mouse.RMB.pressed = false
 		@mouse.double_clicked = false
+	
+	editEntity: (entity)->
+		@editing_entity = entity
+		@selected_entities = [entity]
+	
+	finishEditingEntity: ->
+		@editing_entity = null
+		@selected_entities = []
+		@selected_points = []
+		@dragging_entities = []
+		@dragging_points = []
 	
 	distanceToEntity: (entity, from_point_in_world)->
 		from_point = entity.fromWorld(from_point_in_world)
