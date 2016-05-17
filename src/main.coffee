@@ -56,7 +56,7 @@ do animate = ->
 	
 	ctx.restore()
 	
-	editor.drawAbsolute(ctx)
+	editor.updateGUI()
 	
 	keyboard.endStep()
 

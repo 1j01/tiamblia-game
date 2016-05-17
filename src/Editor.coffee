@@ -25,6 +25,7 @@ class @Editor
 		@redos = []
 		@clipboard = {}
 		@entities_bar = new EntitiesBar(@)
+		# @animation_bar = new AnimationBar(@)
 		if fs?
 			@save_path = "world.json"
 			# @save_path = path.join(nw.App.dataPath, "world.json")
@@ -274,11 +275,6 @@ class @Editor
 				entity.y += mouse_in_world.y - center.y
 	
 	step: ->
-		
-		mouse_in_use = @entities_bar.step(@mouse)
-		if mouse_in_use
-			@hovered_entities = []
-			return
 		
 		mouse_in_world = @view.toWorld(@mouse)
 		
@@ -571,5 +567,6 @@ class @Editor
 			ctx.stroke()
 			ctx.restore()
 	
-	drawAbsolute: (ctx)->
-		@entities_bar.drawAbsolute(ctx)
+	updateGUI: ->
+		# @animation_bar.draw()
+		@entities_bar.draw()

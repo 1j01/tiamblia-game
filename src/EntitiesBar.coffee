@@ -1,14 +1,14 @@
 
-class @EntitiesBar
-	constructor: (@editor)->
-		x = 10
-		y = 10
-		padding_height = 20
-		cell_text_height = 25
-		max_cell_preview_height = 100
-		cell_preview_height = 50
+class @EntitiesBar extends Bar
+	constructor: ->
+		super
+		@element.classList.add("entities-bar")
 		@cells = []
+		
+		cell_preview_width = 200
+		max_cell_preview_height = 100
 		for entity_class_name, EntityClass of entity_classes
+			cell_name = entity_class_name.replace(/[a-z][A-Z]/g, (m)-> "#{m[0]} #{m[1]}")
 			preview_entity = new EntityClass
 			if preview_entity.structure instanceof BoneStructure
 				unless preview_entity instanceof Tree
@@ -17,104 +17,66 @@ class @EntitiesBar
 			preview_center_y = preview_entity_bbox.y + preview_entity_bbox.height / 2
 			cell_preview_height = min(preview_entity_bbox.height, max_cell_preview_height)
 			preview_scale = cell_preview_height / preview_entity_bbox.height
-			cell_height = cell_preview_height + cell_text_height + padding_height
-			@cells.push {
+			preview_view = new View
+			preview_view.width = cell_preview_width
+			preview_view.height = cell_preview_height
+			preview_view.scale = preview_scale
+			preview_view.is_preview = true
+			preview_canvas = document.createElement("canvas")
+			preview_ctx = preview_canvas.getContext("2d")
+			cell_el = document.createElement("article")
+			cell_el.className = "cell grabbable"
+			name_el = document.createElement("h1")
+			name_el.className = "name"
+			name_el.textContent = cell_name
+			cell_el.appendChild(name_el)
+			cell_el.appendChild(preview_canvas)
+			
+			cell = {
 				EntityClass
 				preview_entity
-				name: entity_class_name.replace(/[a-z][A-Z]/g, (m)-> "#{m[0]} #{m[1]}")
-				height: cell_height
-				padding_height
+				name: cell_name
+				preview_width: cell_preview_width
 				preview_height: cell_preview_height
-				text_height: cell_text_height
+				preview_view
+				preview_canvas
+				preview_ctx
 				preview_scale
 				preview_center_y
-				x, y
+				element: cell_el
 			}
-			y += cell_height
-		@hovered_cell = null
-		@mouse_start = null
-		@gui_alpha = 0
-	
-	step: (mouse)->
-		@hovered_cell = null
-		for cell in @cells
-			if (
-				cell.y <= mouse.y <= cell.y + cell.height and
-				# cell.x <= mouse.x <= cell.x + cell.width
-				0 <= mouse.x <= @width
-			)
-				@hovered_cell = cell
-		if @mouse_start and mouse.LMB.down
-			if distance(@mouse_start, mouse) > 4
-				@editor.undoable =>
-					entity = new @mouse_start.cell.EntityClass
-					if entity.structure instanceof BoneStructure
-						unless entity instanceof Tree
-							entity.structure.autoLayout() # because we don't have animations or anything yet
-					@editor.world.entities.push entity
-					@editor.dragEntities([entity])
-					@mouse_start = null
-		else if mouse.LMB.pressed and @hovered_cell
-			@mouse_start = {x: mouse.x, y: mouse.y, cell: @hovered_cell}
-			@editor.selected_entities = []
-		else
-			@mouse_start = null
-		return no if @editor.dragging_entities.length
-		@hovered_cell? or @mouse_start?
-	
-	drawAbsolute: (ctx)->
-		show_gui = @editor.dragging_entities.length is 0
-		@gui_alpha += (show_gui - @gui_alpha) / 3
-		@width = 0
-		@width = Math.max(@width, cell.width) for cell in @cells
-		@width = 0 if isNaN(@width) # because we calculate cell.width(s) below
-		@height = 0
-		@height += cell.height for cell in @cells
-		@width += @cells[0].x * 2
-		@height += @cells[0].y * 2
-		ctx.save()
-		grd1 = ctx.createLinearGradient(0, 0, 0, @height*2)
-		grd1.addColorStop(0, "rgba(0, 0, 0, 0.2)");
-		grd1.addColorStop(1, "rgba(0, 0, 0, 0)")
-		grd2 = ctx.createLinearGradient(0, 0, @width*2, 0)
-		grd2.addColorStop(0, "rgba(0, 0, 0, 0.5)");
-		grd2.addColorStop(1, "rgba(0, 0, 0, 0)")
-		ctx.globalAlpha = @gui_alpha
-		ctx.fillStyle = grd1
-		ctx.fillRect(0, 0, @width, @height*2)
-		ctx.fillStyle = grd2
-		ctx.fillRect(0, 0, @width*2, @height)
-		
-		for cell in @cells
-			cell.preview_width = @width - cell.x * 2
-			if cell is @hovered_cell
-				ctx.fillStyle = "rgba(50, 200, 255, 1)"
-			else
-				ctx.fillStyle = "rgba(50, 200, 255, 0.7)"
-			ctx.fillRect(cell.x, cell.y + cell.padding_height, cell.preview_width, cell.preview_height)
 			
-			# TODO: draw the entity preview to a canvas so it can fade in/out better
-			# (and won't be affected by entities that decide to use globalAlpha)
-			ctx.save()
-			ctx.translate(@width/2, cell.y + cell.padding_height + cell.preview_height/2)
-			ctx.scale(cell.preview_scale, cell.preview_scale)
-			ctx.translate(0, -cell.preview_center_y)
-			preview_view = new View
-			preview_view.width = cell.preview_width
-			preview_view.height = cell.preview_height
-			preview_view.scale = cell.preview_scale
-			preview_view.is_preview = true
-			cell.preview_entity.draw(ctx, preview_view)
-			ctx.restore()
+			do (cell, cell_el)->
+				cell_el.addEventListener "mousedown", (e)=>
+					@editor.selected_entities = []
+					mouse_start = {x: e.clientX, y: e.clientY}
+					addEventListener "mousemove", onmousemove = (e)=>
+						if distance(mouse_start, {x: e.clientX, y: e.clientY}) > 4
+							@editor.undoable =>
+								entity = new cell.EntityClass
+								if entity.structure instanceof BoneStructure
+									unless entity instanceof Tree
+										entity.structure.autoLayout() # because we don't have animations or anything yet
+								@editor.world.entities.push(entity)
+								@editor.dragEntities([entity])
+								removeEventListener "mousemove", onmousemove
+								removeEventListener "mouseup", onmouseup
+					addEventListener "mouseup", onmouseup = (e)=>
+						removeEventListener "mousemove", onmousemove
+						removeEventListener "mouseup", onmouseup
 			
-			ctx.font = "20px sans-serif"
-			ctx.textBaseline = "bottom"
-			ctx.textAlign = "center"
-			cell.width = ctx.measureText(cell.name).width
-			if cell is @hovered_cell
-				ctx.fillStyle = "rgb(255, 255, 255)"
-			else
-				ctx.fillStyle = "rgb(200, 200, 200)"
-			ctx.fillText(cell.name, @width/2, cell.y + cell.height)
-		
-		ctx.restore()
+			@element.appendChild(cell_el)
+			@cells.push(cell)
+	
+	draw: ->
+		show = @editor.dragging_entities.length is 0
+		@element.classList[if show then "add" else "remove"]("visible")
+		for cell in @cells
+			cell.preview_canvas.width = cell.preview_width
+			cell.preview_canvas.height = cell.preview_height
+			cell.preview_ctx.save()
+			cell.preview_ctx.translate(cell.preview_width/2, cell.preview_height/2)
+			cell.preview_ctx.scale(cell.preview_scale, cell.preview_scale)
+			cell.preview_ctx.translate(0, -cell.preview_center_y)
+			cell.preview_entity.draw(cell.preview_ctx, cell.preview_view)
+			cell.preview_ctx.restore()
