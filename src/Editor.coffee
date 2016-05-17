@@ -1,5 +1,5 @@
 
-# TODO: animation editing
+# TODO: animation editing...
 # TODO: reasonable terrain editing
 # TODO: shift+select (and alternatively ctrl+select)
 
@@ -25,7 +25,7 @@ class @Editor
 		@redos = []
 		@clipboard = {}
 		@entities_bar = new EntitiesBar(@)
-		# @animation_bar = new AnimationBar(@)
+		@animation_bar = new AnimationBar(@)
 		if fs?
 			@save_path = "world.json"
 			# @save_path = path.join(nw.App.dataPath, "world.json")
@@ -43,6 +43,10 @@ class @Editor
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
 		
+		# TODO: mousedown only on canvas; handle dragging differently/better
+		# in order to FIXME: entities bar shows and hides annoyingly when just clicking on entities
+		# or TODO: just always show a sidebar, and make it less of an overlay
+		# i.e. the canvas should be pushed over by it, and maybe you should be able to drag entities to it to delete them
 		addEventListener "mousedown", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
 			MB.down = true
@@ -568,5 +572,5 @@ class @Editor
 			ctx.restore()
 	
 	updateGUI: ->
-		# @animation_bar.draw()
-		@entities_bar.draw()
+		@animation_bar.update()
+		@entities_bar.update()
