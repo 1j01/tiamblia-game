@@ -7,7 +7,7 @@ fs = require? "fs"
 path = require? "path"
 
 class @Editor
-	constructor: (@world, @view)->
+	constructor: (@world, @view, canvas)->
 		@selected_entities = []
 		@hovered_entities = []
 		@selected_points = []
@@ -37,20 +37,18 @@ class @Editor
 			RMB: {down: no, pressed: no}
 			double_clicked: no
 		}
-		@mouse_drag_start_in_world = null
+		@grab_start = null
+		@grab_start_in_world = null
 		
 		addEventListener "mousemove", (e)=>
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
 		
-		# TODO: mousedown only on canvas
-		# in order to FIXME: entities bar shows and hides annoyingly when just clicking on entities
-		# or TODO: just always show a sidebar, and make it less of an overlay
-		# i.e. the canvas should be pushed over by it, and maybe you should be able to drag entities to it to delete them
-		addEventListener "mousedown", (e)=>
+		canvas.addEventListener "mousedown", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
 			MB.down = true
 			MB.pressed = true
+			# @grab_start = {x: e.clientX, y: e.clientY}
 		
 		addEventListener "mouseup", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
@@ -76,7 +74,7 @@ class @Editor
 					@selected_entities = (entity for entity in @hovered_entities)
 				@selection_box = null
 		
-		addEventListener "dblclick", (e)=>
+		canvas.addEventListener "dblclick", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
 			MB.pressed = true
 			@mouse.double_clicked = true
@@ -450,6 +448,20 @@ class @Editor
 				@hovered_points = (point for point_name, point of @editing_entity.structure.points when point_within_selection_box(@editing_entity, point))
 			else
 				@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
+		else if @grab_start
+			if @mouse.LMB.down
+				if distance(@mouse, @grab_start) > 2
+					@grab_start = null
+					if @selected_points.length
+						@dragPoints(@selected_points, @grab_start_in_world)
+						# @undoable()
+						# @dragging_points = (point for point in @selected_points)
+					else if @selected_entities.length
+						@dragEntities(@selected_entities, @grab_start_in_world)
+						# @undoable()
+						# @dragging_entities = (entity for entity in @selected_entities)
+			else
+				@grab_start = null
 		else
 			@hovered_entities = []
 			@hovered_points = []
@@ -482,17 +494,17 @@ class @Editor
 				
 				if @hovered_points.length
 					if @hovered_points[0] in @selected_points
-						@dragPoints(@selected_points, mouse_in_world)
+						@grabPoints(@selected_points, mouse_in_world)
 					else
-						@dragPoints(@hovered_points, mouse_in_world)
+						@grabPoints(@hovered_points, mouse_in_world)
 				else
 					@selected_points = []
 					
 					if @hovered_entities.length
 						if @hovered_entities[0] in @selected_entities
-							@dragEntities(@selected_entities, mouse_in_world)
+							@grabEntities(@selected_entities, mouse_in_world)
 						else
-							@dragEntities(@hovered_entities, mouse_in_world)
+							@grabEntities(@hovered_entities, mouse_in_world)
 					else
 						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
@@ -534,6 +546,17 @@ class @Editor
 		
 		closest_dist
 	
+	grabPoints: (points, mouse_in_world)->
+		# @grab_start = mouse_in_world
+		@grab_start = {x: @mouse.x, y: @mouse.y}
+		@grab_start_in_world = mouse_in_world
+		@selected_points = (point for point in points)
+		local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
+		@drag_offsets =
+			for point in @dragging_points
+				x: point.x - local_mouse_position.x
+				y: point.y - local_mouse_position.y
+
 	dragPoints: (points, mouse_in_world)->
 		@selected_points = (point for point in points)
 		@undoable()
@@ -543,6 +566,19 @@ class @Editor
 			for point in @dragging_points
 				x: point.x - local_mouse_position.x
 				y: point.y - local_mouse_position.y
+	
+	grabEntities: (entities, mouse_in_world)->
+		# @grab_start = mouse_in_world
+		@grab_start = {x: @mouse.x, y: @mouse.y}
+		@grab_start_in_world = mouse_in_world
+		@selected_entities = (entity for entity in entities)
+		@drag_offsets =
+			for entity in @dragging_entities
+				if mouse_in_world?
+					x: entity.x - mouse_in_world.x
+					y: entity.y - mouse_in_world.y
+				else
+					{x: 0, y: 0}
 	
 	dragEntities: (entities, mouse_in_world)->
 		@selected_entities = (entity for entity in entities)

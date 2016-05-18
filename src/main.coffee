@@ -15,7 +15,7 @@ ctx = canvas.getContext("2d")
 
 @view = new View
 
-@editor = new Editor(world, view)
+@editor = new Editor(world, view, canvas)
 try
 	editor.load()
 catch e
