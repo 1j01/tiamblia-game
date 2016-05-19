@@ -1,6 +1,7 @@
 
 class @Player extends SimpleActor
 	addEntityClass(@)
+	# Entity.animationize(@)
 	constructor: ->
 		super
 		@structure.addPoint("head")
@@ -88,6 +89,7 @@ class @Player extends SimpleActor
 			name: "lower right leg"
 			length: 10
 		)
+		@_whatever_pose_structure_whatever_ = @structure
 		# FIXME: arms are too long compared to legs
 		# TODO: add some constraints to hips, shoulders, and neck
 		# TODO: min/max_length for psuedo-3D purposes
@@ -103,7 +105,19 @@ class @Player extends SimpleActor
 		super
 	
 	draw: (ctx)->
-		ctx.scale(-1, 1) if @facing_x > 0
+		
+		# if @facing_x > 0
+		# 	# @structure = flipStructureHorizontally(@_whatever_pose_structure_whatever_, sin(Date.now()/500)*50)
+		# 	@structure = flipStructureHorizontally(@_whatever_pose_structure_whatever_)
+		# else
+		# 	@structure = @_whatever_pose_structure_whatever_
+		new_pose =
+			if @facing_x > 0
+				flipStructureHorizontally(@_whatever_pose_structure_whatever_)
+			else
+				@_whatever_pose_structure_whatever_
+		@structure = lerpStructures(@structure, new_pose, 0.3)
+		# ctx.scale(-1, 1) if @facing_x > 0
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good

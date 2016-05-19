@@ -1,5 +1,5 @@
 
-# TODO: animation editing...
+# TODO: animation editing.....
 # TODO: reasonable terrain editing
 # TODO: shift+select (and alternatively ctrl+select)
 
@@ -403,6 +403,14 @@ class @Editor
 		@view.center_y_to = @view.center_y
 		@view_drag_momentum.x *= 0.8
 		@view_drag_momentum.y *= 0.8
+		
+		@dragging_points =
+			for point in @dragging_points
+				@editing_entity.structure.points[point.name]
+		
+		@selected_points =
+			for point in @selected_points
+				@editing_entity.structure.points[point.name]
 		
 		if @view_drag_start_in_world
 			if @mouse.MMB.down
