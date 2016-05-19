@@ -1,5 +1,5 @@
 
-# TODO: animation editing.....
+# TODO: animation editing......
 # TODO: reasonable terrain editing
 # TODO: shift+select (and alternatively ctrl+select)
 
@@ -184,7 +184,7 @@ class @Editor
 	save: ->
 		json = JSON.stringify(@world, null, "\t")
 		if fs?
-			fs.writeFileSync @save_path, json
+			fs.writeFileSync(@save_path, json)
 		else
 			localStorage["Tiamblia World"] = json
 	

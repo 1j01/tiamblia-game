@@ -1,7 +1,7 @@
 
 class @Player extends SimpleActor
 	addEntityClass(@)
-	# Entity.animationize(@)
+	Entity.initAnimation(@)
 	constructor: ->
 		super
 		@structure.addPoint("head")

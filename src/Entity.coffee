@@ -1,21 +1,59 @@
 
+fs = require? "fs"
+path = require? "path"
+
 class @Entity
 	constructor: ->
 		@structure = new BoneStructure
 		@x = 0
 		@y = 0
 		@id = uuid()
-		EntityClass = Object.getPrototypeOf(@).constructor
-		EntityClass.poses = {}
-		EntityClass.animations = {}
-		@_class_ = EntityClass.name
+		
 		@bbox_padding = 2
 		# TODO: depth system
 		# @drawing_pieces = {}
+		
+		EntityClass = Object.getPrototypeOf(@).constructor
+		# EntityClass.poses = {}
+		# EntityClass.animations = {}
+		@_class_ = EntityClass.name
+		
 	
-	# @animationize: (EntityClass)->
-	# 	EntityClass.poses = {}
-	# 	EntityClass.animations = {}
+	@initAnimation: (EntityClass)->
+		EntityClass.poses = {}
+		EntityClass.animations = {}
+		EntityClass.animation_json_path = "./animations/#{EntityClass.name}.json"
+		Entity.loadAnimations(EntityClass)
+		
+	@loadAnimations: (EntityClass)->
+		if fs?
+			try
+				json = fs.readFileSync(EntityClass.animation_json_path)
+			catch e
+				throw e unless e.code is "ENOENT"
+		else
+			json = localStorage["Tiamblia #{EntityClass.name} animations"]
+		if json
+			EntityClass.animationsFromJSON(JSON.parse(json)) if json
+		else
+			req = new XMLHttpRequest
+			req.addEventListener "load", (e)=>
+				json = req.responseText
+				EntityClass.animationsFromJSON(JSON.parse(json)) if json
+			req.open("GET", EntityClass.animation_json_path)
+			req.send()
+	
+	@saveAnimations: (EntityClass)->
+		{poses, animations} = EntityClass
+		json = JSON.stringify({poses, animations}, null, "\t")
+		if fs?
+			fs.writeFileSync(EntityClass.animation_json_path, json)
+		else
+			localStorage["Tiamblia #{EntityClass.name} animations"] = json
+	
+	@animationsFromJSON: ({poses, animations})->
+		EntityClass.poses = poses
+		EntityClass.animations = animations
 	
 	@fromJSON: (def)->
 		unless typeof def._class_ is "string"
