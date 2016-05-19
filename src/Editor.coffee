@@ -57,6 +57,7 @@ class @Editor
 			
 			if @dragging_points.length
 				@dragging_points = []
+				Entity.saveAnimations(Object.getPrototypeOf(@editing_entity).constructor)
 				@save()
 			
 			if @dragging_entities.length
@@ -403,6 +404,8 @@ class @Editor
 		@view.center_y_to = @view.center_y
 		@view_drag_momentum.x *= 0.8
 		@view_drag_momentum.y *= 0.8
+		
+		# @editing_structure ?= @editing_entity?.structure
 		
 		@dragging_points =
 			for point in @dragging_points

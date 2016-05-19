@@ -26,6 +26,10 @@ class @Entity
 		Entity.loadAnimations(EntityClass)
 		
 	@loadAnimations: (EntityClass)->
+		animationsFromJSON = ({poses, animations})->
+			EntityClass.poses = poses
+			EntityClass.animations = animations
+		
 		if fs?
 			try
 				json = fs.readFileSync(EntityClass.animation_json_path)
@@ -34,12 +38,12 @@ class @Entity
 		else
 			json = localStorage["Tiamblia #{EntityClass.name} animations"]
 		if json
-			EntityClass.animationsFromJSON(JSON.parse(json)) if json
+			animationsFromJSON(JSON.parse(json)) if json
 		else
 			req = new XMLHttpRequest
 			req.addEventListener "load", (e)=>
 				json = req.responseText
-				EntityClass.animationsFromJSON(JSON.parse(json)) if json
+				animationsFromJSON(JSON.parse(json)) if json
 			req.open("GET", EntityClass.animation_json_path)
 			req.send()
 	
@@ -47,13 +51,13 @@ class @Entity
 		{poses, animations} = EntityClass
 		json = JSON.stringify({poses, animations}, null, "\t")
 		if fs?
+			try
+				fs.mkdirSync(path.dirname(EntityClass.animation_json_path))
+			catch e
+				throw e unless e.code is "EEXIST"
 			fs.writeFileSync(EntityClass.animation_json_path, json)
 		else
 			localStorage["Tiamblia #{EntityClass.name} animations"] = json
-	
-	@animationsFromJSON: ({poses, animations})->
-		EntityClass.poses = poses
-		EntityClass.animations = animations
 	
 	@fromJSON: (def)->
 		unless typeof def._class_ is "string"
