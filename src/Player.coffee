@@ -103,20 +103,15 @@ class @Player extends SimpleActor
 		# TODO: configurable controls
 		@move_x = right - left
 		super
-	
-	draw: (ctx)->
 		
-		# if @facing_x > 0
-		# 	# @structure = flipStructureHorizontally(@_whatever_pose_structure_whatever_, sin(Date.now()/500)*50)
-		# 	@structure = flipStructureHorizontally(@_whatever_pose_structure_whatever_)
-		# else
-		# 	@structure = @_whatever_pose_structure_whatever_
 		new_pose =
 			if @facing_x > 0
 				flipStructureHorizontally(@_whatever_pose_structure_whatever_)
 			else
 				@_whatever_pose_structure_whatever_
 		@structure = lerpStructures(@structure, new_pose, 0.3)
+	
+	draw: (ctx)->
 		# ctx.scale(-1, 1) if @facing_x > 0
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
