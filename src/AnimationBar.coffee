@@ -24,3 +24,5 @@ class @AnimationBar extends Bar
 			cell_el.appendChild(@entity_preview.canvas)
 			
 			@element.appendChild(cell_el)
+			
+		@entity_preview?.update()
