@@ -1,5 +1,4 @@
 
-# TODO: animation editing......
 # TODO: reasonable terrain editing
 # TODO: shift+select (and alternatively ctrl+select)
 

@@ -39,61 +39,81 @@ class @AnimationBar extends Bar
 				new_pose_name = "New Pose #{i}"
 				i += 1
 			EntityClass.poses[new_pose_name] = {}
-			@update_frame_els(entity)
+			
+			@update_anim_els(entity)
 		
 		@new_animation_button.addEventListener "click", (e)=>
 			alert("Animations are not yet supported")
+			# TODO: animation editing
 		
 		@shown_entity = null
-		@editing_frame_name = null
+		@editing_anim_name = null
 		@entity_previews = []
 	
-	update_frame_els: (entity)->
+	update_anim_els: (entity)->
 		@shown_entity = entity
 		@entity_previews = []
 		
 		EntityClass = Object.getPrototypeOf(entity).constructor
 		
-		selected_frame_el = null
+		selected_anim_el = null
 		
-		create_frame_el = (frame_name)=>
+		create_anim_el = (anim_name)=>
 			entity_preview = new EntityPreview(entity, max_width: 200, max_height: 100)
 			@entity_previews.push(entity_preview)
-			frame_el = document.createElement("article")
-			frame_el.className = "frame"
-			name_el = document.createElement("h1")
-			name_el.className = "name"
-			name_el.textContent = frame_name
-			frame_el.appendChild(name_el)
-			frame_el.appendChild(entity_preview.canvas)
-			frame_el.addEventListener "click", (e)=>
-				selected_frame_el.classList.remove("selected")
-				selected_frame_el = frame_el
-				frame_el.classList.add("selected")
-			frame_el
+			anim_el = document.createElement("article")
+			mdl_textfield_el = document.createElement("div")
+			mdl_textfield_el.className = "mdl-textfield mdl-js-textfield"
+			name_input_el = document.createElement("input")
+			name_label_el = document.createElement("label")
+			name_input_el.className = "mdl-textfield__input name"
+			name_label_el.className = "mdl-textfield__label"
+			name_label_el.textContent = "Text..."
+			name_input_el.value = anim_name
+			mdl_textfield_el.appendChild(name_input_el)
+			mdl_textfield_el.appendChild(name_label_el)
+			anim_el.appendChild(mdl_textfield_el)
+			anim_el.appendChild(entity_preview.canvas)
+			anim_el.addEventListener "click", (e)=>
+				selected_anim_el.classList.remove("selected")
+				selected_anim_el = anim_el
+				anim_el.classList.add("selected")
+			name_input_el.addEventListener "change", (e)=>
+				new_anim_name = name_input_el.value
+				if EntityClass.poses[new_anim_name]
+					alert("There's already a pose with the name #{new_anim_name}")
+					name_input_el.value = anim_name
+					return
+				if EntityClass.animations[new_anim_name]
+					alert("There's already an animation with the name #{new_anim_name}")
+					name_input_el.value = anim_name
+					return
+				alert("Renaming is not yet supported.")
+			componentHandler.upgradeElement(mdl_textfield_el)
+			anim_el
 		
 		@poses_el.innerHTML = ""
 		@animations_el.innerHTML = ""
 		
-		frame_el = create_frame_el("Current Pose")
-		@poses_el.appendChild(frame_el)
-		selected_frame_el = frame_el
-		frame_el.classList.add("selected")
+		anim_el = create_anim_el("Current Pose")
+		@poses_el.appendChild(anim_el)
+		selected_anim_el = anim_el
+		anim_el.classList.add("selected")
 		
 		for pose_name, pose of EntityClass.poses
-			frame_el = create_frame_el(pose_name, pose)
-			@poses_el.appendChild(frame_el)
+			anim_el = create_anim_el(pose_name, pose)
+			@poses_el.appendChild(anim_el)
 		
 		for animation_name, animation of EntityClass.animations
-			frame_el = create_frame_el(animation_name, animation)
-			@animations_el.appendChild(frame_el)
+			anim_el = create_anim_el(animation_name, animation)
+			@animations_el.appendChild(anim_el)
 	
 	update: ->
 		entity = @editor.editing_entity
 		@element.classList[if entity? then "add" else "remove"]("visible")
 		
 		if entity? and entity isnt @shown_entity
-			@update_frame_els(entity)
+			@update_anim_els(entity)
 		
 		for entity_preview in @entity_previews
 			entity_preview.update()

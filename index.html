@@ -56,6 +56,9 @@
 		}
 		.bar article {
 			padding: 1rem;
+			padding-top: 0.5rem;
+			display: flex;
+			flex-direction: column;
 		}
 		.bar article:hover {
 			background: rgba(0, 0, 0, 0.08);
@@ -83,14 +86,23 @@
 			font-size: 1.2em;
 			font-weight: normal;
 			font-family: sans-serif;
+			margin: 0;
 			margin-bottom: 0.1em;
-			margin-top: -0.3em;
 		}
 		.bar article h1 {
 			pointer-events: none;
 		}
-		button {
+		.bar article .mdl-textfield {
+			width: auto;
+			padding: 0;
+			padding-bottom: 0.3rem;
+		}
+		button,
+		canvas,
+		img {
 			flex: 0 0 auto;
+		}
+		button {
 			margin: 0.5rem 0 !important;
 		}
 	</style>
