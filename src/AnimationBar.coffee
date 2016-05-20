@@ -158,15 +158,7 @@ class @AnimationBar extends React.Component
 		
 		if editing_entity?
 			for anim in @anims
-				# console.log anim
 				# TODO: don't need to use getPrototypeOf
-				# EntityClass = Object.getPrototypeOf(editing_entity).constructor
-				# console.log anim, anim.props, anim.props.name
-				# pose = EntityClass.poses[anim.props.name]
-				# {pose} = anim.props
-				# anim.entity_preview.entity.structure.setPose(pose)
-				# anim.entity_preview.entity.structure.setPose(anim.props.pose)
-				
 				EntityClass = Object.getPrototypeOf(editing_entity).constructor
 				pose =
 					if anim.props.name is "Current Pose" or anim.props.name is editing_entity_anim_name

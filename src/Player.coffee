@@ -109,7 +109,7 @@ class @Player extends SimpleActor
 			new_pose = Player.poses["Run"] ? @structure.getPose()
 		
 		new_pose =
-			if @facing_x > 0
+			if @facing_x < 0
 				Pose.horizontallyFlip(new_pose)
 			else
 				new_pose
