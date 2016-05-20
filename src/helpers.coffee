@@ -2,6 +2,9 @@
 @[k] = Math[k] for k in Object.getOwnPropertyNames(Math)
 @TAU = PI * 2
 
+# hope we never want to use Euler's number
+@E = ReactScript
+
 distanceSquared = (v, w)-> (v.x - w.x) ** 2 + (v.y - w.y) ** 2
 @distance = (v, w)-> sqrt(distanceSquared(v, w))
 
@@ -38,3 +41,16 @@ distanceToLineSegmentSquared = (p, v, w)->
 @entity_classes = {}
 @addEntityClass = (constructor)->
 	entity_classes[constructor.name] = constructor
+
+@rename_object_key = (object, old_key, new_key)->
+	new_object = {}
+	for k, v of object
+		if k is old_key
+			new_object[new_key] = v
+		else
+			new_object[k] = v
+	# return new_object
+	for k, v of object
+		delete object[k]
+	for k, v of new_object
+		object[k] = v

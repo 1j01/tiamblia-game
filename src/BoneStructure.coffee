@@ -17,7 +17,6 @@ class @BoneStructure extends Structure
 			throw new Error "point/segment '#{from}' does not exist yet adding segment '#{name}'"
 		@points[to] = {x: 0, y: 0, name: to}
 		@segments[name] = {a: @points[from], b: @points[to], from, to, name}
-		# console.log def
 		@segments[name][k] = v for k, v of def when v?
 		return name
 	
@@ -91,8 +90,6 @@ class @BoneStructure extends Structure
 				point.vy ?= 0
 				point.vx += force.x
 				point.vy += force.y
-				# point.x += force.x
-				# point.y += force.y
 				move_x = point.vx
 				move_y = point.vy
 				resolution = 0.5

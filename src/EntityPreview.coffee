@@ -1,6 +1,8 @@
 
-class @EntityPreview
-	constructor: (@entity, {max_width, max_height})->
+class @EntityPreview extends React.Component
+	constructor: (props)->
+		super
+		{@entity, max_width, max_height} = props
 		@view = new View
 		entity_bbox = @entity.bbox()
 		center_x = entity_bbox.x + entity_bbox.width / 2 - @entity.x
@@ -14,8 +16,9 @@ class @EntityPreview
 		@view.center_x = center_x
 		@view.center_y = center_y
 		@view.is_preview = true
-		@canvas = document.createElement("canvas")
-		@ctx = @canvas.getContext("2d")
+	
+	render: ->
+		E "canvas", ref: (@canvas)=>
 	
 	update: ->
 		entity_bbox = @entity.bbox()
@@ -24,11 +27,12 @@ class @EntityPreview
 		@view.center_x = center_x
 		@view.center_y = center_y
 		
+		ctx = @canvas.getContext("2d")
 		@canvas.width = @view.width
 		@canvas.height = @view.height
-		@ctx.save()
-		@ctx.translate(@view.width/2, @view.height/2)
-		@ctx.scale(@view.scale, @view.scale)
-		@ctx.translate(-@view.center_x, -@view.center_y)
-		@entity.draw(@ctx, @view)
-		@ctx.restore()
+		ctx.save()
+		ctx.translate(@view.width/2, @view.height/2)
+		ctx.scale(@view.scale, @view.scale)
+		ctx.translate(-@view.center_x, -@view.center_y)
+		@entity.draw(ctx, @view)
+		ctx.restore()

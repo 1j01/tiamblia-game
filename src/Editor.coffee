@@ -13,6 +13,7 @@ class @Editor
 		@hovered_points = []
 		@selection_box = null
 		@editing_entity = null
+		@editing_entity_anim_name = null
 		@last_click_time = null
 		@dragging_points = []
 		@dragging_segments = []
@@ -23,8 +24,13 @@ class @Editor
 		@undos = []
 		@redos = []
 		@clipboard = {}
-		@entities_bar = new EntitiesBar(@)
-		@animation_bar = new AnimationBar(@)
+		react_root_el = document.createElement("div")
+		react_root_el.className = "react-root"
+		document.body.appendChild(react_root_el)
+		react_root = E ".editor",
+			E EntitiesBar, editor: @, ref: (@entities_bar)=>
+			E AnimationBar, editor: @, ref: (@animation_bar)=>
+		ReactDOM.render(react_root, react_root_el)
 		if fs?
 			@save_path = "world.json"
 			# @save_path = path.join(nw.App.dataPath, "world.json")
@@ -56,7 +62,7 @@ class @Editor
 			
 			if @dragging_points.length
 				@dragging_points = []
-				@animation_bar.savePose()
+				@savePose()
 				@save()
 			
 			if @dragging_entities.length
@@ -209,7 +215,14 @@ class @Editor
 		else
 			delete localStorage["Tiamblia World"]
 	
+	savePose: ->
+		if @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
+			EntityClass = Object.getPrototypeOf(@editing_entity).constructor
+			EntityClass.poses[@editing_entity_anim_name] = @editing_entity.structure.getPose()
+			Entity.saveAnimations(EntityClass)
+	
 	toJSON: ->
+		# TODO: make animation stuff undoable
 		selected_entity_ids = (entity.id for entity in @selected_entities)
 		editing_entity_id = @editing_entity?.id
 		selected_point_names = []
