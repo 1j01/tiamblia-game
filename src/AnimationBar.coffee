@@ -10,6 +10,7 @@ class Anim extends React.Component
 	render: ->
 		{entity, EntityClass, name, editor} = @props
 		selected = editor.editing_entity_anim_name is name
+		@preview_entity = Entity.fromJSON(JSON.parse(JSON.stringify(entity)))
 		E "article",
 			class: {selected}
 			onClick: (e)=>
@@ -46,13 +47,14 @@ class Anim extends React.Component
 							# EntityClass.poses = new_poses
 							
 							rename_object_key(EntityClass.poses, name, new_name)
+							# FIXME: cursor gets placed at end of field
 							
 							editor.editing_entity_anim_name = new_name
 							Entity.saveAnimations(EntityClass)
 							
 					E "label.mdl-textfield__label", "Name..."
 			E EntityPreview, {
-				entity, max_width: 200, max_height: 100
+				entity: @preview_entity, max_width: 200, max_height: 100
 				ref: (@entity_preview)=>
 			}
 	
@@ -64,9 +66,6 @@ class @AnimationBar extends React.Component
 	constructor: ->
 		super
 		@state = {visible: no}
-		@shown_entity = null
-		# @editing_anim_name = null
-		@entity_previews = []
 	
 	render: ->
 		{editor} = @props
@@ -78,12 +77,31 @@ class @AnimationBar extends React.Component
 		if entity?
 			EntityClass = Object.getPrototypeOf(entity).constructor
 		
+		@anims = []
 		E ".bar.sidebar.animation-bar", class: {visible},
 			E "h1", "Poses"
-			if EntityClass?
-				E Anim, {name: "Current Pose", pose: entity.structure.getPose(), entity, EntityClass, editor}
-				for pose_name, pose of EntityClass.poses
-					E Anim, {name: pose_name, pose, entity, EntityClass, editor}
+			E ".poses",
+				if entity?
+					E Anim, {
+						key: "Current Pose"
+						name: "Current Pose"
+						pose: entity.structure.getPose()
+						entity, EntityClass, editor
+						ref: (anim)=>
+							@anims.push(anim) if anim?
+					}
+				if EntityClass?
+					i = 0
+					for pose_name, pose of EntityClass.poses
+						i += 1
+						E Anim, {
+							key: i
+							name: pose_name
+							pose
+							entity, EntityClass, editor
+							ref: (anim)=>
+								@anims.push(anim) if anim?
+						}
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_pose_button)=>
 				onClick: =>
@@ -99,15 +117,23 @@ class @AnimationBar extends React.Component
 					EntityClass.poses[new_pose_name] = entity.structure.getPose()
 					Entity.saveAnimations(EntityClass)
 					
-					# @editing_anim_name = new_pose_name
 					editor.editing_entity_anim_name = new_pose_name
-					# TODO: rerender() or I guess it can go below in update()
 				
 				E "i.material-icons", "add"
 			E "h1", "Animations"
-			if EntityClass?
-				for animation_name, animation of EntityClass.animations
-					E Anim, {name: animation_name, animation}
+			E ".animations",
+				if EntityClass?
+					i = 0
+					for animation_name, animation of EntityClass.animations
+						i += 1
+						E Anim, {
+							key: i
+							name: animation_name
+							animation
+							entity, EntityClass, editor
+							ref: (anim)=>
+								@anims.push(anim) if anim?
+						}
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_animation_button)=>
 				onClick: =>
@@ -130,5 +156,23 @@ class @AnimationBar extends React.Component
 		visible = editing_entity?
 		@setState {visible, editing_entity_anim_name}
 		
-		for entity_preview in @entity_previews
-			entity_preview.update()
+		if editing_entity?
+			for anim in @anims
+				# console.log anim
+				# TODO: don't need to use getPrototypeOf
+				# EntityClass = Object.getPrototypeOf(editing_entity).constructor
+				# console.log anim, anim.props, anim.props.name
+				# pose = EntityClass.poses[anim.props.name]
+				# {pose} = anim.props
+				# anim.entity_preview.entity.structure.setPose(pose)
+				# anim.entity_preview.entity.structure.setPose(anim.props.pose)
+				
+				EntityClass = Object.getPrototypeOf(editing_entity).constructor
+				pose =
+					if anim.props.name is "Current Pose" or anim.props.name is editing_entity_anim_name
+						editing_entity.structure.getPose()
+					else
+						EntityClass.poses[anim.props.name]
+				anim.entity_preview.entity.structure.setPose(pose)
+				
+				anim.entity_preview.update()

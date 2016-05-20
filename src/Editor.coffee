@@ -132,6 +132,29 @@ class @Editor
 			))
 			menu.append(new nw.MenuItem(type: 'separator'))
 			if @editing_entity
+				# TODO: DRY these (maybe have a modifyPose function of some sort)
+				# TODO: allow flipping the current pose, just don't save it? or save the world where it's stored?
+				menu.append(new nw.MenuItem(
+					label: 'Flip Pose Horizontally'
+					enabled: @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
+					click: =>
+						new_pose = Pose.horizontallyFlip(@editing_entity.structure.getPose())
+						@editing_entity.structure.setPose(new_pose)
+						EntityClass = Object.getPrototypeOf(@editing_entity).constructor
+						EntityClass.poses[@editing_entity_anim_name] = new_pose
+						Entity.saveAnimations(EntityClass)
+				))
+				menu.append(new nw.MenuItem(
+					label: 'Flip Pose Vertically'
+					enabled: @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
+					click: =>
+						new_pose = Pose.verticallyFlip(@editing_entity.structure.getPose())
+						@editing_entity.structure.setPose(new_pose)
+						EntityClass = Object.getPrototypeOf(@editing_entity).constructor
+						EntityClass.poses[@editing_entity_anim_name] = new_pose
+						Entity.saveAnimations(EntityClass)
+				))
+				menu.append(new nw.MenuItem(type: 'separator'))
 				menu.append(new nw.MenuItem(
 					label: 'Finish Editing Entity'
 					click: => @finishEditingEntity()
@@ -692,5 +715,6 @@ class @Editor
 			ctx.restore()
 	
 	updateGUI: ->
+		@editing_entity_anim_name = "Current Pose" unless @editing_entity
 		@animation_bar.update()
 		@entities_bar.update()

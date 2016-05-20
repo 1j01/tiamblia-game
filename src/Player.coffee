@@ -103,7 +103,10 @@ class @Player extends SimpleActor
 		@move_x = right - left
 		super
 		
-		new_pose = Player.poses["New Pose"] ? @structure.getPose()
+		if @move_x is 0
+			new_pose = Player.poses["Stand"] ? @structure.getPose()
+		else
+			new_pose = Player.poses["Run"] ? @structure.getPose()
 		
 		new_pose =
 			if @facing_x > 0
@@ -114,7 +117,6 @@ class @Player extends SimpleActor
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 	
 	draw: (ctx)->
-		# ctx.scale(-1, 1) if @facing_x > 0
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good
