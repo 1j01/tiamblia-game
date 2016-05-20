@@ -89,7 +89,6 @@ class @Player extends SimpleActor
 			name: "lower right leg"
 			length: 10
 		)
-		@_whatever_pose_structure_whatever_ = @structure
 		# FIXME: arms are too long compared to legs
 		# TODO: add some constraints to hips, shoulders, and neck
 		# TODO: min/max_length for psuedo-3D purposes
@@ -104,12 +103,15 @@ class @Player extends SimpleActor
 		@move_x = right - left
 		super
 		
+		new_pose = Player.poses["New Pose"] ? @structure.getPose()
+		
 		new_pose =
 			if @facing_x > 0
-				flipStructureHorizontally(@_whatever_pose_structure_whatever_)
+				Pose.horizontallyFlip(new_pose)
 			else
-				@_whatever_pose_structure_whatever_
-		@structure = lerpStructures(@structure, new_pose, 0.3)
+				new_pose
+		
+		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 	
 	draw: (ctx)->
 		# ctx.scale(-1, 1) if @facing_x > 0

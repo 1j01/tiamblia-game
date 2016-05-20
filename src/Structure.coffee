@@ -26,3 +26,12 @@ class @Structure
 			segment.a = @points[segment.from]
 			segment.b = @points[segment.to]
 			@segments[segment_name] = segment
+	
+	setPose: (pose)->
+		for point_name, point of pose.points
+			# console.log point_name, point, @points[point_name]
+			@points[point_name].x = point.x
+			@points[point_name].y = point.y
+	
+	getPose: ->
+		new Pose(@)

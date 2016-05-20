@@ -56,7 +56,7 @@ class @Editor
 			
 			if @dragging_points.length
 				@dragging_points = []
-				Entity.saveAnimations(Object.getPrototypeOf(@editing_entity).constructor)
+				@animation_bar.savePose()
 				@save()
 			
 			if @dragging_entities.length

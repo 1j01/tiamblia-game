@@ -26,18 +26,10 @@ class @Entity
 		animationsFromJSON = ({poses, animations})->
 			EntityClass.poses = {}
 			EntityClass.animations = {}
-			# TODO: poses shouldn't be structures
-			StructureClass = (new EntityClass).structure.constructor
 			for pose_name, pose of poses
-				structure = new StructureClass
-				structure.fromJSON(pose)
-				EntityClass.poses[pose_name] = structure
+				EntityClass.poses[pose_name] = new Pose(pose)
 			for animation_name, animation of animations
-				frames = for pose in animation
-					structure = new StructureClass
-					structure.fromJSON(pose)
-					structure
-				EntityClass.animations[animation_name] = frames
+				EntityClass.animations[animation_name] = (new Pose(pose) for pose in animation)
 		
 		if fs?
 			try
@@ -118,8 +110,8 @@ class @Entity
 		width: max_point_in_world.x - min_point_in_world.x
 		height: max_point_in_world.y - min_point_in_world.y
 	
-	animate: ()->
-		@structure = lerpStructures()
+	# animate: ()->
+	# 	@structure.setPose(Pose.lerp(various_poses))
 	
 	step: (world)->
 	draw: (ctx)->

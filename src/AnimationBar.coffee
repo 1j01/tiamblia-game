@@ -33,13 +33,15 @@ class @AnimationBar extends Bar
 		@new_pose_button.addEventListener "click", (e)=>
 			entity = @editor.editing_entity
 			EntityClass = Object.getPrototypeOf(entity).constructor
+			
 			new_pose_name = "New Pose"
 			i = 1
 			while EntityClass.poses[new_pose_name]?
 				new_pose_name = "New Pose #{i}"
 				i += 1
-			# TODO: poses shouldn't just be structures; they don't need to store segments (and might want to store other stuff)
-			EntityClass.poses[new_pose_name] = copyStructure(entity.structure)
+			
+			EntityClass.poses[new_pose_name] = entity.structure.getPose()
+			Entity.saveAnimations(EntityClass)
 			
 			@update_anim_els(entity)
 			# TODO: select the new pose
@@ -51,6 +53,13 @@ class @AnimationBar extends Bar
 		@shown_entity = null
 		@editing_anim_name = null
 		@entity_previews = []
+	
+	savePose: ->
+		if @editing_anim_name and @editing_anim_name isnt "Current Pose"
+			entity = @editor.editing_entity
+			EntityClass = Object.getPrototypeOf(entity).constructor
+			EntityClass.poses[@editing_anim_name] = entity.structure.getPose()
+			Entity.saveAnimations(EntityClass)
 	
 	update_anim_els: (entity)->
 		@entity_previews = []
@@ -79,8 +88,9 @@ class @AnimationBar extends Bar
 				selected_anim_el.classList.remove("selected")
 				selected_anim_el = anim_el
 				anim_el.classList.add("selected")
+				@editing_anim_name = anim_name
 				unless anim_name is "Current Pose"
-					entity.structure = EntityClass.poses[anim_name]
+					entity.structure.setPose(EntityClass.poses[anim_name])
 			name_input_el.addEventListener "change", (e)=>
 				new_anim_name = name_input_el.value
 				if EntityClass.poses[new_anim_name]
@@ -101,6 +111,7 @@ class @AnimationBar extends Bar
 		anim_el = create_anim_el("Current Pose")
 		@poses_el.appendChild(anim_el)
 		selected_anim_el = anim_el
+		@editing_anim_name = "Current Pose"
 		anim_el.classList.add("selected")
 		
 		for pose_name, pose of EntityClass.poses
