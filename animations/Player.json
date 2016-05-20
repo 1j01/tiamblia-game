@@ -1,9 +1,181 @@
 {
 	"poses": {
-		"New Pose": {},
-		"New Pose 1": {},
-		"New Pose 2": {},
-		"New Pose 3": {}
+		"New Pose": {
+			"points": {
+				"head": {
+					"x": -2.9095986344496407,
+					"y": -10.465073457110659,
+					"name": "head"
+				},
+				"neck": {
+					"x": -2.762001603270429,
+					"y": -5.467251361177846,
+					"name": "neck"
+				},
+				"sternum": {
+					"x": -2.692019689548519,
+					"y": -3.468471194381745,
+					"name": "sternum"
+				},
+				"left shoulder": {
+					"x": -4.637744126993896,
+					"y": -3.0054634955945287,
+					"name": "left shoulder"
+				},
+				"right shoulder": {
+					"x": -0.7115868408069757,
+					"y": -3.7479250722694633,
+					"name": "right shoulder"
+				},
+				"left elbo": {
+					"x": -13.656089409666796,
+					"y": -7.326291419894396,
+					"name": "left elbo"
+				},
+				"right elbo": {
+					"x": 8.579231042363686,
+					"y": -7.446684973433761,
+					"name": "right elbo"
+				},
+				"left hand": {
+					"x": -15.39608215088371,
+					"y": -17.173750954870975,
+					"name": "left hand"
+				},
+				"right hand": {
+					"x": 12.584278844452967,
+					"y": -16.609634111823055,
+					"name": "right hand"
+				},
+				"pelvis": {
+					"x": -0.399879225401385,
+					"y": 16.399746914853917,
+					"name": "pelvis"
+				},
+				"left hip": {
+					"x": -2.1056784056557882,
+					"y": 17.44389626619405,
+					"name": "left hip"
+				},
+				"right hip": {
+					"x": 1.543247181615965,
+					"y": 16.873306481490836,
+					"name": "right hip"
+				},
+				"left knee": {
+					"x": -7.582815440661064,
+					"y": 25.81055445388487,
+					"name": "left knee"
+				},
+				"right knee": {
+					"x": 6.617022494402254,
+					"y": 25.4905452298932,
+					"name": "right knee"
+				},
+				"left foot": {
+					"x": -4.096911793892272,
+					"y": 35.18330621416828,
+					"name": "left foot"
+				},
+				"right foot": {
+					"x": 16.61557755403369,
+					"y": 25.320555199593436,
+					"name": "right foot"
+				}
+			},
+			"segments": {
+				"neck": {
+					"from": "head",
+					"to": "neck",
+					"name": "neck",
+					"length": 5
+				},
+				"sternum": {
+					"from": "neck",
+					"to": "sternum",
+					"name": "sternum",
+					"length": 2
+				},
+				"left shoulder": {
+					"from": "sternum",
+					"to": "left shoulder",
+					"name": "left shoulder",
+					"length": 2
+				},
+				"right shoulder": {
+					"from": "sternum",
+					"to": "right shoulder",
+					"name": "right shoulder",
+					"length": 2
+				},
+				"upper left arm": {
+					"from": "left shoulder",
+					"to": "left elbo",
+					"name": "upper left arm",
+					"length": 10
+				},
+				"upper right arm": {
+					"from": "right shoulder",
+					"to": "right elbo",
+					"name": "upper right arm",
+					"length": 10
+				},
+				"lower left arm": {
+					"from": "left elbo",
+					"to": "left hand",
+					"name": "lower left arm",
+					"length": 10
+				},
+				"lower right arm": {
+					"from": "right elbo",
+					"to": "right hand",
+					"name": "lower right arm",
+					"length": 10
+				},
+				"torso": {
+					"from": "sternum",
+					"to": "pelvis",
+					"name": "torso",
+					"length": 20
+				},
+				"left hip": {
+					"from": "pelvis",
+					"to": "left hip",
+					"name": "left hip",
+					"length": 2
+				},
+				"right hip": {
+					"from": "pelvis",
+					"to": "right hip",
+					"name": "right hip",
+					"length": 2
+				},
+				"upper left leg": {
+					"from": "left hip",
+					"to": "left knee",
+					"name": "upper left leg",
+					"length": 10
+				},
+				"upper right leg": {
+					"from": "right hip",
+					"to": "right knee",
+					"name": "upper right leg",
+					"length": 10
+				},
+				"lower left leg": {
+					"from": "left knee",
+					"to": "left foot",
+					"name": "lower left leg",
+					"length": 10
+				},
+				"lower right leg": {
+					"from": "right knee",
+					"to": "right foot",
+					"name": "lower right leg",
+					"length": 10
+				}
+			}
+		}
 	},
 	"animations": {}
 }

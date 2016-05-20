@@ -38,9 +38,11 @@ class @AnimationBar extends Bar
 			while EntityClass.poses[new_pose_name]?
 				new_pose_name = "New Pose #{i}"
 				i += 1
-			EntityClass.poses[new_pose_name] = {}
+			# TODO: poses shouldn't just be structures; they don't need to store segments (and might want to store other stuff)
+			EntityClass.poses[new_pose_name] = copyStructure(entity.structure)
 			
 			@update_anim_els(entity)
+			# TODO: select the new pose
 		
 		@new_animation_button.addEventListener "click", (e)=>
 			alert("Animations are not yet supported")
@@ -51,7 +53,6 @@ class @AnimationBar extends Bar
 		@entity_previews = []
 	
 	update_anim_els: (entity)->
-		@shown_entity = entity
 		@entity_previews = []
 		
 		EntityClass = Object.getPrototypeOf(entity).constructor
@@ -78,6 +79,8 @@ class @AnimationBar extends Bar
 				selected_anim_el.classList.remove("selected")
 				selected_anim_el = anim_el
 				anim_el.classList.add("selected")
+				unless anim_name is "Current Pose"
+					entity.structure = EntityClass.poses[anim_name]
 			name_input_el.addEventListener "change", (e)=>
 				new_anim_name = name_input_el.value
 				if EntityClass.poses[new_anim_name]
@@ -114,6 +117,8 @@ class @AnimationBar extends Bar
 		
 		if entity? and entity isnt @shown_entity
 			@update_anim_els(entity)
+		
+		@shown_entity = entity
 		
 		for entity_preview in @entity_previews
 			entity_preview.update()

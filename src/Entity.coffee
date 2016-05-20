@@ -14,10 +14,7 @@ class @Entity
 		# @drawing_pieces = {}
 		
 		EntityClass = Object.getPrototypeOf(@).constructor
-		# EntityClass.poses = {}
-		# EntityClass.animations = {}
 		@_class_ = EntityClass.name
-		
 	
 	@initAnimation: (EntityClass)->
 		EntityClass.poses = {}
@@ -27,8 +24,20 @@ class @Entity
 		
 	@loadAnimations: (EntityClass)->
 		animationsFromJSON = ({poses, animations})->
-			EntityClass.poses = poses
-			EntityClass.animations = animations
+			EntityClass.poses = {}
+			EntityClass.animations = {}
+			# TODO: poses shouldn't be structures
+			StructureClass = (new EntityClass).structure.constructor
+			for pose_name, pose of poses
+				structure = new StructureClass
+				structure.fromJSON(pose)
+				EntityClass.poses[pose_name] = structure
+			for animation_name, animation of animations
+				frames = for pose in animation
+					structure = new StructureClass
+					structure.fromJSON(pose)
+					structure
+				EntityClass.animations[animation_name] = frames
 		
 		if fs?
 			try

@@ -58,7 +58,9 @@ distanceToLineSegmentSquared = (p, v, w)->
 	StructureClass = structure.constructor
 	result = new StructureClass
 	for point_name, point of structure.points
-		result.points[point_name] = fn(point)
+		new_point = fn(point)
+		new_point[k] ?= v for k, v of point
+		result.points[point_name] = new_point
 	for segment_name, segment of structure.segments
 		new_segment = {}
 		new_segment[k] = v for k, v of segment
@@ -66,6 +68,9 @@ distanceToLineSegmentSquared = (p, v, w)->
 		new_segment.b = result.points[segment.b.name]
 		result.segments[segment_name] = new_segment
 	result
+
+@copyStructure = (structure)->
+	@alterStructurePoints(structure, (-> {}))
 
 @flipStructureHorizontally = (structure, center_x=0)->
 	alterStructurePoints structure, (point)->
