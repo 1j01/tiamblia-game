@@ -140,7 +140,7 @@ class @Editor
 					click: =>
 						new_pose = Pose.horizontallyFlip(@editing_entity.structure.getPose())
 						@editing_entity.structure.setPose(new_pose)
-						EntityClass = Object.getPrototypeOf(@editing_entity).constructor
+						EntityClass = entity_classes[@editing_entity._class_]
 						EntityClass.poses[@editing_entity_anim_name] = new_pose
 						Entity.saveAnimations(EntityClass)
 				))
@@ -150,7 +150,7 @@ class @Editor
 					click: =>
 						new_pose = Pose.verticallyFlip(@editing_entity.structure.getPose())
 						@editing_entity.structure.setPose(new_pose)
-						EntityClass = Object.getPrototypeOf(@editing_entity).constructor
+						EntityClass = entity_classes[@editing_entity._class_]
 						EntityClass.poses[@editing_entity_anim_name] = new_pose
 						Entity.saveAnimations(EntityClass)
 				))
@@ -240,7 +240,7 @@ class @Editor
 	
 	savePose: ->
 		if @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
-			EntityClass = Object.getPrototypeOf(@editing_entity).constructor
+			EntityClass = entity_classes[@editing_entity._class_]
 			EntityClass.poses[@editing_entity_anim_name] = @editing_entity.structure.getPose()
 			Entity.saveAnimations(EntityClass)
 	

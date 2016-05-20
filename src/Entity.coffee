@@ -13,8 +13,7 @@ class @Entity
 		# TODO: depth system
 		# @drawing_pieces = {}
 		
-		EntityClass = Object.getPrototypeOf(@).constructor
-		@_class_ = EntityClass.name
+		@_class_ = @constructor.name
 	
 	@initAnimation: (EntityClass)->
 		EntityClass.poses = {}

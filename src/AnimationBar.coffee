@@ -69,13 +69,10 @@ class @AnimationBar extends React.Component
 	
 	render: ->
 		{editor} = @props
-		{visible} = @state
+		{visible, EntityClass} = @state
 		
 		entity = editor.editing_entity ? @shown_entity
 		@shown_entity = entity
-		
-		if entity?
-			EntityClass = Object.getPrototypeOf(entity).constructor
 		
 		@anims = []
 		E ".bar.sidebar.animation-bar", class: {visible},
@@ -105,9 +102,6 @@ class @AnimationBar extends React.Component
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_pose_button)=>
 				onClick: =>
-					# entity = editor.editing_entity
-					# EntityClass = Object.getPrototypeOf(entity).constructor
-					
 					new_pose_name = "New Pose"
 					i = 1
 					while EntityClass.poses[new_pose_name]?
@@ -147,6 +141,7 @@ class @AnimationBar extends React.Component
 	
 	shouldComponentUpdate: (newProps, newState)->
 		newState.visible isnt @state.visible or
+		newState.EntityClass isnt @state.EntityClass or
 		newState.editing_entity_anim_name isnt @state.editing_entity_anim_name
 	
 	update: ->
@@ -154,12 +149,10 @@ class @AnimationBar extends React.Component
 		{editing_entity_anim_name, editing_entity} = editor
 		
 		visible = editing_entity?
-		@setState {visible, editing_entity_anim_name}
-		
 		if editing_entity?
+			EntityClass = entity_classes[editing_entity._class_]
+			
 			for anim in @anims
-				# TODO: don't need to use getPrototypeOf
-				EntityClass = Object.getPrototypeOf(editing_entity).constructor
 				pose =
 					if anim.props.name is "Current Pose" or anim.props.name is editing_entity_anim_name
 						editing_entity.structure.getPose()
@@ -168,3 +161,5 @@ class @AnimationBar extends React.Component
 				anim.entity_preview.entity.structure.setPose(pose)
 				
 				anim.entity_preview.update()
+		
+		@setState {visible, EntityClass, editing_entity_anim_name}
