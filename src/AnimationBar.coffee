@@ -14,45 +14,43 @@ class Anim extends React.Component
 		E "article",
 			class: {selected}
 			onClick: (e)=>
+				console.log e.defaultPrevented, EntityClass.poses[name]
+				return if e.defaultPrevented
 				editor.editing_entity_anim_name = name
 				unless name is "Current Pose"
 					entity.structure.setPose(EntityClass.poses[name])
 			if name is "Current Pose"
 				E "h1.name", name
 			else
-				E ".mdl-textfield.mdl-js-textfield",
-					ref: (@mdl_textfield_el)=>
-					E "input.mdl-textfield__input.name",
-						value: name
-						onChange: (e)=>
-							new_name = e.target.value
-							# TODO: use error classes and messages instead of instrusive alerts
-							if EntityClass.poses[new_name]
-								alert("There's already a pose with the name #{new_name}")
-								return
-							if EntityClass.animations[new_name]
-								alert("There's already an animation with the name #{new_name}")
-								return
-							
-							# EntityClass.poses[new_name] = name
-							# delete EntityClass.poses[name]
-							
-							# rename preserving key order
-							# new_poses = {}
-							# for k, v of EntityClass.poses
-							# 	if k is name
-							# 		new_poses[new_name] = v
-							# 	else
-							# 		new_poses[k] = v
-							# EntityClass.poses = new_poses
-							
-							rename_object_key(EntityClass.poses, name, new_name)
-							# FIXME: cursor gets placed at end of field
-							
-							editor.editing_entity_anim_name = new_name
+				E ".title-bar",
+					E ".mdl-textfield.mdl-js-textfield.name",
+						ref: (@mdl_textfield_el)=>
+						E "input.mdl-textfield__input",
+							value: name
+							onChange: (e)=>
+								new_name = e.target.value
+								# TODO: use error classes and messages instead of instrusive alerts
+								if EntityClass.poses[new_name]
+									alert("There's already a pose with the name #{new_name}")
+									return
+								if EntityClass.animations[new_name]
+									alert("There's already an animation with the name #{new_name}")
+									return
+								
+								rename_object_key(EntityClass.poses, name, new_name)
+								# FIXME: cursor gets placed at end of field
+								
+								editor.editing_entity_anim_name = new_name
+								Entity.saveAnimations(EntityClass)
+								
+						E "label.mdl-textfield__label", "Name..."
+					E "button.mdl-button.mdl-js-button.mdl-button--icon.mdl-color-text--grey-600.delete",
+						onClick: (e)=>
+							delete EntityClass.poses[name]
 							Entity.saveAnimations(EntityClass)
-							
-					E "label.mdl-textfield__label", "Name..."
+							editor.editing_entity_anim_name = "Current Pose"
+							e.preventDefault()
+						E ".material-icons", "delete"
 			E EntityPreview, {
 				entity: @preview_entity, max_width: 200, max_height: 100
 				ref: (@entity_preview)=>
@@ -79,6 +77,8 @@ class @AnimationBar extends React.Component
 			E "h1", "Poses"
 			E ".poses",
 				if entity?
+					# TODO: maybe get rid of this?
+					# (and have a placeholder if no poses)
 					E Anim, {
 						key: "Current Pose"
 						name: "Current Pose"
@@ -128,6 +128,7 @@ class @AnimationBar extends React.Component
 							ref: (anim)=>
 								@anims.push(anim) if anim?
 						}
+					# TODO: placeholder if no animations
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_animation_button)=>
 				onClick: =>
@@ -152,7 +153,7 @@ class @AnimationBar extends React.Component
 		if editing_entity?
 			EntityClass = entity_classes[editing_entity._class_]
 			
-			for anim in @anims
+			for anim in @anims when EntityClass.poses[anim.props.name]? or anim.props.name is "Current Pose"
 				pose =
 					if anim.props.name is "Current Pose" or anim.props.name is editing_entity_anim_name
 						editing_entity.structure.getPose()
