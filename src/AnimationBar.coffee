@@ -5,7 +5,6 @@
 class Anim extends React.Component
 	constructor: ->
 		super
-		@state = {}
 	
 	render: ->
 		{entity, EntityClass, name, editor} = @props
@@ -41,16 +40,16 @@ class Anim extends React.Component
 								
 								editor.editing_entity_anim_name = new_name
 								Entity.saveAnimations(EntityClass)
-								
+								# @setState({pose_names: Object.keys(EntityClass.poses)})
 						E "label.mdl-textfield__label", "Name..."
 					E "button.mdl-button.mdl-js-button.mdl-button--icon.mdl-color-text--grey-600.delete",
 						onClick: (e)=>
 							delete EntityClass.poses[name]
 							Entity.saveAnimations(EntityClass)
 							editor.editing_entity_anim_name = "Current Pose"
-							# FIXME: doesn't rerender if Current Pose is already selected
+							# @setState({pose_names: Object.keys(EntityClass.poses)})
 							e.preventDefault()
-						E ".material-icons", "delete"
+						E "i.material-icons", "delete"
 			E EntityPreview, {
 				entity: @preview_entity, max_width: 200, max_height: 100
 				ref: (@entity_preview)=>
@@ -63,7 +62,11 @@ class Anim extends React.Component
 class @AnimationBar extends React.Component
 	constructor: ->
 		super
-		@state = {visible: no}
+		@state = {
+			visible: no
+			# pose_names: []
+			# animation_names: []
+		}
 	
 	render: ->
 		{editor} = @props
@@ -143,10 +146,13 @@ class @AnimationBar extends React.Component
 		componentHandler.upgradeElement(ReactDOM.findDOMNode(@new_pose_button))
 		componentHandler.upgradeElement(ReactDOM.findDOMNode(@new_animation_button))
 	
-	shouldComponentUpdate: (newProps, newState)->
-		newState.visible isnt @state.visible or
-		newState.EntityClass isnt @state.EntityClass or
-		newState.editing_entity_anim_name isnt @state.editing_entity_anim_name
+	# shouldComponentUpdate: (newProps, newState)->
+	# 	console.log newState, @state
+	# 	newState.visible isnt @state.visible or
+	# 	newState.EntityClass isnt @state.EntityClass or
+	# 	newState.pose_names.join(",") isnt @state.pose_names.join(",") or
+	# 	newState.animation_names.join(",") isnt @state.animation_names.join(",") or
+	# 	newState.editing_entity_anim_name isnt @state.editing_entity_anim_name
 	
 	update: ->
 		{editor} = @props
@@ -155,6 +161,8 @@ class @AnimationBar extends React.Component
 		visible = editing_entity?
 		if editing_entity?
 			EntityClass = entity_classes[editing_entity._class_]
+			# pose_names = Object.keys(EntityClass.poses)
+			# animation_names = Object.keys(EntityClass.animations)
 			
 			for anim in @anims when EntityClass.poses[anim.props.name]?
 				pose =
@@ -165,5 +173,9 @@ class @AnimationBar extends React.Component
 				anim.entity_preview.entity.structure.setPose(pose)
 				
 				anim.entity_preview.update()
+		# else
+		# 	pose_names = []
+		# 	animation_names = []
 		
+		# @setState {visible, EntityClass, editing_entity_anim_name, pose_names, animation_names}
 		@setState {visible, EntityClass, editing_entity_anim_name}
