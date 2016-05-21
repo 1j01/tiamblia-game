@@ -14,7 +14,6 @@ class Anim extends React.Component
 		E "article",
 			class: {selected}
 			onClick: (e)=>
-				console.log e.defaultPrevented, EntityClass.poses[name]
 				return if e.defaultPrevented
 				editor.editing_entity_anim_name = name
 				unless name is "Current Pose"
@@ -49,6 +48,7 @@ class Anim extends React.Component
 							delete EntityClass.poses[name]
 							Entity.saveAnimations(EntityClass)
 							editor.editing_entity_anim_name = "Current Pose"
+							# FIXME: doesn't rerender if Current Pose is already selected
 							e.preventDefault()
 						E ".material-icons", "delete"
 			E EntityPreview, {
@@ -76,29 +76,24 @@ class @AnimationBar extends React.Component
 		E ".bar.sidebar.animation-bar", class: {visible},
 			E "h1", "Poses"
 			E ".poses",
-				if entity?
-					# TODO: maybe get rid of this?
-					# (and have a placeholder if no poses)
-					E Anim, {
-						key: "Current Pose"
-						name: "Current Pose"
-						pose: entity.structure.getPose()
-						entity, EntityClass, editor
-						ref: (anim)=>
-							@anims.push(anim) if anim?
-					}
 				if EntityClass?
-					i = 0
-					for pose_name, pose of EntityClass.poses
-						i += 1
-						E Anim, {
-							key: i
-							name: pose_name
-							pose
-							entity, EntityClass, editor
-							ref: (anim)=>
-								@anims.push(anim) if anim?
-						}
+					if EntityClass.poses?
+						if Object.keys(EntityClass.poses).length > 0
+							i = 0
+							for pose_name, pose of EntityClass.poses
+								i += 1
+								E Anim, {
+									key: i
+									name: pose_name
+									pose
+									entity, EntityClass, editor
+									ref: (anim)=>
+										@anims.push(anim) if anim?
+								}
+						else
+							E "article.placeholder", "No poses"
+					else
+						E "article.placeholder", "Entity class is not initialized for animation"
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_pose_button)=>
 				onClick: =>
@@ -112,23 +107,31 @@ class @AnimationBar extends React.Component
 					Entity.saveAnimations(EntityClass)
 					
 					editor.editing_entity_anim_name = new_pose_name
+					
+					# FIXME: doesn't update until the next frame
 				
 				E "i.material-icons", "add"
 			E "h1", "Animations"
 			E ".animations",
 				if EntityClass?
-					i = 0
-					for animation_name, animation of EntityClass.animations
-						i += 1
-						E Anim, {
-							key: i
-							name: animation_name
-							animation
-							entity, EntityClass, editor
-							ref: (anim)=>
-								@anims.push(anim) if anim?
-						}
-					# TODO: placeholder if no animations
+					if EntityClass.animations?
+						if Object.keys(EntityClass.animations).length > 0
+							i = 0
+							for animation_name, animation of EntityClass.animations
+								i += 1
+								E Anim, {
+									key: i
+									name: animation_name
+									animation
+									entity, EntityClass, editor
+									ref: (anim)=>
+										@anims.push(anim) if anim?
+								}
+						else
+							E "article.placeholder", "No animations"
+					else
+						E "article.placeholder", "Entity class is not initialized for animation"
+					
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_animation_button)=>
 				onClick: =>
@@ -153,7 +156,7 @@ class @AnimationBar extends React.Component
 		if editing_entity?
 			EntityClass = entity_classes[editing_entity._class_]
 			
-			for anim in @anims when EntityClass.poses[anim.props.name]? or anim.props.name is "Current Pose"
+			for anim in @anims when EntityClass.poses[anim.props.name]?
 				pose =
 					if anim.props.name is "Current Pose" or anim.props.name is editing_entity_anim_name
 						editing_entity.structure.getPose()

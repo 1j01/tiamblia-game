@@ -97,3 +97,15 @@ img {
 .animation-bar > .mdl-button--fab {
 	margin: 0.5rem 0 !important;
 }
+.poses,
+.animations {
+	width: 100%;
+}
+article.placeholder {
+	padding: 2rem;
+	text-align: center;
+	background: rgba(128, 59, 110, 0.16);
+	color: rgba(0, 0, 0, 0.5);
+	font-size: 1.4em;
+	pointer-events: none;
+}
