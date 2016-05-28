@@ -193,6 +193,7 @@ class @Editor
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
+			# TODO: play well with the sidebars
 			switch e.keyCode
 				when 46 # Delete
 					@delete()

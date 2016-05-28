@@ -7,7 +7,7 @@ class Anim extends React.Component
 		super
 	
 	render: ->
-		{entity, EntityClass, name, editor} = @props
+		{entity, EntityClass, name, bar, editor} = @props
 		selected = editor.editing_entity_anim_name is name
 		@preview_entity = Entity.fromJSON(JSON.parse(JSON.stringify(entity)))
 		E "article",
@@ -36,18 +36,17 @@ class Anim extends React.Component
 									return
 								
 								rename_object_key(EntityClass.poses, name, new_name)
-								# FIXME: cursor gets placed at end of field
-								
 								editor.editing_entity_anim_name = new_name
 								Entity.saveAnimations(EntityClass)
-								# @setState({pose_names: Object.keys(EntityClass.poses)})
+								
+								# cause rerender immediately so cursor doesn't get moved to the end of the field
+								bar.update()
 						E "label.mdl-textfield__label", "Name..."
 					E "button.mdl-button.mdl-js-button.mdl-button--icon.mdl-color-text--grey-600.delete",
 						onClick: (e)=>
 							delete EntityClass.poses[name]
 							Entity.saveAnimations(EntityClass)
 							editor.editing_entity_anim_name = "Current Pose"
-							# @setState({pose_names: Object.keys(EntityClass.poses)})
 							e.preventDefault()
 						E "i.material-icons", "delete"
 			E EntityPreview, {
@@ -62,11 +61,7 @@ class Anim extends React.Component
 class @AnimationBar extends React.Component
 	constructor: ->
 		super
-		@state = {
-			visible: no
-			# pose_names: []
-			# animation_names: []
-		}
+		@state = {visible: no}
 	
 	render: ->
 		{editor} = @props
@@ -90,6 +85,7 @@ class @AnimationBar extends React.Component
 									name: pose_name
 									pose
 									entity, EntityClass, editor
+									bar: @
 									ref: (anim)=>
 										@anims.push(anim) if anim?
 								}
@@ -111,7 +107,7 @@ class @AnimationBar extends React.Component
 					
 					editor.editing_entity_anim_name = new_pose_name
 					
-					# FIXME: doesn't update until the next frame
+					@update()
 				
 				E "i.material-icons", "add"
 			E "h1", "Animations"
@@ -146,14 +142,6 @@ class @AnimationBar extends React.Component
 		componentHandler.upgradeElement(ReactDOM.findDOMNode(@new_pose_button))
 		componentHandler.upgradeElement(ReactDOM.findDOMNode(@new_animation_button))
 	
-	# shouldComponentUpdate: (newProps, newState)->
-	# 	console.log newState, @state
-	# 	newState.visible isnt @state.visible or
-	# 	newState.EntityClass isnt @state.EntityClass or
-	# 	newState.pose_names.join(",") isnt @state.pose_names.join(",") or
-	# 	newState.animation_names.join(",") isnt @state.animation_names.join(",") or
-	# 	newState.editing_entity_anim_name isnt @state.editing_entity_anim_name
-	
 	update: ->
 		{editor} = @props
 		{editing_entity_anim_name, editing_entity} = editor
@@ -161,8 +149,6 @@ class @AnimationBar extends React.Component
 		visible = editing_entity?
 		if editing_entity?
 			EntityClass = entity_classes[editing_entity._class_]
-			# pose_names = Object.keys(EntityClass.poses)
-			# animation_names = Object.keys(EntityClass.animations)
 			
 			for anim in @anims when EntityClass.poses[anim.props.name]?
 				pose =
@@ -173,9 +159,5 @@ class @AnimationBar extends React.Component
 				anim.entity_preview.entity.structure.setPose(pose)
 				
 				anim.entity_preview.update()
-		# else
-		# 	pose_names = []
-		# 	animation_names = []
 		
-		# @setState {visible, EntityClass, editing_entity_anim_name, pose_names, animation_names}
 		@setState {visible, EntityClass, editing_entity_anim_name}
