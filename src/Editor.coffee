@@ -14,6 +14,9 @@ class @Editor
 		@selection_box = null
 		@editing_entity = null
 		@editing_entity_anim_name = null
+		# @editing_entity_pose_name = null
+		# @editing_entity_animation_name = null
+		@editing_entity_animation_frame_index = null
 		@last_click_time = null
 		@dragging_points = []
 		@dragging_segments = []
@@ -131,28 +134,34 @@ class @Editor
 				enabled: @world.entities.length
 			))
 			menu.append(new nw.MenuItem(type: 'separator'))
+			
 			if @editing_entity
-				# TODO: DRY these (maybe have a modifyPose function of some sort)
+				
+				modifyPose = (fn)=>
+					EntityClass = entity_classes[@editing_entity._class_]
+					frame_index = @editing_entity_animation_frame_index
+					if frame_index?
+						old_pose = EntityClass.animations[@editing_entity_anim_name][frame_index]
+					else
+						old_pose = @editing_entity.structure.getPose()
+					new_pose = fn(old_pose)
+					@editing_entity.structure.setPose(new_pose)
+					if frame_index?
+						EntityClass.animations[@editing_entity_anim_name][frame_index] = new_pose
+					else
+						EntityClass.poses[@editing_entity_anim_name] = new_pose
+					Entity.saveAnimations(EntityClass)
+				
 				# TODO: allow flipping the current pose, just don't save it? or save the world where it's stored?
 				menu.append(new nw.MenuItem(
 					label: 'Flip Pose Horizontally'
 					enabled: @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
-					click: =>
-						new_pose = Pose.horizontallyFlip(@editing_entity.structure.getPose())
-						@editing_entity.structure.setPose(new_pose)
-						EntityClass = entity_classes[@editing_entity._class_]
-						EntityClass.poses[@editing_entity_anim_name] = new_pose
-						Entity.saveAnimations(EntityClass)
+					click: => modifyPose(Pose.horizontallyFlip)
 				))
 				menu.append(new nw.MenuItem(
 					label: 'Flip Pose Vertically'
 					enabled: @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
-					click: =>
-						new_pose = Pose.verticallyFlip(@editing_entity.structure.getPose())
-						@editing_entity.structure.setPose(new_pose)
-						EntityClass = entity_classes[@editing_entity._class_]
-						EntityClass.poses[@editing_entity_anim_name] = new_pose
-						Entity.saveAnimations(EntityClass)
+					click: => modifyPose(Pose.verticallyFlip)
 				))
 				menu.append(new nw.MenuItem(type: 'separator'))
 				menu.append(new nw.MenuItem(
@@ -242,7 +251,10 @@ class @Editor
 	savePose: ->
 		if @editing_entity_anim_name and @editing_entity_anim_name isnt "Current Pose"
 			EntityClass = entity_classes[@editing_entity._class_]
-			EntityClass.poses[@editing_entity_anim_name] = @editing_entity.structure.getPose()
+			if @editing_entity_animation_frame_index?
+				EntityClass.animations[@editing_entity_anim_name][@editing_entity_animation_frame_index] = @editing_entity.structure.getPose()
+			else
+				EntityClass.poses[@editing_entity_anim_name] = @editing_entity.structure.getPose()
 			Entity.saveAnimations(EntityClass)
 	
 	toJSON: ->
@@ -716,6 +728,8 @@ class @Editor
 			ctx.restore()
 	
 	updateGUI: ->
-		@editing_entity_anim_name = "Current Pose" unless @editing_entity
+		unless @editing_entity
+			@editing_entity_anim_name = "Current Pose"
+			@editing_entity_animation_frame_index = null
 		@animation_bar.update()
 		@entities_bar.update()

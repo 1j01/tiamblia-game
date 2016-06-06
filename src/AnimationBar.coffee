@@ -6,17 +6,26 @@ class Anim extends React.Component
 	constructor: ->
 		super
 	
+	isSelected: ->
+		{name, isAnimation, editor} = @props
+		(editor.editing_entity_anim_name is name) and
+		(editor.editing_entity_animation_frame_index? is (not not isAnimation))
+	
 	render: ->
-		{entity, EntityClass, name, bar, editor} = @props
-		selected = editor.editing_entity_anim_name is name
+		{entity, EntityClass, name, isAnimation, bar, editor} = @props
+		selected = @isSelected(name, isAnimation, editor)
 		@preview_entity = Entity.fromJSON(JSON.parse(JSON.stringify(entity)))
 		E "article",
 			class: {selected}
 			onClick: (e)=>
 				return if e.defaultPrevented
 				editor.editing_entity_anim_name = name
-				unless name is "Current Pose"
-					entity.structure.setPose(EntityClass.poses[name])
+				editor.editing_entity_animation_frame_index = if isAnimation then 0 else null
+				if isAnimation
+					entity.structure.setPose(EntityClass.animations[name][0])
+				else
+					unless name is "Current Pose"
+						entity.structure.setPose(EntityClass.poses[name])
 			if name is "Current Pose"
 				E "h1.name", name
 			else
@@ -28,14 +37,17 @@ class Anim extends React.Component
 							onChange: (e)=>
 								new_name = e.target.value
 								# TODO: use error classes and messages instead of instrusive alerts
-								if EntityClass.poses[new_name]
-									alert("There's already a pose with the name #{new_name}")
-									return
-								if EntityClass.animations[new_name]
-									alert("There's already an animation with the name #{new_name}")
-									return
+								if isAnimation
+									if EntityClass.animations[new_name]
+										alert("There's already an animation with the name #{new_name}")
+										return
+								else
+									if EntityClass.poses[new_name]
+										alert("There's already a pose with the name #{new_name}")
+										return
 								
-								rename_object_key(EntityClass.poses, name, new_name)
+								anims_object = EntityClass[if isAnimation then "animations" else "poses"]
+								rename_object_key(anims_object, name, new_name)
 								editor.editing_entity_anim_name = new_name
 								Entity.saveAnimations(EntityClass)
 								
@@ -44,7 +56,8 @@ class Anim extends React.Component
 						E "label.mdl-textfield__label", "Name..."
 					E "button.mdl-button.mdl-js-button.mdl-button--icon.mdl-color-text--grey-600.delete",
 						onClick: (e)=>
-							delete EntityClass.poses[name]
+							anims_object = EntityClass[if isAnimation then "animations" else "poses"]
+							delete anims_object[name]
 							Entity.saveAnimations(EntityClass)
 							editor.editing_entity_anim_name = "Current Pose"
 							e.preventDefault()
@@ -83,7 +96,7 @@ class @AnimationBar extends React.Component
 								E Anim, {
 									key: i
 									name: pose_name
-									pose
+									# pose
 									entity, EntityClass, editor
 									bar: @
 									ref: (anim)=>
@@ -96,16 +109,16 @@ class @AnimationBar extends React.Component
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_pose_button)=>
 				onClick: =>
-					new_pose_name = "New Pose"
+					new_name = "New Pose"
 					i = 1
-					while EntityClass.poses[new_pose_name]?
-						new_pose_name = "New Pose #{i}"
+					while EntityClass.poses[new_name]?
+						new_name = "New Pose #{i}"
 						i += 1
 					
-					EntityClass.poses[new_pose_name] = entity.structure.getPose()
+					EntityClass.poses[new_name] = entity.structure.getPose()
 					Entity.saveAnimations(EntityClass)
 					
-					editor.editing_entity_anim_name = new_pose_name
+					editor.editing_entity_anim_name = new_name
 					
 					@update()
 				
@@ -121,8 +134,10 @@ class @AnimationBar extends React.Component
 								E Anim, {
 									key: i
 									name: animation_name
-									animation
+									# animation
+									isAnimation: yes
 									entity, EntityClass, editor
+									bar: @
 									ref: (anim)=>
 										@anims.push(anim) if anim?
 								}
@@ -134,8 +149,18 @@ class @AnimationBar extends React.Component
 			E "button.mdl-button.mdl-js-button.mdl-button--fab.mdl-js-ripple-effect.mdl-button--colored",
 				ref: (@new_animation_button)=>
 				onClick: =>
-					alert("Animations are not yet supported")
-					# TODO: animation editing
+					new_name = "New Animation"
+					i = 1
+					while EntityClass.animations[new_name]?
+						new_name = "New Animation #{i}"
+						i += 1
+					
+					EntityClass.animations[new_name] = [entity.structure.getPose()]
+					Entity.saveAnimations(EntityClass)
+					
+					editor.editing_entity_anim_name = new_name
+					
+					@update()
 				E "i.material-icons", "add"
 	
 	componentDidMount: ->
@@ -150,14 +175,19 @@ class @AnimationBar extends React.Component
 		if editing_entity?
 			EntityClass = entity_classes[editing_entity._class_]
 			
-			for anim in @anims when EntityClass.poses[anim.props.name]?
-				pose =
-					if anim.props.name is "Current Pose" or anim.props.name is editing_entity_anim_name
-						editing_entity.structure.getPose()
-					else
-						EntityClass.poses[anim.props.name]
-				anim.entity_preview.entity.structure.setPose(pose)
-				
-				anim.entity_preview.update()
+			for anim in @anims
+				{name, isAnimation} = anim.props
+				anims_object = EntityClass[if isAnimation then "animations" else "poses"]
+				if anims_object[name]?
+					pose =
+						if isAnimation
+							animation = EntityClass.animations[name]
+							animation[0]
+						else if name is "Current Pose" or anim.isSelected()
+							editing_entity.structure.getPose()
+						else
+							EntityClass.poses[name]
+					anim.entity_preview.entity.structure.setPose(pose)
+					anim.entity_preview.update()
 		
 		@setState {visible, EntityClass, editing_entity_anim_name}
