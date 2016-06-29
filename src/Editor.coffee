@@ -27,13 +27,15 @@ class @Editor
 		@undos = []
 		@redos = []
 		@clipboard = {}
-		react_root_el = document.createElement("div")
-		react_root_el.className = "react-root"
-		document.body.appendChild(react_root_el)
-		react_root = E ".editor",
-			E EntitiesBar, editor: @, ref: (@entities_bar)=>
-			E AnimationBar, editor: @, ref: (@animation_bar)=>
-		ReactDOM.render(react_root, react_root_el)
+		@warning_message = null
+		@show_warning = no
+		@warning_tid = -1
+		@react_root_el = document.createElement("div")
+		@react_root_el.className = "react-root"
+		document.body.appendChild(@react_root_el)
+		
+		@renderDOM()
+		
 		if fs?
 			@save_path = "world.json"
 			# @save_path = path.join(nw.App.dataPath, "world.json")
@@ -727,9 +729,40 @@ class @Editor
 			ctx.stroke()
 			ctx.restore()
 	
+	warn: (message, timeout=2000)->
+		# # return if @warning_message is message
+		# @warning_message = message
+		# @renderDOM()
+		
+		@warning_message = message
+		@show_warning = yes
+		@renderDOM()
+		clearTimeout @warning_tid
+		@warning_tid = setTimeout =>
+			@show_warning = no
+			@renderDOM()
+		, timeout
+	
+	renderDOM: ->
+		# console.log "renderDOM", {@warning_message}
+		react_root = E ".editor",
+			E EntitiesBar, editor: @, ref: (@entities_bar)=>
+			E AnimationBar, editor: @, ref: (@animation_bar)=>
+			# E Warning, message: @warning_message
+			E ".warning",
+				class: ("show" if @show_warning)
+				@warning_message
+		
+		ReactDOM.render(react_root, @react_root_el)
+	
 	updateGUI: ->
 		unless @editing_entity
 			@editing_entity_anim_name = "Current Pose"
 			@editing_entity_animation_frame_index = null
+		# console.log @dragging_points.length, @editing_entity_anim_name is "Current Pose"
+		if @dragging_points.length and @editing_entity and @editing_entity_anim_name is "Current Pose"
+			EntityClass = entity_classes[@editing_entity._class_]
+			if EntityClass.poses? or EntityClass.animations?
+				@warn "No pose is selected. Edits may be lost."
 		@animation_bar.update()
 		@entities_bar.update()
