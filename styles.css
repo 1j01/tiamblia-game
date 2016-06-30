@@ -44,11 +44,15 @@ html, body {
 	box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
 	flex-direction: column;
 }
-.bar article {
+.bar article,
+.terrain-tools {
 	padding: 1rem;
 	padding-top: 0.5rem;
 	display: flex;
 	flex-direction: column;
+}
+.terrain-tools label {
+	margin-bottom: 1em;
 }
 .bar article:hover {
 	background: rgba(0, 0, 0, 0.08);
@@ -126,47 +130,3 @@ article.placeholder {
 	pointer-events: none;
 	opacity: 0;
 }
-
-/*
-@import url('//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css');
-.warning:before {
-	content: '\e80b';
-	font-family: FontAwesome;
-	font-style: normal;
-	font-weight: 400;
-	padding: 1em;
-	color: #9F6000;
-	background-color: #FEEFB3;
-}
-*/
-
-/*
-.warning {
-	overflow: hidden;
-	padding: 0;
-	margin: 0 0 0.25em;
-}
-
-.warning:before {
-	position: absolute;
-	top: 50%;
-	content: "!";
-	z-index: 101;
-	left: 8px;
-	margin-top: -8px;
-	font-size: 14px;
-	font-weight: bold;
-	color: #000;
-}
-
-.warning:after {
-	position: absolute;
-	top: 50%;
-	z-index: 100;
-	border-width: 0 11px 18px;
-	border-style: solid;
-	border-color: #F8D201 transparent;
-	margin-top: -10px;
-	background: transparent;
-}
-*/

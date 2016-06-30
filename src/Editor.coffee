@@ -11,19 +11,30 @@ class @Editor
 		@hovered_entities = []
 		@selected_points = []
 		@hovered_points = []
+		
 		@selection_box = null
 		@editing_entity = null
 		@editing_entity_anim_name = null
 		# @editing_entity_pose_name = null
 		# @editing_entity_animation_name = null
 		@editing_entity_animation_frame_index = null
-		@last_click_time = null
+		
 		@dragging_points = []
 		@dragging_segments = []
 		@dragging_entities = []
+		
 		@drag_offsets = []
 		@view_drag_start_in_world = null
 		@view_drag_momentum = {x: 0, y: 0}
+		@last_click_time = null
+		
+		@sculpt_mode = no
+		@brush_size = 50
+		# @sculpt_adding = no
+		# @sculpt_removing = no
+		@sculpt_additive = yes
+		@sculpting = no
+		
 		@undos = []
 		@redos = []
 		@clipboard = {}
@@ -528,19 +539,22 @@ class @Editor
 			@hovered_points = []
 			if @editing_entity
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
-				closest_dist = Infinity
-				for point_name, point of @editing_entity.structure.points
-					dist = distance(local_mouse_position, point)
-					if dist < min_grab_dist and dist < closest_dist
-						closest_dist = dist
-						@hovered_points = [point]
-				unless @hovered_points.length
+				if @editing_entity instanceof Terrain and @sculpt_mode
+					# console.log "scyuprt:"
+				else
 					closest_dist = Infinity
-					for segment_name, segment of @editing_entity.structure.segments
-						dist = distanceToLineSegment(local_mouse_position, segment.a, segment.b)
-						if dist < (segment.width ? 5) and dist < closest_dist
+					for point_name, point of @editing_entity.structure.points
+						dist = distance(local_mouse_position, point)
+						if dist < min_grab_dist and dist < closest_dist
 							closest_dist = dist
-							@hovered_segments = [segment]
+							@hovered_points = [point]
+					unless @hovered_points.length
+						closest_dist = Infinity
+						for segment_name, segment of @editing_entity.structure.segments
+							dist = distanceToLineSegment(local_mouse_position, segment.a, segment.b)
+							if dist < (segment.width ? 5) and dist < closest_dist
+								closest_dist = dist
+								@hovered_segments = [segment]
 			else
 				closest_dist = Infinity
 				for entity in @world.entities
@@ -553,21 +567,24 @@ class @Editor
 				@dragging_points = []
 				@dragging_segments = []
 				
-				if @hovered_points.length
-					if @hovered_points[0] in @selected_points
-						@grabPoints(@selected_points, mouse_in_world)
-					else
-						@grabPoints(@hovered_points, mouse_in_world)
+				if @editing_entity instanceof Terrain and @sculpt_mode
+					console.log "scumplpt!"
 				else
-					@selected_points = []
-					
-					if @hovered_entities.length
-						if @hovered_entities[0] in @selected_entities
-							@grabEntities(@selected_entities, mouse_in_world)
+					if @hovered_points.length
+						if @hovered_points[0] in @selected_points
+							@grabPoints(@selected_points, mouse_in_world)
 						else
-							@grabEntities(@hovered_entities, mouse_in_world)
+							@grabPoints(@hovered_points, mouse_in_world)
 					else
-						@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
+						@selected_points = []
+						
+						if @hovered_entities.length
+							if @hovered_entities[0] in @selected_entities
+								@grabEntities(@selected_entities, mouse_in_world)
+							else
+								@grabEntities(@hovered_entities, mouse_in_world)
+						else
+							@selection_box = {x1: mouse_in_world.x, y1: mouse_in_world.y, x2: mouse_in_world.x, y2: mouse_in_world.y}
 		
 		if @editing_entity
 			if @editing_entity.structure instanceof BoneStructure
@@ -685,6 +702,7 @@ class @Editor
 		if @editing_entity
 			ctx.save()
 			ctx.translate(@editing_entity.x, @editing_entity.y)
+			# unless @editing_entity instanceof Terrain and @sculpt_mode
 			draw_points(@editing_entity, 3, "rgba(255, 0, 0, 1)")
 			draw_segments(@editing_entity, 1, "rgba(255, 170, 0, 1)")
 			ctx.restore()
@@ -704,18 +722,32 @@ class @Editor
 			ctx.restore()
 		
 		if @editing_entity?
-			ctx.save()
-			ctx.translate(@editing_entity.x, @editing_entity.y)
-			# draw_points(@selected_points, 2, "rgba(255, 170, 0, 0.2)")
-			for point in @selected_points
+			if @editing_entity instanceof Terrain and @sculpt_mode
+				mouse_in_world = @view.toWorld(@mouse)
 				ctx.beginPath()
-				ctx.arc(point.x, point.y, 3 / view.scale, 0, TAU)
-				ctx.fillStyle = "rgba(255, 0, 0, 1)"
+				# ctx.arc(mouse_in_world.x, mouse_in_world.y, @brush_size / view.scale, 0, TAU)
+				ctx.arc(mouse_in_world.x, mouse_in_world.y, @brush_size, 0, TAU)
+				# ctx.lineWidth = 1.5 / view.scale
+				# ctx.strokeStyle = "rgba(255, 170, 0, 1)"
+				# ctx.stroke()
+				ctx.fillStyle = "rgba(0, 155, 255, 0.1)"
+				ctx.strokeStyle = "rgba(0, 155, 255, 0.8)"
+				ctx.lineWidth = 1 / view.scale
 				ctx.fill()
-				ctx.lineWidth = 1.5 / view.scale
-				ctx.strokeStyle = "rgba(255, 170, 0, 1)"
 				ctx.stroke()
-			ctx.restore()
+			else
+				ctx.save()
+				ctx.translate(@editing_entity.x, @editing_entity.y)
+				# draw_points(@selected_points, 2, "rgba(255, 170, 0, 0.2)")
+				for point in @selected_points
+					ctx.beginPath()
+					ctx.arc(point.x, point.y, 3 / view.scale, 0, TAU)
+					ctx.fillStyle = "rgba(255, 0, 0, 1)"
+					ctx.fill()
+					ctx.lineWidth = 1.5 / view.scale
+					ctx.strokeStyle = "rgba(255, 170, 0, 1)"
+					ctx.stroke()
+				ctx.restore()
 		
 		for entity in @selected_entities
 			ctx.strokeStyle = "rgba(255, 170, 0, 1)"
@@ -749,6 +781,7 @@ class @Editor
 		react_root = E ".editor",
 			E EntitiesBar, editor: @, ref: (@entities_bar)=>
 			E AnimationBar, editor: @, ref: (@animation_bar)=>
+			E TerrainBar, editor: @, ref: (@terrain_bar)=>
 			E ".warning",
 				class: ("show" if @show_warning)
 				@warning_message
@@ -759,5 +792,6 @@ class @Editor
 		unless @editing_entity
 			@editing_entity_anim_name = "Current Pose"
 			@editing_entity_animation_frame_index = null
-		@animation_bar.update()
 		@entities_bar.update()
+		@animation_bar.update()
+		@terrain_bar.update()

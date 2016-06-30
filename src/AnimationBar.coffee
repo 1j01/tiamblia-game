@@ -171,10 +171,9 @@ class @AnimationBar extends React.Component
 		{editor} = @props
 		{editing_entity_anim_name, editing_entity} = editor
 		
-		visible = editing_entity?
-		if editing_entity?
-			EntityClass = entity_classes[editing_entity._class_]
-			
+		EntityClass = if editing_entity? then entity_classes[editing_entity._class_]
+		visible = EntityClass?.animations
+		if visible
 			for anim in @anims
 				{name, isAnimation} = anim.props
 				anims_object = EntityClass[if isAnimation then "animations" else "poses"]
