@@ -534,6 +534,24 @@ class @Editor
 						# @dragging_entities = (entity for entity in @selected_entities)
 			else
 				@grab_start = null
+		else if @sculpting
+			if @mouse.LMB.down
+				# if @sculpt_additive
+					
+				# else
+				# 	
+				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
+				for point_name, point of @editing_entity.structure.points
+					dx = point.x - local_mouse_position.x
+					dy = point.y - local_mouse_position.y
+					dist = sqrt(dx*dx + dy*dy)
+					if dist < @brush_size
+						# TODO: additive/subtractative/legit behavior
+						point.x += dx/10
+						point.y += dy/10
+				@editing_entity.structure.onchange?()
+			else
+				@sculpting = no
 		else
 			@hovered_entities = []
 			@hovered_points = []
@@ -541,6 +559,7 @@ class @Editor
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 				if @editing_entity instanceof Terrain and @sculpt_mode
 					# console.log "scyuprt:"
+					@sculpt_additive = @editing_entity.structure.pointInPolygon(local_mouse_position)
 				else
 					closest_dist = Infinity
 					for point_name, point of @editing_entity.structure.points
@@ -568,7 +587,8 @@ class @Editor
 				@dragging_segments = []
 				
 				if @editing_entity instanceof Terrain and @sculpt_mode
-					console.log "scumplpt!"
+					@undoable()
+					@sculpting = yes
 				else
 					if @hovered_points.length
 						if @hovered_points[0] in @selected_points
