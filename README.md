@@ -1,6 +1,6 @@
 # Tiamblia
 
-With a simple visual style, Tiamblia is an immersive 2D exploration adventure game where you can talk to spirits, hunt them, and gain their powers. Also there'll be a story, original music, inverse kinematics, day/night transitions and maybe even weather.
+With a simple visual style, Tiamblia is an immersive 2D exploration adventure game where you can talk to spirits, hunt them, and gain their powers. There will be lots of interesting places to visit and things to do. Also there'll be a story, original music, inverse kinematics, day/night transitions and maybe even weather.
 
 Stay tuned to potentially interact with...
 * the Spirit of the Hunt,
@@ -17,8 +17,9 @@ Stay tuned to potentially interact with...
 Follow [the game on GameJolt](http://gamejolt.com/games/tiamblia/147746)
 and/or watch [the repository on GitHub](https://github.com/1j01/tiamblia-advjam2016).
 
-I'm making this because of [Adventure Jam 2016](http://jams.gamejolt.io/adventurejam2016) ([#AdvJam2016](http://gamejolt.com/tag/AdvJam2016))
-but let's be honest this isn't gonna be finished by the deadline.
+I started making this because of
+[Adventure Jam 2016](http://jams.gamejolt.io/adventurejam2016) ([#AdvJam2016](http://gamejolt.com/tag/AdvJam2016))
+but it's long past the deadline.
 
 I'm making a custom engine where everything is based on points and an integrated editor that can manipulate these points.
 The core editor is basically done, but there will be an animation editor, as well as terrain-specific editing features.

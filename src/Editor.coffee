@@ -69,7 +69,6 @@ class @Editor
 			MB = @mouse["#{"LMR"[e.button]}MB"]
 			MB.down = true
 			MB.pressed = true
-			# @grab_start = {x: e.clientX, y: e.clientY}
 		
 		addEventListener "mouseup", (e)=>
 			MB = @mouse["#{"LMR"[e.button]}MB"]
@@ -558,7 +557,6 @@ class @Editor
 			if @editing_entity
 				local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
 				if @editing_entity instanceof Terrain and @sculpt_mode
-					# console.log "scyuprt:"
 					@sculpt_additive = @editing_entity.structure.pointInPolygon(local_mouse_position)
 				else
 					closest_dist = Infinity
