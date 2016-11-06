@@ -154,15 +154,6 @@ class @Player extends SimpleActor
 		hair_color = "#000000"
 		dress_color = "#AAFFFF"
 		
-		for segment_name, segment of @structure.segments
-			ctx.beginPath()
-			ctx.moveTo(segment.a.x, segment.a.y)
-			ctx.lineTo(segment.b.x, segment.b.y)
-			ctx.lineWidth = 3
-			ctx.lineCap = "round"
-			ctx.strokeStyle = skin_color
-			ctx.stroke()
-		
 		# TODO: depth
 		# @drawStructure
 		# 	segments:
@@ -205,6 +196,16 @@ class @Player extends SimpleActor
 			ctx.restore()
 		
 		ctx.restore()
+		
+		# limbs
+		for segment_name, segment of @structure.segments
+			ctx.beginPath()
+			ctx.moveTo(segment.a.x, segment.a.y)
+			ctx.lineTo(segment.b.x, segment.b.y)
+			ctx.lineWidth = 3
+			ctx.lineCap = "round"
+			ctx.strokeStyle = skin_color
+			ctx.stroke()
 		
 		# dress
 		ctx.beginPath()
