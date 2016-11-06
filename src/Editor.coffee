@@ -192,6 +192,7 @@ class @Editor
 			return false
 		
 		handle_scroll = (e)=>
+			# TODO: ignore if mouse is over a sidebar
 			# TODO: zoom to/from mouse, i.e. keep the mouse's position anchored in the world
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
@@ -798,7 +799,7 @@ class @Editor
 	renderDOM: ->
 		react_root = E ".editor",
 			E EntitiesBar, editor: @, ref: (@entities_bar)=>
-			E AnimationBar, editor: @, ref: (@animation_bar)=>
+			E PosingAndAnimationBar, editor: @, ref: (@animation_bar)=>
 			E TerrainBar, editor: @, ref: (@terrain_bar)=>
 			E ".warning",
 				class: ("show" if @show_warning)

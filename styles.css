@@ -69,7 +69,7 @@ html, body {
 .bar article.selected canvas {
 	background: rgba(50, 200, 255, 1);
 }
-.bar > h1 {
+.bar h1 {
 	text-align: center;
 	font-size: 2em;
 	font-weight: normal;
@@ -98,8 +98,42 @@ canvas,
 img {
 	flex: 0 0 auto;
 }
-.animation-bar > .mdl-button--fab {
+.posing-and-animation-bar {
+	flex-direction: row;
+	align-items: flex-start;
+}
+.posing-and-animation-bar > * {
+	height: 100%;
+}
+/* TODO: refactor bars and subbars */
+.posing-and-animation-bar > *:not(:first-child) {
+	border-left: 1px solid rgba(0, 0, 0, 0.12);
+}
+.posing-and-animation,
+.anim-group {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+.posing-and-animation {
+	overflow: auto;
+}
+.posing-and-animation > * {
+	flex-shrink: 0;
+}
+/* TODO: refactor bars and subbars */
+.animation-frames {
+	/*transition: 0.1s ease;*/
+}
+.animation-frames:not(.visible) {
+	opacity: 0;
+	pointer-events: none;
+	width: 0;
+	/*transform: translate(-100%, 0);*/
+}
+.add-anim-fab {
 	margin: 0.5rem 0 !important;
+	align-self: center;
 }
 .poses,
 .animations {
