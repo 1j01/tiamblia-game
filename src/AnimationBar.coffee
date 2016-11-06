@@ -118,8 +118,9 @@ class @AnimGroup extends React.Component
 										editor.editing_entity_anim_name = "Current Pose"
 										editor.editing_entity_animation_frame_index = null
 									get_pose: =>
+										# TODO: animate only if anim is the hovered||selected one
 										animation = EntityClass.animations[animation_name]
-										animation?[~~(Math.random()*EntityClass.animations[animation_name].length)]
+										Pose.lerpAnimationLoop(animation, EntityClass.animations[animation_name].length * Date.now()/1000/2)
 									ref: (anim)=>
 										array_to_push_anims_to.push(anim) if anim?
 								}
@@ -166,10 +167,6 @@ class @AnimGroup extends React.Component
 				onClick: =>
 					if type_of_anims is "animation-frames"
 						animation = EntityClass.animations[editor.editing_entity_anim_name]
-						# from_pose = animation[editor.editing_entity_animation_frame_index]
-						# new_pose = Pose.copy(from_pose)
-						# animation.push(new_pose)
-						# editor.editing_entity_animation_frame_index = animation.length - 1
 						new_pose = entity.structure.getPose()
 						animation.push(new_pose)
 						editor.editing_entity_animation_frame_index = animation.length - 1
@@ -239,22 +236,6 @@ class @PosingAndAnimationBar extends React.Component
 		visible = EntityClass?.animations
 		if visible
 			for anim in @anims
-				# {name, type_of_anims} = anim.props
-				# anims_object = EntityClass[if type_of_anims is "animation-frames" then "animations" else type_of_anims]
-				# if anims_object[name]?
-				# 	pose =
-				# 		switch type_of_anims
-				# 			when "animations"
-				# 				animation = EntityClass.animations[name]
-				# 				animation[0]
-				# 			when "animation-frames"
-				# 				animation = EntityClass.animations[name]
-				# 				animation[0]
-				# 			when "poses"
-				# 				if name is "Current Pose" or anim.isSelected()
-				# 					editing_entity.structure.getPose()
-				# 				else
-				# 					EntityClass.poses[name]
 				pose = anim.props.get_pose()
 				if pose?
 					anim.entity_preview.entity.structure.setPose(pose)
