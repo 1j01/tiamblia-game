@@ -214,7 +214,7 @@ class @Editor
 		
 		addEventListener "keydown", (e)=>
 			# console.log e.keyCode
-			# TODO: play well with the sidebars
+			return if e.target.tagName.match(/input|textarea|select|button/i)
 			switch e.keyCode
 				when 46 # Delete
 					@delete()
