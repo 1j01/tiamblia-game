@@ -105,7 +105,7 @@ class @Player extends SimpleActor
 		@run_animation_position = 0
 		@idle_animation_position = 0
 		@idle_timer = 0
-		@avy = 0
+		@smoothed_vy = 0
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
 	
 	step: ->
@@ -168,6 +168,42 @@ class @Player extends SimpleActor
 		# 	points:
 		# 		head: ->
 		
+		# trailing hair
+		# TODO: better, less fake hair physics
+		ctx.save()
+		ctx.translate(head.x, head.y)
+		ctx.translate(-@facing_x * 0.3, 0)
+		@smoothed_vy += ((@vy * not @grounded) - @smoothed_vy) / 5
+		
+		for hxs, i in @hair_x_scales by -1
+			if i is 0
+				@hair_x_scales[i] += (-@facing_x - hxs) / 2
+			else
+				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 2
+			
+			ctx.save()
+			# ctx.translate(0,-@height*0.74)
+			ctx.scale(hxs, 1)
+			ctx.fillStyle = hair_color
+			r = @hair_x_scales[i] * @vx / 40 - Math.min(0.5, Math.max(0, @smoothed_vy/20))
+			l = 5
+			w = 1
+			ctx.rotate(r)
+			ctx.fillRect(0-w, -2, 5+w, l)
+			ctx.translate(0, l)
+			ctx.rotate(r)
+			ctx.fillRect(1-w, -2, 4+w, l)
+			ctx.translate(0, l)
+			ctx.rotate(r)
+			ctx.fillRect(2-w, -2, 3+w, l)
+			ctx.translate(0, l)
+			ctx.rotate(r)
+			ctx.fillRect(3-w, -2, 2+w, l)
+			ctx.translate(0, l)
+			ctx.restore()
+		
+		ctx.restore()
+		
 		# dress
 		ctx.beginPath()
 		ctx.save()
@@ -208,38 +244,6 @@ class @Player extends SimpleActor
 		ctx.save()
 		ctx.translate(head.x, head.y)
 		ctx.rotate(atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
-		# trailing hair
-		ctx.save()
-		@avy += (@vy - @avy) / 5
-		
-		for hxs, i in @hair_x_scales by -1
-			if i < 1
-				@hair_x_scales[i] += ((if @vx > 0 then -1 else 1) - hxs) / 5
-			else
-				@hair_x_scales[i] += (@hair_x_scales[i-1]-hxs)/5
-			
-			ctx.save()
-			# ctx.translate(0,-@height*0.74)
-			ctx.scale(hxs, 1)
-			ctx.fillStyle = hair_color
-			r = @hair_x_scales[i] * @vx / 25 - Math.max(0, @avy/25)
-			l = 5
-			w = 1
-			ctx.rotate(r)
-			ctx.fillRect(0-w,-2,5+w,l)
-			ctx.translate(0,l)
-			ctx.rotate(r)
-			ctx.fillRect(1-w,-2,4+w,l)
-			ctx.translate(0,l)
-			ctx.rotate(r)
-			ctx.fillRect(2-w,-2,3+w,l)
-			ctx.translate(0,l)
-			ctx.rotate(r)
-			ctx.fillRect(3-w,-2,2+w,l)
-			ctx.translate(0,l)
-			ctx.restore()
-		
-		ctx.restore()
 		# head
 		ctx.save()
 		ctx.scale(0.9, 1)
