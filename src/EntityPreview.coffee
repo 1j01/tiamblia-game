@@ -2,7 +2,9 @@
 class @EntityPreview extends React.Component
 	constructor: (props)->
 		super
-		{@entity, max_width, max_height} = props
+		{entity, max_width, max_height} = props
+		@entity = Entity.fromJSON(JSON.parse(JSON.stringify(entity)))
+		@entity.facing_x = 1
 		@view = new View
 		entity_bbox = @entity.bbox()
 		center_x = entity_bbox.x + entity_bbox.width / 2 - @entity.x

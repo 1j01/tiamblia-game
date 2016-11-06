@@ -7,7 +7,6 @@ class Anim extends React.Component
 	
 	render: ->
 		{entity, EntityClass, name, type_of_anims, selected, select, delete_item, update, editor} = @props
-		@preview_entity = Entity.fromJSON(JSON.parse(JSON.stringify(entity)))
 		E "article",
 			class: {selected}
 			onClick: (e)=>
@@ -51,7 +50,7 @@ class Anim extends React.Component
 							Entity.saveAnimations(EntityClass)
 						E "i.material-icons", "delete"
 			E EntityPreview, {
-				entity: @preview_entity, max_width: 200, max_height: 100
+				entity, max_width: 200, max_height: 100
 				ref: (@entity_preview)=>
 			}
 	
