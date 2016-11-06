@@ -111,7 +111,7 @@ class @Player extends SimpleActor
 			@idle_timer += 1
 			idle_animation = Player.animations["Sorta Dance"]
 			if @idle_timer > 100 and idle_animation
-				@idle_animation_position += 1 / 5
+				@idle_animation_position += 1 / 10
 				new_pose = Pose.lerpAnimationLoop(idle_animation, @idle_animation_position)
 				if (@idle_animation_position / idle_animation.length) % 4 < 2
 					new_pose = Pose.horizontallyFlip(new_pose)
