@@ -89,6 +89,14 @@ class @Player extends SimpleActor
 			name: "lower right leg"
 			length: 10
 		)
+		# for abc in "ABC"
+		# 	hair_from = "head"
+		# 	for i in [0..5]
+		# 		@structure.addSegment(
+		# 			from: "head"
+		# 			name: "hair #{abc} #{i}"
+		# 			length: 2
+		# 		)
 		# FIXME: arms are too long compared to legs
 		# TODO: add some constraints to hips, shoulders, and neck
 		# TODO: min/max_length for psuedo-3D purposes
@@ -97,6 +105,8 @@ class @Player extends SimpleActor
 		@run_animation_position = 0
 		@idle_animation_position = 0
 		@idle_timer = 0
+		@avy = 0
+		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
 	
 	step: ->
 		left = keyboard.isHeld("A") or keyboard.isHeld("left")
@@ -138,13 +148,17 @@ class @Player extends SimpleActor
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good
 		
+		skin_color = "#6B422C"
+		hair_color = "#000000"
+		dress_color = "#AAFFFF"
+		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
 			ctx.moveTo(segment.a.x, segment.a.y)
 			ctx.lineTo(segment.b.x, segment.b.y)
 			ctx.lineWidth = 3
 			ctx.lineCap = "round"
-			ctx.strokeStyle = "#6B422C"
+			ctx.strokeStyle = skin_color
 			ctx.stroke()
 		
 		# TODO: depth
@@ -186,17 +200,58 @@ class @Player extends SimpleActor
 		ctx.lineTo(+4 + max(0, 9 * max_cos), torso_length + max(5, 7 * max_sin))
 		ctx.lineTo(-4 + min(0, 9 * min_cos), torso_length + max(5, 7 * max_sin))
 		ctx.lineTo(-4 + min(0, 1 * min_cos), torso_length/2)
-		ctx.fillStyle = "#AAFFFF"
+		ctx.fillStyle = dress_color
 		ctx.fill()
 		ctx.restore()
 		
-		# head
+		# head and hair
 		ctx.save()
-		ctx.beginPath()
 		ctx.translate(head.x, head.y)
 		ctx.rotate(atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
+		# trailing hair
+		ctx.save()
+		@avy += (@vy - @avy) / 5
+		
+		for hxs, i in @hair_x_scales by -1
+			if i < 1
+				@hair_x_scales[i] += ((if @vx > 0 then -1 else 1) - hxs) / 5
+			else
+				@hair_x_scales[i] += (@hair_x_scales[i-1]-hxs)/5
+			
+			ctx.save()
+			# ctx.translate(0,-@height*0.74)
+			ctx.scale(hxs, 1)
+			ctx.fillStyle = hair_color
+			r = @hair_x_scales[i] * @vx / 25 - Math.max(0, @avy/25)
+			l = 5
+			w = 1
+			ctx.rotate(r)
+			ctx.fillRect(0-w,-2,5+w,l)
+			ctx.translate(0,l)
+			ctx.rotate(r)
+			ctx.fillRect(1-w,-2,4+w,l)
+			ctx.translate(0,l)
+			ctx.rotate(r)
+			ctx.fillRect(2-w,-2,3+w,l)
+			ctx.translate(0,l)
+			ctx.rotate(r)
+			ctx.fillRect(3-w,-2,2+w,l)
+			ctx.translate(0,l)
+			ctx.restore()
+		
+		ctx.restore()
+		# head
+		ctx.save()
 		ctx.scale(0.9, 1)
+		ctx.beginPath()
 		ctx.arc(0, 0, 5.5, 0, TAU)
-		ctx.fillStyle = "#6B422C"
+		ctx.fillStyle = skin_color
 		ctx.fill()
+		ctx.restore()
+		# top of hair
+		ctx.beginPath()
+		ctx.arc(0, 0, 5.5, 0, TAU/2)
+		ctx.fillStyle = hair_color
+		ctx.fill()
+		# /head
 		ctx.restore()
