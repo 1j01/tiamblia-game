@@ -93,6 +93,10 @@ class @Player extends SimpleActor
 		# TODO: add some constraints to hips, shoulders, and neck
 		# TODO: min/max_length for psuedo-3D purposes
 		@bbox_padding = 10
+		
+		@run_animation_position = 0
+		@idle_animation_position = 0
+		@idle_timer = 0
 	
 	step: ->
 		left = keyboard.isHeld("A") or keyboard.isHeld("left")
@@ -104,9 +108,22 @@ class @Player extends SimpleActor
 		super
 		
 		if @move_x is 0
-			new_pose = Player.poses["Stand"] ? @structure.getPose()
+			@idle_timer += 1
+			idle_animation = Player.animations["Sorta Dance"]
+			if @idle_timer > 100 and idle_animation
+				@idle_animation_position += 1 / 5
+				new_pose = Pose.lerpAnimationLoop(idle_animation, @idle_animation_position)
+				if (@idle_animation_position / idle_animation.length) % 4 < 2
+					new_pose = Pose.horizontallyFlip(new_pose)
+			else
+				new_pose = Player.poses["Stand"] ? @structure.getPose()
 		else
-			new_pose = Player.poses["Run"] ? @structure.getPose()
+			@idle_timer = 0
+			if Player.animations["Run"]
+				@run_animation_position += @move_x / 5
+				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
+			else
+				@structure.getPose()
 		
 		new_pose =
 			if @facing_x < 0

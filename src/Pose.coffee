@@ -17,6 +17,11 @@ class @Pose
 			result.points[point_name] = lerpPoints(point_a, point_b, b_ness)
 		result
 	
+	@lerpAnimationLoop: (frames, soft_index)->
+		a = frames[(~~(soft_index) + 0) %% frames.length]
+		b = frames[(~~(soft_index) + 1) %% frames.length]
+		Pose.lerp(a, b, soft_index %% 1)
+	
 	@alterPoints: (pose, fn)->
 		result = new Pose
 		for point_name, point of pose.points
