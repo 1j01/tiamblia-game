@@ -186,8 +186,10 @@ class @AnimGroup extends React.Component
 						switch type_of_anims
 							when "poses"
 								EntityClass.poses[new_name] = entity.structure.getPose()
+								editor.editing_entity_animation_frame_index = null
 							when "animations"
 								EntityClass.animations[new_name] = [entity.structure.getPose()]
+								editor.editing_entity_animation_frame_index = 0
 						
 						editor.editing_entity_anim_name = new_name
 					
