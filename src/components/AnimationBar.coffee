@@ -16,6 +16,8 @@ class Anim extends React.Component
 			if name is "Current Pose"
 				E "h1.name", name
 			else
+				# TODO: for animation-frames, instead of a textfield have a reorder handle and a duration control
+				# well, a reorder handle might be nice for the other anims too
 				E ".title-bar",
 					E ".mdl-textfield.mdl-js-textfield.name",
 						ref: (@mdl_textfield_el)=>
@@ -107,6 +109,7 @@ class @AnimGroup extends React.Component
 									name: animation_name
 									entity, EntityClass, selected, editor, update, type_of_anims
 									# animation
+									# TODO: bounds of anim should be determined across all frames
 									select: =>
 										editor.editing_entity_anim_name = animation_name
 										editor.editing_entity_animation_frame_index = 0
@@ -119,6 +122,7 @@ class @AnimGroup extends React.Component
 									get_pose: =>
 										# TODO: animate only if anim is the hovered||selected one
 										animation = EntityClass.animations[animation_name]
+										return unless animation # TODO: shouldn't need this or other ?s
 										Pose.lerpAnimationLoop(animation, EntityClass.animations[animation_name].length * Date.now()/1000/2)
 									ref: (anim)=>
 										array_to_push_anims_to.push(anim) if anim?

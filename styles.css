@@ -78,6 +78,10 @@ html, body {
 .bar article > h1 {
 	pointer-events: none;
 }
+.bar article .title-bar {
+	display: flex;
+	flex-direction: row;
+}
 .bar .name {
 	font-size: 1.2em;
 	font-weight: normal;
@@ -115,8 +119,10 @@ img {
 	flex-direction: column;
 	align-items: center;
 }
-.posing-and-animation {
-	overflow: auto;
+.posing-and-animation,
+.animation-frames {
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 .posing-and-animation > * {
 	flex-shrink: 0;
