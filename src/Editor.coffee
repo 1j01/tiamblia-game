@@ -586,11 +586,14 @@ class @Editor
 								@hovered_segments = [segment]
 			else
 				closest_dist = Infinity
+				closest_entity = null
 				for entity in @world.entities
 					dist = @distanceToEntity(entity, mouse_in_world)
-					if dist < min_grab_dist and dist < closest_dist
-						@hovered_entities = [entity]
+					if dist < min_grab_dist and (dist < closest_dist or (entity not instanceof Terrain and closest_entity instanceof Terrain))
+						closest_entity = entity
 						closest_dist = dist
+				if closest_entity?
+					@hovered_entities = [closest_entity]
 			
 			if @mouse.LMB.pressed
 				@dragging_points = []

@@ -212,9 +212,7 @@ class @Player extends SimpleActor
 		ctx.save()
 		ctx.translate(sternum.x, sternum.y)
 		torso_angle = atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU/4
-		dx = pelvis.x - sternum.x
-		dy = pelvis.y - sternum.y
-		torso_length = sqrt(dx * dx + dy * dy)
+		torso_length = distance(pelvis, sternum)
 		ctx.rotate(torso_angle)
 		left_leg_angle = atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle
 		right_leg_angle = atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle
