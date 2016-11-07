@@ -193,7 +193,6 @@ class @Editor
 		
 		handle_scroll = (e)=>
 			# TODO: ignore if mouse is over a sidebar
-			# TODO: zoom to/from mouse, i.e. keep the mouse's position anchored in the world
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
 			zoom_factor = 1.2
@@ -202,8 +201,10 @@ class @Editor
 			current_center_x = @view.center_x
 			current_center_y = @view.center_y
 			
+			@view.scale = @view.scale_to
 			@view.center_x = @view.center_x_to
 			@view.center_y = @view.center_y_to
+			
 			pivot = @view.toWorld(@mouse)
 			@view.scale_to =
 				if e.detail < 0 or e.wheelDelta > 0
@@ -471,8 +472,8 @@ class @Editor
 		
 		@view.center_x -= @view_drag_momentum.x
 		@view.center_y -= @view_drag_momentum.y
-		@view.center_x_to = @view.center_x
-		@view.center_y_to = @view.center_y
+		@view.center_x_to -= @view_drag_momentum.x
+		@view.center_y_to -= @view_drag_momentum.y
 		@view_drag_momentum.x *= 0.8
 		@view_drag_momentum.y *= 0.8
 		
