@@ -220,6 +220,26 @@ class @Editor
 			@view.scale = current_scale
 			@view.center_x = current_center_x
 			@view.center_y = current_center_y
+			
+			# current_zoom = @view.zoom
+			# current_center_x = @view.center_x
+			# current_center_y = @view.center_y
+			# 
+			# @view.center_x = @view.center_x_to
+			# @view.center_y = @view.center_y_to
+			# @view.zoom = @view.zoom_to
+			# 
+			# pivot = @view.toWorld(@mouse)
+			# @view.zoom_to += 0.2 * if e.detail < 0 or e.wheelDelta > 0 then +1 else -1
+			# 
+			# @view.zoom = @view.zoom_to
+			# mouse_after_zoom = @view.toWorld(@mouse)
+			# @view.center_x_to += (pivot.x - mouse_after_zoom.x)
+			# @view.center_y_to += (pivot.y - mouse_after_zoom.y)
+			# 
+			# @view.center_x = current_center_x
+			# @view.center_y = current_center_y
+			# @view.zoom = current_zoom
 		
 		addEventListener "mousewheel", handle_scroll
 		addEventListener "DOMMouseScroll", handle_scroll
