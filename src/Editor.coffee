@@ -368,6 +368,7 @@ class @Editor
 			@undoable =>
 				for entity in @selected_entities
 					# entity.destroy()
+					entity.destroyed = true
 					index = @world.entities.indexOf(entity)
 					@world.entities.splice(index, 1) if index >= 0
 				@selected_entities = []

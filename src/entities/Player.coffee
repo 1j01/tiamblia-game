@@ -102,13 +102,15 @@ class @Player extends SimpleActor
 		# TODO: min/max_length for psuedo-3D purposes
 		@bbox_padding = 10
 		
+		@holding = null
+		
 		@run_animation_position = 0
 		@idle_animation_position = 0
 		@idle_timer = 0
 		@smoothed_vy = 0
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
 	
-	step: ->
+	step: (world)->
 		left = keyboard.isHeld("A") or keyboard.isHeld("left")
 		right = keyboard.isHeld("D") or keyboard.isHeld("right")
 		@jump = keyboard.wasPressed("W") or keyboard.wasPressed("up")
@@ -116,6 +118,25 @@ class @Player extends SimpleActor
 		# TODO: configurable controls
 		@move_x = right - left
 		super
+		
+		# this is annoyingly complicated
+		if @holding and not @holding.destroyed
+			@holding.x = @x
+			@holding.y = @y
+			# @holding.structure.points.top.x = @x
+			# @holding.structure.points.top.y = @y
+			@holding.structure.points.top.x = 0
+			@holding.structure.points.top.y = -20
+		else
+			# this is ridiculously complicated
+			from_point_in_world = @toWorld(@structure.points.head)
+			for bow in world.getEntitiesOfType(Bow)
+				from_point_in_entity_space = bow.fromWorld(from_point_in_world)
+				for segment_name, segment of bow.structure.segments
+					dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
+					if dist < 50
+						pickup_item = bow
+			@holding = pickup_item if pickup_item
 		
 		if @move_x is 0
 			@idle_timer += 1

@@ -78,6 +78,22 @@ class @Entity
 			else
 				@[k] = v
 	
+	resolveReferences: (world)->
+		if @_refs_
+			for k, id of @_refs_
+				@[k] = world.getEntityByID(id)
+			delete @_refs_
+	
+	toJSON: ->
+		obj = {}
+		for k, v of @ when k isnt "_refs_"
+			if v instanceof Entity
+				obj._refs_ ?= {}
+				obj._refs_[k] = v.id
+			else
+				obj[k] = v
+		obj
+	
 	toWorld: (point)->
 		x: point.x + @x
 		y: point.y + @y

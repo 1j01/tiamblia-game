@@ -7,10 +7,15 @@ class @World
 		unless def.entities instanceof Array
 			throw new Error "Expected entities to be an array, got #{def.entities}"
 		@entities = (Entity.fromJSON(ent_def) for ent_def in def.entities)
+		for entity in @entities
+			entity.resolveReferences(@)
 	
 	getEntityByID: (id)->
 		for entity in @entities
 			return entity if entity.id is id
+	
+	getEntitiesOfType: (Class)->
+		entity for entity in @entities when entity instanceof Class
 	
 	drawBackground: (ctx, view)->
 		ctx.fillStyle = "#32C8FF"
