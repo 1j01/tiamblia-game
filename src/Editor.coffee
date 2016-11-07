@@ -196,18 +196,26 @@ class @Editor
 			# TODO: zoom to/from mouse, i.e. keep the mouse's position anchored in the world
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
-			pivot = @view.toWorld(@mouse)
 			zoom_factor = 1.2
 			current_scale = @view.scale
+			current_center_x = @view.center_x
+			current_center_y = @view.center_y
+			@view.center_x = @view.center_x_to
+			@view.center_y = @view.center_y_to
+			pivot = @view.toWorld(@mouse)
 			new_scale_to =
 				if e.detail < 0 or e.wheelDelta > 0
 					@view.scale_to * zoom_factor
 				else
 					@view.scale_to / zoom_factor
 			
-			# @view.scale = new_scale_to
-			# @view.toWorld(@mouse)
+			@view.scale = new_scale_to
+			mouse_after_preliminary_scale = @view.toWorld(@mouse)
+			@view.center_x_to = (pivot.x - mouse_after_preliminary_scale.x) + @view.center_x_to
+			@view.center_y_to = (pivot.y - mouse_after_preliminary_scale.y) + @view.center_y_to
 			@view.scale = current_scale
+			@view.center_x = current_center_x
+			@view.center_y = current_center_y
 			@view.scale_to = new_scale_to
 		
 		addEventListener "mousewheel", handle_scroll

@@ -9,13 +9,13 @@ class @View
 		@scale_to = 1
 		@width = 1
 		@height = 1
-		@follow_smoothness = 4
-		@zoom_smoothness = 8
+		@follow_smoothness = 0#3
+		@zoom_smoothness = 0#7
 	
 	step: ->
-		@center_x += (@center_x_to - @center_x) / @follow_smoothness
-		@center_y += (@center_y_to - @center_y) / @follow_smoothness
-		@scale += (@scale_to - @scale) / @zoom_smoothness
+		@center_x += (@center_x_to - @center_x) / (1 + @follow_smoothness)
+		@center_y += (@center_y_to - @center_y) / (1 + @follow_smoothness)
+		@scale += (@scale_to - @scale) / (1 + @zoom_smoothness)
 	
 	testRect: (x, y, width, height, padding=0)->
 		@center_x - @width / 2 / @scale - padding <= x <= @center_x + @width / 2 / @scale + padding and
