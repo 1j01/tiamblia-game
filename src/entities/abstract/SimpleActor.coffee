@@ -55,17 +55,13 @@ class @SimpleActor extends Entity
 					break
 				else
 					@y -= 1
-					if @vy > 0
-						console.log "slow vy"
-						# @vy *= 0.9
-						# @vy *= 0.3
-						@vy = 0
+					@vy = 0 if @vy > 0
 			move_x -= go
 			@x += go
 		while abs(move_y) > resolution
 			go = sign(move_y) * resolution
 			if world.collision({@x, y: @y + go + @height})
-				# @vy *= 0.999 # as opposed to `@vy = 0` so the actor sticks to the ground when going downhill
+				@vy = 0
 				@grounded = yes
 				break
 			move_y -= go
