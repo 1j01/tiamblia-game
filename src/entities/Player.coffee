@@ -162,7 +162,7 @@ class @Player extends SimpleActor
 		else
 			@idle_timer = 0
 			if Player.animations["Run"]
-				@run_animation_position += @move_x / 5
+				@run_animation_position += abs(@move_x) / 5
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
 			else
 				@structure.getPose()
