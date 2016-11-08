@@ -121,15 +121,9 @@ class @Player extends SimpleActor
 		@move_x = right - left
 		super
 		
-		# this is annoyingly complicated
-		if @holding and not @holding.destroyed
-			@holding.x = @x
-			@holding.y = @y
-			# @holding.structure.points.top.x = @x
-			# @holding.structure.points.top.y = @y
-			@holding.structure.points.top.x = 0
-			@holding.structure.points.top.y = -20
-		else
+		@holding = null if @holding.destroyed
+		
+		unless @holding
 			# this is ridiculously complicated
 			from_point_in_world = @toWorld(@structure.points.head)
 			for bow in world.getEntitiesOfType(Bow)
@@ -175,7 +169,31 @@ class @Player extends SimpleActor
 			else
 				new_pose
 		
+		if @holding
+			primary_hand = @structure.points["right hand"]
+			secondary_hand = @structure.points["left hand"]
+			bow = @holding if @holding instanceof Bow
+			if bow
+				primary_hand.x = 5 * @facing_x
+				primary_hand.y = -5
+				secondary_hand.x = 20 * @facing_x
+				secondary_hand.y = -5
+		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
+		
+		if @holding
+			primary_hand = @structure.points["right hand"]
+			secondary_hand = @structure.points["left hand"]
+			@holding.x = @x
+			@holding.y = @y
+			bow = @holding if @holding instanceof Bow
+			if bow
+				primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
+				secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
+				bow.structure.points.serving.x = primary_hand_in_bow_space.x
+				bow.structure.points.serving.y = primary_hand_in_bow_space.y
+				bow.structure.points.grip.x = secondary_hand_in_bow_space.x
+				bow.structure.points.grip.y = secondary_hand_in_bow_space.y
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
