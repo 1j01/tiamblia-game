@@ -121,11 +121,15 @@ class @Player extends SimpleActor
 		@move_x = right - left
 		super
 		
+		{sternum} = @structure.points
+		from_point_in_world = @toWorld(sternum)
+		
+		aim_angle = atan2(mouse.y - from_point_in_world.y, mouse.x - from_point_in_world.x)
+		
 		@holding = null if @holding?.destroyed
 		
 		unless @holding
 			# this is ridiculously complicated
-			from_point_in_world = @toWorld(@structure.points.head)
 			for bow in world.getEntitiesOfType(Bow)
 				from_point_in_entity_space = bow.fromWorld(from_point_in_world)
 				for segment_name, segment of bow.structure.segments
@@ -174,10 +178,14 @@ class @Player extends SimpleActor
 			secondary_hand = @structure.points["left hand"]
 			bow = @holding if @holding instanceof Bow
 			if bow
-				primary_hand.x = 5 * @facing_x
-				primary_hand.y = -5
-				secondary_hand.x = 20 * @facing_x
-				secondary_hand.y = -5
+				# primary_hand.x = 5 * @facing_x
+				# primary_hand.y = -5
+				# secondary_hand.x = 20 * @facing_x
+				# secondary_hand.y = -5
+				primary_hand.x = sternum.x + 5 * cos(aim_angle)
+				primary_hand.y = sternum.y + 5 * sin(aim_angle)
+				secondary_hand.x = sternum.x + 20 * cos(aim_angle)
+				secondary_hand.y = sternum.y + 20 * sin(aim_angle)
 		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
