@@ -6,16 +6,11 @@ class @SavannaGrass extends Terrain
 		@bbox_padding = 30
 		@grass_tiles = new Map
 		@grass_tiles.fromJSON = (map_obj)=>
-			# @grass_tiles = new Map(map_obj)
-		@grass_tiles.toJSON = (map_obj)=>
-			{}
+		@grass_tiles.toJSON = (map_obj)=> {}
 		@structure.onchange = =>
-			# console.log "onchange!"
-			# @dirty = true
 			@grass_tiles.forEach (tile)=>
 				for shade in ["dark", "light"]
 					for blade in tile["#{shade}_blades"]
-						# console.log blade, blade.visible
 						delete blade.visible
 	
 	draw: (ctx, view)->
@@ -31,8 +26,6 @@ class @SavannaGrass extends Terrain
 			contains_any_points
 		
 		rect_is_empty = (x, y, width, height)=>
-			# contains_any_points = rect_contains_any_points(x, y, width, height)
-			# center_point = {x: x + width/2, y: y + height/2}
 			center_point = {x: @x + x + width/2, y: @y + y + height/2}
 			view_point = view.fromWorld(center_point)
 			center_of_rect_is_in_polygon = ctx.isPointInPath(view_point.x, view_point.y)
