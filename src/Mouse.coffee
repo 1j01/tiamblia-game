@@ -1,6 +1,6 @@
 
 class @Mouse
-	constructor: (canvas)->
+	constructor: (view, canvas)->
 		@x = -Infinity
 		@y = -Infinity
 		@LMB = {down: no, pressed: no, released: no}
@@ -9,29 +9,28 @@ class @Mouse
 		@double_clicked = no
 		
 		addEventListener "mousemove", (e)=>
-			mouse.x = e.clientX
-			mouse.y = e.clientY
+			{@x, @y} = view.toWorld(x: e.clientX, y: e.clientY)
 		
 		canvas.addEventListener "mousedown", (e)=>
-			MB = mouse["#{"LMR"[e.button]}MB"]
-			MB.down = true
-			MB.pressed = true
+			MB = @["#{"LMR"[e.button]}MB"]
+			MB.down = yes
+			MB.pressed = yes
 		
 		addEventListener "mouseup", (e)=>
-			MB = mouse["#{"LMR"[e.button]}MB"]
-			MB.down = false
-			MB.released = true
+			MB = @["#{"LMR"[e.button]}MB"]
+			MB.down = no
+			MB.released = yes
 		
 		canvas.addEventListener "dblclick", (e)=>
-			MB = mouse["#{"LMR"[e.button]}MB"]
-			MB.pressed = true
-			mouse.double_clicked = true
+			MB = @["#{"LMR"[e.button]}MB"]
+			MB.pressed = yes
+			@double_clicked = yes
 	
 	endStep: ->
-		mouse.LMB.pressed = false
-		mouse.MMB.pressed = false
-		mouse.RMB.pressed = false
-		mouse.LMB.released = false
-		mouse.MMB.released = false
-		mouse.RMB.released = false
-		mouse.double_clicked = false
+		@LMB.pressed = no
+		@MMB.pressed = no
+		@RMB.pressed = no
+		@LMB.released = no
+		@MMB.released = no
+		@RMB.released = no
+		@double_clicked = no
