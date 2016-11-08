@@ -7,7 +7,7 @@ path = require? "path"
 
 class @Editor
 	constructor: (@world, @view, canvas)->
-		@paused = yes
+		@editing = yes
 		
 		@selected_entities = []
 		@hovered_entities = []
@@ -183,7 +183,7 @@ class @Editor
 			return if e.target.tagName.match(/input|textarea|select|button/i)
 			switch e.keyCode
 				when 32, 80 # Space or P
-					@togglePause()
+					@toggleEditing()
 				when 46 # Delete
 					@delete()
 				when 90 # Z
@@ -382,8 +382,8 @@ class @Editor
 					entity.x += mouse.x - center.x
 					entity.y += mouse.y - center.y
 	
-	togglePause: ->
-		@paused = not @paused
+	toggleEditing: ->
+		@editing = not @editing
 		@renderDOM()
 	
 	step: ->
@@ -788,7 +788,7 @@ class @Editor
 		unless @editing_entity
 			@editing_entity_anim_name = "Current Pose"
 			@editing_entity_animation_frame_index = null
-		show = @paused
+		show = @editing
 		@entities_bar.update(show)
 		@anim_bar.update(show)
 		@terrain_bar.update(show)

@@ -36,8 +36,7 @@ do animate = ->
 	else
 		canvas.classList.remove("grabbable")
 	
-	# XXX: "editor.paused" sounds backwards
-	unless editor.paused
+	unless editor.editing
 		for entity in world.entities when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world)
 	
@@ -46,7 +45,7 @@ do animate = ->
 	# view.center_x_to = player.x
 	# view.center_y_to = player.y
 	view.step()
-	editor.step() if editor.paused
+	editor.step() if editor.editing
 	mouse.endStep()
 	
 	world.drawBackground(ctx, view)
@@ -56,7 +55,7 @@ do animate = ->
 	ctx.translate(-view.center_x, -view.center_y)
 	
 	world.draw(ctx, view)
-	editor.draw(ctx, view) if editor.paused
+	editor.draw(ctx, view) if editor.editing
 	
 	ctx.restore()
 	
