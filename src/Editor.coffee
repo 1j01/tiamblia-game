@@ -7,6 +7,8 @@ path = require? "path"
 
 class @Editor
 	constructor: (@world, @view, canvas)->
+		@paused = yes
+		
 		@selected_entities = []
 		@hovered_entities = []
 		@selected_points = []
@@ -52,7 +54,6 @@ class @Editor
 			# @save_path = path.join(nw.App.dataPath, "world.json")
 		
 		@grab_start = null
-		@grab_start_in_world = null
 		
 		addEventListener "contextmenu", (e)=>
 			menu = new nw.Menu
@@ -181,6 +182,8 @@ class @Editor
 			# console.log e.keyCode
 			return if e.target.tagName.match(/input|textarea|select|button/i)
 			switch e.keyCode
+				when 32, 80 # Space or P
+					@togglePause()
 				when 46 # Delete
 					@delete()
 				when 90 # Z
@@ -379,8 +382,11 @@ class @Editor
 					entity.x += mouse.x - center.x
 					entity.y += mouse.y - center.y
 	
+	togglePause: ->
+		@paused = not @paused
+		@renderDOM()
+	
 	step: ->
-		
 		if mouse.LMB.released
 			if @dragging_points.length
 				@dragging_points = []
@@ -448,8 +454,6 @@ class @Editor
 		@view_drag_momentum.x *= 0.8
 		@view_drag_momentum.y *= 0.8
 		
-		# @editing_structure ?= @editing_entity?.structure
-		
 		@dragging_points =
 			for point in @dragging_points
 				@editing_entity.structure.points[point.name]
@@ -505,16 +509,12 @@ class @Editor
 				@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
 		else if @grab_start
 			if mouse.LMB.down
-				if distance(mouse, @grab_start) > 2
-					@grab_start = null
+				if distance(mouse, @grab_start) > 2 / view.scale
 					if @selected_points.length
-						@dragPoints(@selected_points, @grab_start_in_world)
-						# @undoable()
-						# @dragging_points = (point for point in @selected_points)
+						@dragPoints(@selected_points, @grab_start)
 					else if @selected_entities.length
-						@dragEntities(@selected_entities, @grab_start_in_world)
-						# @undoable()
-						# @dragging_entities = (entity for entity in @selected_entities)
+						@dragEntities(@selected_entities, @grab_start)
+					@grab_start = null
 			else
 				@grab_start = null
 		else if @sculpting
@@ -625,7 +625,6 @@ class @Editor
 		closest_dist
 	
 	grabPoints: (points, mouse)->
-		# @grab_start = mouse
 		if @editing_entity and @editing_entity_anim_name is "Current Pose"
 			EntityClass = entity_classes[@editing_entity._class_]
 			if EntityClass.poses? or EntityClass.animations?
@@ -633,7 +632,6 @@ class @Editor
 				return
 		
 		@grab_start = {x: mouse.x, y: mouse.y}
-		@grab_start_in_world = mouse
 		@selected_points = (point for point in points)
 		local_mouse_position = @editing_entity.fromWorld(mouse)
 		@drag_offsets =
@@ -654,7 +652,6 @@ class @Editor
 	grabEntities: (entities, mouse)->
 		# @grab_start = mouse
 		@grab_start = {x: mouse.x, y: mouse.y}
-		@grab_start_in_world = mouse
 		@selected_entities = (entity for entity in entities)
 		@drag_offsets =
 			for entity in @dragging_entities
@@ -791,6 +788,7 @@ class @Editor
 		unless @editing_entity
 			@editing_entity_anim_name = "Current Pose"
 			@editing_entity_animation_frame_index = null
-		@entities_bar.update()
-		@anim_bar.update()
-		@terrain_bar.update()
+		show = @paused
+		@entities_bar.update(show)
+		@anim_bar.update(show)
+		@terrain_bar.update(show)

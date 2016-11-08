@@ -83,15 +83,16 @@ class @EntitiesBar extends React.Component
 	# 			removeEventListener "mousemove", onmousemove
 	# 			removeEventListener "mouseup", onmouseup
 	
-	update: ->
+	update: (show)->
 		{editor} = @props
 		
-		show = editor.dragging_entities.length is 0 and not editor.editing_entity
+		show = show and editor.dragging_entities.length is 0 and not editor.editing_entity
 		if show isnt @state.visible
 			@setState visible: show
 		
 		# for cell in @cells
 		# 	cell.preview.update()
 		
-		for entity_preview in @entity_previews
-			entity_preview.update()
+		if show
+			for entity_preview in @entity_previews
+				entity_preview.update()
