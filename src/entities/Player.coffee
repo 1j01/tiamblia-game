@@ -121,7 +121,7 @@ class @Player extends SimpleActor
 		@move_x = right - left
 		super
 		
-		@holding = null if @holding.destroyed
+		@holding = null if @holding?.destroyed
 		
 		unless @holding
 			# this is ridiculously complicated
