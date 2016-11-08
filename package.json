@@ -44,6 +44,6 @@
     "nw-dev": "^3.0.0"
   },
   "dependencies": {
-    "nw": "0.15.0-beta2sdk-2"
+    "nw": "^0.18.5-sdk"
   }
 }
