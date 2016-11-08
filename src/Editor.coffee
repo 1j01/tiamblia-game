@@ -147,8 +147,6 @@ class @Editor
 		handle_scroll = (e)=>
 			return unless e.target is canvas
 			
-			mouse.x = e.clientX
-			mouse.y = e.clientY
 			zoom_factor = 1.2
 			
 			current_scale = @view.scale
@@ -159,7 +157,7 @@ class @Editor
 			@view.center_x = @view.center_x_to
 			@view.center_y = @view.center_y_to
 			
-			pivot = @view.toWorld(mouse)
+			pivot = @view.toWorld(x: e.clientX, y: e.clientY)
 			@view.scale_to =
 				if e.detail < 0 or e.wheelDelta > 0
 					@view.scale_to * zoom_factor
@@ -167,7 +165,7 @@ class @Editor
 					@view.scale_to / zoom_factor
 			
 			@view.scale = @view.scale_to
-			mouse_after_preliminary_scale = @view.toWorld(mouse)
+			mouse_after_preliminary_scale = @view.toWorld(x: e.clientX, y: e.clientY)
 			@view.center_x_to += (pivot.x - mouse_after_preliminary_scale.x)
 			@view.center_y_to += (pivot.y - mouse_after_preliminary_scale.y)
 			
