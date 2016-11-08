@@ -105,7 +105,9 @@ class @Player extends SimpleActor
 		@holding = null
 		
 		@run_animation_position = 0
-		@idle_animation_position = 0
+		@subtle_idle_animation_position = 0
+		@other_idle_animation_position = 0
+		@idle_animation = null
 		@idle_timer = 0
 		@smoothed_vy = 0
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
@@ -140,14 +142,23 @@ class @Player extends SimpleActor
 		
 		if @move_x is 0
 			@idle_timer += 1
-			idle_animation = Player.animations["Sorta Dance"]
-			if @idle_timer > 100 and idle_animation
-				@idle_animation_position += 1 / 10
-				new_pose = Pose.lerpAnimationLoop(idle_animation, @idle_animation_position)
-				if (@idle_animation_position / idle_animation.length) % 4 < 2
-					@facing_x = -1
-				else
-					@facing_x = +1
+			subtle_idle_animation = Player.animations["Idle"]
+			
+			if @idle_timer > 1000
+				@idle_animation = "Yawn"
+				@idle_timer = 0
+				@other_idle_animation_position = 0
+			
+			other_idle_animation = @idle_animation and Player.animations[@idle_animation]
+			
+			if other_idle_animation
+				@other_idle_animation_position += 1 / 25
+				if @other_idle_animation_position > other_idle_animation.length
+					@idle_animation = null
+				new_pose = Pose.lerpAnimationLoop(other_idle_animation, @other_idle_animation_position)
+			else if subtle_idle_animation
+				@subtle_idle_animation_position += 1 / 25
+				new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, @subtle_idle_animation_position)
 			else
 				new_pose = Player.poses["Stand"] ? @structure.getPose()
 		else
