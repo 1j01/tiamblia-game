@@ -1,6 +1,7 @@
 # Tiamblia
 
-With a simple visual style, Tiamblia is an immersive 2D exploration adventure game where you can talk to spirits, hunt them, and gain their powers. There will be lots of interesting places to visit and things to do. Also there'll be a story, original music, inverse kinematics, day/night transitions and maybe even weather.
+With a simple visual style, Tiamblia is an immersive 2D exploration adventure game where you can talk to spirits, hunt them, and gain their powers. There will be lots of interesting places to visit, things to do, characters to talk to, original music to listen to...
+<!-- inverse kinematics, day/night transitions, maybe even weather... -->
 
 Stay tuned to potentially interact with...
 * the Spirit of the Hunt,
@@ -10,15 +11,16 @@ Stay tuned to potentially interact with...
 * living lanterns (that eat fireflies),
 * tiny birds,
 * cheeky trees,
-* a spider dojo,
-* a charitable castle,
+* a spider dojo (or rather the spiders thereof),
+* a charitable castle (mhm yup the castle),
 * and more!
 
 Follow [the game on GameJolt](http://gamejolt.com/games/tiamblia/147746)
 and/or watch [the repository on GitHub](https://github.com/1j01/tiamblia-advjam2016).
 
 I'm making a custom engine where everything is based on points and an integrated editor that can manipulate these points.
-The core editor is basically done, but there will be an animation editor, as well as terrain-specific editing features.
+The core editor is basically done; you can select entities, drag them around, pose them, cut/copy and paste, et cetera.
+The animation editor needs undo/redo, frame reordering, and maybe variable delays.
 
 <!--
 ## Editor Behavior
@@ -26,8 +28,8 @@ These could become tests if this were to be a reusable game engine and editor.
 
 drag with the middle mouse button to pan the view
 	(with momentum, wee!)
-zoom towards the mouse with mousewheel
-	(i.e. with the mouse anchored in the w
+zoom in and out with the mouse wheel
+	(with the mouse anchored in the world)
 
 while editing an entity
 	drag outside of the entity to select points (w/ a selection box)
