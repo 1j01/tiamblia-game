@@ -102,29 +102,29 @@ canvas,
 img {
 	flex: 0 0 auto;
 }
-.posing-and-animation-bar {
+.anim-bar {
 	flex-direction: row;
 	align-items: flex-start;
 }
-.posing-and-animation-bar > * {
+.anim-bar > * {
 	height: 100%;
 }
 /* TODO: refactor bars and subbars */
-.posing-and-animation-bar > *:not(:first-child) {
+.anim-bar > *:not(:first-child) {
 	border-left: 1px solid rgba(0, 0, 0, 0.12);
 }
-.posing-and-animation,
+.anims,
 .anim-group {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 }
-.posing-and-animation,
+.anims,
 .animation-frames {
 	overflow-y: auto;
 	overflow-x: hidden;
 }
-.posing-and-animation > * {
+.anims > * {
 	flex-shrink: 0;
 }
 /* TODO: refactor bars and subbars */

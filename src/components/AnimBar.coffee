@@ -14,8 +14,8 @@ class @AnimBar extends React.Component
 		
 		@anims = []
 		# TODO: remove references from @anims on Anim::componentWillUnmount
-		E ".bar.sidebar.posing-and-animation-bar", class: {visible},
-			E ".posing-and-animation",
+		E ".bar.sidebar.anim-bar", class: {visible},
+			E ".anims",
 				E "h1", "Poses"
 				E AnimGroup, {entity, EntityClass, array_to_push_anims_to: @anims, update: @update, type_of_anims: "poses"}
 				E "h1", "Animations"
