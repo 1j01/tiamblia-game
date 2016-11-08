@@ -19,10 +19,10 @@ class @Arrow extends Entity
 		@bbox_padding = 20
 	
 	step: (world)->
-		# collision = (point)=> world.collision(@toWorld(point))
-		# @structure.stepLayout({gravity: 0.5, collision})
-		# @structure.stepLayout() for [0..10]
-		# @structure.stepLayout({collision}) for [0..4]
+		collision = (point)=> world.collision(@toWorld(point))
+		@structure.stepLayout({gravity: 0.1, collision})
+		@structure.stepLayout() for [0..10]
+		@structure.stepLayout({collision}) for [0..4]
 	
 	draw: (ctx)->
 		{tip, nock} = @structure.points
