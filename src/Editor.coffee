@@ -51,56 +51,8 @@ class @Editor
 			@save_path = "world.json"
 			# @save_path = path.join(nw.App.dataPath, "world.json")
 		
-		@mouse = {
-			x: -Infinity, y: -Infinity
-			LMB: {down: no, pressed: no}
-			MMB: {down: no, pressed: no}
-			RMB: {down: no, pressed: no}
-			double_clicked: no
-		}
 		@grab_start = null
 		@grab_start_in_world = null
-		
-		addEventListener "mousemove", (e)=>
-			@mouse.x = e.clientX
-			@mouse.y = e.clientY
-		
-		canvas.addEventListener "mousedown", (e)=>
-			MB = @mouse["#{"LMR"[e.button]}MB"]
-			MB.down = true
-			MB.pressed = true
-		
-		addEventListener "mouseup", (e)=>
-			MB = @mouse["#{"LMR"[e.button]}MB"]
-			MB.down = false
-			mouse_in_world = @view.toWorld(@mouse)
-			
-			if @dragging_points.length
-				@dragging_points = []
-				@savePose()
-				@save()
-			
-			if @dragging_entities.length
-				@save()
-				for entity, i in @dragging_entities
-					if entity.vx? and entity.vy?
-						entity.vx = (mouse_in_world.x + @drag_offsets[i].x - entity.x) / 3
-						entity.vy = (mouse_in_world.y + @drag_offsets[i].y - entity.y) / 3
-				@dragging_entities = []
-			
-			if @selection_box
-				if @editing_entity
-					@selected_points = (entity for entity in @hovered_points)
-				else
-					@selected_entities = (entity for entity in @hovered_entities)
-				@selection_box = null
-		
-		canvas.addEventListener "dblclick", (e)=>
-			MB = @mouse["#{"LMR"[e.button]}MB"]
-			MB.pressed = true
-			@mouse.double_clicked = true
-			# TODO: reject double clicks where the first click was not on the same entity
-			# TODO: reject double click and drag
 		
 		addEventListener "contextmenu", (e)=>
 			menu = new nw.Menu
@@ -194,8 +146,8 @@ class @Editor
 		handle_scroll = (e)=>
 			return unless e.target is canvas
 			
-			@mouse.x = e.clientX
-			@mouse.y = e.clientY
+			mouse.x = e.clientX
+			mouse.y = e.clientY
 			zoom_factor = 1.2
 			
 			current_scale = @view.scale
@@ -206,7 +158,7 @@ class @Editor
 			@view.center_x = @view.center_x_to
 			@view.center_y = @view.center_y_to
 			
-			pivot = @view.toWorld(@mouse)
+			pivot = @view.toWorld(mouse)
 			@view.scale_to =
 				if e.detail < 0 or e.wheelDelta > 0
 					@view.scale_to * zoom_factor
@@ -214,7 +166,7 @@ class @Editor
 					@view.scale_to / zoom_factor
 			
 			@view.scale = @view.scale_to
-			mouse_after_preliminary_scale = @view.toWorld(@mouse)
+			mouse_after_preliminary_scale = @view.toWorld(mouse)
 			@view.center_x_to += (pivot.x - mouse_after_preliminary_scale.x)
 			@view.center_y_to += (pivot.y - mouse_after_preliminary_scale.y)
 			
@@ -423,7 +375,7 @@ class @Editor
 				center.x /= centroids.length
 				center.y /= centroids.length
 				
-				mouse_in_world = @view.toWorld(@mouse)
+				mouse_in_world = @view.toWorld(mouse)
 				
 				for entity in new_entities
 					entity.x += mouse_in_world.x - center.x
@@ -431,7 +383,28 @@ class @Editor
 	
 	step: ->
 		
-		mouse_in_world = @view.toWorld(@mouse)
+		mouse_in_world = @view.toWorld(mouse)
+		
+		if mouse.LMB.released
+			if @dragging_points.length
+				@dragging_points = []
+				@savePose()
+				@save()
+			
+			if @dragging_entities.length
+				@save()
+				for entity, i in @dragging_entities
+					if entity.vx? and entity.vy?
+						entity.vx = (mouse_in_world.x + @drag_offsets[i].x - entity.x) / 3
+						entity.vy = (mouse_in_world.y + @drag_offsets[i].y - entity.y) / 3
+				@dragging_entities = []
+			
+			if @selection_box
+				if @editing_entity
+					@selected_points = (entity for entity in @hovered_points)
+				else
+					@selected_entities = (entity for entity in @hovered_entities)
+				@selection_box = null
 		
 		# min_grab_dist = (5 + 5 / Math.min(@view.scale, 1)) / 2
 		# min_grab_dist = 8 / Math.min(@view.scale, 5)
@@ -490,7 +463,7 @@ class @Editor
 				@editing_entity.structure.points[point.name]
 		
 		if @view_drag_start_in_world
-			if @mouse.MMB.down
+			if mouse.MMB.down
 				@view.center_x -= mouse_in_world.x - @view_drag_start_in_world.x
 				@view.center_y -= mouse_in_world.y - @view_drag_start_in_world.y
 				@view.center_x_to = @view.center_x
@@ -501,13 +474,14 @@ class @Editor
 				@view_drag_momentum.x = mouse_in_world.x - @view_drag_start_in_world.x
 				@view_drag_momentum.y = mouse_in_world.y - @view_drag_start_in_world.y
 				@view_drag_start_in_world = null
-		else if @mouse.MMB.pressed
+		else if mouse.MMB.pressed
 			@view_drag_start_in_world = {x: mouse_in_world.x, y: mouse_in_world.y}
-		else if @mouse.double_clicked
+		else if mouse.double_clicked
+			# TODO: reject double clicks where the first click was not on the same entity
+			# TODO: reject double click and drag
 			if @hovered_entities.length
 				if @hovered_entities[0] in @selected_entities
-					if @mouse.double_clicked
-						@editEntity(@hovered_entities[0])
+					@editEntity(@hovered_entities[0])
 			else
 				# TODO: don't exit editing mode if the entity being edited is hovered
 				# except there needs to be a visual indication of hover for the editing entity
@@ -534,8 +508,8 @@ class @Editor
 			else
 				@hovered_entities = (entity for entity in @world.entities when entity_within_selection_box(entity))
 		else if @grab_start
-			if @mouse.LMB.down
-				if distance(@mouse, @grab_start) > 2
+			if mouse.LMB.down
+				if distance(mouse, @grab_start) > 2
 					@grab_start = null
 					if @selected_points.length
 						@dragPoints(@selected_points, @grab_start_in_world)
@@ -548,7 +522,7 @@ class @Editor
 			else
 				@grab_start = null
 		else if @sculpting
-			if @mouse.LMB.down
+			if mouse.LMB.down
 				# if @sculpt_additive
 					
 				# else
@@ -597,7 +571,7 @@ class @Editor
 				if closest_entity?
 					@hovered_entities = [closest_entity]
 			
-			if @mouse.LMB.pressed
+			if mouse.LMB.pressed
 				@dragging_points = []
 				@dragging_segments = []
 				
@@ -626,11 +600,6 @@ class @Editor
 			# TODO: and if there isn't an animation frame loaded
 				@editing_entity.structure.stepLayout() for [0..250]
 				# TODO: save afterwards at some point
-		
-		@mouse.LMB.pressed = false
-		@mouse.MMB.pressed = false
-		@mouse.RMB.pressed = false
-		@mouse.double_clicked = false
 	
 	editEntity: (entity)->
 		@editing_entity = entity
@@ -667,7 +636,7 @@ class @Editor
 				@warn "No pose is selected. Select a pose to edit."
 				return
 		
-		@grab_start = {x: @mouse.x, y: @mouse.y}
+		@grab_start = {x: mouse.x, y: mouse.y}
 		@grab_start_in_world = mouse_in_world
 		@selected_points = (point for point in points)
 		local_mouse_position = @editing_entity.fromWorld(mouse_in_world)
@@ -688,7 +657,7 @@ class @Editor
 	
 	grabEntities: (entities, mouse_in_world)->
 		# @grab_start = mouse_in_world
-		@grab_start = {x: @mouse.x, y: @mouse.y}
+		@grab_start = {x: mouse.x, y: mouse.y}
 		@grab_start_in_world = mouse_in_world
 		@selected_entities = (entity for entity in entities)
 		@drag_offsets =
@@ -758,7 +727,7 @@ class @Editor
 		
 		if @editing_entity?
 			if @editing_entity instanceof Terrain and @sculpt_mode
-				mouse_in_world = @view.toWorld(@mouse)
+				mouse_in_world = @view.toWorld(mouse)
 				ctx.beginPath()
 				# ctx.arc(mouse_in_world.x, mouse_in_world.y, @brush_size / view.scale, 0, TAU)
 				ctx.arc(mouse_in_world.x, mouse_in_world.y, @brush_size, 0, TAU)

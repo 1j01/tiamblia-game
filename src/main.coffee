@@ -14,6 +14,7 @@ document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
 
 @view = new View
+@mouse = new Mouse(canvas)
 
 @editor = new Editor(world, view, canvas)
 try
@@ -44,6 +45,7 @@ do animate = ->
 	# view.center_y_to = player.y
 	view.step()
 	editor.step()
+	mouse.endStep()
 	
 	world.drawBackground(ctx, view)
 	ctx.save()
