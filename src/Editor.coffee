@@ -192,7 +192,8 @@ class @Editor
 			return false
 		
 		handle_scroll = (e)=>
-			# TODO: ignore if mouse is over a sidebar
+			return unless e.target is canvas
+			
 			@mouse.x = e.clientX
 			@mouse.y = e.clientY
 			zoom_factor = 1.2
