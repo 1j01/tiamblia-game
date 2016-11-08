@@ -815,7 +815,7 @@ class @Editor
 	renderDOM: ->
 		react_root = E ".editor",
 			E EntitiesBar, editor: @, ref: (@entities_bar)=>
-			E PosingAndAnimationBar, editor: @, ref: (@animation_bar)=>
+			E AnimBar, editor: @, ref: (@anim_bar)=>
 			E TerrainBar, editor: @, ref: (@terrain_bar)=>
 			E ".warning",
 				class: ("show" if @show_warning)
@@ -828,5 +828,5 @@ class @Editor
 			@editing_entity_anim_name = "Current Pose"
 			@editing_entity_animation_frame_index = null
 		@entities_bar.update()
-		@animation_bar.update()
+		@anim_bar.update()
 		@terrain_bar.update()
