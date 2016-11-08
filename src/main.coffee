@@ -22,6 +22,17 @@ try
 catch e
 	console?.error? "Failed to load save:", e
 
+try
+	view.center_x_to = view.center_x = parseFloat(localStorage.view_center_x) unless isNaN(localStorage.view_center_x)
+	view.center_y_to = view.center_y = parseFloat(localStorage.view_center_y) unless isNaN(localStorage.view_center_y)
+	view.scale_to = view.scale = parseFloat(localStorage.view_scale) unless isNaN(localStorage.view_scale)
+
+setInterval ->
+	localStorage.view_center_x = view.center_x
+	localStorage.view_center_y = view.center_y
+	localStorage.view_scale = view.scale_to
+, 200
+
 do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
