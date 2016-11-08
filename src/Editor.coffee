@@ -650,7 +650,6 @@ class @Editor
 				y: point.y - local_mouse_position.y
 	
 	grabEntities: (entities, mouse)->
-		# @grab_start = mouse
 		@grab_start = {x: mouse.x, y: mouse.y}
 		@selected_entities = (entity for entity in entities)
 		@drag_offsets =

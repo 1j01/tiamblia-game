@@ -39,6 +39,11 @@ do animate = ->
 	unless editor.editing
 		for entity in world.entities when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world)
+		
+		# TODO: allow margin of offcenterednses
+		player = world.getEntitiesOfType(Player)[0]
+		view.center_x_to = player.x
+		view.center_y_to = player.y
 	
 	view.width = canvas.width
 	view.height = canvas.height
