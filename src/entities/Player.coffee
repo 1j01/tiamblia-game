@@ -178,10 +178,7 @@ class @Player extends SimpleActor
 			secondary_hand = @structure.points["left hand"]
 			bow = @holding if @holding instanceof Bow
 			if bow
-				# primary_hand.x = 5 * @facing_x
-				# primary_hand.y = -5
-				# secondary_hand.x = 20 * @facing_x
-				# secondary_hand.y = -5
+				# TODO: control elbows as well, or exclude them somehow from animation to let them fall naturally if that works
 				primary_hand.x = sternum.x + 5 * cos(aim_angle)
 				primary_hand.y = sternum.y + 5 * sin(aim_angle)
 				secondary_hand.x = sternum.x + 20 * cos(aim_angle)
@@ -206,7 +203,7 @@ class @Player extends SimpleActor
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
-		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that's probably good
+		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that could work, but I would still use {}= when I could honestly, so...
 		
 		skin_color = "#6B422C"
 		hair_color = "#000000"
@@ -233,7 +230,6 @@ class @Player extends SimpleActor
 				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 2
 			
 			ctx.save()
-			# ctx.translate(0,-@height*0.74)
 			ctx.scale(hxs, 1)
 			ctx.fillStyle = hair_color
 			r = @hair_x_scales[i] * @vx / 40 - Math.min(0.5, Math.max(0, @smoothed_vy/20))
@@ -299,7 +295,7 @@ class @Player extends SimpleActor
 		ctx.fill()
 		ctx.restore()
 		
-		# head and hair
+		# head, including top of hair
 		ctx.save()
 		ctx.translate(head.x, head.y)
 		ctx.rotate(atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)

@@ -1,7 +1,4 @@
 
-# Included in npm package, not in source control
-index.js
-
 # Logs
 logs
 *.log

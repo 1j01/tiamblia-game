@@ -47,8 +47,7 @@ do animate = ->
 	
 	view.width = canvas.width
 	view.height = canvas.height
-	# view.center_x_to = player.x
-	# view.center_y_to = player.y
+	
 	view.step()
 	editor.step() if editor.editing
 	mouse.endStep()
@@ -67,12 +66,3 @@ do animate = ->
 	editor.updateGUI()
 	
 	keyboard.endStep()
-
-# index = 0
-# setInterval ->
-# 	entity = world.entities[index %% world.entities.length]
-# 	editor.selected_entities = [entity]
-# 	view.center_x_to = entity.x
-# 	view.center_y_to = entity.y
-# 	index += 1
-# , 1500

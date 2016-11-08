@@ -17,10 +17,6 @@ Stay tuned to potentially interact with...
 Follow [the game on GameJolt](http://gamejolt.com/games/tiamblia/147746)
 and/or watch [the repository on GitHub](https://github.com/1j01/tiamblia-advjam2016).
 
-I started making this because of
-[Adventure Jam 2016](http://jams.gamejolt.io/adventurejam2016) ([#AdvJam2016](http://gamejolt.com/tag/AdvJam2016))
-but it's long past the deadline.
-
 I'm making a custom engine where everything is based on points and an integrated editor that can manipulate these points.
 The core editor is basically done, but there will be an animation editor, as well as terrain-specific editing features.
 
