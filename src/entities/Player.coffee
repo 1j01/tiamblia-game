@@ -174,26 +174,30 @@ class @Player extends SimpleActor
 			else
 				new_pose
 		
-		if @holding
-			primary_hand = @structure.points["right hand"]
-			secondary_hand = @structure.points["left hand"]
-			bow = @holding if @holding instanceof Bow
-			if bow
-				# TODO: control elbows as well, or exclude them somehow from animation to let them fall naturally if that works
-				primary_hand.x = sternum.x + 5 * cos(aim_angle)
-				primary_hand.y = sternum.y + 5 * sin(aim_angle)
-				secondary_hand.x = sternum.x + 20 * cos(aim_angle)
-				secondary_hand.y = sternum.y + 20 * sin(aim_angle)
-		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
 		if @holding
-			primary_hand = @structure.points["right hand"]
-			secondary_hand = @structure.points["left hand"]
 			@holding.x = @x
 			@holding.y = @y
+			primary_hand = @structure.points["right hand"]
+			secondary_hand = @structure.points["left hand"]
+			primary_elbo = @structure.points["right elbo"]
+			secondary_elbo = @structure.points["left elbo"]
 			bow = @holding if @holding instanceof Bow
 			if bow
+				# her dominant eye is whichever one she would theoretically be using
+				primary_hand.x = sternum.x + 10 * cos(aim_angle)
+				primary_hand.y = sternum.y + 10 * sin(aim_angle)
+				secondary_hand.x = sternum.x + 30 * cos(aim_angle)
+				secondary_hand.y = sternum.y + 30 * sin(aim_angle)
+				# primary_elbo.x = sternum.x + 5 * cos(aim_angle)
+				# primary_elbo.y = sternum.y + 5 * sin(aim_angle)
+				# secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
+				# secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
+				secondary_elbo.y = sternum.y - 15
+				
+				@structure.stepLayout() for [0..250]
+				
 				primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
 				secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
 				bow.structure.points.serving.x = primary_hand_in_bow_space.x
