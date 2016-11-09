@@ -48,7 +48,7 @@ do animate = ->
 		canvas.classList.remove("grabbable")
 	
 	unless editor.editing
-		for entity in world.entities when entity isnt editor.editing_entity and entity not in editor.dragging_entities
+		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world)
 		
 		# TODO: allow margin of offcenterednses
