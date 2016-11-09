@@ -3,6 +3,10 @@ class @Bow extends Entity
 	addEntityClass(@)
 	constructor: ->
 		super
+		
+		@height = 25
+		@fistmele = 6
+		
 		@structure.addPoint("grip")
 		@structure.addSegment(
 			from: "grip"
@@ -16,7 +20,6 @@ class @Bow extends Entity
 			name: "lower limb"
 			length: 10
 		)
-		@fistmele = 6
 		@structure.addSegment(
 			from: "grip"
 			name: "serving"
@@ -43,13 +46,20 @@ class @Bow extends Entity
 		
 		# center_x = (top.x + bottom.x)/2
 		# center_y = (top.y + bottom.y)/2
-		bow_length = distance(top, bottom)
 		# bow_angle = atan2(top.y - bottom.y, top.x - bottom.x) - TAU/4
 		bow_angle = atan2(grip.y - serving.y, grip.x - serving.x) - TAU/4
-		top.x = grip.x + @fistmele * sin(bow_angle) + bow_length/2 * cos(bow_angle)
-		top.y = grip.y + @fistmele * cos(bow_angle) + bow_length/2 * sin(bow_angle)
-		bottom.x = grip.x + @fistmele * sin(bow_angle) - bow_length/2 * cos(bow_angle)
-		bottom.y = grip.y + @fistmele * cos(bow_angle) - bow_length/2 * sin(bow_angle)
+		# top.x = grip.x + @fistmele * sin(bow_angle) + @height/2 * cos(bow_angle)
+		# top.y = grip.y + @fistmele * cos(bow_angle) + @height/2 * sin(bow_angle)
+		# bottom.x = grip.x + @fistmele * sin(bow_angle) - @height/2 * cos(bow_angle)
+		# bottom.y = grip.y + @fistmele * cos(bow_angle) - @height/2 * sin(bow_angle)
+		# top.x = grip.x + @height/2 * cos(bow_angle)
+		# top.y = grip.y + @height/2 * sin(bow_angle)
+		# bottom.x = grip.x - @height/2 * cos(bow_angle)
+		# bottom.y = grip.y - @height/2 * sin(bow_angle)
+		top.x = grip.x + @height/2 * cos(bow_angle) - @fistmele * sin(-bow_angle)
+		top.y = grip.y + @height/2 * sin(bow_angle) - @fistmele * cos(bow_angle)
+		bottom.x = grip.x - @height/2 * cos(bow_angle) - @fistmele * sin(-bow_angle)
+		bottom.y = grip.y - @height/2 * sin(bow_angle) - @fistmele * cos(bow_angle)
 	
 	draw: (ctx)->
 		{top, bottom, grip, serving} = @structure.points
@@ -64,8 +74,6 @@ class @Bow extends Entity
 		ctx.beginPath()
 		center_x = (top.x + bottom.x)/2
 		center_y = (top.y + bottom.y)/2
-		bow_length = distance(top, bottom)
-		# bow_angle = atan2(top.y - bottom.y, top.x - bottom.x) - TAU/4
 		bow_angle = atan2(grip.y - serving.y, grip.x - serving.x) - TAU/4
 		ctx.save()
 		# ctx.translate(center_x, center_y)
@@ -74,7 +82,7 @@ class @Bow extends Entity
 		# ctx.rotate(bow_angle + TAU/4)
 		ctx.rotate(bow_angle)
 		arc_r = @fistmele
-		ctx.scale(bow_length/2/arc_r, 1)
+		ctx.scale(@height/2/arc_r, 1)
 		ctx.arc(0, -arc_r, arc_r, 0, TAU/2)
 		ctx.lineWidth = 2
 		ctx.strokeStyle = "#AB7939"
