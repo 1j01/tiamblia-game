@@ -14,7 +14,7 @@ document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
 
 @view = new View
-@mouse = new Mouse(view, canvas)
+@mouse = new Mouse(canvas, view)
 
 @editor = new Editor(world, view, canvas)
 try

@@ -124,7 +124,8 @@ class @Player extends SimpleActor
 		{sternum} = @structure.points
 		from_point_in_world = @toWorld(sternum)
 		
-		aim_angle = atan2(mouse.y - from_point_in_world.y, mouse.x - from_point_in_world.x)
+		mouse_in_world = mouse.toWorld()
+		aim_angle = atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x)
 		
 		@holding = null if @holding?.destroyed
 		

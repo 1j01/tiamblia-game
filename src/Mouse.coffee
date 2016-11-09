@@ -1,6 +1,6 @@
 
 class @Mouse
-	constructor: (view, canvas)->
+	constructor: (canvas, @view)->
 		@x = -Infinity
 		@y = -Infinity
 		@LMB = {down: no, pressed: no, released: no}
@@ -9,7 +9,8 @@ class @Mouse
 		@double_clicked = no
 		
 		addEventListener "mousemove", (e)=>
-			{@x, @y} = view.toWorld(x: e.clientX, y: e.clientY)
+			@x = e.clientX
+			@y = e.clientY
 		
 		canvas.addEventListener "mousedown", (e)=>
 			MB = @["#{"LMR"[e.button]}MB"]
@@ -25,6 +26,9 @@ class @Mouse
 			MB = @["#{"LMR"[e.button]}MB"]
 			MB.pressed = yes
 			@double_clicked = yes
+	
+	toWorld: ->
+		@view.toWorld(@)
 	
 	endStep: ->
 		@LMB.pressed = no
