@@ -38,7 +38,7 @@ class @TerrainBar extends React.Component
 		componentHandler.upgradeElement(ReactDOM.findDOMNode(@sculpt_mode_switch))
 		componentHandler.upgradeElement(ReactDOM.findDOMNode(@brush_size_slider))
 	
-	update: (show)->
+	update: (show)=>
 		{editor} = @props
 		{editing_entity} = editor
 		

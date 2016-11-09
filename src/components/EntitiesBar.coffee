@@ -56,7 +56,7 @@ class @EntitiesBar extends React.Component
 						ref: (ep)=>
 							@entity_previews.push(ep) if ep?
 	
-	update: (show)->
+	update: (show)=>
 		{editor} = @props
 		
 		show = show and editor.dragging_entities.length is 0 and not editor.editing_entity

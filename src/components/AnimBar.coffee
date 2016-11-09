@@ -24,7 +24,7 @@ class @AnimBar extends React.Component
 				E "h1", "Frames"
 				E AnimGroup, {entity, EntityClass, array_to_push_anims_to: @anims, update: @update, type_of_anims: "animation-frames", editing_frame_index: editor.editing_entity_animation_frame_index}
 	
-	update: (show)->
+	update: (show)=>
 		{editor} = @props
 		{editing_entity_anim_name, editing_entity} = editor
 		
