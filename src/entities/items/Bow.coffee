@@ -7,6 +7,8 @@ class @Bow extends Entity
 		@height = 25
 		@fistmele = 6
 		
+		@draw_distance = 0
+		
 		@structure.addPoint("grip")
 		@structure.addSegment(
 			from: "grip"

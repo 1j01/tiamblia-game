@@ -185,18 +185,31 @@ class @Player extends SimpleActor
 			secondary_elbo = @structure.points["left elbo"]
 			bow = @holding if @holding instanceof Bow
 			if bow
+				arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
 				# her dominant eye is whichever one she would theoretically be using
-				primary_hand.x = sternum.x + 10 * cos(aim_angle)
-				primary_hand.y = sternum.y + 10 * sin(aim_angle)
-				secondary_hand.x = sternum.x + 30 * cos(aim_angle)
-				secondary_hand.y = sternum.y + 30 * sin(aim_angle)
-				# primary_elbo.x = sternum.x + 5 * cos(aim_angle)
-				# primary_elbo.y = sternum.y + 5 * sin(aim_angle)
-				# secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
-				# secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
-				secondary_elbo.y = sternum.y - 15
+				max_draw_distance = 5
+				# max_draw_distance = arm_span / 2.5 #- bow.fistmele
+				bow.draw_distance += ((max_draw_distance * mouse.LMB.down) - bow.draw_distance) / 15
+				# if mouse.LMB.down
+				# 	bow.draw_distance += (5 - bow.draw_distance) / 5
+				# else
+				# 	# if bow.draw_distance > 2
+				# 		# fire an arrow
+				# 	bow.draw_distance = 0
+				primary_hand.x = sternum.x + (arm_span - bow.fistmele - bow.draw_distance) * cos(aim_angle)
+				primary_hand.y = sternum.y + (arm_span - bow.fistmele - bow.draw_distance) * sin(aim_angle)
+				secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
+				secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
+				primary_elbo.x = sternum.x + 5 * cos(aim_angle)
+				primary_elbo.y = sternum.y + 5 * sin(aim_angle)
+				secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
+				secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
+				primary_elbo.y = sternum.y - 3
 				
-				@structure.stepLayout() for [0..250]
+				# @structure.points["left shoulder"].x -= 0.1
+				# @structure.points["right shoulder"].x += 0.1
+				# for [0..1250]
+				# 	@structure.stepLayout()
 				
 				primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
 				secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
