@@ -154,6 +154,10 @@ class @Player extends SimpleActor
 		pick_up_any Bow, "holding_bow"
 		pick_up_any Arrow, "holding_arrow"
 		
+		dont_idle = =>
+			@idle_timer = 0
+			@idle_animation = null
+		
 		if @move_x is 0
 			@idle_timer += 1
 			subtle_idle_animation = Player.animations["Idle"]
@@ -176,8 +180,7 @@ class @Player extends SimpleActor
 			else
 				new_pose = Player.poses["Stand"] ? @structure.getPose()
 		else
-			@idle_timer = 0
-			@idle_animation = null
+			dont_idle()
 			if Player.animations["Run"]
 				@run_animation_position += abs(@move_x) / 5
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
@@ -198,7 +201,7 @@ class @Player extends SimpleActor
 		primary_elbo = @structure.points["right elbo"]
 		secondary_elbo = @structure.points["left elbo"]
 		
-		prime_bow = @holding_bow and mouse.RMB.down
+		prime_bow = @holding_bow and mouse.RMB.down # and @holding_arrow
 		draw_bow = prime_bow and mouse.LMB.down
 		
 		# TODO: transition (both ways) between primed and not
@@ -230,6 +233,7 @@ class @Player extends SimpleActor
 				@bow_drawn_to += (arm_span - bow.fistmele - @bow_drawn_to) / 10
 			
 			if prime_bow
+				dont_idle()
 				bow_angle = aim_angle
 				primary_hand.x = sternum.x + @bow_drawn_to * cos(aim_angle)
 				primary_hand.y = sternum.y + @bow_drawn_to * sin(aim_angle)
