@@ -310,14 +310,19 @@ class @Player extends SimpleActor
 		
 		for hxs, i in @hair_x_scales by -1
 			if i is 0
-				@hair_x_scales[i] += (-@facing_x - hxs) / 2
+				@hair_x_scales[i] += (-@facing_x - hxs) / 3
 			else
-				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 2
+				# x = @facing_x * i/@hair_x_scales.length * 2
+				# @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
+				# @hair_x_scales[i] += (x - hxs) / 2
+				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 3
 			
 			ctx.save()
 			ctx.scale(hxs, 1)
 			ctx.fillStyle = hair_color
-			r = @hair_x_scales[i] * @vx / 40 - Math.min(0.5, Math.max(0, @smoothed_vy/20))
+			# r = @hair_x_scales[i] * @vx / 40 - Math.min(0.5, Math.max(0, @smoothed_vy/20))
+			r = @hair_x_scales[i] * @vx / 45 - Math.max(0, @smoothed_vy/25)
+			# r=(this.hairxscales[i])*this.vx/25-Math.max(0,this.avy/25)
 			l = 5
 			w = 1
 			ctx.rotate(r)
