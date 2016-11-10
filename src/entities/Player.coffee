@@ -251,6 +251,7 @@ class @Player extends SimpleActor
 				arrow.structure.points.tip.vx = 0
 				arrow.structure.points.tip.vy = 0
 		else if @holding_arrow
+			arrow = @holding_arrow
 			arrow.x = @x
 			arrow.y = @y
 			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
