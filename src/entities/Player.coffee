@@ -177,6 +177,7 @@ class @Player extends SimpleActor
 				new_pose = Player.poses["Stand"] ? @structure.getPose()
 		else
 			@idle_timer = 0
+			@idle_animation = null
 			if Player.animations["Run"]
 				@run_animation_position += abs(@move_x) / 5
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
