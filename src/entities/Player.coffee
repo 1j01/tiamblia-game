@@ -97,7 +97,7 @@ class @Player extends SimpleActor
 		# 			name: "hair #{abc} #{i}"
 		# 			length: 2
 		# 		)
-		# FIXME: arms are too long compared to legs
+		# TODO: adjust proportions? https://en.wikipedia.org/wiki/Body_proportions
 		# TODO: add some constraints to hips, shoulders, and neck
 		# TODO: min/max_length for psuedo-3D purposes
 		@bbox_padding = 10
@@ -255,8 +255,6 @@ class @Player extends SimpleActor
 				bow.structure.points.serving.x = sternum.x + draw_to * cos(aim_angle)
 				bow.structure.points.serving.y = sternum.y + draw_to * sin(aim_angle)
 			else
-				# bow.structure.points.serving.x = (bow.structure.points.top.x + bow.structure.points.bottom.x) / 2
-				# bow.structure.points.serving.y = (bow.structure.points.top.y + bow.structure.points.bottom.y) / 2
 				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * cos(bow_angle)
 				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * sin(bow_angle)
 		
@@ -267,15 +265,15 @@ class @Player extends SimpleActor
 			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
 			arrow_length = arrow.structure.segments.shaft.length
+			arrow.structure.points.nock.vx = 0
+			arrow.structure.points.nock.vy = 0
+			arrow.structure.points.tip.vx = 0
+			arrow.structure.points.tip.vy = 0
 			if prime_bow
 				arrow.structure.points.nock.x = sternum.x + draw_to * cos(aim_angle)
 				arrow.structure.points.nock.y = sternum.y + draw_to * sin(aim_angle)
 				arrow.structure.points.tip.x = sternum.x + (draw_to + arrow_length) * cos(aim_angle)
 				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow_length) * sin(aim_angle)
-				arrow.structure.points.nock.vx = 0
-				arrow.structure.points.nock.vy = 0
-				arrow.structure.points.tip.vx = 0
-				arrow.structure.points.tip.vy = 0
 			else
 				angle = atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
 				arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
@@ -284,10 +282,6 @@ class @Player extends SimpleActor
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * sin(arrow_angle)
 				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow_length) * cos(arrow_angle)
 				arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow_length) * sin(arrow_angle)
-				arrow.structure.points.nock.vx = 0
-				arrow.structure.points.nock.vy = 0
-				arrow.structure.points.tip.vx = 0
-				arrow.structure.points.tip.vy = 0
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
