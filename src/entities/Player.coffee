@@ -197,6 +197,10 @@ class @Player extends SimpleActor
 		primary_elbo = @structure.points["right elbo"]
 		secondary_elbo = @structure.points["left elbo"]
 		
+		prime_bow = @holding_bow and mouse.RMB.down
+		draw_bow = prime_bow and mouse.LMB.down
+		
+		# TODO: transition (both ways) between primed and not
 		if @holding_bow
 			bow = @holding_bow
 			bow.x = @x
@@ -205,16 +209,16 @@ class @Player extends SimpleActor
 			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
 			max_draw_distance = 6
 			# max_draw_distance = arm_span / 2.5 #- bow.fistmele
-			bow.draw_distance += ((max_draw_distance * mouse.LMB.down) - bow.draw_distance) / 15
+			bow.draw_distance += ((max_draw_distance * draw_bow) - bow.draw_distance) / 15
 			
 			draw_to = arm_span - bow.fistmele - bow.draw_distance
 			
-			if mouse.LMB.down
+			if draw_bow
 				# TODO: use better transition to allow for greater control over release velocity
 				bow.draw_distance += (5 - bow.draw_distance) / 5
 				@bow_drawn_to = draw_to
 			else
-				if bow.draw_distance > 2 and @holding_arrow
+				if prime_bow and @holding_arrow and bow.draw_distance > 2
 					force = bow.draw_distance
 					for point_name, point of @holding_arrow.structure.points
 						point.vx = cos(aim_angle) * force
@@ -224,29 +228,41 @@ class @Player extends SimpleActor
 				# FIXME: this should be an ease-in transition, not ease-out
 				@bow_drawn_to += (arm_span - bow.fistmele - @bow_drawn_to) / 10
 			
-			primary_hand.x = sternum.x + @bow_drawn_to * cos(aim_angle)
-			primary_hand.y = sternum.y + @bow_drawn_to * sin(aim_angle)
-			secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
-			secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
-			primary_elbo.x = sternum.x + 5 * cos(aim_angle)
-			primary_elbo.y = sternum.y + 5 * sin(aim_angle)
-			secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
-			secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
-			primary_elbo.y = sternum.y - 3
+			if prime_bow
+				bow_angle = aim_angle
+				primary_hand.x = sternum.x + @bow_drawn_to * cos(aim_angle)
+				primary_hand.y = sternum.y + @bow_drawn_to * sin(aim_angle)
+				primary_elbo.x = sternum.x + 5 * cos(aim_angle)
+				primary_elbo.y = sternum.y + 5 * sin(aim_angle)
+				# primary_elbo.y = sternum.y - 3
+				secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
+				secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
+				secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
+				secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
+			else
+				bow_angle = atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
 			
 			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
-			bow.structure.points.serving.x = sternum.x + draw_to * cos(aim_angle)
-			bow.structure.points.serving.y = sternum.y + draw_to * sin(aim_angle)
 			bow.structure.points.grip.x = secondary_hand_in_bow_space.x
 			bow.structure.points.grip.y = secondary_hand_in_bow_space.y
-			if @holding_arrow
-				arrow = @holding_arrow
-				arrow.x = @x
-				arrow.y = @y
-				primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
-				secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
-				arrow_length = arrow.structure.segments.shaft.length
+			if prime_bow
+				bow.structure.points.serving.x = sternum.x + draw_to * cos(aim_angle)
+				bow.structure.points.serving.y = sternum.y + draw_to * sin(aim_angle)
+			else
+				# bow.structure.points.serving.x = (bow.structure.points.top.x + bow.structure.points.bottom.x) / 2
+				# bow.structure.points.serving.y = (bow.structure.points.top.y + bow.structure.points.bottom.y) / 2
+				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * cos(bow_angle)
+				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * sin(bow_angle)
+		
+		if @holding_arrow
+			arrow = @holding_arrow
+			arrow.x = @x
+			arrow.y = @y
+			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
+			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
+			arrow_length = arrow.structure.segments.shaft.length
+			if prime_bow
 				arrow.structure.points.nock.x = sternum.x + draw_to * cos(aim_angle)
 				arrow.structure.points.nock.y = sternum.y + draw_to * sin(aim_angle)
 				arrow.structure.points.tip.x = sternum.x + (draw_to + arrow_length) * cos(aim_angle)
@@ -255,24 +271,18 @@ class @Player extends SimpleActor
 				arrow.structure.points.nock.vy = 0
 				arrow.structure.points.tip.vx = 0
 				arrow.structure.points.tip.vy = 0
-		else if @holding_arrow
-			arrow = @holding_arrow
-			arrow.x = @x
-			arrow.y = @y
-			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
-			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
-			angle = atan2(secondary_hand.y - sternum.y, secondary_hand.x - sternum.x)
-			arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
-			arrow_length = arrow.structure.segments.shaft.length
-			hold_offset = -5
-			arrow.structure.points.nock.x = secondary_hand_in_arrow_space.x + hold_offset * cos(arrow_angle)
-			arrow.structure.points.nock.y = secondary_hand_in_arrow_space.y + hold_offset * sin(arrow_angle)
-			arrow.structure.points.tip.x = secondary_hand_in_arrow_space.x + (hold_offset + arrow_length) * cos(arrow_angle)
-			arrow.structure.points.tip.y = secondary_hand_in_arrow_space.y + (hold_offset + arrow_length) * sin(arrow_angle)
-			arrow.structure.points.nock.vx = 0
-			arrow.structure.points.nock.vy = 0
-			arrow.structure.points.tip.vx = 0
-			arrow.structure.points.tip.vy = 0
+			else
+				angle = atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
+				arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
+				hold_offset = -5
+				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * cos(arrow_angle)
+				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * sin(arrow_angle)
+				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow_length) * cos(arrow_angle)
+				arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow_length) * sin(arrow_angle)
+				arrow.structure.points.nock.vx = 0
+				arrow.structure.points.nock.vy = 0
+				arrow.structure.points.tip.vx = 0
+				arrow.structure.points.tip.vy = 0
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points

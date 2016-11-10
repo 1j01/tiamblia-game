@@ -56,6 +56,9 @@ class @Editor
 		@grab_start = null
 		
 		addEventListener "contextmenu", (e)=>
+			e.preventDefault()
+			return unless @editing
+			
 			menu = new nw.Menu
 			
 			# if @selected_entities.length is 0
@@ -140,7 +143,6 @@ class @Editor
 					enabled: @selected_entities.length
 				))
 			
-			e.preventDefault()
 			menu.popup(e.x, e.y)
 			return false
 		
