@@ -105,6 +105,8 @@ class @Player extends SimpleActor
 		@holding_bow = null
 		@holding_arrow = null
 		
+		@bow_drawn_to = 0
+		
 		@run_animation_position = 0
 		@subtle_idle_animation_position = 0
 		@other_idle_animation_position = 0
@@ -141,7 +143,6 @@ class @Player extends SimpleActor
 						if abs(point.vx) + abs(point.vy) > 2
 							moving_too_fast = yes
 							break
-				# moving_too_fast = entity.moving_too_fast_to_pick_up
 				unless moving_too_fast
 					for segment_name, segment of entity.structure.segments
 						dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
@@ -190,6 +191,7 @@ class @Player extends SimpleActor
 		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
+		# her dominant eye is whichever one she would theoretically be using
 		primary_hand = @structure.points["right hand"]
 		secondary_hand = @structure.points["left hand"]
 		primary_elbo = @structure.points["right elbo"]
@@ -201,27 +203,29 @@ class @Player extends SimpleActor
 			bow.y = @y
 			
 			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
-			# her dominant eye is whichever one she would theoretically be using
 			max_draw_distance = 6
 			# max_draw_distance = arm_span / 2.5 #- bow.fistmele
 			bow.draw_distance += ((max_draw_distance * mouse.LMB.down) - bow.draw_distance) / 15
 			
+			draw_to = arm_span - bow.fistmele - bow.draw_distance
+			
 			if mouse.LMB.down
+				# TODO: use better transition to allow for greater control over release velocity
 				bow.draw_distance += (5 - bow.draw_distance) / 5
+				@bow_drawn_to = draw_to
 			else
 				if bow.draw_distance > 2 and @holding_arrow
 					force = bow.draw_distance
 					for point_name, point of @holding_arrow.structure.points
 						point.vx = cos(aim_angle) * force
 						point.vy = sin(aim_angle) * force
-					# @holding_arrow.moving_too_fast_to_pick_up = true
 					@holding_arrow = null
 				bow.draw_distance = 0
+				# FIXME: this should be an ease-in transition, not ease-out
+				@bow_drawn_to += (arm_span - bow.fistmele - @bow_drawn_to) / 10
 			
-			# TODO: have the string leave her hand when releasing
-			draw_to = arm_span - bow.fistmele - bow.draw_distance
-			primary_hand.x = sternum.x + draw_to * cos(aim_angle)
-			primary_hand.y = sternum.y + draw_to * sin(aim_angle)
+			primary_hand.x = sternum.x + @bow_drawn_to * cos(aim_angle)
+			primary_hand.y = sternum.y + @bow_drawn_to * sin(aim_angle)
 			secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
 			secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
 			primary_elbo.x = sternum.x + 5 * cos(aim_angle)
@@ -232,8 +236,8 @@ class @Player extends SimpleActor
 			
 			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
-			bow.structure.points.serving.x = primary_hand_in_bow_space.x
-			bow.structure.points.serving.y = primary_hand_in_bow_space.y
+			bow.structure.points.serving.x = sternum.x + draw_to * cos(aim_angle)
+			bow.structure.points.serving.y = sternum.y + draw_to * sin(aim_angle)
 			bow.structure.points.grip.x = secondary_hand_in_bow_space.x
 			bow.structure.points.grip.y = secondary_hand_in_bow_space.y
 			if @holding_arrow
