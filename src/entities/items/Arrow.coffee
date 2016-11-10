@@ -20,6 +20,7 @@ class @Arrow extends Entity
 		@structure.points.tip.x += @structure.segments.shaft.length
 	
 	step: (world)->
+		# TODO: stick to things and stick into things, don't be "bouncy"
 		collision = (point)=> world.collision(@toWorld(point))
 		@structure.stepLayout({gravity: 0.1, collision})
 		@structure.stepLayout() for [0..10]

@@ -102,7 +102,8 @@ class @Player extends SimpleActor
 		# TODO: min/max_length for psuedo-3D purposes
 		@bbox_padding = 10
 		
-		@holding = null
+		@holding_bow = null
+		@holding_arrow = null
 		
 		@run_animation_position = 0
 		@subtle_idle_animation_position = 0
@@ -127,17 +128,30 @@ class @Player extends SimpleActor
 		mouse_in_world = mouse.toWorld()
 		aim_angle = atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x)
 		
-		@holding = null if @holding?.destroyed
-		
-		unless @holding
+		pick_up_any = (EntityClass, prop)=>
+			@[prop] = null if @[prop]?.destroyed
+			return if @[prop]
 			# this is ridiculously complicated
-			for bow in world.getEntitiesOfType(Bow)
-				from_point_in_entity_space = bow.fromWorld(from_point_in_world)
-				for segment_name, segment of bow.structure.segments
-					dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
-					if dist < 50
-						pickup_item = bow
-			@holding = pickup_item if pickup_item
+			for entity in world.getEntitiesOfType(EntityClass)
+				from_point_in_entity_space = entity.fromWorld(from_point_in_world)
+				moving_too_fast = no
+				for point_name, point of entity.structure.points
+					if point.vx? and point.vy?
+						console.log abs(point.vx) + abs(point.vy)
+						if abs(point.vx) + abs(point.vy) > 2
+							moving_too_fast = yes
+							break
+				# moving_too_fast = entity.moving_too_fast_to_pick_up
+				unless moving_too_fast
+					for segment_name, segment of entity.structure.segments
+						dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
+						if dist < 50
+							pickup_item = entity
+			# TODO: pickup animation
+			@[prop] = pickup_item if pickup_item
+		
+		pick_up_any Bow, "holding_bow"
+		pick_up_any Arrow, "holding_arrow"
 		
 		if @move_x is 0
 			@idle_timer += 1
@@ -176,47 +190,80 @@ class @Player extends SimpleActor
 		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
-		if @holding
-			@holding.x = @x
-			@holding.y = @y
-			primary_hand = @structure.points["right hand"]
-			secondary_hand = @structure.points["left hand"]
-			primary_elbo = @structure.points["right elbo"]
-			secondary_elbo = @structure.points["left elbo"]
-			bow = @holding if @holding instanceof Bow
-			if bow
-				arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
-				# her dominant eye is whichever one she would theoretically be using
-				max_draw_distance = 5
-				# max_draw_distance = arm_span / 2.5 #- bow.fistmele
-				bow.draw_distance += ((max_draw_distance * mouse.LMB.down) - bow.draw_distance) / 15
-				# if mouse.LMB.down
-				# 	bow.draw_distance += (5 - bow.draw_distance) / 5
-				# else
-				# 	# if bow.draw_distance > 2
-				# 		# fire an arrow
-				# 	bow.draw_distance = 0
-				primary_hand.x = sternum.x + (arm_span - bow.fistmele - bow.draw_distance) * cos(aim_angle)
-				primary_hand.y = sternum.y + (arm_span - bow.fistmele - bow.draw_distance) * sin(aim_angle)
-				secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
-				secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
-				primary_elbo.x = sternum.x + 5 * cos(aim_angle)
-				primary_elbo.y = sternum.y + 5 * sin(aim_angle)
-				secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
-				secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
-				primary_elbo.y = sternum.y - 3
-				
-				# @structure.points["left shoulder"].x -= 0.1
-				# @structure.points["right shoulder"].x += 0.1
-				# for [0..1250]
-				# 	@structure.stepLayout()
-				
-				primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
-				secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
-				bow.structure.points.serving.x = primary_hand_in_bow_space.x
-				bow.structure.points.serving.y = primary_hand_in_bow_space.y
-				bow.structure.points.grip.x = secondary_hand_in_bow_space.x
-				bow.structure.points.grip.y = secondary_hand_in_bow_space.y
+		primary_hand = @structure.points["right hand"]
+		secondary_hand = @structure.points["left hand"]
+		primary_elbo = @structure.points["right elbo"]
+		secondary_elbo = @structure.points["left elbo"]
+		
+		if @holding_bow
+			bow = @holding_bow
+			bow.x = @x
+			bow.y = @y
+			
+			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
+			# her dominant eye is whichever one she would theoretically be using
+			max_draw_distance = 5
+			# max_draw_distance = arm_span / 2.5 #- bow.fistmele
+			bow.draw_distance += ((max_draw_distance * mouse.LMB.down) - bow.draw_distance) / 15
+			
+			if mouse.LMB.down
+				bow.draw_distance += (5 - bow.draw_distance) / 5
+			else
+				if bow.draw_distance > 2 and @holding_arrow
+					force = bow.draw_distance
+					for point_name, point of @holding_arrow.structure.points
+						point.vx = cos(aim_angle) * force
+						point.vy = sin(aim_angle) * force
+					# @holding_arrow.moving_too_fast_to_pick_up = true
+					@holding_arrow = null
+				bow.draw_distance = 0
+			
+			# TODO: have the string leave her hand when releasing
+			primary_hand.x = sternum.x + (arm_span - bow.fistmele - bow.draw_distance) * cos(aim_angle)
+			primary_hand.y = sternum.y + (arm_span - bow.fistmele - bow.draw_distance) * sin(aim_angle)
+			secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
+			secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
+			primary_elbo.x = sternum.x + 5 * cos(aim_angle)
+			primary_elbo.y = sternum.y + 5 * sin(aim_angle)
+			secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
+			secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
+			primary_elbo.y = sternum.y - 3
+			
+			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
+			secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
+			bow.structure.points.serving.x = primary_hand_in_bow_space.x
+			bow.structure.points.serving.y = primary_hand_in_bow_space.y
+			bow.structure.points.grip.x = secondary_hand_in_bow_space.x
+			bow.structure.points.grip.y = secondary_hand_in_bow_space.y
+			if @holding_arrow
+				arrow = @holding_arrow
+				arrow.x = @x
+				arrow.y = @y
+				primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
+				secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
+				# TODO: non-stretchy arrows
+				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x
+				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y
+				arrow.structure.points.tip.x = secondary_hand_in_arrow_space.x
+				arrow.structure.points.tip.y = secondary_hand_in_arrow_space.y
+				arrow.structure.points.nock.vx = 0
+				arrow.structure.points.nock.vy = 0
+				arrow.structure.points.tip.vx = 0
+				arrow.structure.points.tip.vy = 0
+		else if @holding_arrow
+			arrow.x = @x
+			arrow.y = @y
+			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
+			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
+			# TODO: non-stretchy arrows
+			arrow.structure.points.nock.x = primary_hand_in_arrow_space.x
+			arrow.structure.points.nock.y = primary_hand_in_arrow_space.y
+			arrow.structure.points.tip.x = secondary_hand_in_arrow_space.x
+			arrow.structure.points.tip.y = secondary_hand_in_arrow_space.y
+			arrow.structure.points.nock.vx = 0
+			arrow.structure.points.nock.vy = 0
+			arrow.structure.points.tip.vx = 0
+			arrow.structure.points.tip.vy = 0
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
