@@ -238,11 +238,11 @@ class @Player extends SimpleActor
 			bow.structure.points.grip.y = secondary_hand_in_bow_space.y
 			if @holding_arrow
 				arrow = @holding_arrow
-				arrow_length = arrow.structure.segments.shaft.length
 				arrow.x = @x
 				arrow.y = @y
 				primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
 				secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
+				arrow_length = arrow.structure.segments.shaft.length
 				arrow.structure.points.nock.x = sternum.x + draw_to * cos(aim_angle)
 				arrow.structure.points.nock.y = sternum.y + draw_to * sin(aim_angle)
 				arrow.structure.points.tip.x = sternum.x + (draw_to + arrow_length) * cos(aim_angle)
@@ -257,11 +257,14 @@ class @Player extends SimpleActor
 			arrow.y = @y
 			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
-			# TODO: non-stretchy arrows
-			arrow.structure.points.nock.x = primary_hand_in_arrow_space.x
-			arrow.structure.points.nock.y = primary_hand_in_arrow_space.y
-			arrow.structure.points.tip.x = secondary_hand_in_arrow_space.x
-			arrow.structure.points.tip.y = secondary_hand_in_arrow_space.y
+			angle = atan2(secondary_hand.y - sternum.y, secondary_hand.x - sternum.x)
+			arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
+			arrow_length = arrow.structure.segments.shaft.length
+			hold_offset = -5
+			arrow.structure.points.nock.x = secondary_hand_in_arrow_space.x + hold_offset * cos(arrow_angle)
+			arrow.structure.points.nock.y = secondary_hand_in_arrow_space.y + hold_offset * sin(arrow_angle)
+			arrow.structure.points.tip.x = secondary_hand_in_arrow_space.x + (hold_offset + arrow_length) * cos(arrow_angle)
+			arrow.structure.points.tip.y = secondary_hand_in_arrow_space.y + (hold_offset + arrow_length) * sin(arrow_angle)
 			arrow.structure.points.nock.vx = 0
 			arrow.structure.points.nock.vy = 0
 			arrow.structure.points.tip.vx = 0
