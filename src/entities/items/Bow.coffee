@@ -4,7 +4,7 @@ class @Bow extends Entity
 	constructor: ->
 		super
 		
-		@height = 25
+		@height = 30
 		@fistmele = 6
 		
 		@draw_distance = 0

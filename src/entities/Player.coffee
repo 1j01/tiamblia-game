@@ -202,7 +202,7 @@ class @Player extends SimpleActor
 			
 			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
 			# her dominant eye is whichever one she would theoretically be using
-			max_draw_distance = 5
+			max_draw_distance = 6
 			# max_draw_distance = arm_span / 2.5 #- bow.fistmele
 			bow.draw_distance += ((max_draw_distance * mouse.LMB.down) - bow.draw_distance) / 15
 			
@@ -219,8 +219,9 @@ class @Player extends SimpleActor
 				bow.draw_distance = 0
 			
 			# TODO: have the string leave her hand when releasing
-			primary_hand.x = sternum.x + (arm_span - bow.fistmele - bow.draw_distance) * cos(aim_angle)
-			primary_hand.y = sternum.y + (arm_span - bow.fistmele - bow.draw_distance) * sin(aim_angle)
+			draw_to = arm_span - bow.fistmele - bow.draw_distance
+			primary_hand.x = sternum.x + draw_to * cos(aim_angle)
+			primary_hand.y = sternum.y + draw_to * sin(aim_angle)
 			secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
 			secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
 			primary_elbo.x = sternum.x + 5 * cos(aim_angle)
@@ -237,15 +238,15 @@ class @Player extends SimpleActor
 			bow.structure.points.grip.y = secondary_hand_in_bow_space.y
 			if @holding_arrow
 				arrow = @holding_arrow
+				arrow_length = arrow.structure.segments.shaft.length
 				arrow.x = @x
 				arrow.y = @y
 				primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
 				secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
-				# TODO: non-stretchy arrows
-				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x
-				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y
-				arrow.structure.points.tip.x = secondary_hand_in_arrow_space.x
-				arrow.structure.points.tip.y = secondary_hand_in_arrow_space.y
+				arrow.structure.points.nock.x = sternum.x + draw_to * cos(aim_angle)
+				arrow.structure.points.nock.y = sternum.y + draw_to * sin(aim_angle)
+				arrow.structure.points.tip.x = sternum.x + (draw_to + arrow_length) * cos(aim_angle)
+				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow_length) * sin(aim_angle)
 				arrow.structure.points.nock.vx = 0
 				arrow.structure.points.nock.vy = 0
 				arrow.structure.points.tip.vx = 0
