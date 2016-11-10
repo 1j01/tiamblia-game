@@ -128,6 +128,36 @@ class @Entity
 	# animate: ()->
 	# 	@structure.setPose(Pose.lerp(various_poses))
 	
+	initLayout: ->
+		EntityClass = @constructor
+		if EntityClass.poses
+			default_pose = EntityClass.poses["Default"] ? EntityClass.poses["Stand"] ? EntityClass.poses["Standing"] ? EntityClass.poses["Idle"]
+			if default_pose
+				@structure.setPose(default_pose)
+				return
+		ys = {}
+		y = 0
+		for point_name, point of @structure.points
+			side = point_name.match(/left|right/)?[0]
+			if side
+				sideless_point_name = point_name.replace(/left|right/, "")
+				if ys[sideless_point_name]
+					y = ys[sideless_point_name]
+				else
+					y += 10
+					ys[sideless_point_name] = y
+				if side is "left"
+					point.x = -5.5
+				if side is "right"
+					point.x = +5.5
+				point.x *= 0.7 if point_name.match(/lower/)
+			point.y = y
+		
+		for [0..2000]
+			@structure.stepLayout(center: yes, repel: yes)
+		for [0..4000]
+			@structure.stepLayout()
+	
 	step: (world)->
 	draw: (ctx)->
 	

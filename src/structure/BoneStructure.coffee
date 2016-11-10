@@ -20,30 +20,6 @@ class @BoneStructure extends Structure
 		@segments[name][k] = v for k, v of def when v?
 		return name
 	
-	autoLayout: ->
-		ys = {}
-		y = 0
-		for point_name, point of @points
-			side = point_name.match(/left|right/)?[0]
-			if side
-				sideless_point_name = point_name.replace(/left|right/, "")
-				if ys[sideless_point_name]
-					y = ys[sideless_point_name]
-				else
-					y += 10
-					ys[sideless_point_name] = y
-				if side is "left"
-					point.x = -5.5
-				if side is "right"
-					point.x = +5.5
-				point.x *= 0.7 if point_name.match(/lower/)
-			point.y = y
-		
-		for [0..2000]
-			@stepLayout(center: yes, repel: yes)
-		for [0..4000]
-			@stepLayout()
-	
 	stepLayout: ({center, repel, gravity, collision, velocity}={})->
 		forces = {}
 		

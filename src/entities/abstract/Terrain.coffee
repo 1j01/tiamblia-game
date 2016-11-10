@@ -5,6 +5,8 @@ class @Terrain extends Entity
 		@structure = new PolygonStructure
 		@simplex = new SimplexNoise
 		@seed = random()
+	
+	initLayout: ->
 		radius = 30
 		for theta in [0..TAU] by TAU/15
 			point_x = sin(theta) * radius

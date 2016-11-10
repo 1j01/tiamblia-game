@@ -13,10 +13,11 @@ class @Arrow extends Entity
 		for point_name, point of @structure.points
 			point.vx = 0
 			point.vy = 0
-			point.x += Math.random() * 5
-			point.y += Math.random() * 5
 		
 		@bbox_padding = 20
+	
+	initLayout: ->
+		@structure.points.tip.x += @structure.segments.shaft.length
 	
 	step: (world)->
 		collision = (point)=> world.collision(@toWorld(point))

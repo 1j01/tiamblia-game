@@ -8,11 +8,7 @@ class @EntitiesBar extends React.Component
 		for entity_class_name, EntityClass of entity_classes
 			cell_name = entity_class_name.replace(/[a-z][A-Z]/g, (m)-> "#{m[0]} #{m[1]}")
 			preview_entity = new EntityClass
-			if preview_entity.structure instanceof BoneStructure
-				# we don't have a defined default pose or anything, but...
-				# TODO: maybe use a pose if there's one called "Default" or "Stand" etc.
-				unless preview_entity instanceof Tree
-					preview_entity.structure.autoLayout()
+			preview_entity.initLayout()
 			cell = {
 				EntityClass
 				name: cell_name
@@ -37,10 +33,7 @@ class @EntitiesBar extends React.Component
 							if distance(mouse_start, {x: e.clientX, y: e.clientY}) > 4
 								editor.undoable =>
 									entity = new cell.EntityClass
-									if entity.structure instanceof BoneStructure
-										# we don't have a defined default pose or anything
-										unless entity instanceof Tree
-											entity.structure.autoLayout()
+									entity.initLayout()
 									editor.world.entities.push(entity)
 									editor.dragEntities([entity])
 									removeEventListener "mousemove", onmousemove

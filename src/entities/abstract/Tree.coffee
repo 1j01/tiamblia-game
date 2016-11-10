@@ -6,6 +6,8 @@ class @Tree extends Entity
 		@structure.addPoint("base")
 		@bbox_padding = 60
 	
+	initLayout: ->
+	
 	branch: ({from, to, juice, angle})->
 		name = to
 		length = sqrt(juice * 1000) * (random() + 1)

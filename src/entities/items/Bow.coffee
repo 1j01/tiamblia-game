@@ -31,11 +31,12 @@ class @Bow extends Entity
 			point.vx = 0
 			point.vy = 0
 		
-		@structure.points.serving.x -= @fistmele
-		@layout()
-		
 		@bbox_padding = 20
 		# @floating_time = 0
+	
+	initLayout: ->
+		@structure.points.serving.x -= @fistmele
+		@layout()
 	
 	step: (world)->
 		# @floating_time += 1
