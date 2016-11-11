@@ -3,12 +3,15 @@ class @Arrow extends Entity
 	addEntityClass(@)
 	constructor: ->
 		super
+		
+		@length = 20
+		
 		@structure.addPoint("tip")
 		@structure.addSegment(
 			from: "tip"
 			to: "nock"
 			name: "shaft"
-			length: 20
+			length: @length
 		)
 		for point_name, point of @structure.points
 			point.vx = 0
@@ -17,14 +20,63 @@ class @Arrow extends Entity
 		@bbox_padding = 20
 	
 	initLayout: ->
-		@structure.points.tip.x += @structure.segments.shaft.length
+		@structure.points.tip.x += @length
 	
 	step: (world)->
-		# TODO: stick to things and stick into things, don't be "bouncy"
-		collision = (point)=> world.collision(@toWorld(point))
-		@structure.stepLayout({gravity: 0.1, collision})
-		@structure.stepLayout() for [0..10]
-		@structure.stepLayout({collision}) for [0..4]
+		# TODO: more physical physics
+		
+		{tip, nock} = @structure.points
+		
+		# move_x = tip.vx
+		# move_y = tip.vy
+		# 
+		# resolution = 1
+		# 
+		# if world.collision(@toWorld(tip))
+		# 	tip.vx = 0
+		# 	tip.vy = 0
+		# 	nock.vx = 0
+		# 	nock.vy = 0
+		# else
+		# 	tip.vy += 0.1
+		# 	tip.x += tip.vx
+		# 	tip.y += tip.vy
+		# 	while abs(move_x) > resolution
+		# 		go = sign(move_x) * resolution
+		# 		move_x -= go
+		# 		tip.x += go
+		# 		if world.collision(@toWorld(tip))
+		# 			tip.vx = 0
+		# 			tip.vy = 0
+		# 			nock.vx = 0
+		# 			nock.vy = 0
+		# 			break
+		# 	while abs(move_y) > resolution
+		# 		go = sign(move_y) * resolution
+		# 		move_y -= go
+		# 		tip.y += go
+		# 		if world.collision(@toWorld(tip))
+		# 			tip.vx = 0
+		# 			tip.vy = 0
+		# 			nock.vx = 0
+		# 			nock.vy = 0
+		# 			break
+		
+		tip.vy += 0.1
+		steps = 10
+		for [0..steps]
+			if world.collision(@toWorld(tip))
+				tip.vx = 0
+				tip.vy = 0
+				nock.vx = 0
+				nock.vy = 0
+				break
+			tip.x += tip.vx / steps
+			tip.y += tip.vy / steps
+		
+		angle = atan2(tip.y - nock.y, tip.x - nock.x)
+		nock.x = tip.x - cos(angle) * @length
+		nock.y = tip.y - sin(angle) * @length
 	
 	draw: (ctx)->
 		{tip, nock} = @structure.points
