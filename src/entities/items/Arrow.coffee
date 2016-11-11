@@ -23,44 +23,10 @@ class @Arrow extends Entity
 		@structure.points.tip.x += @length
 	
 	step: (world)->
-		# TODO: more physical physics
+		# TODO: more physical physics, i.e. if dropped completely sideways, maybe end up lying on the ground
+		# and when going into the ground, maybe rotate a bit from the momentum
 		
 		{tip, nock} = @structure.points
-		
-		# move_x = tip.vx
-		# move_y = tip.vy
-		# 
-		# resolution = 1
-		# 
-		# if world.collision(@toWorld(tip))
-		# 	tip.vx = 0
-		# 	tip.vy = 0
-		# 	nock.vx = 0
-		# 	nock.vy = 0
-		# else
-		# 	tip.vy += 0.1
-		# 	tip.x += tip.vx
-		# 	tip.y += tip.vy
-		# 	while abs(move_x) > resolution
-		# 		go = sign(move_x) * resolution
-		# 		move_x -= go
-		# 		tip.x += go
-		# 		if world.collision(@toWorld(tip))
-		# 			tip.vx = 0
-		# 			tip.vy = 0
-		# 			nock.vx = 0
-		# 			nock.vy = 0
-		# 			break
-		# 	while abs(move_y) > resolution
-		# 		go = sign(move_y) * resolution
-		# 		move_y -= go
-		# 		tip.y += go
-		# 		if world.collision(@toWorld(tip))
-		# 			tip.vx = 0
-		# 			tip.vy = 0
-		# 			nock.vx = 0
-		# 			nock.vy = 0
-		# 			break
 		
 		tip.vy += 0.1
 		steps = 10

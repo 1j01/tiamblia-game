@@ -32,19 +32,12 @@ class @Bow extends Entity
 			point.vy = 0
 		
 		@bbox_padding = 20
-		# @floating_time = 0
 	
 	initLayout: ->
 		@structure.points.serving.x -= @fistmele
 		@layout()
 	
 	step: (world)->
-		# @floating_time += 1
-		# @structure.points["top"].vy -= 0.2 if Math.sin(@floating_time / 100000) > 0
-		# collision = (point)=> world.collision(@toWorld(point))
-		# @structure.stepLayout({gravity: 0.5, collision})
-		# @structure.stepLayout() for [0..10]
-		# @structure.stepLayout({collision}) for [0..4]
 		@layout()
 	
 	layout: ->
