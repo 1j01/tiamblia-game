@@ -24,12 +24,10 @@ class @Arrow extends Entity
 	
 	step: (world)->
 		# TODO: more physical physics, i.e. if dropped completely sideways, maybe end up lying on the ground
-		# and when going into the ground, maybe rotate a bit from the momentum
 		
 		{tip, nock} = @structure.points
 		
 		tip.vy += 0.1
-		# nock.vy += 0.1
 		steps = 10
 		for [0..steps]
 			if world.collision(@toWorld(tip))
@@ -37,22 +35,13 @@ class @Arrow extends Entity
 				tip.vy = 0
 				nock.vx = 0
 				nock.vy = 0
-				# nock.vx /= 2
-				# nock.vy /= 2
 				break
 			tip.x += tip.vx / steps
 			tip.y += tip.vy / steps
 		
-		# if tip.vx is 0 and tip.vy is 0
-		# nock.x += nock.vx
-		# nock.y += nock.vy
-		# original_nock_x = nock.x
-		# original_nock_y = nock.y
 		angle = atan2(tip.y - nock.y, tip.x - nock.x)
 		nock.x = tip.x - cos(angle) * @length
 		nock.y = tip.y - sin(angle) * @length
-		# nock.vx += (nock.x - original_nock_x - nock.vx) / 15
-		# nock.vy += (nock.y - original_nock_y - nock.vy) / 15
 	
 	draw: (ctx)->
 		{tip, nock} = @structure.points
