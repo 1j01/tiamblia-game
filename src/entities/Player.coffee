@@ -195,7 +195,8 @@ class @Player extends SimpleActor
 		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
-		# her dominant eye is whichever one she would theoretically be using
+		# (her dominant eye is, of course, *whichever one she would theoretically be using*)
+		# (given this)
 		primary_hand = @structure.points["right hand"]
 		secondary_hand = @structure.points["left hand"]
 		primary_elbo = @structure.points["right elbo"]
@@ -205,6 +206,7 @@ class @Player extends SimpleActor
 		draw_bow = prime_bow and mouse.LMB.down
 		
 		# TODO: transition (both ways) between primed and not
+		# also maybe relax the "primed" state when running and not drawn back
 		if @holding_bow
 			bow = @holding_bow
 			bow.x = @x
@@ -285,7 +287,7 @@ class @Player extends SimpleActor
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
-		# or should I just alias structure.points as a one-char-var and to p["left sholder"]? that could work, but I would still use {}= when I could honestly, so...
+		# or should I just alias structure.points as a one-char-var and do p["left sholder"]? that could work, but I would still use {}= when I could honestly, so...
 		
 		skin_color = "#6B422C"
 		hair_color = "#000000"
@@ -317,9 +319,7 @@ class @Player extends SimpleActor
 			ctx.save()
 			ctx.scale(hxs, 1)
 			ctx.fillStyle = hair_color
-			# r = @hair_x_scales[i] * @vx / 40 - Math.min(0.5, Math.max(0, @smoothed_vy/20))
 			r = @hair_x_scales[i] * @vx / 45 - Math.max(0, @smoothed_vy/25)
-			# r=(this.hairxscales[i])*this.vx/25-Math.max(0,this.avy/25)
 			l = 5
 			w = 1
 			ctx.rotate(r)
