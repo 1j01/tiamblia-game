@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "http://github.com/1j01/tiamblia-advjam2016.git"
+    "url": "http://github.com/1j01/tiamblia-game.git"
   },
   "bugs": {
-    "url": "http://github.com/1j01/tiamblia-advjam2016/issues"
+    "url": "http://github.com/1j01/tiamblia-game/issues"
   },
   "license": "UNLICENSED",
   "private": true,
