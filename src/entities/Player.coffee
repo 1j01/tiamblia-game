@@ -184,13 +184,10 @@ class @Player extends SimpleActor
 				@run_animation_position += abs(@move_x) / 5
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
 			else
-				@structure.getPose()
+				new_pose = @structure.getPose()
 		
-		new_pose =
-			if @facing_x < 0
-				Pose.horizontallyFlip(new_pose)
-			else
-				new_pose
+		if @facing_x < 0
+			new_pose = Pose.horizontallyFlip(new_pose)
 		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
