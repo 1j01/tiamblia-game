@@ -39,7 +39,7 @@
     "nw-dev": "^3.0.1"
   },
   "dependencies": {
-    "nw": "^0.18.5-sdk",
+    "nw": "^0.29.1-sdk",
     "react-script": "^2.0.5",
     "skele2d": "0.0.1"
   }
