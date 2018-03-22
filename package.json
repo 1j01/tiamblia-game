@@ -41,6 +41,6 @@
   "dependencies": {
     "nw": "^0.18.5-sdk",
     "react-script": "^2.0.5",
-    "skele2d": "0.0.0"
+    "skele2d": "0.0.1"
   }
 }

@@ -118,7 +118,7 @@ class @Player extends SimpleActor
 	step: (world)->
 		left = keyboard.isHeld("A") or keyboard.isHeld("left")
 		right = keyboard.isHeld("D") or keyboard.isHeld("right")
-		@jump = keyboard.wasPressed("W") or keyboard.wasPressed("up")
+		@jump = keyboard.wasJustPressed("W") or keyboard.wasJustPressed("up")
 		# TODO: gamepad support
 		# TODO: configurable controls
 		@move_x = right - left
@@ -127,7 +127,7 @@ class @Player extends SimpleActor
 		{sternum} = @structure.points
 		from_point_in_world = @toWorld(sternum)
 		
-		mouse_in_world = mouse.toWorld()
+		mouse_in_world = view.toWorld(mouse)
 		aim_angle = atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x)
 		
 		pick_up_any = (EntityClass, prop)=>
