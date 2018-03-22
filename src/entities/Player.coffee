@@ -139,7 +139,6 @@ class @Player extends SimpleActor
 				moving_too_fast = no
 				for point_name, point of entity.structure.points
 					if point.vx? and point.vy?
-						console.log abs(point.vx) + abs(point.vy)
 						if abs(point.vx) + abs(point.vy) > 2
 							moving_too_fast = yes
 							break
