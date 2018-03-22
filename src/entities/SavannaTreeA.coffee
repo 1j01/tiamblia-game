@@ -2,7 +2,7 @@
 class @SavannaTreeA extends Tree
 	addEntityClass(@)
 	constructor: ->
-		super
+		super()
 		@branch(from: "base", to: "1", juice: 5, angle: -TAU/2)
 	
 	leaf: (leaf)->

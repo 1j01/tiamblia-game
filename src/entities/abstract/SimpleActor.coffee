@@ -5,7 +5,7 @@
 class @SimpleActor extends Entity
 	gravity = 0.5
 	constructor: ->
-		super
+		super()
 		@vx = 0
 		@vy = 0
 		@width = 10

@@ -3,7 +3,7 @@ class @Player extends SimpleActor
 	addEntityClass(@)
 	Entity.initAnimation(@)
 	constructor: ->
-		super
+		super()
 		@structure.addPoint("head")
 		@structure.addSegment(
 			from: "head"
@@ -122,7 +122,7 @@ class @Player extends SimpleActor
 		# TODO: gamepad support
 		# TODO: configurable controls
 		@move_x = right - left
-		super
+		super(world)
 		
 		{sternum} = @structure.points
 		from_point_in_world = @toWorld(sternum)

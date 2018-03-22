@@ -2,7 +2,7 @@
 class @Bow extends Entity
 	addEntityClass(@)
 	constructor: ->
-		super
+		super()
 		
 		@height = 30
 		@fistmele = 6

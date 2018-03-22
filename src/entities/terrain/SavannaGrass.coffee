@@ -2,7 +2,7 @@
 class @SavannaGrass extends Terrain
 	addEntityClass(@)
 	constructor: ->
-		super
+		super()
 		@bbox_padding = 30
 		@grass_tiles = new Map
 		@grass_tiles.fromJSON = (map_obj)=>

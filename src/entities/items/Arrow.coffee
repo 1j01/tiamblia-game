@@ -2,7 +2,7 @@
 class @Arrow extends Entity
 	addEntityClass(@)
 	constructor: ->
-		super
+		super()
 		
 		@length = 20
 		

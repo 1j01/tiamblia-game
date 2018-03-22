@@ -2,7 +2,7 @@
 class @GranddaddyLonglegs extends Entity
 	addEntityClass(@)
 	constructor: ->
-		super
+		super()
 		@structure.addPoint("body")
 		@foot_point_names = []
 		@legs = []

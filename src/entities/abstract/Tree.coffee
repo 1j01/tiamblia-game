@@ -1,7 +1,7 @@
 
 class @Tree extends Entity
 	constructor: ->
-		super
+		super()
 		@leaf_point_names = []
 		@structure.addPoint("base")
 		@bbox_padding = 60
