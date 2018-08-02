@@ -1,5 +1,21 @@
 
-seedrandom("A world")
+Math.seedrandom("A world")
+
+View = require "skele2d/source/View.coffee"
+Mouse = require "skele2d/source/Mouse.coffee"
+Editor = require "skele2d/source/Editor.coffee"
+World = require "./World.coffee"
+keyboard = require "./keyboard.coffee"
+
+SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
+require "./entities/terrain/Rock.coffee"
+require "./entities/abstract/SimpleActor.coffee"
+require "./entities/abstract/Tree.coffee"
+require "./entities/SavannaTreeA.coffee"
+require "./entities/GranddaddyLonglegs.coffee"
+Player = require "./entities/Player.coffee"
+require "./entities/items/Bow.coffee"
+require "./entities/items/Arrow.coffee"
 
 world = new World
 
@@ -13,12 +29,12 @@ canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
 
-@view = new View
-@view_to = new View
+view = new View
+view_to = new View
 view_smoothness = 7
-@mouse = new Mouse(canvas)
+mouse = new Mouse(canvas)
 
-@editor = new Editor(world, view, view_to, canvas)
+editor = @editor = new Editor(world, view, view_to, canvas, mouse)
 try
 	editor.load()
 catch e
@@ -53,7 +69,7 @@ do animate = ->
 	
 	unless editor.editing
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
-			entity.step(world)
+			entity.step(world, view, mouse)
 		
 		# TODO: allow margin of offcenterednses
 		player = world.getEntitiesOfType(Player)[0]

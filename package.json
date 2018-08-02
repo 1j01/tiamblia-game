@@ -28,7 +28,9 @@
     "gonna-be-epic-tho"
   ],
   "scripts": {
-    "start": "nw"
+    "build": "webpack --mode production",
+    "start": "webpack-dev-server --hot --inline --watch --mode development",
+    "start-nw": "nw"
   },
   "main": "index.html",
   "window": {
@@ -36,11 +38,17 @@
     "id": "Tiamblia"
   },
   "devDependencies": {
-    "nw-dev": "^3.0.1"
+    "coffee-loader": "^0.9.0",
+    "coffeescript": "^2.2.3",
+    "css-loader": "^1.0.0",
+    "nw-dev": "^3.0.1",
+    "skele2d": "0.0.4",
+    "style-loader": "^0.21.0",
+    "webpack": "^4.16.3",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5"
   },
   "dependencies": {
-    "nw": "^0.29.1-sdk",
-    "react-script": "^2.0.5",
-    "skele2d": "0.0.3"
+    "nw": "^0.29.1-sdk"
   }
 }

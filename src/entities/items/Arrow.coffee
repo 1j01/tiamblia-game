@@ -1,5 +1,8 @@
+Entity = require "../abstract/Entity.coffee"
+{addEntityClass} = require "skele2d/source/helpers.coffee"
+TAU = Math.PI * 2
 
-class @Arrow extends Entity
+module.exports = class Arrow extends Entity
 	addEntityClass(@)
 	constructor: ->
 		super()
@@ -39,9 +42,9 @@ class @Arrow extends Entity
 			tip.x += tip.vx / steps
 			tip.y += tip.vy / steps
 		
-		angle = atan2(tip.y - nock.y, tip.x - nock.x)
-		nock.x = tip.x - cos(angle) * @length
-		nock.y = tip.y - sin(angle) * @length
+		angle = Math.atan2(tip.y - nock.y, tip.x - nock.x)
+		nock.x = tip.x - Math.cos(angle) * @length
+		nock.y = tip.y - Math.sin(angle) * @length
 	
 	draw: (ctx)->
 		{tip, nock} = @structure.points
@@ -52,7 +55,7 @@ class @Arrow extends Entity
 		ctx.lineCap = "round"
 		ctx.strokeStyle = "#74552B"
 		ctx.stroke()
-		angle = atan2(tip.y - nock.y, tip.x - nock.x) + TAU/4
+		angle = Math.atan2(tip.y - nock.y, tip.x - nock.x) + TAU/4
 		
 		ctx.save()
 		ctx.translate(tip.x, tip.y)

@@ -2,7 +2,9 @@
 # Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
 # SimpleActors have rectangular collision boxes and basic physics.
 
-class @SimpleActor extends Entity
+Entity = require "./Entity.coffee"
+
+module.exports = class SimpleActor extends Entity
 	gravity = 0.5
 	constructor: ->
 		super()
@@ -24,8 +26,8 @@ class @SimpleActor extends Entity
 		@grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
 		
 		if @grounded
-			# if abs(@vx) >= 1
-			# 	@vx -= sign(@vx)
+			# if Math.abs(@vx) >= 1
+			# 	@vx -= Math.sign(@vx)
 			# else
 			# 	@vx = 0
 			# @vx += @move_x
@@ -33,21 +35,21 @@ class @SimpleActor extends Entity
 				@vx *= 0.7
 			else
 				@vx += @move_x
-			@vy += abs(@vx)
+			@vy += Math.abs(@vx)
 			if @jump
-					@vy = -sqrt(2 * gravity * @jump_height)
+				@vy = -Math.sqrt(2 * gravity * @jump_height)
 		else
 			@vx += @move_x * 0.7
-		@vx = min(+@run_speed, max(-@run_speed, @vx))
+		@vx = Math.min(@run_speed, Math.max(-@run_speed, @vx))
 		@vy += gravity
 		@grounded = no
 		# @vy *= 0.99
 		move_x = @vx
 		move_y = @vy
-		@facing_x = sign(move_x) unless move_x is 0
+		@facing_x = Math.sign(move_x) unless move_x is 0
 		resolution = 0.5
-		while abs(move_x) > resolution
-			go = sign(move_x) * resolution
+		while Math.abs(move_x) > resolution
+			go = Math.sign(move_x) * resolution
 			if world.collision({x: @x + go, y: @y + @height})
 				@vx *= 0.99
 				# TODO: clamber over tiny divots and maybe even stones and twigs
@@ -58,8 +60,8 @@ class @SimpleActor extends Entity
 					@vy = 0 if @vy > 0
 			move_x -= go
 			@x += go
-		while abs(move_y) > resolution
-			go = sign(move_y) * resolution
+		while Math.abs(move_y) > resolution
+			go = Math.sign(move_y) * resolution
 			if world.collision({@x, y: @y + go + @height})
 				@vy = 0
 				@grounded = yes
@@ -77,4 +79,4 @@ class @SimpleActor extends Entity
 		# @grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
 		# 
 		# if @grounded and @jump
-		# 	@vy = -sqrt(2 * gravity * @jump_height)
+		# 	@vy = -Math.sqrt(2 * gravity * @jump_height)

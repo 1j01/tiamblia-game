@@ -1,5 +1,7 @@
+Terrain = require "../abstract/Terrain.coffee"
+{addEntityClass, lineSegmentsIntersect} = require "skele2d/source/helpers.coffee"
 
-class @SavannaGrass extends Terrain
+module.exports = class SavannaGrass extends Terrain
 	addEntityClass(@)
 	constructor: ->
 		super()

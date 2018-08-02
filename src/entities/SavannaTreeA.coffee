@@ -1,12 +1,15 @@
+Tree = require "./abstract/Tree.coffee"
+{addEntityClass} = require "skele2d/source/helpers.coffee"
+TAU = Math.PI * 2
 
-class @SavannaTreeA extends Tree
+module.exports = class SavannaTreeA extends Tree
 	addEntityClass(@)
 	constructor: ->
 		super()
 		@branch(from: "base", to: "1", juice: 5, angle: -TAU/2)
 	
 	leaf: (leaf)->
-		leaf.radius = random() * 15 + 15
+		leaf.radius = Math.random() * 15 + 15
 		leaf.scale_x = 2
 		leaf.scale_y = 1
 		leaf.color = "#627318" #"#363D1B"

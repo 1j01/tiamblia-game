@@ -1,5 +1,13 @@
+SimpleActor = require "./abstract/SimpleActor.coffee"
+Entity = require "./abstract/Entity.coffee"
+Pose = require "skele2d/source/structure/Pose.coffee"
+Bow = require "./items/Bow.coffee"
+Arrow = require "./items/Arrow.coffee"
+keyboard = require "../keyboard.coffee"
+{addEntityClass, distance, distanceToLineSegment} = require "skele2d/source/helpers.coffee"
+TAU = Math.PI * 2
 
-class @Player extends SimpleActor
+module.exports = class Player extends SimpleActor
 	addEntityClass(@)
 	Entity.initAnimation(@)
 	constructor: ->
@@ -115,7 +123,7 @@ class @Player extends SimpleActor
 		@smoothed_vy = 0
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
 	
-	step: (world)->
+	step: (world, view, mouse)->
 		left = keyboard.isHeld("A") or keyboard.isHeld("left")
 		right = keyboard.isHeld("D") or keyboard.isHeld("right")
 		@jump = keyboard.wasJustPressed("W") or keyboard.wasJustPressed("up")
@@ -128,7 +136,7 @@ class @Player extends SimpleActor
 		from_point_in_world = @toWorld(sternum)
 		
 		mouse_in_world = view.toWorld(mouse)
-		aim_angle = atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x)
+		aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x)
 		
 		pick_up_any = (EntityClass, prop)=>
 			@[prop] = null if @[prop]?.destroyed
@@ -139,7 +147,7 @@ class @Player extends SimpleActor
 				moving_too_fast = no
 				for point_name, point of entity.structure.points
 					if point.vx? and point.vy?
-						if abs(point.vx) + abs(point.vy) > 2
+						if Math.abs(point.vx) + Math.abs(point.vy) > 2
 							moving_too_fast = yes
 							break
 				unless moving_too_fast
@@ -181,7 +189,7 @@ class @Player extends SimpleActor
 		else
 			dont_idle()
 			if Player.animations["Run"]
-				@run_animation_position += abs(@move_x) / 5
+				@run_animation_position += Math.abs(@move_x) / 5
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
 			else
 				new_pose = @structure.getPose()
@@ -223,8 +231,8 @@ class @Player extends SimpleActor
 				if prime_bow and @holding_arrow and bow.draw_distance > 2
 					force = bow.draw_distance * 2
 					for point_name, point of @holding_arrow.structure.points
-						point.vx = cos(aim_angle) * force
-						point.vy = sin(aim_angle) * force
+						point.vx = Math.cos(aim_angle) * force
+						point.vy = Math.sin(aim_angle) * force
 					@holding_arrow = null
 				bow.draw_distance = 0
 				# FIXME: this should be an ease-in transition, not ease-out
@@ -233,28 +241,28 @@ class @Player extends SimpleActor
 			if prime_bow
 				dont_idle()
 				bow_angle = aim_angle
-				primary_hand.x = sternum.x + @bow_drawn_to * cos(aim_angle)
-				primary_hand.y = sternum.y + @bow_drawn_to * sin(aim_angle)
-				primary_elbo.x = sternum.x + 5 * cos(aim_angle)
-				primary_elbo.y = sternum.y + 5 * sin(aim_angle)
+				primary_hand.x = sternum.x + @bow_drawn_to * Math.cos(aim_angle)
+				primary_hand.y = sternum.y + @bow_drawn_to * Math.sin(aim_angle)
+				primary_elbo.x = sternum.x + 5 * Math.cos(aim_angle)
+				primary_elbo.y = sternum.y + 5 * Math.sin(aim_angle)
 				# primary_elbo.y = sternum.y - 3
-				secondary_hand.x = sternum.x + arm_span * cos(aim_angle)
-				secondary_hand.y = sternum.y + arm_span * sin(aim_angle)
-				secondary_elbo.x = sternum.x + 15 * cos(aim_angle)
-				secondary_elbo.y = sternum.y + 15 * sin(aim_angle)
+				secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle)
+				secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle)
+				secondary_elbo.x = sternum.x + 15 * Math.cos(aim_angle)
+				secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle)
 			else
-				bow_angle = atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
+				bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
 			
 			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))
 			bow.structure.points.grip.x = secondary_hand_in_bow_space.x
 			bow.structure.points.grip.y = secondary_hand_in_bow_space.y
 			if prime_bow
-				bow.structure.points.serving.x = sternum.x + draw_to * cos(aim_angle)
-				bow.structure.points.serving.y = sternum.y + draw_to * sin(aim_angle)
+				bow.structure.points.serving.x = sternum.x + draw_to * Math.cos(aim_angle)
+				bow.structure.points.serving.y = sternum.y + draw_to * Math.sin(aim_angle)
 			else
-				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * cos(bow_angle)
-				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * sin(bow_angle)
+				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle)
+				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle)
 		
 		if @holding_arrow
 			arrow = @holding_arrow
@@ -267,18 +275,18 @@ class @Player extends SimpleActor
 			arrow.structure.points.tip.vx = 0
 			arrow.structure.points.tip.vy = 0
 			if prime_bow
-				arrow.structure.points.nock.x = sternum.x + draw_to * cos(aim_angle)
-				arrow.structure.points.nock.y = sternum.y + draw_to * sin(aim_angle)
-				arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * cos(aim_angle)
-				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * sin(aim_angle)
+				arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle)
+				arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle)
+				arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * Math.cos(aim_angle)
+				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle)
 			else
-				angle = atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
+				angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
 				arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
 				hold_offset = -5
-				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * cos(arrow_angle)
-				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * sin(arrow_angle)
-				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * cos(arrow_angle)
-				arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * sin(arrow_angle)
+				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle)
+				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
+				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle)
+				arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle)
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
@@ -348,32 +356,32 @@ class @Player extends SimpleActor
 		ctx.beginPath()
 		ctx.save()
 		ctx.translate(sternum.x, sternum.y)
-		torso_angle = atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU/4
+		torso_angle = Math.atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU/4
 		torso_length = distance(pelvis, sternum)
 		ctx.rotate(torso_angle)
-		left_leg_angle = atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle
-		right_leg_angle = atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle
-		left_shoulder_angle = atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
-		right_shoulder_angle = atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
+		left_leg_angle = Math.atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle
+		right_leg_angle = Math.atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle
+		left_shoulder_angle = Math.atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
+		right_shoulder_angle = Math.atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
 		shoulder_distance = distance(left_shoulder, sternum)
-		min_shoulder_cos = min(cos(left_shoulder_angle), cos(right_shoulder_angle))
-		max_shoulder_cos = max(cos(left_shoulder_angle), cos(right_shoulder_angle))
-		if cos(left_shoulder_angle) < cos(right_shoulder_angle)
+		min_shoulder_cos = Math.min(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle))
+		max_shoulder_cos = Math.max(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle))
+		if Math.cos(left_shoulder_angle) < Math.cos(right_shoulder_angle)
 			min_cos_shoulder_angle = left_shoulder_angle
 			max_cos_shoulder_angle = right_shoulder_angle
 		else
 			min_cos_shoulder_angle = right_shoulder_angle
 			max_cos_shoulder_angle = left_shoulder_angle
-		ctx.lineTo(-2 + min(0, 1 * min_shoulder_cos), sin(min_cos_shoulder_angle) * shoulder_distance - 1.5)
-		ctx.lineTo(+2 + max(0, 1 * max_shoulder_cos), sin(max_cos_shoulder_angle) * shoulder_distance - 1.5)
-		min_cos = min(cos(left_leg_angle), cos(right_leg_angle))
-		max_cos = max(cos(left_leg_angle), cos(right_leg_angle))
-		min_sin = min(sin(left_leg_angle), sin(right_leg_angle))
-		max_sin = max(sin(left_leg_angle), sin(right_leg_angle))
-		ctx.lineTo(+4 + max(0, 1 * max_cos), torso_length/2)
-		ctx.lineTo(+4 + max(0, 9 * max_cos), torso_length + max(5, 7 * max_sin))
-		ctx.lineTo(-4 + min(0, 9 * min_cos), torso_length + max(5, 7 * max_sin))
-		ctx.lineTo(-4 + min(0, 1 * min_cos), torso_length/2)
+		ctx.lineTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5)
+		ctx.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5)
+		min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
+		max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
+		min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
+		max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
+		ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length/2)
+		ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin))
+		ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
+		ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length/2)
 		ctx.fillStyle = dress_color
 		ctx.fill()
 		ctx.restore()
@@ -381,7 +389,7 @@ class @Player extends SimpleActor
 		# head, including top of hair
 		ctx.save()
 		ctx.translate(head.x, head.y)
-		ctx.rotate(atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
+		ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
 		# head
 		ctx.save()
 		ctx.scale(0.9, 1)

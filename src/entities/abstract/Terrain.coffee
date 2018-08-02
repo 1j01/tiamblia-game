@@ -1,5 +1,10 @@
 
-class @Terrain extends Entity
+module.exports = require "skele2d/source/base-entities/Terrain.coffee"
+
+###
+Entity = require "./Entity.coffee"
+
+module.exports = class Terrain extends Entity
 	constructor: ->
 		super()
 		@structure = new PolygonStructure
@@ -9,9 +14,9 @@ class @Terrain extends Entity
 	initLayout: ->
 		radius = 30
 		for theta in [0..TAU] by TAU/15
-			point_x = sin(theta) * radius
-			point_y = cos(theta) * radius
-			non_squished_point_y_component = max(point_y, -radius*0.5)
+			point_x = Math.sin(theta) * radius
+			point_y = Math.cos(theta) * radius
+			non_squished_point_y_component = Math.max(point_y, -radius*0.5)
 			point_y = non_squished_point_y_component + (point_y - non_squished_point_y_component) * 0.4
 			# point_y = non_squished_point_y_component + pow(0.9, point_y - non_squished_point_y_component)
 			# point_y = non_squished_point_y_component + pow(point_y - non_squished_point_y_component, 0.9)
@@ -46,3 +51,4 @@ class @Terrain extends Entity
 		ctx.closePath()
 		ctx.fillStyle = "#a5f"
 		ctx.fill()
+###

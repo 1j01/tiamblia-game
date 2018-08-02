@@ -1,5 +1,8 @@
+Entity = require "./abstract/Entity.coffee"
+{addEntityClass, distance} = require "skele2d/source/helpers.coffee"
+TAU = Math.PI * 2
 
-class @GranddaddyLonglegs extends Entity
+module.exports = class GranddaddyLonglegs extends Entity
 	addEntityClass(@)
 	constructor: ->
 		super()

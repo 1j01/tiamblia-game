@@ -1,5 +1,8 @@
+Entity = require "../abstract/Entity.coffee"
+{addEntityClass} = require "skele2d/source/helpers.coffee"
+TAU = Math.PI * 2
 
-class @Bow extends Entity
+module.exports = class Bow extends Entity
 	addEntityClass(@)
 	constructor: ->
 		super()
@@ -43,11 +46,11 @@ class @Bow extends Entity
 	layout: ->
 		{top, bottom, grip, serving} = @structure.points
 		
-		bow_angle = atan2(grip.y - serving.y, grip.x - serving.x) - TAU/4
-		top.x = grip.x + @height/2 * cos(bow_angle) - @fistmele * sin(-bow_angle)
-		top.y = grip.y + @height/2 * sin(bow_angle) - @fistmele * cos(bow_angle)
-		bottom.x = grip.x - @height/2 * cos(bow_angle) - @fistmele * sin(-bow_angle)
-		bottom.y = grip.y - @height/2 * sin(bow_angle) - @fistmele * cos(bow_angle)
+		bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU/4
+		top.x = grip.x + @height/2 * Math.cos(bow_angle) - @fistmele * Math.sin(-bow_angle)
+		top.y = grip.y + @height/2 * Math.sin(bow_angle) - @fistmele * Math.cos(bow_angle)
+		bottom.x = grip.x - @height/2 * Math.cos(bow_angle) - @fistmele * Math.sin(-bow_angle)
+		bottom.y = grip.y - @height/2 * Math.sin(bow_angle) - @fistmele * Math.cos(bow_angle)
 	
 	draw: (ctx)->
 		{top, bottom, grip, serving} = @structure.points
@@ -62,7 +65,7 @@ class @Bow extends Entity
 		ctx.beginPath()
 		center_x = (top.x + bottom.x)/2
 		center_y = (top.y + bottom.y)/2
-		bow_angle = atan2(grip.y - serving.y, grip.x - serving.x) - TAU/4
+		bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU/4
 		ctx.save()
 		ctx.translate(grip.x, grip.y)
 		ctx.rotate(bow_angle)
