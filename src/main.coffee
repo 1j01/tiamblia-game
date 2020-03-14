@@ -73,8 +73,9 @@ do animate = ->
 		
 		# TODO: allow margin of offcenterednses
 		player = world.getEntitiesOfType(Player)[0]
-		view_to.center_x = player.x
-		view_to.center_y = player.y
+		if player
+			view_to.center_x = player.x
+			view_to.center_y = player.y
 	
 	view.width = canvas.width
 	view.height = canvas.height
