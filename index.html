@@ -19,8 +19,11 @@
 			background: black;
 		}
 	</style>
-	<!-- TODO: only include if in NW.js -->
-	<script src="node_modules/nw-dev/lib/dev.js" data-ignore="world.json|animations/*.json|*.md"></script>
+	<script>
+		if(window.nw){
+			document.write(`<script src="node_modules/nw-dev/lib/dev.js" data-ignore="world.json|animations/*.json|*.md">${"</"}script>`);
+		}
+	</script>
 	<!-- TODO: load these as modules as well (keep everything versioned with npm) -->
 	<script src="lib/uuid.js"></script>
 	<script src="lib/seedrandom.min.js"></script>
