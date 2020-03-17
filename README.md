@@ -28,3 +28,15 @@ and also not something you should have to need at all.
 You should be able to start off without a base `Entity` class, to start small.
 Actually, the `World` class isn't even included in the package, even tho it's still essentially integral to the framework.
 So, I'm working this out, progressively...
+
+## Development Setup
+
+* Install [Node.js](https://nodejs.org/) if you don't have it.
+* Install [Git](https://git-scm.com/) if you don't have it.
+* [Clone the repository](https://help.github.com/articles/cloning-a-repository/)
+* Open a command prompt / terminal in the project directory, and run `npm install`
+* Then run `npm start` and wait for it to say `Project is running at http://localhost:8080/`
+* Open <http://localhost:8080> in your browser. It will automatically reload when you make changes. (Note: undo history in the editor will be lost when it reloads.)
+
+When pulling new changes from Git, run `npm install` again in case there are new or updated dependencies.
+(You don't need to if `package-lock.json` hasn't changed.)
