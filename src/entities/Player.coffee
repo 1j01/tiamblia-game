@@ -1,10 +1,11 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 Entity = require "./abstract/Entity.coffee"
-Pose = require "skele2d/source/structure/Pose.coffee"
+{Pose} = require "skele2d"
 Bow = require "./items/Bow.coffee"
 Arrow = require "./items/Arrow.coffee"
 keyboard = require "../keyboard.coffee"
-{addEntityClass, distance, distanceToLineSegment} = require "skele2d/source/helpers.coffee"
+{addEntityClass} = require "skele2d"
+{distance, distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
 
 module.exports = class Player extends SimpleActor

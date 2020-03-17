@@ -1,5 +1,5 @@
 Entity = require "../abstract/Entity.coffee"
-{addEntityClass} = require "skele2d/source/helpers.coffee"
+{addEntityClass} = require "skele2d"
 TAU = Math.PI * 2
 
 module.exports = class Bow extends Entity

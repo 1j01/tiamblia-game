@@ -1,5 +1,5 @@
 
-module.exports = require "skele2d/source/base-entities/Entity.coffee"
+module.exports = require("skele2d").Entity
 
 ###
 fs = require? "fs"

@@ -1,5 +1,5 @@
 Tree = require "./abstract/Tree.coffee"
-{addEntityClass} = require "skele2d/source/helpers.coffee"
+{addEntityClass} = require "skele2d"
 TAU = Math.PI * 2
 
 module.exports = class SavannaTreeA extends Tree

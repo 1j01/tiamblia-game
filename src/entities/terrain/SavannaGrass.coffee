@@ -1,5 +1,6 @@
-Terrain = require "../abstract/Terrain.coffee"
-{addEntityClass, lineSegmentsIntersect} = require "skele2d/source/helpers.coffee"
+Terrain = require("../abstract/Terrain.coffee")
+{addEntityClass} = require("skele2d")
+{lineSegmentsIntersect} = require("skele2d").helpers
 
 module.exports = class SavannaGrass extends Terrain
 	addEntityClass(@)

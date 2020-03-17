@@ -1,5 +1,6 @@
-Entity = require "./abstract/Entity.coffee"
-{addEntityClass, distance} = require "skele2d/source/helpers.coffee"
+Entity = require("./abstract/Entity.coffee")
+{addEntityClass} = require("skele2d")
+{distance} = require("skele2d").helpers
 TAU = Math.PI * 2
 
 module.exports = class GranddaddyLonglegs extends Entity

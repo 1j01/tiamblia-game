@@ -1,9 +1,7 @@
 
 Math.seedrandom("A world")
 
-View = require "skele2d/source/View.coffee"
-Mouse = require "skele2d/source/Mouse.coffee"
-Editor = require "skele2d/source/Editor.coffee"
+{View, Mouse, Editor} = require "skele2d"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 

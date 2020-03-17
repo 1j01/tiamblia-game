@@ -1,5 +1,5 @@
 Terrain = require "../abstract/Terrain.coffee"
-{addEntityClass} = require "skele2d/source/helpers.coffee"
+{addEntityClass} = require "skele2d"
 
 module.exports = class Rock extends Terrain
 	addEntityClass(@)
