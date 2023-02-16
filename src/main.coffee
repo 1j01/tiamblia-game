@@ -69,7 +69,7 @@ do animate = ->
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world, view, mouse)
 		
-		# TODO: allow margin of offcenterednses
+		# TODO: allow margin of offcenteredness
 		player = world.getEntitiesOfType(Player)[0]
 		if player
 			view_to.center_x = player.x

@@ -23,7 +23,8 @@
     "canvas-game",
     "level-editor",
     "game-engine",
-    "tiamlia"
+    "tiamblia",
+    "skele2d"
   ],
   "scripts": {
     "build": "webpack --mode production && node src/make-app-build.js",

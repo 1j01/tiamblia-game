@@ -108,7 +108,7 @@ module.exports = class Player extends SimpleActor
 		# 		)
 		# TODO: adjust proportions? https://en.wikipedia.org/wiki/Body_proportions
 		# TODO: add some constraints to hips, shoulders, and neck
-		# TODO: min/max_length for psuedo-3D purposes
+		# TODO: min/max_length for pseudo-3D purposes
 		@bbox_padding = 10
 		
 		@holding_bow = null
@@ -162,7 +162,7 @@ module.exports = class Player extends SimpleActor
 		pick_up_any Bow, "holding_bow"
 		pick_up_any Arrow, "holding_arrow"
 		
-		dont_idle = =>
+		prevent_idle = =>
 			@idle_timer = 0
 			@idle_animation = null
 		
@@ -188,7 +188,7 @@ module.exports = class Player extends SimpleActor
 			else
 				new_pose = Player.poses["Stand"] ? @structure.getPose()
 		else
-			dont_idle()
+			prevent_idle()
 			if Player.animations["Run"]
 				@run_animation_position += Math.abs(@move_x) / 5
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
@@ -240,7 +240,7 @@ module.exports = class Player extends SimpleActor
 				@bow_drawn_to += (arm_span - bow.fistmele - @bow_drawn_to) / 10
 			
 			if prime_bow
-				dont_idle()
+				prevent_idle()
 				bow_angle = aim_angle
 				primary_hand.x = sternum.x + @bow_drawn_to * Math.cos(aim_angle)
 				primary_hand.y = sternum.y + @bow_drawn_to * Math.sin(aim_angle)
@@ -292,7 +292,7 @@ module.exports = class Player extends SimpleActor
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
-		# or should I just alias structure.points as a one-char-var and do p["left sholder"]? that could work, but I would still use {}= when I could honestly, so...
+		# or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
 		
 		skin_color = "#6B422C"
 		hair_color = "#000000"
