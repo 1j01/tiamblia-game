@@ -10,7 +10,7 @@ const source_globs = [
 ];
 const destination_folder = "app-build";
 try {
-	fs.rmdirSync(destination_folder, { recursive: true });
+	fs.rmSync(destination_folder, { recursive: true });
 } catch (e) {
 	if (e.code !== "ENOENT") {
 		throw e;
