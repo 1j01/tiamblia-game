@@ -9,7 +9,13 @@ const source_globs = [
 	"world.json",
 ];
 const destination_folder = "app-build";
-fs.rmdirSync(destination_folder, { recursive: true });
+try {
+	fs.rmdirSync(destination_folder, { recursive: true });
+} catch (e) {
+	if (e.code !== "ENOENT") {
+		throw e;
+	}
+}
 fs.mkdirSync(destination_folder);
 
 for (const source_glob of source_globs) {
