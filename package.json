@@ -30,7 +30,7 @@
     "build": "webpack --mode production && node src/make-app-build.js",
     "start": "webpack-dev-server --hot --mode development",
     "deploy": "npm run build && gh-pages -d app-build",
-    "start-nw": "nw"
+    "start-nw": "npm run build && nw"
   },
   "main": "index.html",
   "window": {
