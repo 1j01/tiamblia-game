@@ -50,6 +50,6 @@
     "webpack-dev-server": "^4.11.1"
   },
   "dependencies": {
-    "nw": "^0.73.0"
+    "nw": "^0.73.0-sdk"
   }
 }
