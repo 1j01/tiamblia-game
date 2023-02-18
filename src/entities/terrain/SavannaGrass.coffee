@@ -12,6 +12,7 @@ module.exports = class SavannaGrass extends Terrain
 		@grass_tiles.fromJSON = (map_obj)=>
 		@grass_tiles.toJSON = (map_obj)=> {}
 		@structure.onchange = =>
+			console.log "SavannaGrass::structure.onchange"
 			@grass_tiles.forEach (tile)=>
 				for shade in ["dark", "light"]
 					for blade in tile["#{shade}_blades"]
