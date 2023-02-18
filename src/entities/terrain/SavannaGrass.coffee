@@ -7,6 +7,7 @@ module.exports = class SavannaGrass extends Terrain
 	constructor: ->
 		super()
 		@bbox_padding = 30
+		@color = "#C29853"
 		@grass_tiles = new Map
 		@grass_tiles.fromJSON = (map_obj)=>
 		@grass_tiles.toJSON = (map_obj)=> {}
@@ -16,6 +17,15 @@ module.exports = class SavannaGrass extends Terrain
 					for blade in tile["#{shade}_blades"]
 						delete blade.visible
 	
+	step: (world)->
+		console.log "SavannaGrass::step"
+		# modify shit randomly for testing mutations during step
+		# for an entity where deleting points is allowed
+		Math.seedrandom(performance.now())
+		for entity in world.getEntitiesOfType(Terrain)
+			if entity isnt @
+				entity.color = "hsl(#{~~(Math.random()*36)}, 50%, 50%)"
+
 	draw: (ctx, view)->
 		
 		rect_contains_any_points = (x, y, width, height)=>
@@ -47,7 +57,7 @@ module.exports = class SavannaGrass extends Terrain
 		for point_name, point of @structure.points
 			ctx.lineTo(point.x, point.y)
 		ctx.closePath()
-		ctx.fillStyle = "#C29853"
+		ctx.fillStyle = @color
 		ctx.fill()
 		Math.seedrandom(5)
 		random = Math.random
