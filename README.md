@@ -16,18 +16,25 @@ Stay tuned to potentially interact with...
 * a charitable castle (mhm yup the castle),
 * and more!
 
-I'm making [a custom engine](https://github.com/1j01/skele2d) where everything is based on points and an integrated editor that can manipulate these points.
+I'm making a custom engine called [Skele2D](https://github.com/1j01/skele2d), where everything is based on points and an integrated editor that can manipulate these points.
 The core editor is basically done; you can select entities, drag them around, pose them, cut/copy and paste, et cetera.
 The animation editor needs undo/redo, frame reordering, and maybe variable delays.
 
-I'm in the process of extracting the engine out to [Skele2D](https://github.com/1j01/skele2d).
-I've switched to loading most of the code from the npm module, although it's published as uncompiled CoffeeScript for now.
-I've kept the `Entity`, `Terrain`, and `World` classes in here because I think they should eventually be decoupled from Skele2D,
-because an entity system is very "personal", something you want to use specific to your game,
+I'm loading most of the code from the npm module, but
+I've kept the `Entity` and `Terrain` classes in here (commenting them out entirely), because I think they should eventually be decoupled from Skele2D.
+I believe an entity system is very "personal", something you want to use specific to your game,
 and also not something you should have to need at all.
-You should be able to start off without a base `Entity` class, to start small.
-Actually, the `World` class isn't even included in the package, even tho it's still essentially integral to the framework.
-So, I'm working this out, progressively...
+You should be able to start off without a base `Entity` class, to start small — if possible.
+
+I'm still working out the boundary between Skele2D and the game.
+Right now, the `World` class isn't included in the engine, even though it's still essentially integral to the framework.
+I didn't really plan for separating the engine from the game, so it might be a challenge.
+One strategy might be to make Skele2D as much as possible be _just an editor_.
+I think the main value add is the editor, with its complex logic and simple UI.
+It still will take a lot to figure out (or simplify) the boundary; the editor does some rendering and needs to know and manipulate the viewport, and it needs to integrate with serialization in order to do undo/redo, and saving/loading.
+The editor also needs to know how to render previews of entities for the entities bar...
+
+To be clear, the parts are all working together right now, it's just the boundary that's not clear.
 
 ## Development Setup
 
