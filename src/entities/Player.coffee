@@ -125,9 +125,9 @@ module.exports = class Player extends SimpleActor
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
 	
 	step: (world, view, mouse)->
-		left = keyboard.isHeld("A") or keyboard.isHeld("left")
-		right = keyboard.isHeld("D") or keyboard.isHeld("right")
-		@jump = keyboard.wasJustPressed("W") or keyboard.wasJustPressed("up")
+		left = keyboard.isHeld("KeyA") or keyboard.isHeld("ArrowLeft")
+		right = keyboard.isHeld("KeyD") or keyboard.isHeld("ArrowRight")
+		@jump = keyboard.wasJustPressed("KeyW") or keyboard.wasJustPressed("ArrowUp")
 		# TODO: gamepad support
 		# TODO: configurable controls
 		@move_x = right - left
