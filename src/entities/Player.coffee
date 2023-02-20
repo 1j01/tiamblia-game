@@ -254,12 +254,12 @@ module.exports = class Player extends SimpleActor
 				secondary_elbo.x = sternum.x + 15 * Math.cos(aim_angle)
 				secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle)
 				# make head look along aim path
-				{head, neck} = @structure.points
-				head.x = neck.x + 5 * Math.cos(aim_angle - Math.PI / 2)
-				head.y = neck.y + 5 * Math.sin(aim_angle - Math.PI / 2)
-				
 				angle = (aim_angle - Math.PI / 2) %% (Math.PI * 2)
 				@real_facing_x = if angle < Math.PI then -1 else 1
+				{head, neck} = @structure.points
+				head.x = neck.x + 5 * Math.cos(angle * @real_facing_x)
+				head.y = neck.y + 5 * Math.sin(angle * @real_facing_x)
+				
 			else
 				bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
 			
