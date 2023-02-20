@@ -17,6 +17,15 @@ const config = {
       directory: path.resolve(__dirname, ""),
     },
   },
+  resolve: {
+    // Temporary workaround for https://github.com/webpack/webpack/issues/16744
+    // a webpack bug where importing a library built with webpack as ESM fails.
+    // I provide both "module" and "main" fields in package.json in skele2d now;
+    // webpack prefers "module", which broke my build of the game.
+    mainFields: ['main', 'module'],
+    // I don't import any other packages at this point, so the lack of granularity here
+    // shouldn't cause other problems, for now.
+  },
   module: {
     rules: [
       {
