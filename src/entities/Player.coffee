@@ -123,6 +123,7 @@ module.exports = class Player extends SimpleActor
 		@idle_timer = 0
 		@smoothed_vy = 0
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
+		@real_facing_x = @facing_x
 	
 	step: (world, view, mouse)->
 		left = keyboard.isHeld("KeyA") or keyboard.isHeld("ArrowLeft")
@@ -195,7 +196,7 @@ module.exports = class Player extends SimpleActor
 			else
 				new_pose = @structure.getPose()
 		
-		if @facing_x < 0
+		if @real_facing_x < 0
 			new_pose = Pose.horizontallyFlip(new_pose)
 		
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
@@ -210,6 +211,7 @@ module.exports = class Player extends SimpleActor
 		prime_bow = @holding_bow and mouse.RMB.down # and @holding_arrow
 		draw_bow = prime_bow and mouse.LMB.down
 		
+		@real_facing_x = @facing_x
 		# TODO: transition (both ways) between primed and not
 		# also maybe relax the "primed" state when running and not drawn back
 		if @holding_bow
@@ -255,7 +257,9 @@ module.exports = class Player extends SimpleActor
 				{head, neck} = @structure.points
 				head.x = neck.x + 5 * Math.cos(aim_angle - Math.PI / 2)
 				head.y = neck.y + 5 * Math.sin(aim_angle - Math.PI / 2)
-				@aiming_x = aim_angle > Math.PI / 2 ? -1 : 1
+				
+				angle = (aim_angle - Math.PI / 2) %% (Math.PI * 2)
+				@real_facing_x = if angle < Math.PI then -1 else 1
 			else
 				bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
 			
@@ -287,7 +291,7 @@ module.exports = class Player extends SimpleActor
 				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle)
 			else
 				angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
-				arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
+				arrow_angle = angle - (TAU/4 + 0.2) * @real_facing_x
 				hold_offset = -5
 				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle)
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
@@ -315,14 +319,14 @@ module.exports = class Player extends SimpleActor
 		# TODO: better, less fake hair physics
 		ctx.save()
 		ctx.translate(head.x, head.y)
-		ctx.translate(-@facing_x * 0.3, 0)
+		ctx.translate(-@real_facing_x * 0.3, 0)
 		@smoothed_vy += ((@vy * not @grounded) - @smoothed_vy) / 5
 		
 		for hxs, i in @hair_x_scales by -1
 			if i is 0
-				@hair_x_scales[i] += (-@facing_x - hxs) / 3
+				@hair_x_scales[i] += (-@real_facing_x - hxs) / 3
 			else
-				# x = @facing_x * i/@hair_x_scales.length * 2
+				# x = @real_facing_x * i/@hair_x_scales.length * 2
 				# @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
 				# @hair_x_scales[i] += (x - hxs) / 2
 				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 3
