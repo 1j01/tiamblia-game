@@ -296,6 +296,7 @@ module.exports = class Player extends SimpleActor
 		
 		skin_color = "#6B422C"
 		hair_color = "#000000"
+		eye_color = "#000000"
 		dress_color = "#AAFFFF"
 		
 		# TODO: depth
@@ -403,6 +404,22 @@ module.exports = class Player extends SimpleActor
 		ctx.beginPath()
 		ctx.arc(0, 0, 5.5, 0, TAU/2)
 		ctx.fillStyle = hair_color
+		ctx.fill()
+		# eyes
+		# TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
+		# Also, it's weird that the eyes are defined in terms of the hair... but it was easy!
+		# @hair_x_scales is basically different smoothing functions on the facing direction — including delay.
+		# The exact functions I want aren't quite available in this array, so
+		# the eyes are spaced out a weird amount.
+		ctx.arc(0, 0, 5.5*0.9, 0, TAU)
+		ctx.clip()
+		ctx.beginPath()
+		ctx.arc(@hair_x_scales[0] * 6, -1, 1, 0, TAU)
+		ctx.fillStyle = eye_color
+		ctx.fill()
+		ctx.beginPath()
+		ctx.arc(@hair_x_scales[2] * 3, -1, 1, 0, TAU)
+		ctx.fillStyle = eye_color
 		ctx.fill()
 		# /head
 		ctx.restore()
