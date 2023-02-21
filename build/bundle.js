@@ -1,1849 +1,28 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 378:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Entity, Terrain, World;
-
-Entity = __webpack_require__(293);
-
-Terrain = __webpack_require__(891);
-
-module.exports = World = class World {
-  constructor() {
-    this.entities = [];
-  }
-
-  fromJSON(def) {
-    var ent_def, entity, i, len, ref, results;
-    if (!(def.entities instanceof Array)) {
-      throw new Error(`Expected entities to be an array, got ${def.entities}`);
-    }
-    this.entities = (function() {
-      var i, len, ref, results;
-      ref = def.entities;
-      results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        ent_def = ref[i];
-        results.push(Entity.fromJSON(ent_def));
-      }
-      return results;
-    })();
-    ref = this.entities;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      results.push(entity.resolveReferences(this));
-    }
-    return results;
-  }
-
-  getEntityByID(id) {
-    var entity, i, len, ref;
-    ref = this.entities;
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      if (entity.id === id) {
-        return entity;
-      }
-    }
-  }
-
-  getEntitiesOfType(Class) {
-    var entity, i, len, ref, results;
-    ref = this.entities;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      if (entity instanceof Class) {
-        results.push(entity);
-      }
-    }
-    return results;
-  }
-
-  drawBackground(ctx, view) {
-    ctx.fillStyle = "#32C8FF";
-    return ctx.fillRect(0, 0, view.width, view.height);
-  }
-
-  draw(ctx, view) {
-    var entity, i, len, ref, results;
-    ref = this.entities;
-    // ctx.fillStyle = "#32C8FF"
-    // {x, y} = view.toWorld({x: 0, y: 0})
-    // {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
-    // ctx.fillRect(x, y, width-x, height-y)
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      ctx.save();
-      ctx.translate(entity.x, entity.y);
-      entity.draw(ctx, view);
-      results.push(ctx.restore());
-    }
-    return results;
-  }
-
-  collision(point) {
-    var entity, i, len, ref;
-    ref = this.entities;
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      if (entity instanceof Terrain) {
-        if (entity.structure.pointInPolygon(entity.fromWorld(point))) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-};
-
-
-/***/ }),
-
-/***/ 668:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Entity, GranddaddyLonglegs, TAU, addEntityClass, distance,
-  modulo = function(a, b) { return (+a % (b = +b) + b) % b; },
-  indexOf = [].indexOf;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(529));
-
-({distance} = (__webpack_require__(529).helpers));
-
-TAU = Math.PI * 2;
-
-module.exports = GranddaddyLonglegs = (function() {
-  class GranddaddyLonglegs extends Entity {
-    constructor() {
-      var foot_point_name, i, j, k, l, leg, leg_pair_n, len, len1, len2, point, point_name, previous, ref, ref1, ref2, ref3, segment_name, side;
-      super();
-      this.structure.addPoint("body");
-      this.foot_point_names = [];
-      this.legs = [];
-      for (leg_pair_n = i = 1; i <= 4; leg_pair_n = ++i) {
-        ref = ["left", "right"];
-        for (j = 0, len = ref.length; j < len; j++) {
-          side = ref[j];
-          leg = {
-            point_names_by_segment_name: {}
-          };
-          this.legs.push(leg);
-          previous = "body";
-          ref1 = ["upper", "middle", "lower"];
-          for (k = 0, len1 = ref1.length; k < len1; k++) {
-            segment_name = ref1[k];
-            point_name = segment_name === "lower" ? foot_point_name = `${side} foot ${leg_pair_n}` : (foot_point_name = void 0, `${segment_name} ${side} leg ${leg_pair_n}`);
-            previous = this.structure.addSegment({
-              from: previous,
-              to: foot_point_name,
-              name: `${segment_name} ${side} leg ${leg_pair_n}`,
-              length: 50,
-              // NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
-              // often have vastly more spindly legs
-              width: (function() {
-                switch (segment_name) {
-                  case "upper":
-                    return 4;
-                  case "middle":
-                    return 3;
-                  case "lower":
-                    return 2;
-                }
-              })()
-            });
-            leg.point_names_by_segment_name[segment_name] = point_name;
-            leg.foot_point_name = foot_point_name;
-            if (foot_point_name != null) {
-              this.foot_point_names.push(foot_point_name);
-            }
-          }
-        }
-      }
-      this.step_index = 0;
-      this.step_timer = 0;
-      this.next_foot_positions = {};
-      ref2 = this.foot_point_names;
-      for (l = 0, len2 = ref2.length; l < len2; l++) {
-        point_name = ref2[l];
-        this.next_foot_positions[point_name] = {
-          x: 0,
-          y: 0
-        };
-      }
-      ref3 = this.structure.points;
-      for (point_name in ref3) {
-        point = ref3[point_name];
-        point.vx = 0;
-        point.vy = 0;
-      }
-      this.bbox_padding = 20;
-    }
-
-    step(world) {
-      var collision, current_foot_point_name, current_foot_pos, dist, foot_point, force, i, j, k, l, leg, len, next_foot_pos, point_name, ref, ref1, results, segment_name;
-      if (this.toWorld(this.structure.points[this.foot_point_names[0]]).y > 400) {
-        return;
-      }
-      if (++this.step_timer >= 10) {
-        this.step_timer = 0;
-        this.step_index += 1;
-        current_foot_point_name = this.foot_point_names[modulo(this.step_index, this.foot_point_names.length)];
-        current_foot_pos = this.structure.points[current_foot_point_name];
-        next_foot_pos = {
-          x: current_foot_pos.x,
-          y: current_foot_pos.y
-        };
-        next_foot_pos.x += 50;
-        next_foot_pos.y -= 50;
-        for (var i = 0; i <= 50; i++) {
-          next_foot_pos.y += 5;
-          if (world.collision(this.toWorld(next_foot_pos))) {
-            next_foot_pos.y -= 5;
-            break;
-          }
-        }
-        this.next_foot_positions[current_foot_point_name] = next_foot_pos;
-      }
-      ref = this.legs;
-      for (j = 0, len = ref.length; j < len; j++) {
-        leg = ref[j];
-        foot_point = this.structure.points[leg.foot_point_name];
-        next_foot_pos = this.next_foot_positions[leg.foot_point_name];
-        ref1 = leg.point_names_by_segment_name;
-        for (segment_name in ref1) {
-          point_name = ref1[segment_name];
-          this.structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 200;
-          if (indexOf.call(this.foot_point_names, point_name) < 0) {
-            this.structure.points[point_name].vy -= 0.6;
-          }
-        }
-        dist = distance(next_foot_pos, foot_point);
-        force = 2;
-        foot_point.vx += (next_foot_pos.x - foot_point.x) / dist * force;
-        foot_point.vy += (next_foot_pos.y - foot_point.y) / dist * force;
-      }
-      this.structure.points["body"].vy -= 0.2;
-      collision = (point) => {
-        return world.collision(this.toWorld(point));
-      };
-      this.structure.stepLayout({
-        gravity: 0.5,
-        collision
-      });
-      for (var k = 0; k <= 10; k++) {
-        this.structure.stepLayout();
-      }
-      results = [];
-      for (var l = 0; l <= 4; l++) {
-        results.push(this.structure.stepLayout({collision}));
-      }
-      return results;
-    }
-
-    draw(ctx) {
-      var ref, segment, segment_name;
-      ref = this.structure.segments;
-      for (segment_name in ref) {
-        segment = ref[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = segment.width;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#2c1c0a"; //"brown"
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.translate(this.structure.points.body.x, this.structure.points.body.y);
-      ctx.scale(1, 0.7);
-      ctx.arc(0, 0, 10, 0, TAU);
-      ctx.fillStyle = "#2c1c0a"; //"#C15723" #"brown"
-      return ctx.fill();
-    }
-
-  };
-
-  addEntityClass(GranddaddyLonglegs);
-
-  return GranddaddyLonglegs;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 795:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, distance, distanceToLineSegment, keyboard;
-
-SimpleActor = __webpack_require__(339);
-
-Entity = __webpack_require__(293);
-
-({Pose} = __webpack_require__(529));
-
-Bow = __webpack_require__(914);
-
-Arrow = __webpack_require__(943);
-
-keyboard = __webpack_require__(866);
-
-({addEntityClass} = __webpack_require__(529));
-
-({distance, distanceToLineSegment} = (__webpack_require__(529).helpers));
-
-TAU = Math.PI * 2;
-
-module.exports = Player = (function() {
-  class Player extends SimpleActor {
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "neck",
-        length: 5
-      });
-      this.structure.addSegment({
-        from: "neck",
-        name: "sternum",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "sternum",
-        name: "left shoulder",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "sternum",
-        name: "right shoulder",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "left shoulder",
-        to: "left elbo",
-        name: "upper left arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right shoulder",
-        to: "right elbo",
-        name: "upper right arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "left elbo",
-        to: "left hand",
-        name: "lower left arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right elbo",
-        to: "right hand",
-        name: "lower right arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "sternum",
-        to: "pelvis",
-        name: "torso",
-        length: 20
-      });
-      this.structure.addSegment({
-        from: "pelvis",
-        name: "left hip",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "pelvis",
-        name: "right hip",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "left hip",
-        to: "left knee",
-        name: "upper left leg",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right hip",
-        to: "right knee",
-        name: "upper right leg",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "left knee",
-        to: "left foot",
-        name: "lower left leg",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right knee",
-        to: "right foot",
-        name: "lower right leg",
-        length: 10
-      });
-      // for abc in "ABC"
-      // 	hair_from = "head"
-      // 	for i in [0..5]
-      // 		@structure.addSegment(
-      // 			from: "head"
-      // 			name: "hair #{abc} #{i}"
-      // 			length: 2
-      // 		)
-      // TODO: adjust proportions? https://en.wikipedia.org/wiki/Body_proportions
-      // TODO: add some constraints to hips, shoulders, and neck
-      // TODO: min/max_length for pseudo-3D purposes
-      this.bbox_padding = 10;
-      this.holding_bow = null;
-      this.holding_arrow = null;
-      this.bow_drawn_to = 0;
-      this.run_animation_position = 0;
-      this.subtle_idle_animation_position = 0;
-      this.other_idle_animation_position = 0;
-      this.idle_animation = null;
-      this.idle_timer = 0;
-      this.smoothed_vy = 0;
-      this.hair_x_scales = [1, 1, 1, 1, 1, 1, 1, 1, 1];
-    }
-
-    step(world, view, mouse) {
-      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, draw_bow, draw_to, force, from_point_in_world, hold_offset, left, max_draw_distance, mouse_in_world, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbo, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, right, secondary_elbo, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation;
-      left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
-      right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
-      this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
-      // TODO: gamepad support
-      // TODO: configurable controls
-      this.move_x = right - left;
-      super.step(world);
-      ({sternum} = this.structure.points);
-      from_point_in_world = this.toWorld(sternum);
-      mouse_in_world = view.toWorld(mouse);
-      aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x);
-      pick_up_any = (EntityClass, prop) => {
-        var dist, entity, from_point_in_entity_space, j, len, moving_too_fast, pickup_item, point, point_name, ref, ref1, ref2, ref3, segment, segment_name;
-        if ((ref = this[prop]) != null ? ref.destroyed : void 0) {
-          this[prop] = null;
-        }
-        if (this[prop]) {
-          return;
-        }
-        ref1 = world.getEntitiesOfType(EntityClass);
-        // this is ridiculously complicated
-        for (j = 0, len = ref1.length; j < len; j++) {
-          entity = ref1[j];
-          from_point_in_entity_space = entity.fromWorld(from_point_in_world);
-          moving_too_fast = false;
-          ref2 = entity.structure.points;
-          for (point_name in ref2) {
-            point = ref2[point_name];
-            if ((point.vx != null) && (point.vy != null)) {
-              if (Math.abs(point.vx) + Math.abs(point.vy) > 2) {
-                moving_too_fast = true;
-                break;
-              }
-            }
-          }
-          if (!moving_too_fast) {
-            ref3 = entity.structure.segments;
-            for (segment_name in ref3) {
-              segment = ref3[segment_name];
-              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
-              if (dist < 50) {
-                pickup_item = entity;
-              }
-            }
-          }
-        }
-        if (pickup_item) {
-          // TODO: pickup animation
-          return this[prop] = pickup_item;
-        }
-      };
-      pick_up_any(Bow, "holding_bow");
-      pick_up_any(Arrow, "holding_arrow");
-      prevent_idle = () => {
-        this.idle_timer = 0;
-        return this.idle_animation = null;
-      };
-      if (this.move_x === 0) {
-        this.idle_timer += 1;
-        subtle_idle_animation = Player.animations["Idle"];
-        if (this.idle_timer > 1000) {
-          this.idle_animation = "Yawn";
-          this.idle_timer = 0;
-          this.other_idle_animation_position = 0;
-        }
-        other_idle_animation = this.idle_animation && Player.animations[this.idle_animation];
-        if (other_idle_animation) {
-          this.other_idle_animation_position += 1 / 25;
-          if (this.other_idle_animation_position > other_idle_animation.length) {
-            this.idle_animation = null;
-          }
-          new_pose = Pose.lerpAnimationLoop(other_idle_animation, this.other_idle_animation_position);
-        } else if (subtle_idle_animation) {
-          this.subtle_idle_animation_position += 1 / 25;
-          new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, this.subtle_idle_animation_position);
-        } else {
-          new_pose = (ref = Player.poses["Stand"]) != null ? ref : this.structure.getPose();
-        }
-      } else {
-        prevent_idle();
-        if (Player.animations["Run"]) {
-          this.run_animation_position += Math.abs(this.move_x) / 5;
-          new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], this.run_animation_position);
-        } else {
-          new_pose = this.structure.getPose();
-        }
-      }
-      if (this.facing_x < 0) {
-        new_pose = Pose.horizontallyFlip(new_pose);
-      }
-      this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
-      
-      // (her dominant eye is, of course, *whichever one she would theoretically be using*)
-      // (given this)
-      primary_hand = this.structure.points["right hand"];
-      secondary_hand = this.structure.points["left hand"];
-      primary_elbo = this.structure.points["right elbo"];
-      secondary_elbo = this.structure.points["left elbo"];
-      prime_bow = this.holding_bow && mouse.RMB.down; // and @holding_arrow
-      draw_bow = prime_bow && mouse.LMB.down;
-      
-      // TODO: transition (both ways) between primed and not
-      // also maybe relax the "primed" state when running and not drawn back
-      if (this.holding_bow) {
-        bow = this.holding_bow;
-        bow.x = this.x;
-        bow.y = this.y;
-        arm_span = this.structure.segments["upper right arm"].length + this.structure.segments["lower right arm"].length;
-        max_draw_distance = 6;
-        // max_draw_distance = arm_span / 2.5 #- bow.fistmele
-        bow.draw_distance += ((max_draw_distance * draw_bow) - bow.draw_distance) / 15;
-        draw_to = arm_span - bow.fistmele - bow.draw_distance;
-        if (draw_bow) {
-          // TODO: use better transition to allow for greater control over release velocity
-          bow.draw_distance += (5 - bow.draw_distance) / 5;
-          this.bow_drawn_to = draw_to;
-        } else {
-          if (prime_bow && this.holding_arrow && bow.draw_distance > 2) {
-            force = bow.draw_distance * 2;
-            ref1 = this.holding_arrow.structure.points;
-            for (point_name in ref1) {
-              point = ref1[point_name];
-              point.vx = Math.cos(aim_angle) * force;
-              point.vy = Math.sin(aim_angle) * force;
-            }
-            this.holding_arrow = null;
-          }
-          bow.draw_distance = 0;
-          // FIXME: this should be an ease-in transition, not ease-out
-          this.bow_drawn_to += (arm_span - bow.fistmele - this.bow_drawn_to) / 10;
-        }
-        if (prime_bow) {
-          prevent_idle();
-          bow_angle = aim_angle;
-          primary_hand.x = sternum.x + this.bow_drawn_to * Math.cos(aim_angle);
-          primary_hand.y = sternum.y + this.bow_drawn_to * Math.sin(aim_angle);
-          primary_elbo.x = sternum.x + 5 * Math.cos(aim_angle);
-          primary_elbo.y = sternum.y + 5 * Math.sin(aim_angle);
-          // primary_elbo.y = sternum.y - 3
-          secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle);
-          secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle);
-          secondary_elbo.x = sternum.x + 15 * Math.cos(aim_angle);
-          secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle);
-        } else {
-          bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x);
-        }
-        primary_hand_in_bow_space = bow.fromWorld(this.toWorld(primary_hand));
-        secondary_hand_in_bow_space = bow.fromWorld(this.toWorld(secondary_hand));
-        bow.structure.points.grip.x = secondary_hand_in_bow_space.x;
-        bow.structure.points.grip.y = secondary_hand_in_bow_space.y;
-        if (prime_bow) {
-          bow.structure.points.serving.x = sternum.x + draw_to * Math.cos(aim_angle);
-          bow.structure.points.serving.y = sternum.y + draw_to * Math.sin(aim_angle);
-        } else {
-          bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle);
-          bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle);
-        }
-      }
-      if (this.holding_arrow) {
-        arrow = this.holding_arrow;
-        arrow.x = this.x;
-        arrow.y = this.y;
-        primary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(primary_hand));
-        secondary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(secondary_hand));
-        arrow.structure.points.nock.vx = 0;
-        arrow.structure.points.nock.vy = 0;
-        arrow.structure.points.tip.vx = 0;
-        arrow.structure.points.tip.vy = 0;
-        if (prime_bow) {
-          arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle);
-          arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle);
-          arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * Math.cos(aim_angle);
-          return arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
-        } else {
-          angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x);
-          arrow_angle = angle - (TAU / 4 + 0.2) * this.facing_x;
-          hold_offset = -5;
-          arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle);
-          arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle);
-          arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle);
-          return arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle);
-        }
-      }
-    }
-
-    draw(ctx) {
-      var dress_color, hair_color, head, hxs, i, j, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, r, ref, ref1, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, w;
-      ({
-        head,
-        sternum,
-        pelvis,
-        "left knee": left_knee,
-        "right knee": right_knee,
-        "left shoulder": left_shoulder,
-        "right shoulder": right_shoulder
-      } = this.structure.points);
-      // ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
-      // or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
-      skin_color = "#6B422C";
-      hair_color = "#000000";
-      dress_color = "#AAFFFF";
-      
-      // TODO: depth
-      // @drawStructure
-      // 	segments:
-      // 		torso: ->
-      // 	points:
-      // 		head: ->
-
-      // trailing hair
-      // TODO: better, less fake hair physics
-      ctx.save();
-      ctx.translate(head.x, head.y);
-      ctx.translate(-this.facing_x * 0.3, 0);
-      this.smoothed_vy += ((this.vy * !this.grounded) - this.smoothed_vy) / 5;
-      ref = this.hair_x_scales;
-      for (i = j = ref.length - 1; j >= 0; i = j += -1) {
-        hxs = ref[i];
-        if (i === 0) {
-          this.hair_x_scales[i] += (-this.facing_x - hxs) / 3;
-        } else {
-          // x = @facing_x * i/@hair_x_scales.length * 2
-          // @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
-          // @hair_x_scales[i] += (x - hxs) / 2
-          this.hair_x_scales[i] += (this.hair_x_scales[i - 1] - hxs) / 3;
-        }
-        ctx.save();
-        ctx.scale(hxs, 1);
-        ctx.fillStyle = hair_color;
-        r = this.hair_x_scales[i] * this.vx / 45 - Math.max(0, this.smoothed_vy / 25);
-        l = 5;
-        w = 1;
-        ctx.rotate(r);
-        ctx.fillRect(0 - w, -2, 5 + w, l);
-        ctx.translate(0, l);
-        ctx.rotate(r);
-        ctx.fillRect(1 - w, -2, 4 + w, l);
-        ctx.translate(0, l);
-        ctx.rotate(r);
-        ctx.fillRect(2 - w, -2, 3 + w, l);
-        ctx.translate(0, l);
-        ctx.rotate(r);
-        ctx.fillRect(3 - w, -2, 2 + w, l);
-        ctx.translate(0, l);
-        ctx.restore();
-      }
-      ctx.restore();
-      ref1 = this.structure.segments;
-      
-      // limbs
-      for (segment_name in ref1) {
-        segment = ref1[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = skin_color;
-        ctx.stroke();
-      }
-      
-      // dress
-      ctx.beginPath();
-      ctx.save();
-      ctx.translate(sternum.x, sternum.y);
-      torso_angle = Math.atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU / 4;
-      torso_length = distance(pelvis, sternum);
-      ctx.rotate(torso_angle);
-      left_leg_angle = Math.atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle;
-      right_leg_angle = Math.atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle;
-      left_shoulder_angle = Math.atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle;
-      right_shoulder_angle = Math.atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle;
-      shoulder_distance = distance(left_shoulder, sternum);
-      min_shoulder_cos = Math.min(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
-      max_shoulder_cos = Math.max(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
-      if (Math.cos(left_shoulder_angle) < Math.cos(right_shoulder_angle)) {
-        min_cos_shoulder_angle = left_shoulder_angle;
-        max_cos_shoulder_angle = right_shoulder_angle;
-      } else {
-        min_cos_shoulder_angle = right_shoulder_angle;
-        max_cos_shoulder_angle = left_shoulder_angle;
-      }
-      ctx.lineTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5);
-      ctx.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5);
-      min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
-      max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
-      min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
-      max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
-      ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length / 2);
-      ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin));
-      ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin));
-      ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length / 2);
-      ctx.fillStyle = dress_color;
-      ctx.fill();
-      ctx.restore();
-      
-      // head, including top of hair
-      ctx.save();
-      ctx.translate(head.x, head.y);
-      ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU / 4);
-      // head
-      ctx.save();
-      ctx.scale(0.9, 1);
-      ctx.beginPath();
-      ctx.arc(0, 0, 5.5, 0, TAU);
-      ctx.fillStyle = skin_color;
-      ctx.fill();
-      ctx.restore();
-      // top of hair
-      ctx.beginPath();
-      ctx.arc(0, 0, 5.5, 0, TAU / 2);
-      ctx.fillStyle = hair_color;
-      ctx.fill();
-      // /head
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Player);
-
-  Entity.initAnimation(Player);
-
-  return Player;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 521:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var SavannaTreeA, TAU, Tree, addEntityClass;
-
-Tree = __webpack_require__(776);
-
-({addEntityClass} = __webpack_require__(529));
-
-TAU = Math.PI * 2;
-
-module.exports = SavannaTreeA = (function() {
-  class SavannaTreeA extends Tree {
-    constructor() {
-      super();
-      this.branch({
-        from: "base",
-        to: "1",
-        juice: 5,
-        angle: -TAU / 2
-      });
-    }
-
-    leaf(leaf) {
-      leaf.radius = Math.random() * 15 + 15;
-      leaf.scale_x = 2;
-      leaf.scale_y = 1;
-      leaf.color = "#627318"; //"#363D1B"
-      return leaf;
-    }
-
-    draw(ctx) {
-      var i, leaf, leaf_point_name, len, ref, ref1, results, segment, segment_name;
-      ref = this.structure.segments;
-      for (segment_name in ref) {
-        segment = ref[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = segment.width;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = segment.color;
-        ctx.stroke();
-      }
-      ref1 = this.leaf_point_names;
-      results = [];
-      for (i = 0, len = ref1.length; i < len; i++) {
-        leaf_point_name = ref1[i];
-        leaf = this.structure.points[leaf_point_name];
-        // ctx.beginPath()
-        // ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
-        ctx.save();
-        ctx.beginPath();
-        ctx.translate(leaf.x, leaf.y);
-        ctx.scale(leaf.scale_x, leaf.scale_y);
-        ctx.arc(0, 0, leaf.radius, 0, TAU);
-        ctx.fillStyle = leaf.color;
-        ctx.fill();
-        results.push(ctx.restore());
-      }
-      return results;
-    }
-
-  };
-
-  addEntityClass(SavannaTreeA);
-
-  return SavannaTreeA;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 293:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-module.exports = __webpack_require__(529).Entity;
-
-/*
-fs = require? "fs"
-path = require? "path"
- * XXX: hack for webpack
- * TODO: use ifdef conditionals or something
-fs = null if not fs.readFileSync
-path = null if not path.join
-
-module.exports = class Entity
-	constructor: ->
-		@structure = new BoneStructure
-		@x = 0
-		@y = 0
-		@id = uuid()
-
-		@bbox_padding = 2
- * TODO: depth system
- * @drawing_pieces = {}
-
-		@_class_ = @constructor.name
-
-	@initAnimation: (EntityClass)->
-		EntityClass.poses = {}
-		EntityClass.animations = {}
-		EntityClass.animation_json_path = "./animations/#{EntityClass.name}.json"
-		Entity.loadAnimations(EntityClass)
-
-	@loadAnimations: (EntityClass)->
-		animationsFromJSON = ({poses, animations})->
-			EntityClass.poses = {}
-			EntityClass.animations = {}
-			for pose_name, pose of poses
-				EntityClass.poses[pose_name] = new Pose(pose)
-			for animation_name, animation of animations
-				EntityClass.animations[animation_name] = (new Pose(pose) for pose in animation)
-
-		if fs?
-			try
-				json = fs.readFileSync(EntityClass.animation_json_path)
-			catch e
-				throw e unless e.code is "ENOENT"
-		else
-			json = localStorage["Tiamblia #{EntityClass.name} animations"]
-		if json
-			animationsFromJSON(JSON.parse(json)) if json
-		else
-			req = new XMLHttpRequest
-			req.addEventListener "load", (e)=>
-				json = req.responseText
-				animationsFromJSON(JSON.parse(json)) if json
-			req.open("GET", EntityClass.animation_json_path)
-			req.send()
-
-	@saveAnimations: (EntityClass)->
-		{poses, animations} = EntityClass
-		json = JSON.stringify({poses, animations}, null, "\t")
-		if fs?
-			try
-				fs.mkdirSync(path.dirname(EntityClass.animation_json_path))
-			catch e
-				throw e unless e.code is "EEXIST"
-			fs.writeFileSync(EntityClass.animation_json_path, json)
-		else
-			localStorage["Tiamblia #{EntityClass.name} animations"] = json
-
-	@fromJSON: (def)->
-		unless typeof def._class_ is "string"
-			console.error "Erroneous entity definition:", def
-			throw new Error "Expected entity to have a string _class_, _class_ is #{def._class_}"
-		unless entity_classes[def._class_]
-			throw new Error "Entity class '#{def._class_}' does not exist"
-		entity = new entity_classes[def._class_]
-		entity.fromJSON(def)
-		entity
-
-	fromJSON: (def)->
-		if def._class_ isnt @_class_
-			throw new Error "Tried to initialize #{@_class_} entity from JSON with _class_ #{JSON.stringify(def._class_)}"
-		for k, v of def when k isnt "_class_"
-			if @[k]?.fromJSON
-				@[k].fromJSON(v)
-			else
-				@[k] = v
-
-	resolveReferences: (world)->
-		if @_refs_
-			for k, id of @_refs_
-				@[k] = world.getEntityByID(id)
-			delete @_refs_
-
-	toJSON: ->
-		obj = {}
-		for k, v of @ when k isnt "_refs_"
-			if v instanceof Entity
-				obj._refs_ ?= {}
-				obj._refs_[k] = v.id
-			else
-				obj[k] = v
-		obj
-
-	toWorld: (point)->
-		x: point.x + @x
-		y: point.y + @y
-
-	fromWorld: (point)->
-		x: point.x - @x
-		y: point.y - @y
-
-	bbox: ->
-		min_point = {x: +Infinity, y: +Infinity}
-		max_point = {x: -Infinity, y: -Infinity}
-		for point_name, point of @structure.points
-			min_point.x = Math.min(min_point.x, point.x)
-			min_point.y = Math.min(min_point.y, point.y)
-			max_point.x = Math.max(max_point.x, point.x)
-			max_point.y = Math.max(max_point.y, point.y)
-		min_point.x = 0 unless isFinite(min_point.x)
-		min_point.y = 0 unless isFinite(min_point.y)
-		max_point.x = 0 unless isFinite(max_point.x)
-		max_point.y = 0 unless isFinite(max_point.y)
-		min_point.x -= @bbox_padding
-		min_point.y -= @bbox_padding
-		max_point.x += @bbox_padding
-		max_point.y += @bbox_padding
-		min_point_in_world = @toWorld(min_point)
-		max_point_in_world = @toWorld(max_point)
-		x: min_point_in_world.x
-		y: min_point_in_world.y
-		width: max_point_in_world.x - min_point_in_world.x
-		height: max_point_in_world.y - min_point_in_world.y
-
- * animate: ()->
- * 	@structure.setPose(Pose.lerp(various_poses))
-
-	initLayout: ->
-		EntityClass = @constructor
-		if EntityClass.poses
-			default_pose = EntityClass.poses["Default"] ? EntityClass.poses["Stand"] ? EntityClass.poses["Standing"] ? EntityClass.poses["Idle"]
-			if default_pose
-				@structure.setPose(default_pose)
-				return
-		ys = {}
-		y = 0
-		for point_name, point of @structure.points
-			side = point_name.match(/left|right/)?[0]
-			if side
-				sideless_point_name = point_name.replace(/left|right/, "")
-				if ys[sideless_point_name]
-					y = ys[sideless_point_name]
-				else
-					y += 10
-					ys[sideless_point_name] = y
-				if side is "left"
-					point.x = -5.5
-				if side is "right"
-					point.x = +5.5
-				point.x *= 0.7 if point_name.match(/lower/)
-			point.y = y
-
-		for [0..2000]
-			@structure.stepLayout(center: yes, repel: yes)
-		for [0..4000]
-			@structure.stepLayout()
-
-	step: (world)->
-	draw: (ctx)->
-
- * TODO: function to call into the depth system
- * drawStructure: (drawing_functions)->
- * 	for point_name, fn of drawing_functions.points
- * 		fn(@structure.points[point_name])
- * 	for segment_name, fn of drawing_functions.segments
- * 		fn(@structure.segments[segment_name])
- */
-
-
-/***/ }),
-
-/***/ 339:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-// Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
-// SimpleActors have rectangular collision boxes and basic physics.
-var Entity, SimpleActor;
-
-Entity = __webpack_require__(293);
-
-module.exports = SimpleActor = (function() {
-  var gravity;
-
-  class SimpleActor extends Entity {
-    constructor() {
-      super();
-      this.vx = 0;
-      this.vy = 0;
-      this.width = 10;
-      this.height = 40;
-      this.jump_height = 50;
-      this.walk_speed = 4;
-      this.run_speed = 6;
-      this.move_x = 0;
-      this.jump = false;
-      this.grounded = false;
-      this.facing_x = 0;
-    }
-
-    step(world) {
-      var go, move_x, move_y, resolution, results;
-      if (this.y > 400) {
-        return;
-      }
-      this.grounded = world.collision({
-        x: this.x,
-        y: this.y + 1 + this.height //or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
-      });
-      if (this.grounded) {
-        // if Math.abs(@vx) >= 1
-        // 	@vx -= Math.sign(@vx)
-        // else
-        // 	@vx = 0
-        // @vx += @move_x
-        if (this.move_x === 0) {
-          this.vx *= 0.7;
-        } else {
-          this.vx += this.move_x;
-        }
-        this.vy += Math.abs(this.vx);
-        if (this.jump) {
-          this.vy = -Math.sqrt(2 * gravity * this.jump_height);
-        }
-      } else {
-        this.vx += this.move_x * 0.7;
-      }
-      this.vx = Math.min(this.run_speed, Math.max(-this.run_speed, this.vx));
-      this.vy += gravity;
-      this.grounded = false;
-      // @vy *= 0.99
-      move_x = this.vx;
-      move_y = this.vy;
-      if (move_x !== 0) {
-        this.facing_x = Math.sign(move_x);
-      }
-      resolution = 0.5;
-      while (Math.abs(move_x) > resolution) {
-        go = Math.sign(move_x) * resolution;
-        if (world.collision({
-          x: this.x + go,
-          y: this.y + this.height
-        })) {
-          this.vx *= 0.99;
-          // TODO: clamber over tiny divots and maybe even stones and twigs
-          if (world.collision({
-            x: this.x + go,
-            y: this.y + this.height - 1
-          })) {
-            break;
-          } else {
-            this.y -= 1;
-            if (this.vy > 0) {
-              this.vy = 0;
-            }
-          }
-        }
-        move_x -= go;
-        this.x += go;
-      }
-      results = [];
-      while (Math.abs(move_y) > resolution) {
-        go = Math.sign(move_y) * resolution;
-        if (world.collision({
-          x: this.x,
-          y: this.y + go + this.height
-        })) {
-          this.vy = 0;
-          this.grounded = true;
-          break;
-        }
-        move_y -= go;
-        results.push(this.y += go);
-      }
-      return results;
-    }
-
-  };
-
-  gravity = 0.5;
-
-  return SimpleActor;
-
-}).call(this);
-
-// @jump_height = @y - view.toWorld(editor.mouse).y
-
-// if @jump
-// 	console.log world.collision({@x, y: @y + i + @height}) for i in [0..5]
-// 	console.log @vy, world.collision({@x, y: @y + @vy + @height})
-
-// console.log "RES", world.collision({@x, y: @y + resolution + @height})
-
-// @grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
-
-// if @grounded and @jump
-// 	@vy = -Math.sqrt(2 * gravity * @jump_height)
-
-
-/***/ }),
-
-/***/ 891:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-module.exports = __webpack_require__(529).Terrain;
-
-/*
-Entity = require "./Entity.coffee"
-
-module.exports = class Terrain extends Entity
-	constructor: ->
-		super()
-		@structure = new PolygonStructure
-		@simplex = new SimplexNoise
-		@seed = random()
-
-	initLayout: ->
-		radius = 30
-		for theta in [0..TAU] by TAU/15
-			point_x = Math.sin(theta) * radius
-			point_y = Math.cos(theta) * radius
-			non_squished_point_y_component = Math.max(point_y, -radius*0.5)
-			point_y = non_squished_point_y_component + (point_y - non_squished_point_y_component) * 0.4
- * point_y = non_squished_point_y_component + pow(0.9, point_y - non_squished_point_y_component)
- * point_y = non_squished_point_y_component + pow(point_y - non_squished_point_y_component, 0.9)
-			@structure.addVertex(point_x, point_y)
-
-	toJSON: ->
-		def = {}
-		def[k] = v for k, v of @ when k isnt "simplex"
-		def
-
-	generate: ->
-		@width = 5000
-		@left = -2500
-		@right = @left + @width
-		@max_height = 400
-		@bottom = 300
-		res = 20
-		@structure.clear()
-		@structure.addVertex(@right, @bottom)
-		@structure.addVertex(@left, @bottom)
-		for x in [@left..@right] by res
-			noise =
-				@simplex.noise2D(x / 2400, 0) +
-				@simplex.noise2D(x / 500, 10) / 5 +
-				@simplex.noise2D(x / 50, 30) / 100
-			@structure.addVertex(x, @bottom - (noise + 1) / 2 * @max_height)
-
-	draw: (ctx, view)->
-		ctx.beginPath()
-		for point_name, point of @structure.points
-			ctx.lineTo(point.x, point.y)
-		ctx.closePath()
-		ctx.fillStyle = "#a5f"
-		ctx.fill()
- */
-
-
-/***/ }),
-
-/***/ 776:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Entity, TAU, Tree;
-
-Entity = __webpack_require__(293);
-
-TAU = Math.PI * 2;
-
-module.exports = Tree = class Tree extends Entity {
-  constructor() {
-    super();
-    this.leaf_point_names = [];
-    this.structure.addPoint("base");
-    this.bbox_padding = 60;
-  }
-
-  initLayout() {}
-
-  branch({from, to, juice, angle}) {
-    var leaf, leaf_point, length, name, width;
-    name = to;
-    length = Math.sqrt(juice * 1000) * (Math.random() + 1);
-    width = Math.sqrt(juice * 20) + 1;
-    this.structure.addSegment({
-      from,
-      name,
-      length,
-      width,
-      color: "#926B2E"
-    });
-    this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
-    this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
-    if (--juice > 0) {
-      // @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-      // @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-      this.branch({
-        from: name,
-        to: `${to}-a`,
-        juice,
-        angle: angle + Math.random() * TAU / 8
-      });
-      this.branch({
-        from: name,
-        to: `${to}-b`,
-        juice,
-        angle: angle - Math.random() * TAU / 8
-      });
-      if (Math.random() < 0.2) {
-        return this.branch({
-          from: name,
-          to: `${to}-c`,
-          juice,
-          angle
-        });
-      }
-    } else {
-      leaf_point = this.structure.points[name];
-      leaf = this.leaf(leaf_point);
-      if (leaf != null) {
-        return this.leaf_point_names.push(name);
-      }
-    }
-  }
-
-  leaf(leaf) {
-    leaf.radius = Math.random() * 15 + 15;
-    leaf.scale_x = 2;
-    leaf.scale_y = 1;
-    leaf.color = "#627318"; //"#363D1B"
-    return leaf;
-  }
-
-  draw(ctx) {
-    var i, leaf, leaf_point_name, len, ref, ref1, results, segment, segment_name;
-    ref = this.structure.segments;
-    for (segment_name in ref) {
-      segment = ref[segment_name];
-      ctx.beginPath();
-      ctx.moveTo(segment.a.x, segment.a.y);
-      ctx.lineTo(segment.b.x, segment.b.y);
-      ctx.lineWidth = segment.width;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = segment.color;
-      ctx.stroke();
-    }
-    ref1 = this.leaf_point_names;
-    results = [];
-    for (i = 0, len = ref1.length; i < len; i++) {
-      leaf_point_name = ref1[i];
-      leaf = this.structure.points[leaf_point_name];
-      ctx.beginPath();
-      results.push(ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU));
-    }
-    return results;
-  }
-
-};
-
-// ctx.save()
-// ctx.beginPath()
-// ctx.translate(leaf.x, leaf.y)
-// ctx.scale(leaf.scale_x, leaf.scale_y)
-// ctx.arc(0, 0, leaf.radius, 0, TAU)
-// ctx.fillStyle = leaf.color
-// ctx.fill()
-// ctx.restore()
-
-
-/***/ }),
-
-/***/ 943:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Arrow, Entity, TAU, addEntityClass;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(529));
-
-TAU = Math.PI * 2;
-
-module.exports = Arrow = (function() {
-  class Arrow extends Entity {
-    constructor() {
-      var point, point_name, ref;
-      super();
-      this.length = 20;
-      this.structure.addPoint("tip");
-      this.structure.addSegment({
-        from: "tip",
-        to: "nock",
-        name: "shaft",
-        length: this.length
-      });
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        point.vx = 0;
-        point.vy = 0;
-      }
-      this.bbox_padding = 20;
-    }
-
-    initLayout() {
-      return this.structure.points.tip.x += this.length;
-    }
-
-    step(world) {
-      var angle, i, nock, ref, steps, tip;
-      // TODO: more physical physics, i.e. if dropped completely sideways, maybe end up lying on the ground
-      ({tip, nock} = this.structure.points);
-      tip.vy += 0.1;
-      steps = 10;
-      for (i = 0, ref = steps; (0 <= ref ? i <= ref : i >= ref); 0 <= ref ? i++ : i--) {
-        if (world.collision(this.toWorld(tip))) {
-          tip.vx = 0;
-          tip.vy = 0;
-          nock.vx = 0;
-          nock.vy = 0;
-          break;
-        }
-        tip.x += tip.vx / steps;
-        tip.y += tip.vy / steps;
-      }
-      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
-      nock.x = tip.x - Math.cos(angle) * this.length;
-      return nock.y = tip.y - Math.sin(angle) * this.length;
-    }
-
-    draw(ctx) {
-      var angle, nock, tip;
-      ({tip, nock} = this.structure.points);
-      ctx.beginPath();
-      ctx.moveTo(tip.x, tip.y);
-      ctx.lineTo(nock.x, nock.y);
-      ctx.lineWidth = 1;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#74552B";
-      ctx.stroke();
-      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x) + TAU / 4;
-      ctx.save();
-      ctx.translate(tip.x, tip.y);
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.moveTo(0, -2);
-      ctx.lineTo(-2, 2);
-      ctx.lineTo(0, 1);
-      ctx.lineTo(+2, 2);
-      ctx.fillStyle = "#2D1813";
-      ctx.fill();
-      ctx.restore();
-      ctx.save();
-      ctx.translate(nock.x, nock.y);
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.translate(0, -4);
-      ctx.moveTo(0, 0);
-      ctx.lineTo(-2, 2);
-      ctx.lineTo(-2, 4);
-      ctx.lineTo(0, 3);
-      ctx.lineTo(+2, 4);
-      ctx.lineTo(+2, 2);
-      ctx.fillStyle = "#B1280A";
-      ctx.fill();
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Arrow);
-
-  return Arrow;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 914:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Bow, Entity, TAU, addEntityClass;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(529));
-
-TAU = Math.PI * 2;
-
-module.exports = Bow = (function() {
-  class Bow extends Entity {
-    constructor() {
-      var point, point_name, ref;
-      super();
-      this.height = 30;
-      this.fistmele = 6;
-      this.draw_distance = 0;
-      this.structure.addPoint("grip");
-      this.structure.addSegment({
-        from: "grip",
-        to: "top",
-        name: "upper limb",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "grip",
-        to: "bottom",
-        name: "lower limb",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "grip",
-        name: "serving",
-        length: this.fistmele
-      });
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        point.vx = 0;
-        point.vy = 0;
-      }
-      this.bbox_padding = 20;
-    }
-
-    initLayout() {
-      this.structure.points.serving.x -= this.fistmele;
-      return this.layout();
-    }
-
-    step(world) {
-      return this.layout();
-    }
-
-    layout() {
-      var bottom, bow_angle, grip, serving, top;
-      ({top, bottom, grip, serving} = this.structure.points);
-      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
-      top.x = grip.x + this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
-      top.y = grip.y + this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
-      bottom.x = grip.x - this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
-      return bottom.y = grip.y - this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
-    }
-
-    draw(ctx) {
-      var arc_r, bottom, bow_angle, center_x, center_y, grip, serving, top;
-      ({top, bottom, grip, serving} = this.structure.points);
-      ctx.beginPath();
-      ctx.moveTo(top.x, top.y);
-      ctx.lineTo(serving.x, serving.y);
-      ctx.lineTo(bottom.x, bottom.y);
-      ctx.lineWidth = 0.5;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "white";
-      ctx.stroke();
-      ctx.beginPath();
-      center_x = (top.x + bottom.x) / 2;
-      center_y = (top.y + bottom.y) / 2;
-      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
-      ctx.save();
-      ctx.translate(grip.x, grip.y);
-      ctx.rotate(bow_angle);
-      arc_r = this.fistmele;
-      ctx.beginPath();
-      ctx.save();
-      ctx.translate(0, -arc_r);
-      ctx.save();
-      ctx.scale(this.height / 2 / arc_r + 0.1, 1);
-      ctx.arc(0, -0.5, arc_r, 0, TAU / 2);
-      ctx.restore();
-      ctx.save();
-      ctx.scale(this.height / 2 / arc_r, 0.7);
-      ctx.arc(0, 0, arc_r - 0.1, TAU / 2, 0, true);
-      ctx.restore();
-      ctx.closePath();
-      ctx.fillStyle = "#AB7939";
-      ctx.fill();
-      ctx.restore();
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Bow);
-
-  return Bow;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 91:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Rock, Terrain, addEntityClass;
-
-Terrain = __webpack_require__(891);
-
-({addEntityClass} = __webpack_require__(529));
-
-module.exports = Rock = (function() {
-  class Rock extends Terrain {
-    constructor() {
-      super();
-      this.bbox_padding = 20;
-    }
-
-    draw(ctx, view) {
-      var point, point_name, ref;
-      ctx.beginPath();
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        ctx.lineTo(point.x, point.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = "#63625F";
-      return ctx.fill();
-    }
-
-  };
-
-  addEntityClass(Rock);
-
-  return Rock;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 475:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var SavannaGrass, Terrain, addEntityClass, lineSegmentsIntersect;
-
-Terrain = __webpack_require__(891);
-
-({addEntityClass} = __webpack_require__(529));
-
-({lineSegmentsIntersect} = (__webpack_require__(529).helpers));
-
-module.exports = SavannaGrass = (function() {
-  class SavannaGrass extends Terrain {
-    constructor() {
-      super();
-      this.bbox_padding = 30;
-      this.grass_tiles = new Map();
-      this.grass_tiles.fromJSON = (map_obj) => {};
-      this.grass_tiles.toJSON = (map_obj) => {
-        return {};
-      };
-      this.structure.onchange = () => {
-        return this.grass_tiles.forEach((tile) => {
-          var blade, i, len, ref, results, shade;
-          ref = ["dark", "light"];
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            shade = ref[i];
-            results.push((function() {
-              var k, len1, ref1, results1;
-              ref1 = tile[`${shade}_blades`];
-              results1 = [];
-              for (k = 0, len1 = ref1.length; k < len1; k++) {
-                blade = ref1[k];
-                results1.push(delete blade.visible);
-              }
-              return results1;
-            })());
-          }
-          return results;
-        });
-      };
-    }
-
-    draw(ctx, view) {
-      var bbox, blade, bottom, contains_any_points, dark_blades, first_tile_xi, first_tile_yi, i, j, k, l, last_tile_xi, last_tile_yi, left, len, len1, len2, len3, light_blades, m, n, o, p, point, point_name, q, random, rect_contains_any_points, rect_is_empty, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, right, shade, tile, tile_name, tile_size, tile_x, tile_xi, tile_y, tile_yi, top, view_point, x, y;
-      rect_contains_any_points = (x, y, width, height) => {
-        var contains_any_points, point, point_name, ref, ref1, ref2;
-        contains_any_points = false;
-        ref = this.structure.points;
-        for (point_name in ref) {
-          point = ref[point_name];
-          if ((x <= (ref1 = point.x) && ref1 <= x + width) && (y <= (ref2 = point.y) && ref2 <= y + height)) {
-            contains_any_points = true;
-          }
-        }
-        return contains_any_points;
-      };
-      rect_is_empty = (x, y, width, height) => {
-        var center_of_rect_is_in_polygon, center_point, ref, segment, segment_name, view_point;
-        center_point = {
-          x: this.x + x + width / 2,
-          y: this.y + y + height / 2
-        };
-        view_point = view.fromWorld(center_point);
-        center_of_rect_is_in_polygon = ctx.isPointInPath(view_point.x, view_point.y);
-        ref = this.structure.segments;
-        for (segment_name in ref) {
-          segment = ref[segment_name];
-          if (lineSegmentsIntersect(x, y, x, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y, x + width, y, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x + width, y, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y + height, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
-            // return center_of_rect_is_in_polygon
-            return false;
-          }
-        }
-        return !center_of_rect_is_in_polygon;
-      };
-      ctx.beginPath();
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        ctx.lineTo(point.x, point.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = "#C29853";
-      ctx.fill();
-      Math.seedrandom(5);
-      random = Math.random;
-      // TODO: try layers of chained triangles
-      // like https://jsfiddle.net/evarildo/ds2ajjks/
-      // and order tufts of grass based on y (along with the layers of triangles)?
-      dark_blades = [];
-      light_blades = [];
-      bbox = this.bbox();
-      tile_size = 300;
-      // first_tile_x = floor(bbox.x / tile_size) * tile_size
-      // last_tile_x = ceil((bbox.x + bbox.width) / tile_size) * tile_size
-      // first_tile_y = floor(bbox.y / tile_size) * tile_size
-      // last_tile_y = ceil((bbox.y + bbox.height) / tile_size) * tile_size
-      // first_tile_x = (bbox.x // tile_size) * tile_size
-      // last_tile_x = ((bbox.x + bbox.width) // tile_size) * tile_size
-      // first_tile_y = (bbox.y // tile_size) * tile_size
-      // last_tile_y = ((bbox.y + bbox.height) // tile_size) * tile_size
-      // first_tile_xi = bbox.x // tile_size
-      // last_tile_xi = (bbox.x + bbox.width) // tile_size
-      // first_tile_yi = bbox.y // tile_size
-      // last_tile_yi = (bbox.y + bbox.height) // tile_size
-      // first_tile_x = first_tile_x * tile_size
-      // last_tile_x = last_tile_x * tile_size
-      // first_tile_y = first_tile_y * tile_size
-      // last_tile_y = last_tile_y * tile_size
-      // for tile_x in [first_tile_x..last_tile_x] by tile_size
-      // 	tile_x -= @x
-      // 	for tile_y in [first_tile_y..last_tile_y] by tile_size
-      // 		tile_name = "(#{tile_x}, #{tile_y})"
-      // 		tile_y -= @y
-      left = bbox.x - this.x;
-      top = bbox.y - this.y;
-      right = left + bbox.width;
-      bottom = top + bbox.height;
-      first_tile_xi = Math.floor(left / tile_size);
-      last_tile_xi = Math.floor(right / tile_size);
-      first_tile_yi = Math.floor(top / tile_size);
-      last_tile_yi = Math.floor(bottom / tile_size);
-      for (tile_xi = i = ref1 = first_tile_xi, ref2 = last_tile_xi; (ref1 <= ref2 ? i <= ref2 : i >= ref2); tile_xi = ref1 <= ref2 ? ++i : --i) {
-        for (tile_yi = k = ref3 = first_tile_yi, ref4 = last_tile_yi; (ref3 <= ref4 ? k <= ref4 : k >= ref4); tile_yi = ref3 <= ref4 ? ++k : --k) {
-          tile_name = `(${tile_xi}, ${tile_yi})`;
-          // tile_x = @x + tile_xi * tile_size
-          // tile_y = @y + tile_yi * tile_size
-          // tile_x = tile_xi * tile_size - @x
-          // tile_y = tile_yi * tile_size - @y
-          tile_x = tile_xi * tile_size;
-          tile_y = tile_yi * tile_size;
-          tile = this.grass_tiles.get(tile_name);
-          contains_any_points = rect_contains_any_points(tile_x, tile_y, tile_size, tile_size);
-          if (!((!contains_any_points) && rect_is_empty(tile_x, tile_y, tile_size, tile_size))) {
-            if (tile == null) {
-              tile = {
-                dark_blades: [],
-                light_blades: []
-              };
-              for (var l = 0; l <= 350; l++) {
-                x = tile_x + random() * tile_size;
-                y = tile_y + random() * tile_size;
-                for (j = m = 0, ref5 = random() * 3 + 1; (0 <= ref5 ? m <= ref5 : m >= ref5); j = 0 <= ref5 ? ++m : --m) {
-                  shade = random() < 0.5 ? "dark" : "light";
-                  tile[`${shade}_blades`].push({x, y});
-                  x += (random() + 1) * 3;
-                }
-              }
-              this.grass_tiles.set(tile_name, tile);
-            }
-            ref6 = ["dark", "light"];
-            
-            // ctx.strokeStyle = "#f0f"
-            // ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
-            // ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
-            // ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
-            // # ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
-            // # ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
-            for (n = 0, len = ref6.length; n < len; n++) {
-              shade = ref6[n];
-              ref7 = tile[`${shade}_blades`];
-              for (o = 0, len1 = ref7.length; o < len1; o++) {
-                blade = ref7[o];
-                point = this.toWorld(blade);
-                if (view.testRect(point.x, point.y - 10, 0, 10, 15)) {
-                  view_point = view.fromWorld(point);
-                  if (blade.visible != null ? blade.visible : blade.visible = ctx.isPointInPath(view_point.x, view_point.y)) {
-                    // if (not contains_any_points) or ctx.isPointInPath(view_point.x, view_point.y)
-                    (shade === "dark" ? dark_blades : light_blades).push(blade);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      ctx.beginPath();
-      for (p = 0, len2 = dark_blades.length; p < len2; p++) {
-        ({x, y} = dark_blades[p]);
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
-      }
-      ctx.strokeStyle = "#B7863E";
-      ctx.stroke();
-      ctx.beginPath();
-      for (q = 0, len3 = light_blades.length; q < len3; q++) {
-        ({x, y} = light_blades[q]);
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
-      }
-      ctx.strokeStyle = "#D6AE77";
-      return ctx.stroke();
-    }
-
-  };
-
-  addEntityClass(SavannaGrass);
-
-  return SavannaGrass;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 866:
+/***/ 432:
 /***/ ((module) => {
 
-var keyboard, keys, prev_keys;
-
-keys = {};
-
-prev_keys = {};
-
-addEventListener("keydown", function(e) {
-  return keys[e.code] = true;
-});
-
-addEventListener("keyup", function(e) {
-  return delete keys[e.code];
-});
-
-keyboard = {
-  wasJustPressed: function(code) {
-    return (keys[code] != null) && (prev_keys[code] == null);
-  },
-  isHeld: function(code) {
-    return keys[code] != null;
-  },
-  resetForNextStep: function() {
-    var k, results, v;
-    prev_keys = {};
-    results = [];
-    for (k in keys) {
-      v = keys[k];
-      results.push(prev_keys[k] = v);
-    }
-    return results;
-  }
-};
-
-module.exports = keyboard;
-
-
-/***/ }),
-
-/***/ 529:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "BoneStructure": () => (/* binding */ __webpack_exports__BoneStructure),
-/* harmony export */   "Editor": () => (/* binding */ __webpack_exports__Editor),
-/* harmony export */   "Entity": () => (/* binding */ __webpack_exports__Entity),
-/* harmony export */   "Mouse": () => (/* binding */ __webpack_exports__Mouse),
-/* harmony export */   "PolygonStructure": () => (/* binding */ __webpack_exports__PolygonStructure),
-/* harmony export */   "Pose": () => (/* binding */ __webpack_exports__Pose),
-/* harmony export */   "Structure": () => (/* binding */ __webpack_exports__Structure),
-/* harmony export */   "Terrain": () => (/* binding */ __webpack_exports__Terrain),
-/* harmony export */   "View": () => (/* binding */ __webpack_exports__View),
-/* harmony export */   "addEntityClass": () => (/* binding */ __webpack_exports__addEntityClass),
-/* harmony export */   "entityClasses": () => (/* binding */ __webpack_exports__entityClasses),
-/* harmony export */   "helpers": () => (/* binding */ __webpack_exports__helpers)
-/* harmony export */ });
-/******/ var __webpack_modules__ = ({
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(true)
+		module.exports = factory();
+	else {}
+})(self, () => {
+return /******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
 
 /***/ 89:
-/***/ ((module, __webpack_exports__, __nested_webpack_require_86__) => {
+/***/ ((module, __webpack_exports__, __nested_webpack_require_487__) => {
 
-/* harmony export */ __nested_webpack_require_86__.d(__webpack_exports__, {
+"use strict";
+/* harmony export */ __nested_webpack_require_487__.d(__webpack_exports__, {
 /* harmony export */   "Z": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __nested_webpack_require_86__(933);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nested_webpack_require_86__.n(_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __nested_webpack_require_86__(476);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nested_webpack_require_86__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __nested_webpack_require_487__(933);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nested_webpack_require_487__.n(_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __nested_webpack_require_487__(476);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nested_webpack_require_487__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
 // Imports
 
 
@@ -1858,15 +37,16 @@ ___CSS_LOADER_EXPORT___.push([module.id, "html, body {\n\tmargin: 0;\n\theight: 
 /***/ }),
 
 /***/ 389:
-/***/ ((module, __webpack_exports__, __nested_webpack_require_5400__) => {
+/***/ ((module, __webpack_exports__, __nested_webpack_require_5815__) => {
 
-/* harmony export */ __nested_webpack_require_5400__.d(__webpack_exports__, {
+"use strict";
+/* harmony export */ __nested_webpack_require_5815__.d(__webpack_exports__, {
 /* harmony export */   "Z": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __nested_webpack_require_5400__(933);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nested_webpack_require_5400__.n(_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __nested_webpack_require_5400__(476);
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nested_webpack_require_5400__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__ = __nested_webpack_require_5815__(933);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nested_webpack_require_5815__.n(_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__ = __nested_webpack_require_5815__(476);
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nested_webpack_require_5815__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1__);
 // Imports
 
 
@@ -1882,6 +62,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, ".editor {\n\t-webkit-touch-callout: no
 /***/ 476:
 /***/ ((module) => {
 
+"use strict";
 
 
 /*
@@ -1973,6 +154,7 @@ module.exports = function (cssWithMappingToString) {
 /***/ 933:
 /***/ ((module) => {
 
+"use strict";
 
 
 module.exports = function (i) {
@@ -1984,6 +166,7 @@ module.exports = function (i) {
 /***/ 525:
 /***/ ((module) => {
 
+"use strict";
 /*
 object-assign
 (c) Sindre Sorhus
@@ -2079,8 +262,9 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 /***/ }),
 
 /***/ 577:
-/***/ ((__unused_webpack_module, exports, __nested_webpack_require_14588__) => {
+/***/ ((__unused_webpack_module, exports, __nested_webpack_require_15059__) => {
 
+"use strict";
 /** @license React v17.0.2
  * react-dom.production.min.js
  *
@@ -2092,7 +276,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__nested_webpack_require_14588__(378),m=__nested_webpack_require_14588__(525),r=__nested_webpack_require_14588__(102);function y(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}if(!aa)throw Error(y(227));var ba=new Set,ca={};function da(a,b){ea(a,b);ea(a+"Capture",b)}
+var aa=__nested_webpack_require_15059__(378),m=__nested_webpack_require_15059__(525),r=__nested_webpack_require_15059__(102);function y(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}if(!aa)throw Error(y(227));var ba=new Set,ca={};function da(a,b){ea(a,b);ea(a+"Capture",b)}
 function ea(a,b){ca[a]=b;for(a=0;a<b.length;a++)ba.add(b[a])}
 var fa=!("undefined"===typeof window||"undefined"===typeof window.document||"undefined"===typeof window.document.createElement),ha=/^[:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD][:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\-.0-9\u00B7\u0300-\u036F\u203F-\u2040]*$/,ia=Object.prototype.hasOwnProperty,
 ja={},ka={};function la(a){if(ia.call(ka,a))return!0;if(ia.call(ja,a))return!1;if(ha.test(a))return ka[a]=!0;ja[a]=!0;return!1}function ma(a,b,c,d){if(null!==c&&0===c.type)return!1;switch(typeof b){case "function":case "symbol":return!0;case "boolean":if(d)return!1;if(null!==c)return!c.acceptsBooleans;a=a.toLowerCase().slice(0,5);return"data-"!==a&&"aria-"!==a;default:return!1}}
@@ -2383,8 +567,9 @@ exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!rk(c))throw Er
 /***/ }),
 
 /***/ 542:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_135368__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_135853__) => {
 
+"use strict";
 
 
 function checkDCE() {
@@ -2410,22 +595,22 @@ if (true) {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __nested_webpack_require_135368__(577);
+  module.exports = __nested_webpack_require_135853__(577);
 } else {}
 
 
 /***/ }),
 
 /***/ 908:
-/***/ (function(module, __unused_webpack_exports, __nested_webpack_require_136219__) {
+/***/ (function(module, __unused_webpack_exports, __nested_webpack_require_136718__) {
 
-/* module decorator */ module = __nested_webpack_require_136219__.nmd(module);
+/* module decorator */ module = __nested_webpack_require_136718__.nmd(module);
 // Generated by CoffeeScript 1.9.1
 (function() {
   var E, React, add, hyphenate, is_plainish_object, ref,
     slice = [].slice;
 
-  React = (ref = this.React) != null ? ref : __nested_webpack_require_136219__(378);
+  React = (ref = this.React) != null ? ref : __nested_webpack_require_136718__(378);
 
   is_plainish_object = function(o) {
     return (o != null) && typeof o === "object" && !(o instanceof Array || React.isValidElement(o));
@@ -2563,8 +748,9 @@ if (true) {
 /***/ }),
 
 /***/ 535:
-/***/ ((__unused_webpack_module, exports, __nested_webpack_require_141017__) => {
+/***/ ((__unused_webpack_module, exports, __nested_webpack_require_141516__) => {
 
+"use strict";
 /** @license React v17.0.2
  * react.production.min.js
  *
@@ -2573,7 +759,7 @@ if (true) {
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var l=__nested_webpack_require_141017__(525),n=60103,p=60106;exports.Fragment=60107;exports.StrictMode=60108;exports.Profiler=60114;var q=60109,r=60110,t=60112;exports.Suspense=60113;var u=60115,v=60116;
+var l=__nested_webpack_require_141516__(525),n=60103,p=60106;exports.Fragment=60107;exports.StrictMode=60108;exports.Profiler=60114;var q=60109,r=60110,t=60112;exports.Suspense=60113;var u=60115,v=60116;
 if("function"===typeof Symbol&&Symbol.for){var w=Symbol.for;n=w("react.element");p=w("react.portal");exports.Fragment=w("react.fragment");exports.StrictMode=w("react.strict_mode");exports.Profiler=w("react.profiler");q=w("react.provider");r=w("react.context");t=w("react.forward_ref");exports.Suspense=w("react.suspense");u=w("react.memo");v=w("react.lazy")}var x="function"===typeof Symbol&&Symbol.iterator;
 function y(a){if(null===a||"object"!==typeof a)return null;a=x&&a[x]||a["@@iterator"];return"function"===typeof a?a:null}function z(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}
 var A={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}},B={};function C(a,b,c){this.props=a;this.context=b;this.refs=B;this.updater=c||A}C.prototype.isReactComponent={};C.prototype.setState=function(a,b){if("object"!==typeof a&&"function"!==typeof a&&null!=a)throw Error(z(85));this.updater.enqueueSetState(this,a,b,"setState")};C.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};
@@ -2593,12 +779,13 @@ exports.useLayoutEffect=function(a,b){return S().useLayoutEffect(a,b)};exports.u
 /***/ }),
 
 /***/ 378:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_147547__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_148060__) => {
 
+"use strict";
 
 
 if (true) {
-  module.exports = __nested_webpack_require_147547__(535);
+  module.exports = __nested_webpack_require_148060__(535);
 } else {}
 
 
@@ -2607,6 +794,7 @@ if (true) {
 /***/ 323:
 /***/ ((__unused_webpack_module, exports) => {
 
+"use strict";
 /** @license React v0.20.2
  * scheduler.production.min.js
  *
@@ -2632,12 +820,13 @@ exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;
 /***/ }),
 
 /***/ 102:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_152598__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_153139__) => {
 
+"use strict";
 
 
 if (true) {
-  module.exports = __nested_webpack_require_152598__(323);
+  module.exports = __nested_webpack_require_153139__(323);
 } else {}
 
 
@@ -2646,6 +835,7 @@ if (true) {
 /***/ 892:
 /***/ ((module) => {
 
+"use strict";
 
 
 var stylesInDOM = [];
@@ -2756,6 +946,7 @@ module.exports = function (list, options) {
 /***/ 311:
 /***/ ((module) => {
 
+"use strict";
 
 
 var memo = {};
@@ -2801,6 +992,7 @@ module.exports = insertBySelector;
 /***/ 60:
 /***/ ((module) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -2816,13 +1008,14 @@ module.exports = insertStyleElement;
 /***/ }),
 
 /***/ 192:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_156649__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_157246__) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
 function setAttributesWithoutAttributes(styleElement) {
-  var nonce =   true ? __nested_webpack_require_156649__.nc : 0;
+  var nonce =   true ? __nested_webpack_require_157246__.nc : 0;
 
   if (nonce) {
     styleElement.setAttribute("nonce", nonce);
@@ -2836,6 +1029,7 @@ module.exports = setAttributesWithoutAttributes;
 /***/ 760:
 /***/ ((module) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -2912,6 +1106,7 @@ module.exports = domAPI;
 /***/ 865:
 /***/ ((module) => {
 
+"use strict";
 
 
 /* istanbul ignore next  */
@@ -2931,115 +1126,118 @@ module.exports = styleTagTransform;
 
 /***/ })
 
-/******/ });
+/******/ 	});
 /************************************************************************/
-/******/ // The module cache
-/******/ var __webpack_module_cache__ = {};
-/******/ 
-/******/ // The require function
-/******/ function __nested_webpack_require_159015__(moduleId) {
-/******/ 	// Check if module is in cache
-/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 	if (cachedModule !== undefined) {
-/******/ 		return cachedModule.exports;
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __nested_webpack_require_159660__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			id: moduleId,
+/******/ 			loaded: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nested_webpack_require_159660__);
+/******/ 	
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
 /******/ 	}
-/******/ 	// Create a new module (and put it into the cache)
-/******/ 	var module = __webpack_module_cache__[moduleId] = {
-/******/ 		id: moduleId,
-/******/ 		loaded: false,
-/******/ 		exports: {}
-/******/ 	};
-/******/ 
-/******/ 	// Execute the module function
-/******/ 	__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nested_webpack_require_159015__);
-/******/ 
-/******/ 	// Flag the module as loaded
-/******/ 	module.loaded = true;
-/******/ 
-/******/ 	// Return the exports of the module
-/******/ 	return module.exports;
-/******/ }
-/******/ 
+/******/ 	
 /************************************************************************/
-/******/ /* webpack/runtime/compat get default export */
-/******/ (() => {
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__nested_webpack_require_159015__.n = (module) => {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			() => (module['default']) :
-/******/ 			() => (module);
-/******/ 		__nested_webpack_require_159015__.d(getter, { a: getter });
-/******/ 		return getter;
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/define property getters */
-/******/ (() => {
-/******/ 	// define getter functions for harmony exports
-/******/ 	__nested_webpack_require_159015__.d = (exports, definition) => {
-/******/ 		for(var key in definition) {
-/******/ 			if(__nested_webpack_require_159015__.o(definition, key) && !__nested_webpack_require_159015__.o(exports, key)) {
-/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nested_webpack_require_159660__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nested_webpack_require_159660__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nested_webpack_require_159660__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nested_webpack_require_159660__.o(definition, key) && !__nested_webpack_require_159660__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
 /******/ 			}
-/******/ 		}
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/hasOwnProperty shorthand */
-/******/ (() => {
-/******/ 	__nested_webpack_require_159015__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/make namespace object */
-/******/ (() => {
-/******/ 	// define __esModule on exports
-/******/ 	__nested_webpack_require_159015__.r = (exports) => {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/node module decorator */
-/******/ (() => {
-/******/ 	__nested_webpack_require_159015__.nmd = (module) => {
-/******/ 		module.paths = [];
-/******/ 		if (!module.children) module.children = [];
-/******/ 		return module;
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/nonce */
-/******/ (() => {
-/******/ 	__nested_webpack_require_159015__.nc = undefined;
-/******/ })();
-/******/ 
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nested_webpack_require_159660__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nested_webpack_require_159660__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/node module decorator */
+/******/ 	(() => {
+/******/ 		__nested_webpack_require_159660__.nmd = (module) => {
+/******/ 			module.paths = [];
+/******/ 			if (!module.children) module.children = [];
+/******/ 			return module;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/nonce */
+/******/ 	(() => {
+/******/ 		__nested_webpack_require_159660__.nc = undefined;
+/******/ 	})();
+/******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
+"use strict";
+// ESM COMPAT FLAG
+__nested_webpack_require_159660__.r(__webpack_exports__);
 
 // EXPORTS
-__nested_webpack_require_159015__.d(__webpack_exports__, {
-  "iU": () => (/* reexport */ BoneStructure_coffee),
-  "ML": () => (/* reexport */ Editor_coffee),
-  "JH": () => (/* reexport */ Entity_coffee),
-  "TK": () => (/* reexport */ Mouse_coffee),
-  "DR": () => (/* reexport */ BoneStructure_coffee),
-  "DJ": () => (/* reexport */ Pose_coffee),
-  "vA": () => (/* reexport */ Structure_coffee),
-  "HC": () => (/* reexport */ Terrain_coffee),
-  "G7": () => (/* reexport */ View_coffee),
-  "fk": () => (/* reexport */ addEntityClass),
-  "IW": () => (/* reexport */ entityClasses),
-  "BM": () => (/* reexport */ helpers_coffee_namespaceObject)
+__nested_webpack_require_159660__.d(__webpack_exports__, {
+  "BoneStructure": () => (/* reexport */ BoneStructure_coffee),
+  "Editor": () => (/* reexport */ Editor_coffee),
+  "Entity": () => (/* reexport */ Entity_coffee),
+  "Mouse": () => (/* reexport */ Mouse_coffee),
+  "PolygonStructure": () => (/* reexport */ BoneStructure_coffee),
+  "Pose": () => (/* reexport */ Pose_coffee),
+  "Structure": () => (/* reexport */ Structure_coffee),
+  "Terrain": () => (/* reexport */ Terrain_coffee),
+  "View": () => (/* reexport */ View_coffee),
+  "addEntityClass": () => (/* reexport */ addEntityClass),
+  "entityClasses": () => (/* reexport */ entityClasses),
+  "helpers": () => (/* reexport */ helpers_coffee_namespaceObject)
 });
 
 // NAMESPACE OBJECT: ./helpers.coffee
 var helpers_coffee_namespaceObject = {};
-__nested_webpack_require_159015__.r(helpers_coffee_namespaceObject);
-__nested_webpack_require_159015__.d(helpers_coffee_namespaceObject, {
+__nested_webpack_require_159660__.r(helpers_coffee_namespaceObject);
+__nested_webpack_require_159660__.d(helpers_coffee_namespaceObject, {
   "distance": () => (distance),
   "distanceToLineSegment": () => (distanceToLineSegment),
   "lerpPoints": () => (lerpPoints),
@@ -3907,12 +2105,12 @@ TAU = Math.PI * 2;
 });
 
 // EXTERNAL MODULE: ../node_modules/react-dom/index.js
-var react_dom = __nested_webpack_require_159015__(542);
+var react_dom = __nested_webpack_require_159660__(542);
 // EXTERNAL MODULE: ../node_modules/react-script/lib/react-script.js
-var react_script = __nested_webpack_require_159015__(908);
-var react_script_default = /*#__PURE__*/__nested_webpack_require_159015__.n(react_script);
+var react_script = __nested_webpack_require_159660__(908);
+var react_script_default = /*#__PURE__*/__nested_webpack_require_159660__.n(react_script);
 // EXTERNAL MODULE: ../node_modules/react/index.js
-var react = __nested_webpack_require_159015__(378);
+var react = __nested_webpack_require_159660__(378);
 ;// CONCATENATED MODULE: ./View.coffee
 var View;
 
@@ -4701,25 +2899,25 @@ var TerrainBar,
 });
 
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
-var injectStylesIntoStyleTag = __nested_webpack_require_159015__(892);
-var injectStylesIntoStyleTag_default = /*#__PURE__*/__nested_webpack_require_159015__.n(injectStylesIntoStyleTag);
+var injectStylesIntoStyleTag = __nested_webpack_require_159660__(892);
+var injectStylesIntoStyleTag_default = /*#__PURE__*/__nested_webpack_require_159660__.n(injectStylesIntoStyleTag);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/styleDomAPI.js
-var styleDomAPI = __nested_webpack_require_159015__(760);
-var styleDomAPI_default = /*#__PURE__*/__nested_webpack_require_159015__.n(styleDomAPI);
+var styleDomAPI = __nested_webpack_require_159660__(760);
+var styleDomAPI_default = /*#__PURE__*/__nested_webpack_require_159660__.n(styleDomAPI);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/insertBySelector.js
-var insertBySelector = __nested_webpack_require_159015__(311);
-var insertBySelector_default = /*#__PURE__*/__nested_webpack_require_159015__.n(insertBySelector);
+var insertBySelector = __nested_webpack_require_159660__(311);
+var insertBySelector_default = /*#__PURE__*/__nested_webpack_require_159660__.n(insertBySelector);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js
-var setAttributesWithoutAttributes = __nested_webpack_require_159015__(192);
-var setAttributesWithoutAttributes_default = /*#__PURE__*/__nested_webpack_require_159015__.n(setAttributesWithoutAttributes);
+var setAttributesWithoutAttributes = __nested_webpack_require_159660__(192);
+var setAttributesWithoutAttributes_default = /*#__PURE__*/__nested_webpack_require_159660__.n(setAttributesWithoutAttributes);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/insertStyleElement.js
-var insertStyleElement = __nested_webpack_require_159015__(60);
-var insertStyleElement_default = /*#__PURE__*/__nested_webpack_require_159015__.n(insertStyleElement);
+var insertStyleElement = __nested_webpack_require_159660__(60);
+var insertStyleElement_default = /*#__PURE__*/__nested_webpack_require_159660__.n(insertStyleElement);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/styleTagTransform.js
-var styleTagTransform = __nested_webpack_require_159015__(865);
-var styleTagTransform_default = /*#__PURE__*/__nested_webpack_require_159015__.n(styleTagTransform);
+var styleTagTransform = __nested_webpack_require_159660__(865);
+var styleTagTransform_default = /*#__PURE__*/__nested_webpack_require_159660__.n(styleTagTransform);
 // EXTERNAL MODULE: ../node_modules/css-loader/dist/cjs.js!./styles.css
-var cjs_js_styles = __nested_webpack_require_159015__(389);
+var cjs_js_styles = __nested_webpack_require_159660__(389);
 ;// CONCATENATED MODULE: ./styles.css
 
       
@@ -5530,7 +3728,7 @@ MenuItem.useModifierSymbols =
 // End:
 
 // EXTERNAL MODULE: ../node_modules/css-loader/dist/cjs.js!./jsMenus/jsMenus.css
-var jsMenus = __nested_webpack_require_159015__(89);
+var jsMenus = __nested_webpack_require_159660__(89);
 ;// CONCATENATED MODULE: ./jsMenus/jsMenus.css
 
       
@@ -7066,19 +5264,1861 @@ var Mouse;
 
 })();
 
-var __webpack_exports__BoneStructure = __webpack_exports__.iU;
-var __webpack_exports__Editor = __webpack_exports__.ML;
-var __webpack_exports__Entity = __webpack_exports__.JH;
-var __webpack_exports__Mouse = __webpack_exports__.TK;
-var __webpack_exports__PolygonStructure = __webpack_exports__.DR;
-var __webpack_exports__Pose = __webpack_exports__.DJ;
-var __webpack_exports__Structure = __webpack_exports__.vA;
-var __webpack_exports__Terrain = __webpack_exports__.HC;
-var __webpack_exports__View = __webpack_exports__.G7;
-var __webpack_exports__addEntityClass = __webpack_exports__.fk;
-var __webpack_exports__entityClasses = __webpack_exports__.IW;
-var __webpack_exports__helpers = __webpack_exports__.BM;
+/******/ 	return __webpack_exports__;
+/******/ })()
+;
+});
 
+/***/ }),
+
+/***/ 378:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Entity, Terrain, World;
+
+Entity = __webpack_require__(293);
+
+Terrain = __webpack_require__(891);
+
+module.exports = World = class World {
+  constructor() {
+    this.entities = [];
+  }
+
+  fromJSON(def) {
+    var ent_def, entity, i, len, ref, results;
+    if (!(def.entities instanceof Array)) {
+      throw new Error(`Expected entities to be an array, got ${def.entities}`);
+    }
+    this.entities = (function() {
+      var i, len, ref, results;
+      ref = def.entities;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        ent_def = ref[i];
+        results.push(Entity.fromJSON(ent_def));
+      }
+      return results;
+    })();
+    ref = this.entities;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      entity = ref[i];
+      results.push(entity.resolveReferences(this));
+    }
+    return results;
+  }
+
+  getEntityByID(id) {
+    var entity, i, len, ref;
+    ref = this.entities;
+    for (i = 0, len = ref.length; i < len; i++) {
+      entity = ref[i];
+      if (entity.id === id) {
+        return entity;
+      }
+    }
+  }
+
+  getEntitiesOfType(Class) {
+    var entity, i, len, ref, results;
+    ref = this.entities;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      entity = ref[i];
+      if (entity instanceof Class) {
+        results.push(entity);
+      }
+    }
+    return results;
+  }
+
+  drawBackground(ctx, view) {
+    ctx.fillStyle = "#32C8FF";
+    return ctx.fillRect(0, 0, view.width, view.height);
+  }
+
+  draw(ctx, view) {
+    var entity, i, len, ref, results;
+    ref = this.entities;
+    // ctx.fillStyle = "#32C8FF"
+    // {x, y} = view.toWorld({x: 0, y: 0})
+    // {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
+    // ctx.fillRect(x, y, width-x, height-y)
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      entity = ref[i];
+      ctx.save();
+      ctx.translate(entity.x, entity.y);
+      entity.draw(ctx, view);
+      results.push(ctx.restore());
+    }
+    return results;
+  }
+
+  collision(point) {
+    var entity, i, len, ref;
+    ref = this.entities;
+    for (i = 0, len = ref.length; i < len; i++) {
+      entity = ref[i];
+      if (entity instanceof Terrain) {
+        if (entity.structure.pointInPolygon(entity.fromWorld(point))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+};
+
+
+/***/ }),
+
+/***/ 668:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Entity, GranddaddyLonglegs, TAU, addEntityClass, distance,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; },
+  indexOf = [].indexOf;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(432));
+
+({distance} = (__webpack_require__(432).helpers));
+
+TAU = Math.PI * 2;
+
+module.exports = GranddaddyLonglegs = (function() {
+  class GranddaddyLonglegs extends Entity {
+    constructor() {
+      var foot_point_name, i, j, k, l, leg, leg_pair_n, len, len1, len2, point, point_name, previous, ref, ref1, ref2, ref3, segment_name, side;
+      super();
+      this.structure.addPoint("body");
+      this.foot_point_names = [];
+      this.legs = [];
+      for (leg_pair_n = i = 1; i <= 4; leg_pair_n = ++i) {
+        ref = ["left", "right"];
+        for (j = 0, len = ref.length; j < len; j++) {
+          side = ref[j];
+          leg = {
+            point_names_by_segment_name: {}
+          };
+          this.legs.push(leg);
+          previous = "body";
+          ref1 = ["upper", "middle", "lower"];
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            segment_name = ref1[k];
+            point_name = segment_name === "lower" ? foot_point_name = `${side} foot ${leg_pair_n}` : (foot_point_name = void 0, `${segment_name} ${side} leg ${leg_pair_n}`);
+            previous = this.structure.addSegment({
+              from: previous,
+              to: foot_point_name,
+              name: `${segment_name} ${side} leg ${leg_pair_n}`,
+              length: 50,
+              // NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
+              // often have vastly more spindly legs
+              width: (function() {
+                switch (segment_name) {
+                  case "upper":
+                    return 4;
+                  case "middle":
+                    return 3;
+                  case "lower":
+                    return 2;
+                }
+              })()
+            });
+            leg.point_names_by_segment_name[segment_name] = point_name;
+            leg.foot_point_name = foot_point_name;
+            if (foot_point_name != null) {
+              this.foot_point_names.push(foot_point_name);
+            }
+          }
+        }
+      }
+      this.step_index = 0;
+      this.step_timer = 0;
+      this.next_foot_positions = {};
+      ref2 = this.foot_point_names;
+      for (l = 0, len2 = ref2.length; l < len2; l++) {
+        point_name = ref2[l];
+        this.next_foot_positions[point_name] = {
+          x: 0,
+          y: 0
+        };
+      }
+      ref3 = this.structure.points;
+      for (point_name in ref3) {
+        point = ref3[point_name];
+        point.vx = 0;
+        point.vy = 0;
+      }
+      this.bbox_padding = 20;
+    }
+
+    step(world) {
+      var collision, current_foot_point_name, current_foot_pos, dist, foot_point, force, i, j, k, l, leg, len, next_foot_pos, point_name, ref, ref1, results, segment_name;
+      if (this.toWorld(this.structure.points[this.foot_point_names[0]]).y > 400) {
+        return;
+      }
+      if (++this.step_timer >= 10) {
+        this.step_timer = 0;
+        this.step_index += 1;
+        current_foot_point_name = this.foot_point_names[modulo(this.step_index, this.foot_point_names.length)];
+        current_foot_pos = this.structure.points[current_foot_point_name];
+        next_foot_pos = {
+          x: current_foot_pos.x,
+          y: current_foot_pos.y
+        };
+        next_foot_pos.x += 50;
+        next_foot_pos.y -= 50;
+        for (var i = 0; i <= 50; i++) {
+          next_foot_pos.y += 5;
+          if (world.collision(this.toWorld(next_foot_pos))) {
+            next_foot_pos.y -= 5;
+            break;
+          }
+        }
+        this.next_foot_positions[current_foot_point_name] = next_foot_pos;
+      }
+      ref = this.legs;
+      for (j = 0, len = ref.length; j < len; j++) {
+        leg = ref[j];
+        foot_point = this.structure.points[leg.foot_point_name];
+        next_foot_pos = this.next_foot_positions[leg.foot_point_name];
+        ref1 = leg.point_names_by_segment_name;
+        for (segment_name in ref1) {
+          point_name = ref1[segment_name];
+          this.structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 200;
+          if (indexOf.call(this.foot_point_names, point_name) < 0) {
+            this.structure.points[point_name].vy -= 0.6;
+          }
+        }
+        dist = distance(next_foot_pos, foot_point);
+        force = 2;
+        foot_point.vx += (next_foot_pos.x - foot_point.x) / dist * force;
+        foot_point.vy += (next_foot_pos.y - foot_point.y) / dist * force;
+      }
+      this.structure.points["body"].vy -= 0.2;
+      collision = (point) => {
+        return world.collision(this.toWorld(point));
+      };
+      this.structure.stepLayout({
+        gravity: 0.5,
+        collision
+      });
+      for (var k = 0; k <= 10; k++) {
+        this.structure.stepLayout();
+      }
+      results = [];
+      for (var l = 0; l <= 4; l++) {
+        results.push(this.structure.stepLayout({collision}));
+      }
+      return results;
+    }
+
+    draw(ctx) {
+      var ref, segment, segment_name;
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#2c1c0a"; //"brown"
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.translate(this.structure.points.body.x, this.structure.points.body.y);
+      ctx.scale(1, 0.7);
+      ctx.arc(0, 0, 10, 0, TAU);
+      ctx.fillStyle = "#2c1c0a"; //"#C15723" #"brown"
+      return ctx.fill();
+    }
+
+  };
+
+  addEntityClass(GranddaddyLonglegs);
+
+  return GranddaddyLonglegs;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 795:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, distance, distanceToLineSegment, keyboard,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+
+SimpleActor = __webpack_require__(339);
+
+Entity = __webpack_require__(293);
+
+({Pose} = __webpack_require__(432));
+
+Bow = __webpack_require__(914);
+
+Arrow = __webpack_require__(943);
+
+keyboard = __webpack_require__(866);
+
+({addEntityClass} = __webpack_require__(432));
+
+({distance, distanceToLineSegment} = (__webpack_require__(432).helpers));
+
+TAU = Math.PI * 2;
+
+module.exports = Player = (function() {
+  class Player extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "neck",
+        length: 5
+      });
+      this.structure.addSegment({
+        from: "neck",
+        name: "sternum",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "sternum",
+        name: "left shoulder",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "sternum",
+        name: "right shoulder",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "left shoulder",
+        to: "left elbo",
+        name: "upper left arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right shoulder",
+        to: "right elbo",
+        name: "upper right arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "left elbo",
+        to: "left hand",
+        name: "lower left arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right elbo",
+        to: "right hand",
+        name: "lower right arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "sternum",
+        to: "pelvis",
+        name: "torso",
+        length: 20
+      });
+      this.structure.addSegment({
+        from: "pelvis",
+        name: "left hip",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "pelvis",
+        name: "right hip",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "left hip",
+        to: "left knee",
+        name: "upper left leg",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right hip",
+        to: "right knee",
+        name: "upper right leg",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "left knee",
+        to: "left foot",
+        name: "lower left leg",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right knee",
+        to: "right foot",
+        name: "lower right leg",
+        length: 10
+      });
+      // for abc in "ABC"
+      // 	hair_from = "head"
+      // 	for i in [0..5]
+      // 		@structure.addSegment(
+      // 			from: "head"
+      // 			name: "hair #{abc} #{i}"
+      // 			length: 2
+      // 		)
+      // TODO: adjust proportions? https://en.wikipedia.org/wiki/Body_proportions
+      // TODO: add some constraints to hips, shoulders, and neck
+      // TODO: min/max_length for pseudo-3D purposes
+      this.bbox_padding = 10;
+      this.holding_bow = null;
+      this.holding_arrow = null;
+      this.bow_drawn_to = 0;
+      this.run_animation_position = 0;
+      this.subtle_idle_animation_position = 0;
+      this.other_idle_animation_position = 0;
+      this.idle_animation = null;
+      this.idle_timer = 0;
+      this.smoothed_vy = 0;
+      this.hair_x_scales = [1, 1, 1, 1, 1, 1, 1, 1, 1];
+      this.real_facing_x = this.facing_x;
+    }
+
+    step(world, view, mouse) {
+      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, draw_bow, draw_to, force, from_point_in_world, head, head_x_before_posing, head_y_before_posing, hold_offset, left, max_draw_distance, mouse_in_world, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbo, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, right, secondary_elbo, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation;
+      left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
+      right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
+      this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
+      // TODO: gamepad support
+      // TODO: configurable controls
+      this.move_x = right - left;
+      super.step(world);
+      ({sternum} = this.structure.points);
+      from_point_in_world = this.toWorld(sternum);
+      mouse_in_world = view.toWorld(mouse);
+      aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x);
+      pick_up_any = (EntityClass, prop) => {
+        var dist, entity, from_point_in_entity_space, j, len, moving_too_fast, pickup_item, point, point_name, ref, ref1, ref2, ref3, segment, segment_name;
+        if ((ref = this[prop]) != null ? ref.destroyed : void 0) {
+          this[prop] = null;
+        }
+        if (this[prop]) {
+          return;
+        }
+        ref1 = world.getEntitiesOfType(EntityClass);
+        // this is ridiculously complicated
+        for (j = 0, len = ref1.length; j < len; j++) {
+          entity = ref1[j];
+          from_point_in_entity_space = entity.fromWorld(from_point_in_world);
+          moving_too_fast = false;
+          ref2 = entity.structure.points;
+          for (point_name in ref2) {
+            point = ref2[point_name];
+            if ((point.vx != null) && (point.vy != null)) {
+              if (Math.abs(point.vx) + Math.abs(point.vy) > 2) {
+                moving_too_fast = true;
+                break;
+              }
+            }
+          }
+          if (!moving_too_fast) {
+            ref3 = entity.structure.segments;
+            for (segment_name in ref3) {
+              segment = ref3[segment_name];
+              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
+              if (dist < 50) {
+                pickup_item = entity;
+              }
+            }
+          }
+        }
+        if (pickup_item) {
+          // TODO: pickup animation
+          return this[prop] = pickup_item;
+        }
+      };
+      pick_up_any(Bow, "holding_bow");
+      pick_up_any(Arrow, "holding_arrow");
+      prevent_idle = () => {
+        this.idle_timer = 0;
+        return this.idle_animation = null;
+      };
+      if (this.move_x === 0) {
+        this.idle_timer += 1;
+        subtle_idle_animation = Player.animations["Idle"];
+        if (this.idle_timer > 1000) {
+          this.idle_animation = "Yawn";
+          this.idle_timer = 0;
+          this.other_idle_animation_position = 0;
+        }
+        other_idle_animation = this.idle_animation && Player.animations[this.idle_animation];
+        if (other_idle_animation) {
+          this.other_idle_animation_position += 1 / 25;
+          if (this.other_idle_animation_position > other_idle_animation.length) {
+            this.idle_animation = null;
+          }
+          new_pose = Pose.lerpAnimationLoop(other_idle_animation, this.other_idle_animation_position);
+        } else if (subtle_idle_animation) {
+          this.subtle_idle_animation_position += 1 / 25;
+          new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, this.subtle_idle_animation_position);
+        } else {
+          new_pose = (ref = Player.poses["Stand"]) != null ? ref : this.structure.getPose();
+        }
+      } else {
+        prevent_idle();
+        if (Player.animations["Run"]) {
+          this.run_animation_position += Math.abs(this.move_x) / 5 * this.facing_x * this.real_facing_x;
+          new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], this.run_animation_position);
+        } else {
+          new_pose = this.structure.getPose();
+        }
+      }
+      if (this.real_facing_x < 0) {
+        new_pose = Pose.horizontallyFlip(new_pose);
+      }
+      head_x_before_posing = this.structure.points["head"].x;
+      head_y_before_posing = this.structure.points["head"].y;
+      this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
+      
+      // (her dominant eye is, of course, *whichever one she would theoretically be using*)
+      // (given this)
+      primary_hand = this.structure.points["right hand"];
+      secondary_hand = this.structure.points["left hand"];
+      primary_elbo = this.structure.points["right elbo"];
+      secondary_elbo = this.structure.points["left elbo"];
+      prime_bow = this.holding_bow && mouse.RMB.down; // and @holding_arrow
+      draw_bow = prime_bow && mouse.LMB.down;
+      this.real_facing_x = this.facing_x;
+      if (prime_bow) {
+        // Restore head position, in order to do linear interpolation.
+        // In this state, the head is not controlled by the pose, but by the bow aiming.
+        this.structure.points["head"].x = head_x_before_posing;
+        this.structure.points["head"].y = head_y_before_posing;
+      }
+      // TODO: transition (both ways) between primed and not
+      // also maybe relax the "primed" state when running and not drawn back
+      if (this.holding_bow) {
+        bow = this.holding_bow;
+        bow.x = this.x;
+        bow.y = this.y;
+        arm_span = this.structure.segments["upper right arm"].length + this.structure.segments["lower right arm"].length;
+        max_draw_distance = 6;
+        // max_draw_distance = arm_span / 2.5 #- bow.fistmele
+        bow.draw_distance += ((max_draw_distance * draw_bow) - bow.draw_distance) / 15;
+        draw_to = arm_span - bow.fistmele - bow.draw_distance;
+        if (draw_bow) {
+          // TODO: use better transition to allow for greater control over release velocity
+          bow.draw_distance += (5 - bow.draw_distance) / 5;
+          this.bow_drawn_to = draw_to;
+        } else {
+          if (prime_bow && this.holding_arrow && bow.draw_distance > 2) {
+            force = bow.draw_distance * 2;
+            ref1 = this.holding_arrow.structure.points;
+            for (point_name in ref1) {
+              point = ref1[point_name];
+              point.vx = Math.cos(aim_angle) * force;
+              point.vy = Math.sin(aim_angle) * force;
+            }
+            this.holding_arrow = null;
+          }
+          bow.draw_distance = 0;
+          // FIXME: this should be an ease-in transition, not ease-out
+          this.bow_drawn_to += (arm_span - bow.fistmele - this.bow_drawn_to) / 10;
+        }
+        if (prime_bow) {
+          prevent_idle();
+          bow_angle = aim_angle;
+          primary_hand.x = sternum.x + this.bow_drawn_to * Math.cos(aim_angle);
+          primary_hand.y = sternum.y + this.bow_drawn_to * Math.sin(aim_angle);
+          primary_elbo.x = sternum.x + 5 * Math.cos(aim_angle);
+          primary_elbo.y = sternum.y + 5 * Math.sin(aim_angle);
+          // primary_elbo.y = sternum.y - 3
+          secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle);
+          secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle);
+          secondary_elbo.x = sternum.x + 15 * Math.cos(aim_angle);
+          secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle);
+          // make head look along aim path
+          angle = modulo(aim_angle - Math.PI / 2, Math.PI * 2);
+          this.real_facing_x = angle < Math.PI ? -1 : 1;
+          ({head, neck} = this.structure.points);
+          new_head_x = neck.x + 5 * Math.cos(angle + (angle < Math.PI ? Math.PI : 0));
+          new_head_y = neck.y + 5 * Math.sin(angle + (angle < Math.PI ? Math.PI : 0));
+          head.x += (new_head_x - head.x) / 5;
+          head.y += (new_head_y - head.y) / 5;
+        } else {
+          bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x);
+        }
+        primary_hand_in_bow_space = bow.fromWorld(this.toWorld(primary_hand));
+        secondary_hand_in_bow_space = bow.fromWorld(this.toWorld(secondary_hand));
+        bow.structure.points.grip.x = secondary_hand_in_bow_space.x;
+        bow.structure.points.grip.y = secondary_hand_in_bow_space.y;
+        if (prime_bow) {
+          bow.structure.points.serving.x = sternum.x + draw_to * Math.cos(aim_angle);
+          bow.structure.points.serving.y = sternum.y + draw_to * Math.sin(aim_angle);
+        } else {
+          bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle);
+          bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle);
+        }
+      }
+      if (this.holding_arrow) {
+        arrow = this.holding_arrow;
+        arrow.x = this.x;
+        arrow.y = this.y;
+        primary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(primary_hand));
+        secondary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(secondary_hand));
+        arrow.structure.points.nock.vx = 0;
+        arrow.structure.points.nock.vy = 0;
+        arrow.structure.points.tip.vx = 0;
+        arrow.structure.points.tip.vy = 0;
+        if (prime_bow) {
+          arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle);
+          arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle);
+          arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * Math.cos(aim_angle);
+          return arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
+        } else {
+          angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x);
+          arrow_angle = angle - (TAU / 4 + 0.2) * this.real_facing_x;
+          hold_offset = -5;
+          arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle);
+          arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle);
+          arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle);
+          return arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle);
+        }
+      }
+    }
+
+    draw(ctx) {
+      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, head, head_rotation_angle, hxs, i, j, k, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, r, ref, ref1, ref2, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit, w;
+      ({
+        head,
+        sternum,
+        pelvis,
+        "left knee": left_knee,
+        "right knee": right_knee,
+        "left shoulder": left_shoulder,
+        "right shoulder": right_shoulder
+      } = this.structure.points);
+      // ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
+      // or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
+      skin_color = "#6B422C";
+      hair_color = "#000000";
+      eye_color = "#000000";
+      dress_color = "#AAFFFF";
+      
+      // TODO: depth
+      // @drawStructure
+      // 	segments:
+      // 		torso: ->
+      // 	points:
+      // 		head: ->
+
+      // trailing hair
+      // TODO: better, less fake hair physics
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.translate(-this.real_facing_x * 0.3, 0);
+      this.smoothed_vy += ((this.vy * !this.grounded) - this.smoothed_vy) / 5;
+      ref = this.hair_x_scales;
+      for (i = j = ref.length - 1; j >= 0; i = j += -1) {
+        hxs = ref[i];
+        if (i === 0) {
+          this.hair_x_scales[i] += (-this.real_facing_x - hxs) / 3;
+        } else {
+          // x = @real_facing_x * i/@hair_x_scales.length * 2
+          // @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
+          // @hair_x_scales[i] += (x - hxs) / 2
+          this.hair_x_scales[i] += (this.hair_x_scales[i - 1] - hxs) / 3;
+        }
+        ctx.save();
+        ctx.scale(hxs, 1);
+        ctx.fillStyle = hair_color;
+        r = this.hair_x_scales[i] * this.vx / 45 - Math.max(0, this.smoothed_vy / 25);
+        l = 5;
+        w = 1;
+        ctx.rotate(r);
+        ctx.fillRect(0 - w, -2, 5 + w, l);
+        ctx.translate(0, l);
+        ctx.rotate(r);
+        ctx.fillRect(1 - w, -2, 4 + w, l);
+        ctx.translate(0, l);
+        ctx.rotate(r);
+        ctx.fillRect(2 - w, -2, 3 + w, l);
+        ctx.translate(0, l);
+        ctx.rotate(r);
+        ctx.fillRect(3 - w, -2, 2 + w, l);
+        ctx.translate(0, l);
+        ctx.restore();
+      }
+      ctx.restore();
+      ref1 = this.structure.segments;
+      
+      // limbs
+      for (segment_name in ref1) {
+        segment = ref1[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = skin_color;
+        ctx.stroke();
+      }
+      
+      // dress
+      ctx.beginPath();
+      ctx.save();
+      ctx.translate(sternum.x, sternum.y);
+      torso_angle = Math.atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU / 4;
+      torso_length = distance(pelvis, sternum);
+      ctx.rotate(torso_angle);
+      left_leg_angle = Math.atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle;
+      right_leg_angle = Math.atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle;
+      left_shoulder_angle = Math.atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle;
+      right_shoulder_angle = Math.atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle;
+      shoulder_distance = distance(left_shoulder, sternum);
+      min_shoulder_cos = Math.min(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
+      max_shoulder_cos = Math.max(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
+      if (Math.cos(left_shoulder_angle) < Math.cos(right_shoulder_angle)) {
+        min_cos_shoulder_angle = left_shoulder_angle;
+        max_cos_shoulder_angle = right_shoulder_angle;
+      } else {
+        min_cos_shoulder_angle = right_shoulder_angle;
+        max_cos_shoulder_angle = left_shoulder_angle;
+      }
+      ctx.lineTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5);
+      ctx.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5);
+      min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
+      max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
+      min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
+      max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
+      ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length / 2);
+      ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin));
+      ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin));
+      ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length / 2);
+      ctx.fillStyle = dress_color;
+      ctx.fill();
+      ctx.restore();
+      
+      // head, including top of hair
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU / 4);
+      // head
+      ctx.save();
+      ctx.scale(0.9, 1);
+      ctx.beginPath();
+      ctx.arc(0, 0, 5.5, 0, TAU);
+      ctx.fillStyle = skin_color;
+      ctx.fill();
+      ctx.restore();
+      // top of hair
+      ctx.beginPath();
+      ctx.arc(0, 0, 5.5, 0, TAU / 2);
+      ctx.fillStyle = hair_color;
+      ctx.fill();
+      // eyes
+      // TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
+      ctx.arc(0, 0, 5.5 * 0.9, 0, TAU);
+      ctx.clip();
+      eye_spacing = 0.6; // radians
+      turn_limit = TAU / 8; // radians, TAU/4 = head facing completely sideways, only one eye visible
+      ctx.fillStyle = eye_color;
+      if (this.smoothed_facing_x_for_eyes == null) {
+        this.smoothed_facing_x_for_eyes = 0;
+      }
+      this.smoothed_facing_x_for_eyes += (this.real_facing_x - this.smoothed_facing_x_for_eyes) / 5;
+      ref2 = [-1, 1];
+      for (k = 0, len = ref2.length; k < len; k++) {
+        eye_signature = ref2[k];
+        // 3D projection in one axis
+        head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
+        eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5 * 0.9;
+        ctx.beginPath();
+        ctx.arc(eye_x, -1, 1, 0, TAU);
+        ctx.fill();
+      }
+      // /head
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Player);
+
+  Entity.initAnimation(Player);
+
+  return Player;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 521:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var SavannaTreeA, TAU, Tree, addEntityClass;
+
+Tree = __webpack_require__(776);
+
+({addEntityClass} = __webpack_require__(432));
+
+TAU = Math.PI * 2;
+
+module.exports = SavannaTreeA = (function() {
+  class SavannaTreeA extends Tree {
+    constructor() {
+      super();
+      this.branch({
+        from: "base",
+        to: "1",
+        juice: 5,
+        angle: -TAU / 2
+      });
+    }
+
+    leaf(leaf) {
+      leaf.radius = Math.random() * 15 + 15;
+      leaf.scale_x = 2;
+      leaf.scale_y = 1;
+      leaf.color = "#627318"; //"#363D1B"
+      return leaf;
+    }
+
+    draw(ctx) {
+      var i, leaf, leaf_point_name, len, ref, ref1, results, segment, segment_name;
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = segment.color;
+        ctx.stroke();
+      }
+      ref1 = this.leaf_point_names;
+      results = [];
+      for (i = 0, len = ref1.length; i < len; i++) {
+        leaf_point_name = ref1[i];
+        leaf = this.structure.points[leaf_point_name];
+        // ctx.beginPath()
+        // ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(leaf.x, leaf.y);
+        ctx.scale(leaf.scale_x, leaf.scale_y);
+        ctx.arc(0, 0, leaf.radius, 0, TAU);
+        ctx.fillStyle = leaf.color;
+        ctx.fill();
+        results.push(ctx.restore());
+      }
+      return results;
+    }
+
+  };
+
+  addEntityClass(SavannaTreeA);
+
+  return SavannaTreeA;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 293:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+module.exports = __webpack_require__(432).Entity;
+
+/*
+fs = require? "fs"
+path = require? "path"
+ * XXX: hack for webpack
+ * TODO: use ifdef conditionals or something
+fs = null if not fs.readFileSync
+path = null if not path.join
+
+module.exports = class Entity
+	constructor: ->
+		@structure = new BoneStructure
+		@x = 0
+		@y = 0
+		@id = uuid()
+
+		@bbox_padding = 2
+ * TODO: depth system
+ * @drawing_pieces = {}
+
+		@_class_ = @constructor.name
+
+	@initAnimation: (EntityClass)->
+		EntityClass.poses = {}
+		EntityClass.animations = {}
+		EntityClass.animation_json_path = "./animations/#{EntityClass.name}.json"
+		Entity.loadAnimations(EntityClass)
+
+	@loadAnimations: (EntityClass)->
+		animationsFromJSON = ({poses, animations})->
+			EntityClass.poses = {}
+			EntityClass.animations = {}
+			for pose_name, pose of poses
+				EntityClass.poses[pose_name] = new Pose(pose)
+			for animation_name, animation of animations
+				EntityClass.animations[animation_name] = (new Pose(pose) for pose in animation)
+
+		if fs?
+			try
+				json = fs.readFileSync(EntityClass.animation_json_path)
+			catch e
+				throw e unless e.code is "ENOENT"
+		else
+			json = localStorage["Tiamblia #{EntityClass.name} animations"]
+		if json
+			animationsFromJSON(JSON.parse(json)) if json
+		else
+			req = new XMLHttpRequest
+			req.addEventListener "load", (e)=>
+				json = req.responseText
+				animationsFromJSON(JSON.parse(json)) if json
+			req.open("GET", EntityClass.animation_json_path)
+			req.send()
+
+	@saveAnimations: (EntityClass)->
+		{poses, animations} = EntityClass
+		json = JSON.stringify({poses, animations}, null, "\t")
+		if fs?
+			try
+				fs.mkdirSync(path.dirname(EntityClass.animation_json_path))
+			catch e
+				throw e unless e.code is "EEXIST"
+			fs.writeFileSync(EntityClass.animation_json_path, json)
+		else
+			localStorage["Tiamblia #{EntityClass.name} animations"] = json
+
+	@fromJSON: (def)->
+		unless typeof def._class_ is "string"
+			console.error "Erroneous entity definition:", def
+			throw new Error "Expected entity to have a string _class_, _class_ is #{def._class_}"
+		unless entity_classes[def._class_]
+			throw new Error "Entity class '#{def._class_}' does not exist"
+		entity = new entity_classes[def._class_]
+		entity.fromJSON(def)
+		entity
+
+	fromJSON: (def)->
+		if def._class_ isnt @_class_
+			throw new Error "Tried to initialize #{@_class_} entity from JSON with _class_ #{JSON.stringify(def._class_)}"
+		for k, v of def when k isnt "_class_"
+			if @[k]?.fromJSON
+				@[k].fromJSON(v)
+			else
+				@[k] = v
+
+	resolveReferences: (world)->
+		if @_refs_
+			for k, id of @_refs_
+				@[k] = world.getEntityByID(id)
+			delete @_refs_
+
+	toJSON: ->
+		obj = {}
+		for k, v of @ when k isnt "_refs_"
+			if v instanceof Entity
+				obj._refs_ ?= {}
+				obj._refs_[k] = v.id
+			else
+				obj[k] = v
+		obj
+
+	toWorld: (point)->
+		x: point.x + @x
+		y: point.y + @y
+
+	fromWorld: (point)->
+		x: point.x - @x
+		y: point.y - @y
+
+	bbox: ->
+		min_point = {x: +Infinity, y: +Infinity}
+		max_point = {x: -Infinity, y: -Infinity}
+		for point_name, point of @structure.points
+			min_point.x = Math.min(min_point.x, point.x)
+			min_point.y = Math.min(min_point.y, point.y)
+			max_point.x = Math.max(max_point.x, point.x)
+			max_point.y = Math.max(max_point.y, point.y)
+		min_point.x = 0 unless isFinite(min_point.x)
+		min_point.y = 0 unless isFinite(min_point.y)
+		max_point.x = 0 unless isFinite(max_point.x)
+		max_point.y = 0 unless isFinite(max_point.y)
+		min_point.x -= @bbox_padding
+		min_point.y -= @bbox_padding
+		max_point.x += @bbox_padding
+		max_point.y += @bbox_padding
+		min_point_in_world = @toWorld(min_point)
+		max_point_in_world = @toWorld(max_point)
+		x: min_point_in_world.x
+		y: min_point_in_world.y
+		width: max_point_in_world.x - min_point_in_world.x
+		height: max_point_in_world.y - min_point_in_world.y
+
+ * animate: ()->
+ * 	@structure.setPose(Pose.lerp(various_poses))
+
+	initLayout: ->
+		EntityClass = @constructor
+		if EntityClass.poses
+			default_pose = EntityClass.poses["Default"] ? EntityClass.poses["Stand"] ? EntityClass.poses["Standing"] ? EntityClass.poses["Idle"]
+			if default_pose
+				@structure.setPose(default_pose)
+				return
+		ys = {}
+		y = 0
+		for point_name, point of @structure.points
+			side = point_name.match(/left|right/)?[0]
+			if side
+				sideless_point_name = point_name.replace(/left|right/, "")
+				if ys[sideless_point_name]
+					y = ys[sideless_point_name]
+				else
+					y += 10
+					ys[sideless_point_name] = y
+				if side is "left"
+					point.x = -5.5
+				if side is "right"
+					point.x = +5.5
+				point.x *= 0.7 if point_name.match(/lower/)
+			point.y = y
+
+		for [0..2000]
+			@structure.stepLayout(center: yes, repel: yes)
+		for [0..4000]
+			@structure.stepLayout()
+
+	step: (world)->
+	draw: (ctx)->
+
+ * TODO: function to call into the depth system
+ * drawStructure: (drawing_functions)->
+ * 	for point_name, fn of drawing_functions.points
+ * 		fn(@structure.points[point_name])
+ * 	for segment_name, fn of drawing_functions.segments
+ * 		fn(@structure.segments[segment_name])
+ */
+
+
+/***/ }),
+
+/***/ 339:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+// Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
+// SimpleActors have rectangular collision boxes and basic physics.
+var Entity, SimpleActor;
+
+Entity = __webpack_require__(293);
+
+module.exports = SimpleActor = (function() {
+  var gravity;
+
+  class SimpleActor extends Entity {
+    constructor() {
+      super();
+      this.vx = 0;
+      this.vy = 0;
+      this.width = 10;
+      this.height = 40;
+      this.jump_height = 50;
+      this.walk_speed = 4;
+      this.run_speed = 6;
+      this.move_x = 0;
+      this.jump = false;
+      this.grounded = false;
+      this.facing_x = 0;
+    }
+
+    step(world) {
+      var go, move_x, move_y, resolution, results;
+      if (this.y > 400) {
+        return;
+      }
+      this.grounded = world.collision({
+        x: this.x,
+        y: this.y + 1 + this.height //or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+      });
+      if (this.grounded) {
+        // if Math.abs(@vx) >= 1
+        // 	@vx -= Math.sign(@vx)
+        // else
+        // 	@vx = 0
+        // @vx += @move_x
+        if (this.move_x === 0) {
+          this.vx *= 0.7;
+        } else {
+          this.vx += this.move_x;
+        }
+        this.vy += Math.abs(this.vx);
+        if (this.jump) {
+          this.vy = -Math.sqrt(2 * gravity * this.jump_height);
+        }
+      } else {
+        this.vx += this.move_x * 0.7;
+      }
+      this.vx = Math.min(this.run_speed, Math.max(-this.run_speed, this.vx));
+      this.vy += gravity;
+      this.grounded = false;
+      // @vy *= 0.99
+      move_x = this.vx;
+      move_y = this.vy;
+      if (move_x !== 0) {
+        this.facing_x = Math.sign(move_x);
+      }
+      resolution = 0.5;
+      while (Math.abs(move_x) > resolution) {
+        go = Math.sign(move_x) * resolution;
+        if (world.collision({
+          x: this.x + go,
+          y: this.y + this.height
+        })) {
+          this.vx *= 0.99;
+          // TODO: clamber over tiny divots and maybe even stones and twigs
+          if (world.collision({
+            x: this.x + go,
+            y: this.y + this.height - 1
+          })) {
+            break;
+          } else {
+            this.y -= 1;
+            if (this.vy > 0) {
+              this.vy = 0;
+            }
+          }
+        }
+        move_x -= go;
+        this.x += go;
+      }
+      results = [];
+      while (Math.abs(move_y) > resolution) {
+        go = Math.sign(move_y) * resolution;
+        if (world.collision({
+          x: this.x,
+          y: this.y + go + this.height
+        })) {
+          this.vy = 0;
+          this.grounded = true;
+          break;
+        }
+        move_y -= go;
+        results.push(this.y += go);
+      }
+      return results;
+    }
+
+  };
+
+  gravity = 0.5;
+
+  return SimpleActor;
+
+}).call(this);
+
+// @jump_height = @y - view.toWorld(editor.mouse).y
+
+// if @jump
+// 	console.log world.collision({@x, y: @y + i + @height}) for i in [0..5]
+// 	console.log @vy, world.collision({@x, y: @y + @vy + @height})
+
+// console.log "RES", world.collision({@x, y: @y + resolution + @height})
+
+// @grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+
+// if @grounded and @jump
+// 	@vy = -Math.sqrt(2 * gravity * @jump_height)
+
+
+/***/ }),
+
+/***/ 891:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+module.exports = __webpack_require__(432).Terrain;
+
+/*
+Entity = require "./Entity.coffee"
+
+module.exports = class Terrain extends Entity
+	constructor: ->
+		super()
+		@structure = new PolygonStructure
+		@simplex = new SimplexNoise
+		@seed = random()
+
+	initLayout: ->
+		radius = 30
+		for theta in [0..TAU] by TAU/15
+			point_x = Math.sin(theta) * radius
+			point_y = Math.cos(theta) * radius
+			non_squished_point_y_component = Math.max(point_y, -radius*0.5)
+			point_y = non_squished_point_y_component + (point_y - non_squished_point_y_component) * 0.4
+ * point_y = non_squished_point_y_component + pow(0.9, point_y - non_squished_point_y_component)
+ * point_y = non_squished_point_y_component + pow(point_y - non_squished_point_y_component, 0.9)
+			@structure.addVertex(point_x, point_y)
+
+	toJSON: ->
+		def = {}
+		def[k] = v for k, v of @ when k isnt "simplex"
+		def
+
+	generate: ->
+		@width = 5000
+		@left = -2500
+		@right = @left + @width
+		@max_height = 400
+		@bottom = 300
+		res = 20
+		@structure.clear()
+		@structure.addVertex(@right, @bottom)
+		@structure.addVertex(@left, @bottom)
+		for x in [@left..@right] by res
+			noise =
+				@simplex.noise2D(x / 2400, 0) +
+				@simplex.noise2D(x / 500, 10) / 5 +
+				@simplex.noise2D(x / 50, 30) / 100
+			@structure.addVertex(x, @bottom - (noise + 1) / 2 * @max_height)
+
+	draw: (ctx, view)->
+		ctx.beginPath()
+		for point_name, point of @structure.points
+			ctx.lineTo(point.x, point.y)
+		ctx.closePath()
+		ctx.fillStyle = "#a5f"
+		ctx.fill()
+ */
+
+
+/***/ }),
+
+/***/ 776:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Entity, TAU, Tree;
+
+Entity = __webpack_require__(293);
+
+TAU = Math.PI * 2;
+
+module.exports = Tree = class Tree extends Entity {
+  constructor() {
+    super();
+    this.leaf_point_names = [];
+    this.structure.addPoint("base");
+    this.bbox_padding = 60;
+  }
+
+  initLayout() {}
+
+  branch({from, to, juice, angle}) {
+    var leaf, leaf_point, length, name, width;
+    name = to;
+    length = Math.sqrt(juice * 1000) * (Math.random() + 1);
+    width = Math.sqrt(juice * 20) + 1;
+    this.structure.addSegment({
+      from,
+      name,
+      length,
+      width,
+      color: "#926B2E"
+    });
+    this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
+    this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
+    if (--juice > 0) {
+      // @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
+      // @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
+      this.branch({
+        from: name,
+        to: `${to}-a`,
+        juice,
+        angle: angle + Math.random() * TAU / 8
+      });
+      this.branch({
+        from: name,
+        to: `${to}-b`,
+        juice,
+        angle: angle - Math.random() * TAU / 8
+      });
+      if (Math.random() < 0.2) {
+        return this.branch({
+          from: name,
+          to: `${to}-c`,
+          juice,
+          angle
+        });
+      }
+    } else {
+      leaf_point = this.structure.points[name];
+      leaf = this.leaf(leaf_point);
+      if (leaf != null) {
+        return this.leaf_point_names.push(name);
+      }
+    }
+  }
+
+  leaf(leaf) {
+    leaf.radius = Math.random() * 15 + 15;
+    leaf.scale_x = 2;
+    leaf.scale_y = 1;
+    leaf.color = "#627318"; //"#363D1B"
+    return leaf;
+  }
+
+  draw(ctx) {
+    var i, leaf, leaf_point_name, len, ref, ref1, results, segment, segment_name;
+    ref = this.structure.segments;
+    for (segment_name in ref) {
+      segment = ref[segment_name];
+      ctx.beginPath();
+      ctx.moveTo(segment.a.x, segment.a.y);
+      ctx.lineTo(segment.b.x, segment.b.y);
+      ctx.lineWidth = segment.width;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = segment.color;
+      ctx.stroke();
+    }
+    ref1 = this.leaf_point_names;
+    results = [];
+    for (i = 0, len = ref1.length; i < len; i++) {
+      leaf_point_name = ref1[i];
+      leaf = this.structure.points[leaf_point_name];
+      ctx.beginPath();
+      results.push(ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU));
+    }
+    return results;
+  }
+
+};
+
+// ctx.save()
+// ctx.beginPath()
+// ctx.translate(leaf.x, leaf.y)
+// ctx.scale(leaf.scale_x, leaf.scale_y)
+// ctx.arc(0, 0, leaf.radius, 0, TAU)
+// ctx.fillStyle = leaf.color
+// ctx.fill()
+// ctx.restore()
+
+
+/***/ }),
+
+/***/ 943:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Arrow, Entity, TAU, addEntityClass;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(432));
+
+TAU = Math.PI * 2;
+
+module.exports = Arrow = (function() {
+  class Arrow extends Entity {
+    constructor() {
+      var point, point_name, ref;
+      super();
+      this.length = 20;
+      this.structure.addPoint("tip");
+      this.structure.addSegment({
+        from: "tip",
+        to: "nock",
+        name: "shaft",
+        length: this.length
+      });
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        point.vx = 0;
+        point.vy = 0;
+      }
+      this.bbox_padding = 20;
+    }
+
+    initLayout() {
+      return this.structure.points.tip.x += this.length;
+    }
+
+    step(world) {
+      var angle, i, nock, ref, steps, tip;
+      // TODO: more physical physics, i.e. if dropped completely sideways, maybe end up lying on the ground
+      ({tip, nock} = this.structure.points);
+      tip.vy += 0.1;
+      steps = 10;
+      for (i = 0, ref = steps; (0 <= ref ? i <= ref : i >= ref); 0 <= ref ? i++ : i--) {
+        if (world.collision(this.toWorld(tip))) {
+          tip.vx = 0;
+          tip.vy = 0;
+          nock.vx = 0;
+          nock.vy = 0;
+          break;
+        }
+        tip.x += tip.vx / steps;
+        tip.y += tip.vy / steps;
+      }
+      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
+      nock.x = tip.x - Math.cos(angle) * this.length;
+      return nock.y = tip.y - Math.sin(angle) * this.length;
+    }
+
+    draw(ctx) {
+      var angle, nock, tip;
+      ({tip, nock} = this.structure.points);
+      ctx.beginPath();
+      ctx.moveTo(tip.x, tip.y);
+      ctx.lineTo(nock.x, nock.y);
+      ctx.lineWidth = 1;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#74552B";
+      ctx.stroke();
+      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x) + TAU / 4;
+      ctx.save();
+      ctx.translate(tip.x, tip.y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, -2);
+      ctx.lineTo(-2, 2);
+      ctx.lineTo(0, 1);
+      ctx.lineTo(+2, 2);
+      ctx.fillStyle = "#2D1813";
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(nock.x, nock.y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.translate(0, -4);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-2, 2);
+      ctx.lineTo(-2, 4);
+      ctx.lineTo(0, 3);
+      ctx.lineTo(+2, 4);
+      ctx.lineTo(+2, 2);
+      ctx.fillStyle = "#B1280A";
+      ctx.fill();
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Arrow);
+
+  return Arrow;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 914:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Bow, Entity, TAU, addEntityClass;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(432));
+
+TAU = Math.PI * 2;
+
+module.exports = Bow = (function() {
+  class Bow extends Entity {
+    constructor() {
+      var point, point_name, ref;
+      super();
+      this.height = 30;
+      this.fistmele = 6;
+      this.draw_distance = 0;
+      this.structure.addPoint("grip");
+      this.structure.addSegment({
+        from: "grip",
+        to: "top",
+        name: "upper limb",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "grip",
+        to: "bottom",
+        name: "lower limb",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "grip",
+        name: "serving",
+        length: this.fistmele
+      });
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        point.vx = 0;
+        point.vy = 0;
+      }
+      this.bbox_padding = 20;
+    }
+
+    initLayout() {
+      this.structure.points.serving.x -= this.fistmele;
+      return this.layout();
+    }
+
+    step(world) {
+      return this.layout();
+    }
+
+    layout() {
+      var bottom, bow_angle, grip, serving, top;
+      ({top, bottom, grip, serving} = this.structure.points);
+      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
+      top.x = grip.x + this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
+      top.y = grip.y + this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
+      bottom.x = grip.x - this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
+      return bottom.y = grip.y - this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
+    }
+
+    draw(ctx) {
+      var arc_r, bottom, bow_angle, center_x, center_y, grip, serving, top;
+      ({top, bottom, grip, serving} = this.structure.points);
+      ctx.beginPath();
+      ctx.moveTo(top.x, top.y);
+      ctx.lineTo(serving.x, serving.y);
+      ctx.lineTo(bottom.x, bottom.y);
+      ctx.lineWidth = 0.5;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "white";
+      ctx.stroke();
+      ctx.beginPath();
+      center_x = (top.x + bottom.x) / 2;
+      center_y = (top.y + bottom.y) / 2;
+      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
+      ctx.save();
+      ctx.translate(grip.x, grip.y);
+      ctx.rotate(bow_angle);
+      arc_r = this.fistmele;
+      ctx.beginPath();
+      ctx.save();
+      ctx.translate(0, -arc_r);
+      ctx.save();
+      ctx.scale(this.height / 2 / arc_r + 0.1, 1);
+      ctx.arc(0, -0.5, arc_r, 0, TAU / 2);
+      ctx.restore();
+      ctx.save();
+      ctx.scale(this.height / 2 / arc_r, 0.7);
+      ctx.arc(0, 0, arc_r - 0.1, TAU / 2, 0, true);
+      ctx.restore();
+      ctx.closePath();
+      ctx.fillStyle = "#AB7939";
+      ctx.fill();
+      ctx.restore();
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Bow);
+
+  return Bow;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 91:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Rock, Terrain, addEntityClass;
+
+Terrain = __webpack_require__(891);
+
+({addEntityClass} = __webpack_require__(432));
+
+module.exports = Rock = (function() {
+  class Rock extends Terrain {
+    constructor() {
+      super();
+      this.bbox_padding = 20;
+    }
+
+    draw(ctx, view) {
+      var point, point_name, ref;
+      ctx.beginPath();
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#63625F";
+      return ctx.fill();
+    }
+
+  };
+
+  addEntityClass(Rock);
+
+  return Rock;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 475:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var SavannaGrass, Terrain, addEntityClass, lineSegmentsIntersect;
+
+Terrain = __webpack_require__(891);
+
+({addEntityClass} = __webpack_require__(432));
+
+({lineSegmentsIntersect} = (__webpack_require__(432).helpers));
+
+module.exports = SavannaGrass = (function() {
+  class SavannaGrass extends Terrain {
+    constructor() {
+      super();
+      this.bbox_padding = 30;
+      this.grass_tiles = new Map();
+      this.grass_tiles.fromJSON = (map_obj) => {};
+      this.grass_tiles.toJSON = (map_obj) => {
+        return {};
+      };
+      this.structure.onchange = () => {
+        return this.grass_tiles.forEach((tile) => {
+          var blade, i, len, ref, results, shade;
+          ref = ["dark", "light"];
+          results = [];
+          for (i = 0, len = ref.length; i < len; i++) {
+            shade = ref[i];
+            results.push((function() {
+              var k, len1, ref1, results1;
+              ref1 = tile[`${shade}_blades`];
+              results1 = [];
+              for (k = 0, len1 = ref1.length; k < len1; k++) {
+                blade = ref1[k];
+                results1.push(delete blade.visible);
+              }
+              return results1;
+            })());
+          }
+          return results;
+        });
+      };
+    }
+
+    draw(ctx, view) {
+      var bbox, blade, bottom, contains_any_points, dark_blades, first_tile_xi, first_tile_yi, i, j, k, l, last_tile_xi, last_tile_yi, left, len, len1, len2, len3, light_blades, m, n, o, p, point, point_name, q, random, rect_contains_any_points, rect_is_empty, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, right, shade, tile, tile_name, tile_size, tile_x, tile_xi, tile_y, tile_yi, top, view_point, x, y;
+      rect_contains_any_points = (x, y, width, height) => {
+        var contains_any_points, point, point_name, ref, ref1, ref2;
+        contains_any_points = false;
+        ref = this.structure.points;
+        for (point_name in ref) {
+          point = ref[point_name];
+          if ((x <= (ref1 = point.x) && ref1 <= x + width) && (y <= (ref2 = point.y) && ref2 <= y + height)) {
+            contains_any_points = true;
+          }
+        }
+        return contains_any_points;
+      };
+      rect_is_empty = (x, y, width, height) => {
+        var center_of_rect_is_in_polygon, center_point, ref, segment, segment_name, view_point;
+        center_point = {
+          x: this.x + x + width / 2,
+          y: this.y + y + height / 2
+        };
+        view_point = view.fromWorld(center_point);
+        center_of_rect_is_in_polygon = ctx.isPointInPath(view_point.x, view_point.y);
+        ref = this.structure.segments;
+        for (segment_name in ref) {
+          segment = ref[segment_name];
+          if (lineSegmentsIntersect(x, y, x, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y, x + width, y, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x + width, y, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y + height, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+            // return center_of_rect_is_in_polygon
+            return false;
+          }
+        }
+        return !center_of_rect_is_in_polygon;
+      };
+      ctx.beginPath();
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#C29853";
+      ctx.fill();
+      Math.seedrandom(5);
+      random = Math.random;
+      // TODO: try layers of chained triangles
+      // like https://jsfiddle.net/evarildo/ds2ajjks/
+      // and order tufts of grass based on y (along with the layers of triangles)?
+      dark_blades = [];
+      light_blades = [];
+      bbox = this.bbox();
+      tile_size = 300;
+      // first_tile_x = floor(bbox.x / tile_size) * tile_size
+      // last_tile_x = ceil((bbox.x + bbox.width) / tile_size) * tile_size
+      // first_tile_y = floor(bbox.y / tile_size) * tile_size
+      // last_tile_y = ceil((bbox.y + bbox.height) / tile_size) * tile_size
+      // first_tile_x = (bbox.x // tile_size) * tile_size
+      // last_tile_x = ((bbox.x + bbox.width) // tile_size) * tile_size
+      // first_tile_y = (bbox.y // tile_size) * tile_size
+      // last_tile_y = ((bbox.y + bbox.height) // tile_size) * tile_size
+      // first_tile_xi = bbox.x // tile_size
+      // last_tile_xi = (bbox.x + bbox.width) // tile_size
+      // first_tile_yi = bbox.y // tile_size
+      // last_tile_yi = (bbox.y + bbox.height) // tile_size
+      // first_tile_x = first_tile_x * tile_size
+      // last_tile_x = last_tile_x * tile_size
+      // first_tile_y = first_tile_y * tile_size
+      // last_tile_y = last_tile_y * tile_size
+      // for tile_x in [first_tile_x..last_tile_x] by tile_size
+      // 	tile_x -= @x
+      // 	for tile_y in [first_tile_y..last_tile_y] by tile_size
+      // 		tile_name = "(#{tile_x}, #{tile_y})"
+      // 		tile_y -= @y
+      left = bbox.x - this.x;
+      top = bbox.y - this.y;
+      right = left + bbox.width;
+      bottom = top + bbox.height;
+      first_tile_xi = Math.floor(left / tile_size);
+      last_tile_xi = Math.floor(right / tile_size);
+      first_tile_yi = Math.floor(top / tile_size);
+      last_tile_yi = Math.floor(bottom / tile_size);
+      for (tile_xi = i = ref1 = first_tile_xi, ref2 = last_tile_xi; (ref1 <= ref2 ? i <= ref2 : i >= ref2); tile_xi = ref1 <= ref2 ? ++i : --i) {
+        for (tile_yi = k = ref3 = first_tile_yi, ref4 = last_tile_yi; (ref3 <= ref4 ? k <= ref4 : k >= ref4); tile_yi = ref3 <= ref4 ? ++k : --k) {
+          tile_name = `(${tile_xi}, ${tile_yi})`;
+          // tile_x = @x + tile_xi * tile_size
+          // tile_y = @y + tile_yi * tile_size
+          // tile_x = tile_xi * tile_size - @x
+          // tile_y = tile_yi * tile_size - @y
+          tile_x = tile_xi * tile_size;
+          tile_y = tile_yi * tile_size;
+          tile = this.grass_tiles.get(tile_name);
+          contains_any_points = rect_contains_any_points(tile_x, tile_y, tile_size, tile_size);
+          if (!((!contains_any_points) && rect_is_empty(tile_x, tile_y, tile_size, tile_size))) {
+            if (tile == null) {
+              tile = {
+                dark_blades: [],
+                light_blades: []
+              };
+              for (var l = 0; l <= 350; l++) {
+                x = tile_x + random() * tile_size;
+                y = tile_y + random() * tile_size;
+                for (j = m = 0, ref5 = random() * 3 + 1; (0 <= ref5 ? m <= ref5 : m >= ref5); j = 0 <= ref5 ? ++m : --m) {
+                  shade = random() < 0.5 ? "dark" : "light";
+                  tile[`${shade}_blades`].push({x, y});
+                  x += (random() + 1) * 3;
+                }
+              }
+              this.grass_tiles.set(tile_name, tile);
+            }
+            ref6 = ["dark", "light"];
+            
+            // ctx.strokeStyle = "#f0f"
+            // ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
+            // ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
+            // ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
+            // # ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
+            // # ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
+            for (n = 0, len = ref6.length; n < len; n++) {
+              shade = ref6[n];
+              ref7 = tile[`${shade}_blades`];
+              for (o = 0, len1 = ref7.length; o < len1; o++) {
+                blade = ref7[o];
+                point = this.toWorld(blade);
+                if (view.testRect(point.x, point.y - 10, 0, 10, 15)) {
+                  view_point = view.fromWorld(point);
+                  if (blade.visible != null ? blade.visible : blade.visible = ctx.isPointInPath(view_point.x, view_point.y)) {
+                    // if (not contains_any_points) or ctx.isPointInPath(view_point.x, view_point.y)
+                    (shade === "dark" ? dark_blades : light_blades).push(blade);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      ctx.beginPath();
+      for (p = 0, len2 = dark_blades.length; p < len2; p++) {
+        ({x, y} = dark_blades[p]);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
+      }
+      ctx.strokeStyle = "#B7863E";
+      ctx.stroke();
+      ctx.beginPath();
+      for (q = 0, len3 = light_blades.length; q < len3; q++) {
+        ({x, y} = light_blades[q]);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
+      }
+      ctx.strokeStyle = "#D6AE77";
+      return ctx.stroke();
+    }
+
+  };
+
+  addEntityClass(SavannaGrass);
+
+  return SavannaGrass;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 866:
+/***/ ((module) => {
+
+var keyboard, keys, prev_keys;
+
+keys = {};
+
+prev_keys = {};
+
+addEventListener("keydown", function(e) {
+  return keys[e.code] = true;
+});
+
+addEventListener("keyup", function(e) {
+  return delete keys[e.code];
+});
+
+keyboard = {
+  wasJustPressed: function(code) {
+    return (keys[code] != null) && (prev_keys[code] == null);
+  },
+  isHeld: function(code) {
+    return keys[code] != null;
+  },
+  resetForNextStep: function() {
+    var k, results, v;
+    prev_keys = {};
+    results = [];
+    for (k in keys) {
+      v = keys[k];
+      results.push(prev_keys[k] = v);
+    }
+    return results;
+  }
+};
+
+module.exports = keyboard;
 
 
 /***/ })
@@ -7110,35 +7150,6 @@ var __webpack_exports__helpers = __webpack_exports__.BM;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/************************************************************************/
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
@@ -7147,7 +7158,7 @@ var Editor, Mouse, Player, SavannaGrass, View, World, animate, canvas, ctx, e, e
 
 Math.seedrandom("A world");
 
-({View, Mouse, Editor} = __webpack_require__(529));
+({View, Mouse, Editor} = __webpack_require__(432));
 
 World = __webpack_require__(378);
 
