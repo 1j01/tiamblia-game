@@ -61,8 +61,8 @@ module.exports = class Arrow extends Entity
 			# nock_vx *= 0.9999
 			# Then, rotate the nock's velocity back to the original coordinate system,
 			# applying it to the particle.
-			nock.vx = nock_vx * Math.cos(-angle) + nock_vy * Math.sin(-angle)
-			nock.vy = nock_vx * Math.sin(-angle) - nock_vy * Math.cos(-angle)
+			nock.vx = nock_vx * Math.cos(angle) - nock_vy * Math.sin(angle)
+			nock.vy = nock_vx * Math.sin(angle) + nock_vy * Math.cos(angle)
 
 			# Constrain arrow length, moving both points symmetrically.
 			# I learned this from:
