@@ -38,5 +38,5 @@ module.exports = class World
 	collision: (point)->
 		for entity in @entities when entity instanceof Terrain
 			if entity.structure.pointInPolygon(entity.fromWorld(point))
-				return true
+				return entity
 		no

@@ -1,5 +1,6 @@
 Entity = require "../abstract/Entity.coffee"
 {addEntityClass} = require "skele2d"
+{lineSegmentsIntersect, distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
 
 module.exports = class Arrow extends Entity
@@ -37,12 +38,32 @@ module.exports = class Arrow extends Entity
 		nock.vy += 0.1
 		steps = 10
 		for [0..steps]
-			if world.collision(@toWorld(tip))
+			hit = world.collision(@toWorld(tip))
+			if hit
+				# collision() doesn't give us the line segment that we hit.
+				# We want to know how deep the arrow is in the wall, to tell
+				# if it should stay planted or bounce off.
+				tip_relative = hit.fromWorld(@toWorld(tip))
+				nock_relative = hit.fromWorld(@toWorld(nock))
+				depth = 0
+				for segment_name, segment of hit.structure.segments
+					# console.log(distanceToLineSegment(tip_relative, segment.a, segment.b))
+					if lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
+						depth = distanceToLineSegment(tip_relative, segment.a, segment.b)
+						break
+				# console.log(depth)
+				if depth > 3
+					# The arrow is too deep in the wall to bounce off.
+					# It should stay planted.
+					tip.vx = 0
+					tip.vy = 0
+					nock.vx = 0
+					nock.vy = 0
+					break # don't move the arrow any further
+				# The arrow should bounce off.
+				# Or whatever. TODO.
 				tip.vx = 0
 				tip.vy = 0
-				nock.vx = 0
-				nock.vy = 0
-				break # don't move the arrow any further
 			if world.collision(@toWorld(nock))
 				nock.vx *= 0.1
 				nock.vy *= 0.1
