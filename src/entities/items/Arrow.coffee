@@ -54,15 +54,16 @@ module.exports = class Arrow extends Entity
 			# Introduce drag on fletched side, perpendicular to the arrow shaft.
 			# First, find the angle of the arrow shaft.
 			angle = Math.atan2(tip.y - nock.y, tip.x - nock.x)
-			# Then, rotate the nock's velocity to a coordinate system where the arrow shaft is horizontal.
-			nock_vx = nock.vx * Math.cos(angle) + nock.vy * Math.sin(angle)
-			nock_vy = nock.vx * Math.sin(angle) - nock.vy * Math.cos(angle)
+			# Then, calculate the rotation matrix to rotate the velocity to the horizontal coordinate system.
+			rot_matrix1 = [[Math.cos(angle), Math.sin(angle)], [-Math.sin(angle), Math.cos(angle)]]
+			# Apply the rotation to the velocity.
+			[nock_vx, nock_vy] = [nock.vx, nock.vy].map((val, idx) => rot_matrix1[idx][0] * nock.vx + rot_matrix1[idx][1] * nock.vy)
 			# Then, apply drag to the nock's velocity.
 			# nock_vx *= 0.9999
-			# Then, rotate the nock's velocity back to the original coordinate system,
-			# applying it to the particle.
-			nock.vx = nock_vx * Math.cos(angle) - nock_vy * Math.sin(angle)
-			nock.vy = nock_vx * Math.sin(angle) + nock_vy * Math.cos(angle)
+			# Then, calculate the rotation matrix to rotate the velocity back to the original coordinate system.
+			rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]]
+			# Apply the rotation to the velocity and update the particle's velocity.
+			[nock.vx, nock.vy] = [nock_vx, nock_vy].map((val, idx) => rot_matrix2[idx][0] * nock_vx + rot_matrix2[idx][1] * nock_vy)
 
 			# Constrain arrow length, moving both points symmetrically.
 			# I learned this from:
