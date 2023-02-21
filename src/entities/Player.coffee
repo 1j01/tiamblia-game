@@ -224,18 +224,19 @@ module.exports = class Player extends SimpleActor
 		ground_angle = find_ground_angle()
 		if ground_angle? and isFinite(ground_angle)
 			# there's no helper for rotation yet
-			# center = @structure.points["pelvis"]
+			center = @structure.points["pelvis"]
+			center = {x: center.x, y: center.y} # copy
 			for point_name, point of @structure.points
 				# translate
-				# point.x -= center.x
-				# point.y -= center.y
+				point.x -= center.x
+				point.y -= center.y
 				# rotate
 				{x, y} = point
 				point.x = x * Math.cos(ground_angle) - y * Math.sin(ground_angle)
 				point.y = x * Math.sin(ground_angle) + y * Math.cos(ground_angle)
 				# translate back
-				# point.x += center.x
-				# point.y += center.y
+				point.x += center.x
+				point.y += center.y
 
 		# (her dominant eye is, of course, *whichever one she would theoretically be using*)
 		# (given this)
