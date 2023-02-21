@@ -210,7 +210,7 @@ module.exports = class Player extends SimpleActor
 			b = {x: @x, y: @y + 2 + @height} # slightly further down than collision code uses in SimpleActor
 			for entity in world.entities when entity instanceof Terrain
 				if entity.structure.pointInPolygon(entity.fromWorld(b))
-					console.log "found ground"
+					# console.log "found ground"
 					# find line segment intersecting ab
 					e_a = entity.fromWorld(a)
 					e_b = entity.fromWorld(b)
@@ -218,14 +218,12 @@ module.exports = class Player extends SimpleActor
 						if lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
 							# find the angle
 							angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
-							console.log "angle", angle
-							# if angle < -Math.PI / 2 or angle > Math.PI / 2
-							# 	angle += Math.PI * 2
+							# console.log "angle", angle
 							if Math.cos(angle) < 0
 								angle -= Math.PI
 								angle = (angle + Math.PI * 2) % (Math.PI * 2)
 							return angle
-			console.log "no ground found"
+			# console.log "no ground found"
 
 		# rotate the pose based on the ground angle
 		ground_angle = find_ground_angle()
@@ -488,8 +486,8 @@ module.exports = class Player extends SimpleActor
 
 		# debug draw
 		# show the ground angle
-		ctx.beginPath()
-		ctx.moveTo(0, 0)
-		ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
-		ctx.strokeStyle = "red"
-		ctx.stroke()
+		# ctx.beginPath()
+		# ctx.moveTo(0, 0)
+		# ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
+		# ctx.strokeStyle = "red"
+		# ctx.stroke()
