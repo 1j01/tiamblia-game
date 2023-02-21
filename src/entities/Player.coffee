@@ -219,9 +219,11 @@ module.exports = class Player extends SimpleActor
 							angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
 							console.log "angle", angle
 							return angle
+			console.log "no ground found"
 
 		# rotate the pose based on the ground angle
 		ground_angle = find_ground_angle()
+		@ground_angle = ground_angle
 		if ground_angle? and isFinite(ground_angle)
 			# there's no helper for rotation yet
 			center = @structure.points["pelvis"]
@@ -477,3 +479,11 @@ module.exports = class Player extends SimpleActor
 			ctx.fill()
 		# /head
 		ctx.restore()
+
+		# debug draw
+		# show the ground angle
+		ctx.beginPath()
+		ctx.moveTo(0, 0)
+		ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
+		ctx.strokeStyle = "red"
+		ctx.stroke()
