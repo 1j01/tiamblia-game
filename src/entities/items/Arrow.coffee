@@ -26,11 +26,16 @@ module.exports = class Arrow extends Entity
 		@structure.points.tip.x += @length
 	
 	step: (world)->
-		# TODO: more physical physics, i.e. if dropped completely sideways, maybe end up lying on the ground
+		# TODO:
+		# If dropped completely sideways, it should end up lying on the ground
+		# but the feather ideally would introduce some drag in that direction,
+		# leading to a slight rotation.
+		# (But the feathers shouldn't introduce much drag in the direction of travel.)
 		
 		{tip, nock} = @structure.points
 		
 		tip.vy += 0.1
+		nock.vy += 0.1
 		steps = 10
 		for [0..steps]
 			if world.collision(@toWorld(tip))
@@ -38,13 +43,29 @@ module.exports = class Arrow extends Entity
 				tip.vy = 0
 				nock.vx = 0
 				nock.vy = 0
-				break
+				break # don't move the arrow any further
 			tip.x += tip.vx / steps
 			tip.y += tip.vy / steps
+			nock.x += nock.vx / steps
+			nock.y += nock.vy / steps
+
+			# Constrain arrow length, moving both points symmetrically.
+			# I learned this from:
+			# http://web.archive.org/web/20080410171619/http://www.teknikus.dk/tj/gdc2001.htm
+			delta_x = tip.x - nock.x
+			delta_y = tip.y - nock.y
+			delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
+			diff = (delta_length - @length) / delta_length
+			tip.x -= delta_x * 0.5 * diff
+			tip.y -= delta_y * 0.5 * diff
+			nock.x += delta_x * 0.5 * diff
+			nock.y += delta_y * 0.5 * diff
 		
-		angle = Math.atan2(tip.y - nock.y, tip.x - nock.x)
-		nock.x = tip.x - Math.cos(angle) * @length
-		nock.y = tip.y - Math.sin(angle) * @length
+		# This was a decent attempt at making the arrow point in the direction it's moving,
+		# but it's not very physical.
+		# angle = Math.atan2(tip.y - nock.y, tip.x - nock.x)
+		# nock.x = tip.x - Math.cos(angle) * @length
+		# nock.y = tip.y - Math.sin(angle) * @length
 	
 	draw: (ctx)->
 		{tip, nock} = @structure.points
