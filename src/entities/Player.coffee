@@ -202,8 +202,7 @@ module.exports = class Player extends SimpleActor
 		head_x_before_posing = @structure.points["head"].x
 		head_y_before_posing = @structure.points["head"].y
 
-		# @structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
-		@structure.setPose(new_pose)
+		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
 		find_ground_angle = =>
 			a = {x: @x, y: @y}
