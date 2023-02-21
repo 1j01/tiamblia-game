@@ -427,17 +427,19 @@ module.exports = class Player extends SimpleActor
 		ctx.fill()
 		# eyes
 		# TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
-		# Also, it's weird that the eyes are defined in terms of the hair... but it was easy!
-		# @hair_x_scales is basically different smoothing functions on the facing direction — including delay.
 		ctx.arc(0, 0, 5.5*0.9, 0, TAU)
 		ctx.clip()
-		ctx.beginPath()
-		ctx.arc(@hair_x_scales[0] * 5, -1, 1, 0, TAU)
+		eye_spacing = 0.5 # radians
+		turn_limit = TAU/7 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = eye_color
-		ctx.fill()
-		ctx.beginPath()
-		ctx.arc(@hair_x_scales[2] * 1, -1, 1, 0, TAU)
-		ctx.fillStyle = eye_color
-		ctx.fill()
+		@smoothed_facing_x_for_eyes ?= 0
+		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
+		for eye_signature in [-1, 1]
+			# 3D projection in one axis
+			head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
+			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5*0.9
+			ctx.beginPath()
+			ctx.arc(eye_x, -1, 1, 0, TAU)
+			ctx.fill()
 		# /head
 		ctx.restore()
