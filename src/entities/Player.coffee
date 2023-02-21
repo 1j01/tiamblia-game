@@ -223,13 +223,27 @@ module.exports = class Player extends SimpleActor
 			# console.log "no ground found"
 
 		# rotate the pose based on the ground angle
+		# TODO: balance the character better; lean while running; keep feet out of the ground
+		# I may need to define new poses to do this well.
 		ground_angle = find_ground_angle()
 		@ground_angle = ground_angle
 		if ground_angle? and isFinite(ground_angle)
 			# there's no helper for rotation yet
+			# and we wanna do it a little custom anyway
+			# rotating some points more than others
 			center = new_pose.points["pelvis"]
 			center = {x: center.x, y: center.y} # copy
 			for point_name, point of new_pose.points
+				# With this constant this small, it's almost like a conditional
+				# of whether the point is below the pelvis or not.
+				# With a larger number, it would bend the knees backwards.
+				max_y_diff = 2
+				# how much to rotate this point
+				factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff))
+				# It's a bit much on steep slopes, so let's reduce it.
+				# This is still enough to keep the feet from floating,
+				# although the feet go into the ground significantly.
+				factor *= 0.8
 				# translate
 				point.x -= center.x
 				point.y -= center.y
@@ -237,6 +251,10 @@ module.exports = class Player extends SimpleActor
 				{x, y} = point
 				point.x = x * Math.cos(ground_angle) - y * Math.sin(ground_angle)
 				point.y = x * Math.sin(ground_angle) + y * Math.cos(ground_angle)
+				# while we've got the x and y from before the rotation handy,
+				# let's use them to apply the factor, using linear interpolation
+				point.x += (x - point.x) * (1 - factor)
+				point.y += (y - point.y) * (1 - factor)
 				# translate back
 				point.x += center.x
 				point.y += center.y
