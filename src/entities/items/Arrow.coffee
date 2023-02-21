@@ -46,10 +46,12 @@ module.exports = class Arrow extends Entity
 				tip_relative = hit.fromWorld(@toWorld(tip))
 				nock_relative = hit.fromWorld(@toWorld(nock))
 				depth = 0
+				normal = undefined
 				for segment_name, segment of hit.structure.segments
 					# console.log(distanceToLineSegment(tip_relative, segment.a, segment.b))
 					if lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
 						depth = distanceToLineSegment(tip_relative, segment.a, segment.b)
+						normal = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
 						break
 				# console.log(depth)
 				if depth > 3
@@ -60,11 +62,11 @@ module.exports = class Arrow extends Entity
 					nock.vx = 0
 					nock.vy = 0
 					break # don't move the arrow any further
-				# The arrow should bounce off.
-				# Or whatever. TODO.
-				tip.vx = 0
-				tip.vy = 0
+				else
+					# @handle_bounce(tip, normal)
+					""
 			if world.collision(@toWorld(nock))
+				# Bouncing isn't as important for the nock. It mainly trails behind the tip.
 				nock.vx *= 0.1
 				nock.vy *= 0.1
 			tip.x += tip.vx / steps
@@ -104,6 +106,19 @@ module.exports = class Arrow extends Entity
 		# nock.x = tip.x - Math.cos(angle) * @length
 		# nock.y = tip.y - Math.sin(angle) * @length
 	
+	handle_bounce: (particle, normal, elasticity = 1) ->
+		# Bounce the particle off a surface with a given normal angle.
+		# First, calculate the rotation matrix to rotate the velocity to the horizontal coordinate system.
+		rot_matrix1 = [[Math.cos(normal), Math.sin(normal)], [-Math.sin(normal), Math.cos(normal)]]
+		# Apply the rotation to the velocity.
+		[particle_vx, particle_vy] = [particle.vx, particle.vy].map((val, idx) => rot_matrix1[idx][0] * particle.vx + rot_matrix1[idx][1] * particle.vy)
+		# Then, apply the bounce.
+		particle_vy *= -elasticity
+		# Then, calculate the rotation matrix to rotate the velocity back to the original coordinate system.
+		rot_matrix2 = [[Math.cos(-normal), Math.sin(-normal)], [-Math.sin(-normal), Math.cos(-normal)]]
+		# Apply the rotation to the velocity and update the particle's velocity.
+		[particle.vx, particle.vy] = [particle_vx, particle_vy].map((val, idx) => rot_matrix2[idx][0] * particle_vx + rot_matrix2[idx][1] * particle_vy)
+
 	draw: (ctx)->
 		{tip, nock} = @structure.points
 		ctx.beginPath()
