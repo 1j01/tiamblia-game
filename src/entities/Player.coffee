@@ -219,6 +219,11 @@ module.exports = class Player extends SimpleActor
 							# find the angle
 							angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
 							console.log "angle", angle
+							# if angle < -Math.PI / 2 or angle > Math.PI / 2
+							# 	angle += Math.PI * 2
+							if Math.cos(@ground_angle) < 0
+								angle -= Math.PI
+								angle = (angle + Math.PI * 2) % (Math.PI * 2)
 							return angle
 			console.log "no ground found"
 
