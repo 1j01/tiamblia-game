@@ -44,6 +44,9 @@ module.exports = class Arrow extends Entity
 				nock.vx = 0
 				nock.vy = 0
 				break # don't move the arrow any further
+			if world.collision(@toWorld(nock))
+				nock.vx *= 0.1
+				nock.vy *= 0.1
 			tip.x += tip.vx / steps
 			tip.y += tip.vy / steps
 			nock.x += nock.vx / steps
