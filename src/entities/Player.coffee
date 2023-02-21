@@ -1,11 +1,11 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 Entity = require "./abstract/Entity.coffee"
-{Pose} = require "skele2d"
+{Pose, Terrain} = require "skele2d"
 Bow = require "./items/Bow.coffee"
 Arrow = require "./items/Arrow.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
-{distance, distanceToLineSegment} = require("skele2d").helpers
+{distance, distanceToLineSegment, lineSegmentsIntersect} = require("skele2d").helpers
 TAU = Math.PI * 2
 
 module.exports = class Player extends SimpleActor
@@ -204,6 +204,39 @@ module.exports = class Player extends SimpleActor
 
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
+		find_ground_angle = =>
+			a = {x: @x, y: @y}
+			b = {x: @x, y: @y + 2 + @height} # slightly further down than collision code uses in SimpleActor
+			for entity in world.entities when entity instanceof Terrain
+				if entity.structure.pointInPolygon(entity.fromWorld(b))
+					console.log "found ground"
+					# find line segment intersecting ab
+					e_a = entity.fromWorld(a)
+					e_b = entity.fromWorld(b)
+					for segment_name, segment of entity.structure.segments
+						if lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
+							# find the angle
+							angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
+							console.log "angle", angle
+							return angle
+
+		# rotate the pose based on the ground angle
+		ground_angle = find_ground_angle()
+		if ground_angle? and isFinite(ground_angle)
+			# there's no helper for rotation yet
+			# center = @structure.points["pelvis"]
+			for point_name, point of @structure.points
+				# translate
+				# point.x -= center.x
+				# point.y -= center.y
+				# rotate
+				{x, y} = point
+				point.x = x * Math.cos(ground_angle) - y * Math.sin(ground_angle)
+				point.y = x * Math.sin(ground_angle) + y * Math.cos(ground_angle)
+				# translate back
+				# point.x += center.x
+				# point.y += center.y
+
 		# (her dominant eye is, of course, *whichever one she would theoretically be using*)
 		# (given this)
 		primary_hand = @structure.points["right hand"]
