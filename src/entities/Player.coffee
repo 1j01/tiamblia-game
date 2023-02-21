@@ -191,7 +191,7 @@ module.exports = class Player extends SimpleActor
 		else
 			prevent_idle()
 			if Player.animations["Run"]
-				@run_animation_position += Math.abs(@move_x) / 5
+				@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * @real_facing_x
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
 			else
 				new_pose = @structure.getPose()
