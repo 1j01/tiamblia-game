@@ -202,8 +202,6 @@ module.exports = class Player extends SimpleActor
 		head_x_before_posing = @structure.points["head"].x
 		head_y_before_posing = @structure.points["head"].y
 
-		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.03))
-		
 		find_ground_angle = =>
 			a = {x: @x, y: @y}
 			b = {x: @x, y: @y + 2 + @height} # slightly further down than collision code uses in SimpleActor
@@ -229,9 +227,9 @@ module.exports = class Player extends SimpleActor
 		@ground_angle = ground_angle
 		if ground_angle? and isFinite(ground_angle)
 			# there's no helper for rotation yet
-			center = @structure.points["pelvis"]
+			center = new_pose.points["pelvis"]
 			center = {x: center.x, y: center.y} # copy
-			for point_name, point of @structure.points
+			for point_name, point of new_pose.points
 				# translate
 				point.x -= center.x
 				point.y -= center.y
@@ -243,6 +241,8 @@ module.exports = class Player extends SimpleActor
 				point.x += center.x
 				point.y += center.y
 
+		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
+		
 		# (her dominant eye is, of course, *whichever one she would theoretically be using*)
 		# (given this)
 		primary_hand = @structure.points["right hand"]
