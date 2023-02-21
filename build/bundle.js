@@ -5553,14 +5553,14 @@ module.exports = GranddaddyLonglegs = (function() {
 /***/ 795:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, distance, distanceToLineSegment, keyboard,
+var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, Terrain, addEntityClass, distance, distanceToLineSegment, keyboard, lineSegmentsIntersect,
   modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 SimpleActor = __webpack_require__(339);
 
 Entity = __webpack_require__(293);
 
-({Pose} = __webpack_require__(432));
+({Pose, Terrain} = __webpack_require__(432));
 
 Bow = __webpack_require__(914);
 
@@ -5570,7 +5570,7 @@ keyboard = __webpack_require__(866);
 
 ({addEntityClass} = __webpack_require__(432));
 
-({distance, distanceToLineSegment} = (__webpack_require__(432).helpers));
+({distance, distanceToLineSegment, lineSegmentsIntersect} = (__webpack_require__(432).helpers));
 
 TAU = Math.PI * 2;
 
@@ -5689,7 +5689,7 @@ module.exports = Player = (function() {
     }
 
     step(world, view, mouse) {
-      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, draw_bow, draw_to, force, from_point_in_world, head, head_x_before_posing, head_y_before_posing, hold_offset, left, max_draw_distance, mouse_in_world, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbo, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, right, secondary_elbo, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation;
+      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, draw_bow, draw_to, factor, find_ground_angle, force, from_point_in_world, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, left, max_draw_distance, max_y_diff, mouse_in_world, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbo, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, right, secondary_elbo, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation, x, y;
       left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
       right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
       this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
@@ -5782,6 +5782,88 @@ module.exports = Player = (function() {
       }
       head_x_before_posing = this.structure.points["head"].x;
       head_y_before_posing = this.structure.points["head"].y;
+      find_ground_angle = () => {
+        var a, angle, b, e_a, e_b, entity, j, len, ref1, ref2, segment, segment_name;
+        a = {
+          x: this.x,
+          y: this.y
+        };
+        b = {
+          x: this.x,
+          y: this.y + 2 + this.height // slightly further down than collision code uses in SimpleActor
+        };
+        ref1 = world.entities;
+        for (j = 0, len = ref1.length; j < len; j++) {
+          entity = ref1[j];
+          if (entity instanceof Terrain) {
+            if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
+              // console.log "found ground"
+              // find line segment intersecting ab
+              e_a = entity.fromWorld(a);
+              e_b = entity.fromWorld(b);
+              ref2 = entity.structure.segments;
+              for (segment_name in ref2) {
+                segment = ref2[segment_name];
+                if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+                  // find the angle
+                  angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
+                  // console.log "angle", angle
+                  if (Math.cos(angle) < 0) {
+                    angle -= Math.PI;
+                    angle = (angle + Math.PI * 2) % (Math.PI * 2);
+                  }
+                  return angle;
+                }
+              }
+            }
+          }
+        }
+      };
+      // console.log "no ground found"
+
+      // rotate the pose based on the ground angle
+      // TODO: balance the character better; lean while running; keep feet out of the ground
+      // I may need to define new poses to do this well.
+      ground_angle = find_ground_angle();
+      this.ground_angle = ground_angle;
+      if ((ground_angle != null) && isFinite(ground_angle)) {
+        // there's no helper for rotation yet
+        // and we wanna do it a little custom anyway
+        // rotating some points more than others
+        center = new_pose.points["pelvis"];
+        center = {
+          x: center.x,
+          y: center.y // copy
+        };
+        ref1 = new_pose.points;
+        for (point_name in ref1) {
+          point = ref1[point_name];
+          // With this constant this small, it's almost like a conditional
+          // of whether the point is below the pelvis or not.
+          // With a larger number, it would bend the knees backwards.
+          max_y_diff = 2;
+          // how much to rotate this point
+          factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff));
+          // It's a bit much on steep slopes, so let's reduce it.
+          // This is still enough to keep the feet from floating,
+          // although the feet go into the ground significantly.
+          factor *= 0.8;
+          // translate
+          point.x -= center.x;
+          point.y -= center.y;
+          // rotate
+          ({x, y} = point);
+          point.x = x * Math.cos(ground_angle) - y * Math.sin(ground_angle);
+          point.y = x * Math.sin(ground_angle) + y * Math.cos(ground_angle);
+          // while we've got the x and y from before the rotation handy,
+          // let's use them to apply the factor, using linear interpolation
+          point.x += (x - point.x) * (1 - factor);
+          point.y += (y - point.y) * (1 - factor);
+          // translate back
+          point.x += center.x;
+          point.y += center.y;
+        }
+      }
       this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
       
       // (her dominant eye is, of course, *whichever one she would theoretically be using*)
@@ -5817,9 +5899,9 @@ module.exports = Player = (function() {
         } else {
           if (prime_bow && this.holding_arrow && bow.draw_distance > 2) {
             force = bow.draw_distance * 2;
-            ref1 = this.holding_arrow.structure.points;
-            for (point_name in ref1) {
-              point = ref1[point_name];
+            ref2 = this.holding_arrow.structure.points;
+            for (point_name in ref2) {
+              point = ref2[point_name];
               point.vx = Math.cos(aim_angle) * force;
               point.vy = Math.sin(aim_angle) * force;
             }
@@ -6054,6 +6136,14 @@ module.exports = Player = (function() {
   return Player;
 
 }).call(this);
+
+// debug draw
+// show the ground angle
+// ctx.beginPath()
+// ctx.moveTo(0, 0)
+// ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
+// ctx.strokeStyle = "red"
+// ctx.stroke()
 
 
 /***/ }),
