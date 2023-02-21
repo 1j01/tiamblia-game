@@ -199,6 +199,9 @@ module.exports = class Player extends SimpleActor
 		if @real_facing_x < 0
 			new_pose = Pose.horizontallyFlip(new_pose)
 		
+		head_x_before_posing = @structure.points["head"].x
+		head_y_before_posing = @structure.points["head"].y
+
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
 		# (her dominant eye is, of course, *whichever one she would theoretically be using*)
@@ -212,6 +215,13 @@ module.exports = class Player extends SimpleActor
 		draw_bow = prime_bow and mouse.LMB.down
 		
 		@real_facing_x = @facing_x
+
+		if prime_bow
+			# Restore head position, in order to do linear interpolation.
+			# In this state, the head is not controlled by the pose, but by the bow aiming.
+			@structure.points["head"].x = head_x_before_posing
+			@structure.points["head"].y = head_y_before_posing
+
 		# TODO: transition (both ways) between primed and not
 		# also maybe relax the "primed" state when running and not drawn back
 		if @holding_bow
@@ -257,9 +267,10 @@ module.exports = class Player extends SimpleActor
 				angle = (aim_angle - Math.PI / 2) %% (Math.PI * 2)
 				@real_facing_x = if angle < Math.PI then -1 else 1
 				{head, neck} = @structure.points
-				head.x = neck.x + 5 * Math.cos(angle * @real_facing_x)
-				head.y = neck.y + 5 * Math.sin(angle * @real_facing_x)
-				
+				new_head_x = neck.x + 5 * Math.cos(angle + if angle < Math.PI then Math.PI else 0)
+				new_head_y = neck.y + 5 * Math.sin(angle + if angle < Math.PI then Math.PI else 0)
+				head.x += (new_head_x - head.x) / 5
+				head.y += (new_head_y - head.y) / 5
 			else
 				bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
 			
