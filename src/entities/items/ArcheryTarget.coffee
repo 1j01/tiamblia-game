@@ -30,10 +30,10 @@ module.exports = class ArcheryTarget extends Entity
 		ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x))
 		ctx.scale(1, 1/3)
 		# Draw concentric circles
-		n_rings = 5
-		for i in [n_rings..1]
+		colors = ["#fff", "#000", "#0af", "#f00", "#ff0"]
+		for color, i in colors
 			ctx.beginPath()
-			ctx.arc(0, 0, i / n_rings * radius, 0, TAU)
-			ctx.fillStyle = if i % 2 is 0 then "red" else "white"
+			ctx.arc(0, 0, (1 - i / colors.length) * radius, 0, TAU)
+			ctx.fillStyle = color
 			ctx.fill()
 		ctx.restore()
