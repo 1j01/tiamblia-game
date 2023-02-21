@@ -221,7 +221,7 @@ module.exports = class Player extends SimpleActor
 							console.log "angle", angle
 							# if angle < -Math.PI / 2 or angle > Math.PI / 2
 							# 	angle += Math.PI * 2
-							if Math.cos(@ground_angle) < 0
+							if Math.cos(angle) < 0
 								angle -= Math.PI
 								angle = (angle + Math.PI * 2) % (Math.PI * 2)
 							return angle
