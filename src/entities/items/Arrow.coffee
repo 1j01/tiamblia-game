@@ -26,11 +26,10 @@ module.exports = class Arrow extends Entity
 		@structure.points.tip.x += @length
 	
 	step: (world)->
-		# TODO:
 		# If dropped completely sideways, it should end up lying on the ground
-		# but the feather ideally would introduce some drag in that direction,
+		# but the fletching should introduce some drag in that direction,
 		# leading to a slight rotation.
-		# (But the feathers shouldn't introduce much drag in the direction of travel.)
+		# However the fletching shouldn't introduce much drag in the direction of travel.
 		
 		{tip, nock} = @structure.points
 		
@@ -51,6 +50,19 @@ module.exports = class Arrow extends Entity
 			tip.y += tip.vy / steps
 			nock.x += nock.vx / steps
 			nock.y += nock.vy / steps
+
+			# Introduce drag on fletched side, perpendicular to the arrow shaft.
+			# First, find the angle of the arrow shaft.
+			angle = Math.atan2(tip.y - nock.y, tip.x - nock.x)
+			# Then, rotate the nock's velocity to a coordinate system where the arrow shaft is horizontal.
+			nock_vx = nock.vx * Math.cos(angle) + nock.vy * Math.sin(angle)
+			nock_vy = nock.vx * Math.sin(angle) - nock.vy * Math.cos(angle)
+			# Then, apply drag to the nock's velocity.
+			# nock_vx *= 0.9999
+			# Then, rotate the nock's velocity back to the original coordinate system,
+			# applying it.
+			nock.vx = nock_vx * Math.cos(angle) - nock_vy * Math.sin(angle)
+			nock.vy = nock_vx * Math.sin(angle) + nock_vy * Math.cos(angle)
 
 			# Constrain arrow length, moving both points symmetrically.
 			# I learned this from:
