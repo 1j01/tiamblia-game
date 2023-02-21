@@ -8,6 +8,28 @@ keyboard = require "../keyboard.coffee"
 {distance, distanceToLineSegment, lineSegmentsIntersect} = require("skele2d").helpers
 TAU = Math.PI * 2
 
+gamepad_aiming = false
+gamepad_detect_threshold = 0.5 # axis value (not a deadzone! just switching from mouse to gamepad)
+gamepad_deadzone = 0.1 # axis value
+mouse_detect_threshold = 30 # pixels radius (movement can occur over any number of frames)
+mouse_detect_from = {x: 0, y: 0}
+addEventListener "mousemove", (e) ->
+	if Math.hypot(e.clientX - mouse_detect_from.x, e.clientY - mouse_detect_from.y) > mouse_detect_threshold
+		gamepad_aiming = false
+		mouse_detect_from.x = e.clientX
+		mouse_detect_from.y = e.clientY
+
+gamepads = {}
+gamepadHandler = (event, connecting) ->
+	gamepad = event.gamepad
+	if connecting
+		gamepads[gamepad.index] = gamepad
+	else
+		delete gamepads[gamepad.index]
+
+window.addEventListener("gamepadconnected", ((e) -> gamepadHandler(e, true)), false)
+window.addEventListener("gamepaddisconnected", ((e) -> gamepadHandler(e, false)), false)
+
 module.exports = class Player extends SimpleActor
 	addEntityClass(@)
 	Entity.initAnimation(@)
@@ -126,19 +148,40 @@ module.exports = class Player extends SimpleActor
 		@real_facing_x = @facing_x
 	
 	step: (world, view, mouse)->
-		left = keyboard.isHeld("KeyA") or keyboard.isHeld("ArrowLeft")
-		right = keyboard.isHeld("KeyD") or keyboard.isHeld("ArrowRight")
-		@jump = keyboard.wasJustPressed("KeyW") or keyboard.wasJustPressed("ArrowUp")
-		# TODO: gamepad support
-		# TODO: configurable controls
-		@move_x = right - left
-		super(world)
-		
 		{sternum} = @structure.points
 		from_point_in_world = @toWorld(sternum)
 		
+		# mouse controls
 		mouse_in_world = view.toWorld(mouse)
 		aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x)
+		mouse_prime_bow = mouse.RMB.down
+		mouse_draw_bow = mouse.LMB.down
+		# keyboard controls
+		left = keyboard.isHeld("KeyA") or keyboard.isHeld("ArrowLeft")
+		right = keyboard.isHeld("KeyD") or keyboard.isHeld("ArrowRight")
+		@jump = keyboard.wasJustPressed("KeyW") or keyboard.wasJustPressed("ArrowUp")
+		# gamepad controls
+		gamepad_draw_bow = false
+		gamepad_prime_bow = false
+		for gamepad in Object.values(gamepads)
+			left or= gamepad.axes[0] < -0.5
+			right or= gamepad.axes[0] > 0.5
+			@jump or= gamepad.buttons[0].pressed
+			gamepad_draw_bow = gamepad.buttons[7].pressed
+			# gamepad_prime_bow = gamepad.buttons[4].pressed
+
+			if Math.hypot(gamepad.axes[2], gamepad.axes[3]) > gamepad_detect_threshold
+				gamepad_aiming = true
+			if gamepad_aiming
+				aim_angle = Math.atan2(gamepad.axes[3], gamepad.axes[2])
+				draw_back_distance = Math.hypot(gamepad.axes[2], gamepad.axes[3])
+				draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone)
+				gamepad_prime_bow = draw_back_distance > 0.3
+
+		# TODO: configurable controls
+		@move_x = right - left
+		# run SimpleActor physics, which uses @move_x and @jump
+		super(world)
 		
 		pick_up_any = (EntityClass, prop)=>
 			@[prop] = null if @[prop]?.destroyed
@@ -268,8 +311,9 @@ module.exports = class Player extends SimpleActor
 		primary_elbo = @structure.points["right elbo"]
 		secondary_elbo = @structure.points["left elbo"]
 		
-		prime_bow = @holding_bow and mouse.RMB.down # and @holding_arrow
-		draw_bow = prime_bow and mouse.LMB.down
+		# Note: You're allowed to prime and draw the bow without an arrow.
+		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
+		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
 		
 		@real_facing_x = @facing_x
 
