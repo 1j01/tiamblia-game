@@ -123,7 +123,6 @@ module.exports = class Player extends SimpleActor
 		@idle_timer = 0
 		@smoothed_vy = 0
 		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
-		@real_facing_x = @facing_x
 	
 	step: (world, view, mouse)->
 		left = keyboard.isHeld("KeyA") or keyboard.isHeld("ArrowLeft")
@@ -191,12 +190,12 @@ module.exports = class Player extends SimpleActor
 		else
 			prevent_idle()
 			if Player.animations["Run"]
-				@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * @real_facing_x
+				@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * Math.sign(@move_x)
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
 			else
 				new_pose = @structure.getPose()
 		
-		if @real_facing_x < 0
+		if @facing_x < 0
 			new_pose = Pose.horizontallyFlip(new_pose)
 		
 		head_x_before_posing = @structure.points["head"].x
@@ -214,8 +213,6 @@ module.exports = class Player extends SimpleActor
 		prime_bow = @holding_bow and mouse.RMB.down # and @holding_arrow
 		draw_bow = prime_bow and mouse.LMB.down
 		
-		@real_facing_x = @facing_x
-
 		if prime_bow
 			# Restore head position, in order to do linear interpolation.
 			# In this state, the head is not controlled by the pose, but by the bow aiming.
@@ -265,7 +262,7 @@ module.exports = class Player extends SimpleActor
 				secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle)
 				# make head look along aim path
 				angle = (aim_angle - Math.PI / 2) %% (Math.PI * 2)
-				@real_facing_x = if angle < Math.PI then -1 else 1
+				@facing_x = if angle < Math.PI then -1 else 1
 				{head, neck} = @structure.points
 				new_head_x = neck.x + 5 * Math.cos(angle + if angle < Math.PI then Math.PI else 0)
 				new_head_y = neck.y + 5 * Math.sin(angle + if angle < Math.PI then Math.PI else 0)
@@ -302,7 +299,7 @@ module.exports = class Player extends SimpleActor
 				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle)
 			else
 				angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
-				arrow_angle = angle - (TAU/4 + 0.2) * @real_facing_x
+				arrow_angle = angle - (TAU/4 + 0.2) * @facing_x
 				hold_offset = -5
 				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle)
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
@@ -330,14 +327,14 @@ module.exports = class Player extends SimpleActor
 		# TODO: better, less fake hair physics
 		ctx.save()
 		ctx.translate(head.x, head.y)
-		ctx.translate(-@real_facing_x * 0.3, 0)
+		ctx.translate(-@facing_x * 0.3, 0)
 		@smoothed_vy += ((@vy * not @grounded) - @smoothed_vy) / 5
 		
 		for hxs, i in @hair_x_scales by -1
 			if i is 0
-				@hair_x_scales[i] += (-@real_facing_x - hxs) / 3
+				@hair_x_scales[i] += (-@facing_x - hxs) / 3
 			else
-				# x = @real_facing_x * i/@hair_x_scales.length * 2
+				# x = @facing_x * i/@hair_x_scales.length * 2
 				# @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
 				# @hair_x_scales[i] += (x - hxs) / 2
 				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 3
@@ -433,7 +430,7 @@ module.exports = class Player extends SimpleActor
 		turn_limit = TAU/7 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = eye_color
 		@smoothed_facing_x_for_eyes ?= 0
-		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
+		@smoothed_facing_x_for_eyes += (@facing_x - @smoothed_facing_x_for_eyes) / 5
 		for eye_signature in [-1, 1]
 			# 3D projection in one axis
 			head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
