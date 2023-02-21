@@ -429,8 +429,8 @@ module.exports = class Player extends SimpleActor
 		# TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
 		ctx.arc(0, 0, 5.5*0.9, 0, TAU)
 		ctx.clip()
-		eye_spacing = 0.5 # radians
-		turn_limit = TAU/7 # radians, TAU/4 = head facing completely sideways, only one eye visible
+		eye_spacing = 0.6 # radians
+		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = eye_color
 		@smoothed_facing_x_for_eyes ?= 0
 		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
