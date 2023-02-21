@@ -59,7 +59,7 @@ module.exports = class Arrow extends Entity
 			# Apply the rotation to the velocity.
 			[nock_vx, nock_vy] = [nock.vx, nock.vy].map((val, idx) => rot_matrix1[idx][0] * nock.vx + rot_matrix1[idx][1] * nock.vy)
 			# Then, apply drag to the nock's velocity.
-			# nock_vx *= 0.9999
+			nock_vy *= 0.999
 			# Then, calculate the rotation matrix to rotate the velocity back to the original coordinate system.
 			rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]]
 			# Apply the rotation to the velocity and update the particle's velocity.
