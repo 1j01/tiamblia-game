@@ -14,6 +14,7 @@ require "./entities/GranddaddyLonglegs.coffee"
 Player = require "./entities/Player.coffee"
 require "./entities/items/Bow.coffee"
 require "./entities/items/Arrow.coffee"
+require "./entities/items/ArcheryTarget.coffee"
 
 world = new World
 
