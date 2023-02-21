@@ -22,6 +22,7 @@ module.exports = class Arrow extends Entity
 			point.vy = 0
 		
 		@bbox_padding = 20
+		@plant = null
 	
 	initLayout: ->
 		@structure.points.tip.x += @length
@@ -65,6 +66,9 @@ module.exports = class Arrow extends Entity
 				else
 					# @handle_bounce(tip, normal)
 					""
+			hit = world.collision(@toWorld(tip))
+			if hit and not @plant
+				@plant = {tip: {x: tip.x, y: tip.y}, nock: {x: nock.x, y: nock.y}}
 			if world.collision(@toWorld(nock))
 				# Bouncing isn't as important for the nock. It mainly trails behind the tip.
 				nock.vx *= 0.1
@@ -87,6 +91,22 @@ module.exports = class Arrow extends Entity
 			rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]]
 			# Apply the rotation to the velocity and update the particle's velocity.
 			[nock.vx, nock.vy] = [nock_vx, nock_vy].map((val, idx) => rot_matrix2[idx][0] * nock_vx + rot_matrix2[idx][1] * nock_vy)
+
+			# Constrain when planted.
+			if @plant
+				tip.x = @plant.tip.x
+				tip.y = @plant.tip.y
+				tip.vx = 0
+				tip.vy = 0
+				# Constrain the nock as an approximation of constraining the angle.
+				nock.x += (@plant.nock.x - nock.x) * 0.9
+				nock.y += (@plant.nock.y - nock.y) * 0.9
+				nock.vx = 0
+				nock.vy = 0
+				# @plant.nock.x = nock.x
+				# @plant.nock.y = nock.y
+				if not hit
+					@plant = null
 
 			# Constrain arrow length, moving both points symmetrically.
 			# I learned this from:
