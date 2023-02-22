@@ -100,8 +100,8 @@ module.exports = class Arrow extends Entity
 				# 	""
 				if hit_segment
 					constraint = {
-						hit_entity: hit
-						hit_segment
+						hit_entity_id: hit.id
+						hit_segment_name: Object.keys(hit.structure.segments)[Object.values(hit.structure.segments).indexOf(hit_segment)]
 						relative_angle
 						hit_segment_position_ratio
 						arrow_segment_position_ratio
@@ -136,7 +136,10 @@ module.exports = class Arrow extends Entity
 			[nock.vx, nock.vy] = [nock_vx, nock_vy].map((val, idx) => rot_matrix2[idx][0] * nock_vx + rot_matrix2[idx][1] * nock_vy)
 
 			# Constrain when lodged in an object.
-			for {hit_entity, hit_segment, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
+			for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
+				hit_entity = world.getEntityByID(hit_entity_id)
+				hit_segment = hit_entity.structure.segments[hit_segment_name]
+
 				hit_segment_pos = hit_entity.toWorld({
 					x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio
 					y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
@@ -249,8 +252,10 @@ module.exports = class Arrow extends Entity
 
 		return unless window.debug_mode
 		
-		for {hit_entity, hit_segment, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
-			
+		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
+			hit_entity = world.getEntityByID(hit_entity_id)
+			hit_segment = hit_entity.structure.segments[hit_segment_name]
+
 			if not hit_entity.toWorld
 				console.error("Need to fix serialization of references to entities (and segments) with something like resurrect.js!")
 				@lodging_constraints.length = 0
