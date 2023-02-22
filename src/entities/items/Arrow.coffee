@@ -49,29 +49,23 @@ module.exports = class Arrow extends Entity
 		nock.vy += 0.1
 		steps = 1
 		for [0..steps]
-			# hit = world.collision(@toWorld(tip), types: (entity)=> entity not instanceof Arrow)
-			# Can't require Player here because of circular dependency
+			# Note: can't require Player here (to use instanceof check) because of circular dependency
 			hit = world.collision(@toWorld(tip), types: (entity)=>
 				entity.constructor.name not in ["Arrow", "Player", "Bow"]
 			)
 			if hit
 				# collision() doesn't give us the line segment that we hit.
-				# We want to know how deep the arrow is in the wall, to tell
-				# if it should stay planted or bounce off.
+				# We want to know the segment point in order to add a lodging constraint at the intersection point.
 				tip_relative = hit.fromWorld(@toWorld(tip))
 				nock_relative = hit.fromWorld(@toWorld(nock))
-				arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x)
 				hit_segment = undefined
-				normal = undefined
 				relative_angle = undefined
-				# depth = 0
 				hit_segment_position_ratio = 0
 				arrow_segment_position_ratio = 0 # AKA depth ratio
 				for segment_name, segment of hit.structure.segments
-					# console.log(distanceToLineSegment(tip_relative, segment.a, segment.b))
 					if lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
-						# depth = distanceToLineSegment(tip_relative, segment.a, segment.b)
 						normal = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
+						arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x)
 						relative_angle = arrow_angle - normal
 						hit_segment = segment
 						# find position ratios of the intersection point on each segment
@@ -86,19 +80,15 @@ module.exports = class Arrow extends Entity
 						arrow_segment_position_ratio =
 							-((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x))
 						break
-				# console.log(depth)
-				# if depth > 3
-				# 	# The arrow is too deep in the wall to bounce off.
-				# 	# It should stay planted.
-				# 	tip.vx = 0
-				# 	tip.vy = 0
-				# 	nock.vx = 0
-				# 	nock.vy = 0
-				# 	break # don't move the arrow any further
-				# else
-				# 	# @handle_bounce(tip, normal)
-				# 	""
-				if hit_segment
+				# I'm only allowing one lodging constraint per arrow for now.
+				# Ideally I would like to allow the arrow to pin an enemy to the ground,
+				# using multiple constraints, but this will probably require the whole game to be
+				# simulated together with something like Verlet integration, so that the
+				# enemy's limb can be constrained in a stable way.
+				# But maybe with specific targets it can be enabled to work.
+				# Also, TODO: bounce off if the angle is not perpendicular enough
+				# (i.e. angle of incidence is too high)
+				if hit_segment and @lodging_constraints.length == 0
 					constraint = {
 						hit_entity_id: hit.id
 						hit_segment_name: Object.keys(hit.structure.segments)[Object.values(hit.structure.segments).indexOf(hit_segment)]
@@ -107,13 +97,10 @@ module.exports = class Arrow extends Entity
 						arrow_segment_position_ratio
 					}
 					@lodging_constraints.push(constraint)
-					# if @lodging_constraints.length > 10
-					# 	@lodging_constraints.shift()
-					# Keep only one constraint, for now.
-					@lodging_constraints.length = 1
 						
 			if world.collision(@toWorld(nock))
 				# Bouncing isn't as important for the tail end.
+				# TODO: handle it properly anyway.
 				nock.vx *= 0.1
 				nock.vy *= 0.1
 			
@@ -162,7 +149,7 @@ module.exports = class Arrow extends Entity
 					console.warn("pos_diff has NaN")
 					continue
 				# TODO: for non-static objects,
-				# move the object equally in the opposite direction.
+				# move the object equally in the opposite direction (each only halfway)
 				# And integrate all physics in the same loop, for Verlet integration.
 				tip.x += pos_diff.x
 				tip.y += pos_diff.y
@@ -198,26 +185,7 @@ module.exports = class Arrow extends Entity
 			tip.y -= delta_y * 0.5 * diff
 			nock.x += delta_x * 0.5 * diff
 			nock.y += delta_y * 0.5 * diff
-		
-		# This was a decent attempt at making the arrow point in the direction it's moving,
-		# but it's not very physical.
-		# angle = Math.atan2(tip.y - nock.y, tip.x - nock.x)
-		# nock.x = tip.x - Math.cos(angle) * @length
-		# nock.y = tip.y - Math.sin(angle) * @length
 	
-	handle_bounce: (particle, normal, elasticity = 1) ->
-		# Bounce the particle off a surface with a given normal angle.
-		# First, calculate the rotation matrix to rotate the velocity to the horizontal coordinate system.
-		rot_matrix1 = [[Math.cos(normal), Math.sin(normal)], [-Math.sin(normal), Math.cos(normal)]]
-		# Apply the rotation to the velocity.
-		[particle_vx, particle_vy] = [particle.vx, particle.vy].map((val, idx) => rot_matrix1[idx][0] * particle.vx + rot_matrix1[idx][1] * particle.vy)
-		# Then, apply the bounce.
-		particle_vy *= -elasticity
-		# Then, calculate the rotation matrix to rotate the velocity back to the original coordinate system.
-		rot_matrix2 = [[Math.cos(-normal), Math.sin(-normal)], [-Math.sin(-normal), Math.cos(-normal)]]
-		# Apply the rotation to the velocity and update the particle's velocity.
-		[particle.vx, particle.vy] = [particle_vx, particle_vy].map((val, idx) => rot_matrix2[idx][0] * particle_vx + rot_matrix2[idx][1] * particle_vy)
-
 	draw: (ctx)->
 		{tip, nock} = @structure.points
 		ctx.beginPath()
