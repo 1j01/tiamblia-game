@@ -19,17 +19,6 @@ addEventListener "mousemove", (e) ->
 		mouse_detect_from.x = e.clientX
 		mouse_detect_from.y = e.clientY
 
-gamepads = {}
-gamepadHandler = (event, connecting) ->
-	gamepad = event.gamepad
-	if connecting
-		gamepads[gamepad.index] = gamepad
-	else
-		delete gamepads[gamepad.index]
-
-window.addEventListener("gamepadconnected", ((e) -> gamepadHandler(e, true)), false)
-window.addEventListener("gamepaddisconnected", ((e) -> gamepadHandler(e, false)), false)
-
 module.exports = class Player extends SimpleActor
 	addEntityClass(@)
 	Entity.initAnimation(@)
@@ -163,7 +152,7 @@ module.exports = class Player extends SimpleActor
 		# gamepad controls
 		gamepad_draw_bow = false
 		gamepad_prime_bow = false
-		for gamepad in Object.values(gamepads)
+		for gamepad in (try navigator.getGamepads()) ? [] when gamepad
 			left or= gamepad.axes[0] < -0.5
 			right or= gamepad.axes[0] > 0.5
 			@jump or= gamepad.buttons[0].pressed
