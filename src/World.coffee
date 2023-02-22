@@ -56,4 +56,4 @@ module.exports = class World
 					dist = distanceToLineSegment(local_point, segment.a, segment.b)
 					if dist < lineThickness
 						return entity
-		no
+		null
