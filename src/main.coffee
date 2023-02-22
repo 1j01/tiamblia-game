@@ -54,6 +54,21 @@ setInterval ->
 		localStorage.view_scale = view_to.scale
 , 200
 
+redraw = ->
+
+	world.drawBackground(ctx, view)
+	ctx.save()
+	ctx.translate(canvas.width / 2, canvas.height / 2)
+	ctx.scale(view.scale, view.scale)
+	ctx.translate(-view.center_x, -view.center_y)
+	
+	world.draw(ctx, view)
+	editor.draw(ctx, view) if editor.editing
+	
+	ctx.restore()
+
+window.do_a_redraw = redraw
+
 do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
@@ -85,17 +100,8 @@ do animate = ->
 	editor.step() if editor.editing
 	mouse.resetForNextStep()
 	
-	world.drawBackground(ctx, view)
-	ctx.save()
-	ctx.translate(canvas.width / 2, canvas.height / 2)
-	ctx.scale(view.scale, view.scale)
-	ctx.translate(-view.center_x, -view.center_y)
-	
-	world.draw(ctx, view)
-	editor.draw(ctx, view) if editor.editing
-	
-	ctx.restore()
-	
+	redraw()
+
 	editor.updateGUI()
 	
 	keyboard.resetForNextStep()
