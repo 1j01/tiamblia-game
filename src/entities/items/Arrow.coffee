@@ -97,12 +97,6 @@ module.exports = class Arrow extends Entity
 				
 				break if hit_segment
 			
-			if world.collision(@toWorld(nock))
-				# Bouncing isn't as important for the tail end.
-				# TODO: handle it properly anyway.
-				nock.vx *= 0.1
-				nock.vy *= 0.1
-			
 			# Ideally I would like to allow the arrow to move while lodged,
 			# and adjust the depth and angle of lodging (with some stiffness),
 			# and maybe allow it to become dislodged, but it was causing numerical instability.
@@ -112,6 +106,18 @@ module.exports = class Arrow extends Entity
 				tip.y += tip.vy / steps
 				nock.x += nock.vx / steps
 				nock.y += nock.vy / steps
+				# Bounce off the ground.
+				elasticity = 0.1
+				if world.collision(@toWorld(tip))
+					tip.x -= tip.vx / steps
+					tip.y -= tip.vy / steps
+					tip.vy *= -elasticity
+					tip.vx *= -elasticity
+				if world.collision(@toWorld(nock))
+					nock.x -= nock.vx / steps
+					nock.y -= nock.vy / steps
+					nock.vy *= -elasticity
+					nock.vx *= -elasticity
 
 			# Introduce drag on fletched side, perpendicular to the arrow shaft.
 			# First, find the angle of the arrow shaft.
