@@ -172,6 +172,7 @@ module.exports = class Player extends SimpleActor
 				gamepad_prime_bow = draw_back_distance > 0.3
 
 		# TODO: configurable controls
+
 		@move_x = right - left
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
@@ -180,6 +181,7 @@ module.exports = class Player extends SimpleActor
 			@[prop] = null if @[prop]?.destroyed
 			return if @[prop]
 			# this is ridiculously complicated
+			# mainly to avoid picking up an arrow that you just shot (but also incoming arrows)
 			for entity in world.getEntitiesOfType(EntityClass)
 				from_point_in_entity_space = entity.fromWorld(from_point_in_world)
 				moving_too_fast = no
@@ -258,7 +260,7 @@ module.exports = class Player extends SimpleActor
 							return angle
 			# console.log "no ground found"
 
-		# rotate the pose based on the ground angle
+		# Rotate the pose based on the ground angle.
 		# TODO: balance the character better; lean while running; keep feet out of the ground
 		# I may need to define new poses to do this well.
 		ground_angle = find_ground_angle()
@@ -304,7 +306,7 @@ module.exports = class Player extends SimpleActor
 		primary_elbo = @structure.points["right elbo"]
 		secondary_elbo = @structure.points["left elbo"]
 		
-		# Note: You're allowed to prime and draw the bow without an arrow.
+		# Note: You're allowed to prime and draw the bow without any arrow.
 		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
 		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
 		
@@ -317,7 +319,7 @@ module.exports = class Player extends SimpleActor
 			@structure.points["head"].y = head_y_before_posing
 
 		# TODO: transition (both ways) between primed and not
-		# also maybe relax the "primed" state when running and not drawn back
+		# also maybe relax the "primed" state when running without the string drawn back
 		if @holding_bow
 			bow = @holding_bow
 			bow.x = @x

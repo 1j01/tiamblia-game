@@ -66,7 +66,7 @@ module.exports = class Arrow extends Entity
 					# @handle_bounce(tip, normal)
 					""
 			if world.collision(@toWorld(nock))
-				# Bouncing isn't as important for the nock. It mainly trails behind the tip.
+				# Bouncing isn't as important for the trailing end of the arrow.
 				nock.vx *= 0.1
 				nock.vy *= 0.1
 			tip.x += tip.vx / steps
