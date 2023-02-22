@@ -18,6 +18,8 @@ require "./entities/items/ArcheryTarget.coffee"
 
 world = new World
 
+window.the_world = world
+
 terrain = new SavannaGrass
 world.entities.push terrain
 terrain.x = 0

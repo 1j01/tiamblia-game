@@ -232,7 +232,7 @@ module.exports = class Arrow extends Entity
 		return unless window.debug_mode
 		
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
-			hit_entity = world.getEntityByID(hit_entity_id)
+			hit_entity = window.the_world.getEntityByID(hit_entity_id)
 			hit_segment = hit_entity.structure.segments[hit_segment_name]
 
 			if not hit_entity.toWorld
