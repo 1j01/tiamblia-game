@@ -47,7 +47,7 @@ module.exports = class Arrow extends Entity
 		
 		tip.vy += 0.1
 		nock.vy += 0.1
-		steps = 10
+		steps = 1
 		for [0..steps]
 			# hit = world.collision(@toWorld(tip), types: (entity)=> entity not instanceof Arrow)
 			# Can't require Player here because of circular dependency
