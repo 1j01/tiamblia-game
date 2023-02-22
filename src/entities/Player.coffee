@@ -163,6 +163,10 @@ module.exports = class Player extends SimpleActor
 				gamepad_aiming = true
 			if gamepad_aiming
 				aim_angle = Math.atan2(gamepad.axes[3], gamepad.axes[2])
+				# Reverse aiming can feel more natural, like drawing back the bow
+				# even though it's not the control to draw the bow
+				# TODO: It should be an option.
+				aim_angle += Math.PI
 				draw_back_distance = Math.hypot(gamepad.axes[2], gamepad.axes[3])
 				draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone)
 				gamepad_prime_bow = draw_back_distance > 0.3
