@@ -49,6 +49,16 @@ module.exports = class Arrow extends Entity
 		nock.vy += 0.1
 		steps = 1
 		for [0..steps]
+			# Move the arrow.
+			# Ideally I would like to allow the arrow to move while lodged,
+			# and adjust the depth and angle of lodging (with some stiffness),
+			# and maybe allow it to become dislodged, but it was causing numerical instability.
+			unless @lodging_constraints.length
+				tip.x += tip.vx / steps
+				tip.y += tip.vy / steps
+				nock.x += nock.vx / steps
+				nock.y += nock.vy / steps
+
 			# Note: can't require Player here (to use instanceof check) because of circular dependency
 			for entity in world.entities when (
 				entity.constructor.name not in ["Arrow", "Player", "Bow"]
@@ -76,6 +86,7 @@ module.exports = class Arrow extends Entity
 						# at tip = 0, at nock = 1
 						arrow_segment_position_ratio =
 							-((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x))
+						console.log "found intersection", hit_segment_position_ratio, arrow_segment_position_ratio
 						break
 				# I'm only allowing one lodging constraint per arrow for now.
 				# Ideally I would like to allow the arrow to pin an enemy to the ground,
@@ -101,23 +112,20 @@ module.exports = class Arrow extends Entity
 			# and adjust the depth and angle of lodging (with some stiffness),
 			# and maybe allow it to become dislodged, but it was causing numerical instability.
 			unless @lodging_constraints.length
-				# Move the arrow.
-				tip.x += tip.vx / steps
-				tip.y += tip.vy / steps
-				nock.x += nock.vx / steps
-				nock.y += nock.vy / steps
-				# Bounce off the ground.
-				elasticity = 0.1
+				# Collide with the ground.
+				friction = 0.2
 				if world.collision(@toWorld(tip))
+					console.log("tip collided")
 					tip.x -= tip.vx / steps
 					tip.y -= tip.vy / steps
-					tip.vy *= -elasticity
-					tip.vx *= -elasticity
+					tip.vx *= 1 - friction
+					tip.vy *= 1 - friction
 				if world.collision(@toWorld(nock))
+					console.log("nock collided")
 					nock.x -= nock.vx / steps
 					nock.y -= nock.vy / steps
-					nock.vy *= -elasticity
-					nock.vx *= -elasticity
+					nock.vx *= 1 - friction
+					nock.vy *= 1 - friction
 
 			# Introduce drag on fletched side, perpendicular to the arrow shaft.
 			# First, find the angle of the arrow shaft.
