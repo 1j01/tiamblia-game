@@ -60,16 +60,19 @@ module.exports = class Arrow extends Entity
 				nock.y += nock.vy / steps
 
 			# Note: can't require Player here (to use instanceof check) because of circular dependency
-			for entity in world.entities when (
+			hit = world.collision(@toWorld(tip), types: (entity)=>
 				entity.constructor.name not in ["Arrow", "Player", "Bow"]
 			)
-				tip_relative = entity.fromWorld(@toWorld(tip))
-				nock_relative = entity.fromWorld(@toWorld(nock))
+			if hit
+				# collision() doesn't give us the line segment that we hit.
+				# We want to know the segment point in order to add a lodging constraint at the intersection point.
+				tip_relative = hit.fromWorld(@toWorld(tip))
+				nock_relative = hit.fromWorld(@toWorld(nock))
 				hit_segment = undefined
 				relative_angle = undefined
 				hit_segment_position_ratio = 0
 				arrow_segment_position_ratio = 0 # AKA depth ratio
-				for segment_name, segment of entity.structure.segments
+				for segment_name, segment of hit.structure.segments
 					if lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
 						normal = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
 						arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x)
@@ -98,15 +101,13 @@ module.exports = class Arrow extends Entity
 				# (i.e. angle of incidence is too high)
 				if hit_segment and @lodging_constraints.length == 0
 					constraint = {
-						hit_entity_id: entity.id
-						hit_segment_name: Object.keys(entity.structure.segments)[Object.values(entity.structure.segments).indexOf(hit_segment)]
+						hit_entity_id: hit.id
+						hit_segment_name: Object.keys(hit.structure.segments)[Object.values(hit.structure.segments).indexOf(hit_segment)]
 						relative_angle
 						hit_segment_position_ratio
 						arrow_segment_position_ratio
 					}
 					@lodging_constraints.push(constraint)
-				
-				break if hit_segment
 			
 			# Ideally I would like to allow the arrow to move while lodged,
 			# and adjust the depth and angle of lodging (with some stiffness),
