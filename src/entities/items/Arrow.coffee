@@ -116,10 +116,16 @@ module.exports = class Arrow extends Entity
 				# Bouncing isn't as important for the tail end.
 				nock.vx *= 0.1
 				nock.vy *= 0.1
-			tip.x += tip.vx / steps
-			tip.y += tip.vy / steps
-			nock.x += nock.vx / steps
-			nock.y += nock.vy / steps
+			
+			# Ideally I would like to allow the arrow to move while lodged,
+			# and adjust the depth and angle of lodging (with some stiffness),
+			# and maybe allow it to become dislodged, but it was causing numerical instability.
+			unless @lodging_constraints.length
+				# Move the arrow.
+				tip.x += tip.vx / steps
+				tip.y += tip.vy / steps
+				nock.x += nock.vx / steps
+				nock.y += nock.vy / steps
 
 			# Introduce drag on fletched side, perpendicular to the arrow shaft.
 			# First, find the angle of the arrow shaft.
