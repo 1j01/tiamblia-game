@@ -52,10 +52,20 @@ setInterval ->
 		localStorage.view_scale = view_to.scale
 , 200
 
-do animate = ->
+last_frame_time = 0
+@time_scale = 1
+do animate = =>
 	return if window.CRASHED
 	requestAnimationFrame(animate)
-	
+
+	delta_time = performance.now() / 1000 - last_frame_time
+	last_frame_time = performance.now() / 1000
+
+	if delta_time > 0.1
+		delta_time = 0.1
+
+	delta_time *= @time_scale
+
 	canvas.width = innerWidth unless canvas.width is innerWidth
 	canvas.height = innerHeight unless canvas.height is innerHeight
 	
@@ -68,7 +78,7 @@ do animate = ->
 	
 	unless editor.editing
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
-			entity.step(world, view, mouse)
+			entity.step(world, view, mouse, delta_time)
 		
 		# TODO: allow margin of offcenteredness
 		player = world.getEntitiesOfType(Player)[0]
@@ -80,7 +90,7 @@ do animate = ->
 	view.height = canvas.height
 	
 	view.easeTowards(view_to, view_smoothness)
-	editor.step() if editor.editing
+	editor.step(delta_time) if editor.editing
 	mouse.resetForNextStep()
 	
 	world.drawBackground(ctx, view)
