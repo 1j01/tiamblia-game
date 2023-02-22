@@ -184,8 +184,14 @@ module.exports = class Player extends SimpleActor
 				from_point_in_entity_space = entity.fromWorld(from_point_in_world)
 				moving_too_fast = no
 				for point_name, point of entity.structure.points
-					if point.vx? and point.vy?
-						if Math.abs(point.vx) + Math.abs(point.vy) > 2
+					if point.prev_x? and point.prev_y?
+						vx = point.x - point.prev_x
+						vy = point.y - point.prev_y
+					else
+						vx = point.vx
+						vy = point.vy
+					if vx? and vy?
+						if Math.abs(vx) + Math.abs(vy) > 2
 							moving_too_fast = yes
 							break
 				unless moving_too_fast
@@ -381,7 +387,7 @@ module.exports = class Player extends SimpleActor
 		
 		if @holding_arrow
 			arrow = @holding_arrow
-			arrow.plant = null # pull it out of the ground
+			arrow.lodging_constraints.length = 0 # pull it out if it's lodged in an object
 			arrow.x = @x
 			arrow.y = @y
 			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))

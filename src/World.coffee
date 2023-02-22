@@ -1,6 +1,7 @@
 
 Entity = require "./entities/abstract/Entity.coffee"
 Terrain = require "./entities/abstract/Terrain.coffee"
+{distanceToLineSegment} = require("skele2d").helpers
 
 module.exports = class World
 	constructor: ->
@@ -35,8 +36,24 @@ module.exports = class World
 			entity.draw(ctx, view)
 			ctx.restore()
 	
-	collision: (point)->
-		for entity in @entities when entity instanceof Terrain
-			if entity.structure.pointInPolygon(entity.fromWorld(point))
-				return entity
+	collision: (point, {types=[Terrain], lineThickness=5}={})->
+		# lineThickness doesn't apply to polygons like Terrain
+		# also it's kind of a hack, because different entities could need different lineThicknesses
+		# and different segments within an entity too
+		
+		if typeof types is "function"
+			filter = types
+		else
+			filter = (entity)=> types.some((type)=> entity instanceof type)
+		
+		for entity in @entities when filter(entity)
+			if entity.structure.pointInPolygon?
+				if entity.structure.pointInPolygon(entity.fromWorld(point))
+					return entity
+			else
+				local_point = entity.fromWorld(point)
+				for segment_name, segment of entity.structure.segments
+					dist = distanceToLineSegment(local_point, segment.a, segment.b)
+					if dist < lineThickness
+						return entity
 		no
