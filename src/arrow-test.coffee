@@ -8,6 +8,7 @@ Arrow = require "./entities/items/Arrow.coffee"
 module.exports = window.create_arrow_test_scene = ->
 	world = window.the_world
 
+	arrows = []
 	for target_angle in [-Math.PI..Math.PI] by Math.PI / 8
 		target = new ArcheryTarget()
 		target.x = 600 * Math.cos(target_angle)
@@ -31,5 +32,7 @@ module.exports = window.create_arrow_test_scene = ->
 			arrow.structure.points.nock.vy = 5 * Math.sin(arrow_angle)
 			arrow.structure.points.tip.vx = 5 * Math.cos(arrow_angle)
 			arrow.structure.points.tip.vy = 5 * Math.sin(arrow_angle)
-			world.entities.push(arrow)
+			arrows.push(arrow)
+	
+	world.entities.push(arrows...)
 		
