@@ -69,6 +69,8 @@ redraw = ->
 
 window.do_a_redraw = redraw
 
+gamepad_start_prev = false
+
 do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
@@ -78,6 +80,11 @@ do animate = ->
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 	
+	for gamepad in (try navigator.getGamepads()) ? [] when gamepad
+		if gamepad.buttons[9].pressed and not gamepad_start_prev
+			editor.toggleEditing()
+		gamepad_start_prev = gamepad.buttons[9].pressed
+
 	if editor.editing and (editor.entities_bar.hovered_cell or ((editor.hovered_points.length or editor.hovered_entities.length) and not editor.selection_box))
 		canvas.classList.add("grabbable")
 	else
