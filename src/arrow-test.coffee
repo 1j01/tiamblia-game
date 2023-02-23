@@ -11,8 +11,8 @@ module.exports = window.create_arrow_test_scene = ->
 	arrows = []
 	for target_angle in [-Math.PI..Math.PI] by Math.PI / 8
 		target = new ArcheryTarget()
-		target.x = 600 * Math.cos(target_angle)
-		target.y = 600 * Math.sin(target_angle)
+		target.x = 200 * Math.cos(target_angle)
+		target.y = 200 * Math.sin(target_angle)
 		target.structure.points.a.x = -100 * Math.cos(target_angle)
 		target.structure.points.a.y = -100 * Math.sin(target_angle)
 		target.structure.points.b.x = 100 * Math.cos(target_angle)
@@ -20,10 +20,10 @@ module.exports = window.create_arrow_test_scene = ->
 		world.entities.push(target)
 		
 		# Create arrows shooting at the target from various angles
-		for arrow_angle in [-Math.PI..Math.PI] by Math.PI / 8
+		for arrow_angle in [-Math.PI..Math.PI] by Math.PI / 16
 			arrow = new Arrow()
-			arrow.x = target.x - 100 * Math.cos(arrow_angle)
-			arrow.y = target.y - 100 * Math.sin(arrow_angle)
+			arrow.x = target.x - 50 * Math.cos(arrow_angle)
+			arrow.y = target.y - 50 * Math.sin(arrow_angle)
 			arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle)
 			arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle)
 			arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle)
