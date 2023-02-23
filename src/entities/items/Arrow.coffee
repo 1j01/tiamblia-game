@@ -85,6 +85,10 @@ module.exports = class Arrow extends Entity
 						towards_surface_speed = Math.sin(-normal) * tip.vx + Math.cos(-normal) * tip.vy
 						towards_surface_speed = Math.abs(towards_surface_speed)
 						# console.log "towards_surface_speed", towards_surface_speed
+						if towards_surface_speed < 2
+							# console.log "not lodging"
+							continue
+						
 						hit_segment = segment
 						# find position ratios of the intersection point on each segment
 						p1 = segment.a
