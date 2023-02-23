@@ -89,7 +89,7 @@ module.exports = class Arrow extends Entity
 						# at tip = 0, at nock = 1
 						arrow_segment_position_ratio =
 							-((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x))
-						console.log "found intersection", hit_segment_position_ratio, arrow_segment_position_ratio
+						# console.log "found intersection", hit_segment_position_ratio, arrow_segment_position_ratio
 						break
 				# I'm only allowing one lodging constraint per arrow for now.
 				# Ideally I would like to allow the arrow to pin an enemy to the ground,
@@ -116,13 +116,13 @@ module.exports = class Arrow extends Entity
 				# Collide with the ground.
 				friction = 0.2
 				if world.collision(@toWorld(tip))
-					console.log("tip collided")
+					# console.log("tip collided")
 					tip.x -= tip.vx / steps
 					tip.y -= tip.vy / steps
 					tip.vx *= 1 - friction
 					tip.vy *= 1 - friction
 				if world.collision(@toWorld(nock))
-					console.log("nock collided")
+					# console.log("nock collided")
 					nock.x -= nock.vx / steps
 					nock.y -= nock.vy / steps
 					nock.vx *= 1 - friction
