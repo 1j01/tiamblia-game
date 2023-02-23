@@ -61,7 +61,7 @@ module.exports = class Arrow extends Entity
 
 			# Note: can't require Player here (to use instanceof check) because of circular dependency
 			hit = world.collision(@toWorld(tip), types: (entity)=>
-				entity.constructor.name not in ["Arrow", "Player", "Bow"]
+				entity.constructor.name not in ["Arrow", "Player", "Bow", "Rock"]
 			)
 			if hit and not @lodging_constraints.length
 				# collision() doesn't give us the line segment that we hit.
