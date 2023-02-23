@@ -4,6 +4,7 @@ Math.seedrandom("A world")
 {View, Mouse, Editor} = require "skele2d"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
+require "./arrow-test.coffee"
 
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/Rock.coffee"
