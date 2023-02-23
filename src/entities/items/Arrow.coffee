@@ -158,6 +158,9 @@ module.exports = class Arrow extends Entity
 			# Constrain when lodged in an object.
 			for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
 				hit_entity = world.getEntityByID(hit_entity_id)
+				if not hit_entity # no longer exists
+					@lodging_constraints = []
+					break
 				hit_segment = hit_entity.structure.segments[hit_segment_name]
 
 				hit_segment_pos = hit_entity.toWorld({
@@ -255,6 +258,8 @@ module.exports = class Arrow extends Entity
 		
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio, towards_surface_speed} in @lodging_constraints
 			hit_entity = window.the_world.getEntityByID(hit_entity_id)
+			if not hit_entity # no longer exists
+				continue
 			hit_segment = hit_entity.structure.segments[hit_segment_name]
 
 			if not hit_entity.toWorld
