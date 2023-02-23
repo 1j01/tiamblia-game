@@ -70,6 +70,7 @@ module.exports = class Arrow extends Entity
 				nock_relative = hit.fromWorld(@toWorld(nock))
 				hit_segment = undefined
 				relative_angle = undefined
+				towards_surface_speed = undefined
 				hit_segment_position_ratio = 0
 				arrow_segment_position_ratio = 0 # AKA depth ratio
 				for segment_name, segment of hit.structure.segments
@@ -77,6 +78,13 @@ module.exports = class Arrow extends Entity
 						normal = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
 						arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x)
 						relative_angle = arrow_angle - normal
+						# Arrows coming in at a grazing angle should bounce off.
+						# Arrows going slow should bounce off.
+						# Therefore, a combination of speed and angle of incidence is needed.
+						# Arrows going fast enough towards the surface (i.e. in the axis perpendicular to the surface) should lodge.
+						towards_surface_speed = Math.sin(-normal) * tip.vx + Math.cos(-normal) * tip.vy
+						towards_surface_speed = Math.abs(towards_surface_speed)
+						# console.log "towards_surface_speed", towards_surface_speed
 						hit_segment = segment
 						# find position ratios of the intersection point on each segment
 						p1 = segment.a
@@ -106,6 +114,7 @@ module.exports = class Arrow extends Entity
 						relative_angle
 						hit_segment_position_ratio
 						arrow_segment_position_ratio
+						towards_surface_speed
 					}
 					@lodging_constraints.push(constraint)
 			
@@ -240,7 +249,7 @@ module.exports = class Arrow extends Entity
 
 		return unless window.debug_mode
 		
-		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
+		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio, towards_surface_speed} in @lodging_constraints
 			hit_entity = window.the_world.getEntityByID(hit_entity_id)
 			hit_segment = hit_entity.structure.segments[hit_segment_name]
 
@@ -275,6 +284,14 @@ module.exports = class Arrow extends Entity
 			ctx.lineWidth = 1
 			ctx.lineCap = "round"
 			ctx.strokeStyle = "#00FF00"
+			ctx.stroke()
+
+			ctx.beginPath()
+			ctx.moveTo(tip.x, tip.y)
+			ctx.lineTo(nock.x, nock.y)
+			ctx.lineWidth = 2
+			ctx.lineCap = "round"
+			ctx.strokeStyle = "hsl(50, 100%, #{towards_surface_speed * 10}%)"
 			ctx.stroke()
 
 
