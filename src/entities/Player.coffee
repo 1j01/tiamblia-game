@@ -11,6 +11,7 @@ TAU = Math.PI * 2
 gamepad_aiming = false
 gamepad_detect_threshold = 0.5 # axis value (not a deadzone! just switching from mouse to gamepad)
 gamepad_deadzone = 0.1 # axis value
+gamepad_jump_prev = false
 mouse_detect_threshold = 30 # pixels radius (movement can occur over any number of frames)
 mouse_detect_from = {x: 0, y: 0}
 addEventListener "mousemove", (e) ->
@@ -155,7 +156,8 @@ module.exports = class Player extends SimpleActor
 		for gamepad in (try navigator.getGamepads()) ? [] when gamepad
 			left or= gamepad.axes[0] < -0.5
 			right or= gamepad.axes[0] > 0.5
-			@jump or= gamepad.buttons[0].pressed
+			@jump or= gamepad.buttons[0].pressed and not gamepad_jump_prev
+			gamepad_jump_prev = gamepad.buttons[0].pressed
 			gamepad_draw_bow = gamepad.buttons[7].pressed
 			# gamepad_prime_bow = gamepad.buttons[4].pressed
 
