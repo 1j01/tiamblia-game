@@ -63,7 +63,7 @@ module.exports = class Arrow extends Entity
 			hit = world.collision(@toWorld(tip), types: (entity)=>
 				entity.constructor.name not in ["Arrow", "Player", "Bow"]
 			)
-			if hit
+			if hit and not @lodging_constraints.length
 				# collision() doesn't give us the line segment that we hit.
 				# We want to know the segment point in order to add a lodging constraint at the intersection point.
 				tip_relative = hit.fromWorld(@toWorld(tip))
