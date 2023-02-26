@@ -344,7 +344,7 @@ module.exports = class Player extends SimpleActor
 				@bow_drawn_to = draw_to
 			else
 				if prime_bow and @holding_arrow and bow.draw_distance > 2
-					force = bow.draw_distance * 2
+					force = bow.draw_distance / 2
 					for point_name, point of @holding_arrow.structure.points
 						point_vx = Math.cos(aim_angle) * force + @vx
 						point_vy = Math.sin(aim_angle) * force + @vy
