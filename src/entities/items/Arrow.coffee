@@ -187,16 +187,22 @@ module.exports = class Arrow extends Entity
 				if hit
 					coefficient_of_restitution = if hit.constructor.name is "Rock" then 0.5 else 0.2
 					# back up until there's no hit
-					limit = 40
+					max_iterations = 10
+					back_up_iterations = 0
 					vx = point.x - point.prev_x
 					vy = point.y - point.prev_y
-					while hit and limit > 0
-						limit -= 1
-						point.x -= vx * 0.1
-						point.y -= vy * 0.1
+					while hit and back_up_iterations <= max_iterations
+						back_up_iterations++
+						point.x -= vx / (max_iterations - 1)
+						point.y -= vy / (max_iterations - 1)
 						hit = world.collision(@toWorld(point))
-					# TODO: use different granularity when there's a hit; back up all the way and reduce step size
 					# bounce off the surface, reflecting the angle
+					# This old code uses vx/vy instead of prev_x/prev_y,
+					# would need to be updated for Verlet integration,
+					# and be sure to use x/y before above modification.
+					# With Verlet integration, the particles implicitly bounce,
+					# via changing the position, but I'm not sure if it's as accurate
+					# as an angle reflection could be.
 					# speed = Math.hypot(point.vx, point.vy)
 					# if speed > 0 and surface_angle?
 					# 	console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
@@ -205,8 +211,6 @@ module.exports = class Arrow extends Entity
 					# 	a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
 					# 	point.vx = Math.cos(a) * speed * coefficient_of_restitution
 					# 	point.vy = Math.sin(a) * speed * coefficient_of_restitution
-					# 	# TODO: use verlet integration so that the other point gets bounced properly
-					# 	# according to the distance constraint
 
 		# Constrain when lodged in an object.
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
