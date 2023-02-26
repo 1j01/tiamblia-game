@@ -47,7 +47,7 @@ module.exports = class Arrow extends Entity
 		
 		tip.vy += 0.1
 		nock.vy += 0.1
-		steps = 1
+		steps = 8
 		for [0..steps]
 			# Move the arrow.
 			# Ideally I would like to allow the arrow to move while lodged,
@@ -61,7 +61,7 @@ module.exports = class Arrow extends Entity
 
 			# Note: can't require Player here (to use instanceof check) because of circular dependency
 			hit = world.collision(@toWorld(tip), types: (entity)=>
-				entity.constructor.name not in ["Arrow", "Player", "Bow", "Rock"]
+				entity.constructor.name not in ["Arrow", "Player", "Bow"]
 			)
 			if hit and not @lodging_constraints.length
 				# collision() doesn't give us the line segment that we hit.
@@ -69,6 +69,7 @@ module.exports = class Arrow extends Entity
 				tip_relative = hit.fromWorld(@toWorld(tip))
 				nock_relative = hit.fromWorld(@toWorld(nock))
 				hit_segment = undefined
+				surface_angle = undefined
 				relative_angle = undefined
 				incident_speed = undefined # speed along the surface normal (i.e. towards the surface), ignoring motion along the surface
 				heading_angle_of_incidence = undefined
@@ -100,6 +101,9 @@ module.exports = class Arrow extends Entity
 							continue
 						if facing_angle_of_incidence > Math.PI / 4 # 45 degrees
 							console.log "not lodging, arrow is not facing head-on enough"
+							continue
+						if hit.constructor.name is "Rock"
+							console.log "not lodging, hit rock"
 							continue
 						
 						hit_segment = segment
@@ -142,19 +146,25 @@ module.exports = class Arrow extends Entity
 			# and maybe allow it to become dislodged, but it was causing numerical instability.
 			unless @lodging_constraints.length
 				# Collide with the ground.
-				friction = 0.2
-				if world.collision(@toWorld(tip))
-					# console.log("tip collided")
-					tip.x -= tip.vx / steps
-					tip.y -= tip.vy / steps
-					tip.vx *= 1 - friction
-					tip.vy *= 1 - friction
-				if world.collision(@toWorld(nock))
-					# console.log("nock collided")
-					nock.x -= nock.vx / steps
-					nock.y -= nock.vy / steps
-					nock.vx *= 1 - friction
-					nock.vy *= 1 - friction
+				for point in [tip, nock]
+					hit = world.collision(@toWorld(point))
+					if hit
+						coefficient_of_restitution = if hit.constructor.name is "Rock" then 0.5 else 0.2
+						# back up
+						# TODO: use different granularity when there's a hit; back up all the way and reduce step size
+						point.x -= point.vx / steps
+						point.y -= point.vy / steps
+						# bounce off the surface, reflecting the angle
+						speed = Math.hypot(point.vx, point.vy)
+						if speed > 0 and surface_angle?
+							console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
+							heading_angle = Math.atan2(point.vy, point.vx)
+							a = surface_angle * 2 - heading_angle
+							a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
+							point.vx = Math.cos(a) * speed * coefficient_of_restitution
+							point.vy = Math.sin(a) * speed * coefficient_of_restitution
+							# TODO: use verlet integration so that the other point gets bounced properly
+							# according to the distance constraint
 
 			# Introduce drag on fletched side, perpendicular to the arrow shaft.
 			# First, find the angle of the arrow shaft.
