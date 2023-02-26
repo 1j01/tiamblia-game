@@ -10,9 +10,13 @@ off_angle = 0
 addEventListener "mousemove", (e) ->
 	off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2)
 
+addEventListener "mousedown", (e) ->
+	if e.button is 1 # middle click
+		window.create_arrow_test_scene()
+
 module.exports = window.create_arrow_test_scene = ->
 
-	setTimeout window.create_arrow_test_scene, 1000
+	# setTimeout window.create_arrow_test_scene, 1000
 
 	world = window.the_world
 
