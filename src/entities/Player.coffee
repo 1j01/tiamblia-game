@@ -346,8 +346,10 @@ module.exports = class Player extends SimpleActor
 				if prime_bow and @holding_arrow and bow.draw_distance > 2
 					force = bow.draw_distance * 2
 					for point_name, point of @holding_arrow.structure.points
-						point.vx = Math.cos(aim_angle) * force + @vx
-						point.vy = Math.sin(aim_angle) * force + @vy
+						point_vx = Math.cos(aim_angle) * force + @vx
+						point_vy = Math.sin(aim_angle) * force + @vy
+						point.prev_x = point.x - point_vx
+						point.prev_y = point.y - point_vy
 					@holding_arrow = null
 				bow.draw_distance = 0
 				# FIXME: this should be an ease-in transition, not ease-out
@@ -394,10 +396,6 @@ module.exports = class Player extends SimpleActor
 			arrow.y = @y
 			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
-			arrow.structure.points.nock.vx = 0
-			arrow.structure.points.nock.vy = 0
-			arrow.structure.points.tip.vx = 0
-			arrow.structure.points.tip.vy = 0
 			if prime_bow
 				arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle)
 				arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle)
@@ -411,6 +409,12 @@ module.exports = class Player extends SimpleActor
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
 				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle)
 				arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle)
+
+			# Cancel implicit velocity
+			arrow.structure.points.nock.prev_x = arrow.structure.points.nock.x
+			arrow.structure.points.nock.prev_y = arrow.structure.points.nock.y
+			arrow.structure.points.tip.prev_x = arrow.structure.points.tip.x
+			arrow.structure.points.tip.prev_y = arrow.structure.points.tip.y
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
