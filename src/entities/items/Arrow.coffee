@@ -45,8 +45,8 @@ module.exports = class Arrow extends Entity
 		# leading to a slight rotation.
 		# However the fletching shouldn't introduce much drag in the direction of travel.
 		
-		# tip.vy += 0.1
-		# nock.vy += 0.1
+		tip.vy += 0.1
+		nock.vy += 0.1
 		steps = 1
 		for [0..steps]
 			# Move the arrow.

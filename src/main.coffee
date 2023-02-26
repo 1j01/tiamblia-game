@@ -21,14 +21,11 @@ world = new World
 
 window.the_world = world
 
-# terrain = new SavannaGrass
-# world.entities.push terrain
-# terrain.x = 0
-# terrain.y = 0
-# terrain.generate()
-
-window.debug_mode = true
-window.create_arrow_test_scene()
+terrain = new SavannaGrass
+world.entities.push terrain
+terrain.x = 0
+terrain.y = 0
+terrain.generate()
 
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
@@ -40,10 +37,10 @@ view_smoothness = 7
 mouse = new Mouse(canvas)
 
 editor = @editor = new Editor(world, view, view_to, canvas, mouse)
-# try
-# 	editor.load()
-# catch e
-# 	console?.error? "Failed to load save:", e
+try
+	editor.load()
+catch e
+	console?.error? "Failed to load save:", e
 
 try
 	view_to.center_x = view.center_x = parseFloat(localStorage.view_center_x) unless isNaN(localStorage.view_center_x)
