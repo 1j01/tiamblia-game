@@ -283,10 +283,10 @@ module.exports = class Arrow extends Entity
 						# })
 
 					# bounce off the surface, reflecting the angle
-					# (if the surface is known)
-					if speed > 0 and surface_angle?
+					if speed > 0
 						console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
 						heading_angle = Math.atan2(vy, vx)
+						surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 						a = surface_angle * 2 - heading_angle
 						a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
 						point.prev_x = point.x - Math.cos(a) * speed * coefficient_of_restitution
@@ -313,8 +313,6 @@ module.exports = class Arrow extends Entity
 							other_point.y += delta_y * diff
 						else
 							console.warn("diff is not finite, for momentary distance constraint")
-					else if not surface_angle?
-						console.log("unknown surface angle, not bouncing off")
 
 		# Constrain when lodged in an object.
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
