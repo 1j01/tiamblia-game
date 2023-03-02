@@ -234,6 +234,11 @@ module.exports = class Arrow extends Entity
 				hit = world.collision(@toWorld(point))
 				if hit
 					coefficient_of_restitution = if hit.constructor.name is "Rock" then 0.5 else 0.1
+
+					vx = point.x - point.prev_x
+					vy = point.y - point.prev_y
+					speed = Math.hypot(vx, vy)
+
 					# Project the point back to the surface of the polygon.
 					# This is done by finding the closest point on the polygon's edges.
 					closest_distance = Infinity
@@ -252,7 +257,6 @@ module.exports = class Arrow extends Entity
 
 					# bounce off the surface, reflecting the angle
 					# (if the surface is known)
-					speed = Math.hypot(vx, vy)
 					if speed > 0 and surface_angle?
 						console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
 						heading_angle = Math.atan2(vy, vx)
