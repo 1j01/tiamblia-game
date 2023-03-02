@@ -12,10 +12,10 @@ module.exports = class World
 		entities: @entities
 
 	fromJSON: (def)->
-		unless def.entities instanceof Array
-			throw new Error "Expected entities to be an array, got #{def.entities}"
 		# upgrade old versions of the format
 		if not def.formatVersion
+			if def.entities not instanceof Array
+				throw new Error "Expected entities to be an array, got #{def.entities}"
 			def.formatVersion = 1
 			# Arrow now uses prev_x/prev_y instead of of vx/vy for velocity
 			# (Velocity is now implicit in the difference between prev_x/prev_y and x/y)
@@ -28,7 +28,17 @@ module.exports = class World
 				delete ent_def.structure.points.nock.vy
 				delete ent_def.structure.points.tip.vx
 				delete ent_def.structure.points.tip.vy
+		if def.formatVersion > 1
+			throw new Error "The format version #{def.formatVersion} is too new for this version of the game."
+		# In case the format version format changes to a string or something
+		if def.formatVersion isnt 1
+			throw new Error "Unsupported format version #{def.formatVersion}"
 		
+		# Validate the current format a bit
+		if def.entities not instanceof Array
+			throw new Error "Expected entities to be an array, got #{def.entities}"
+		
+		# Initialize the world
 		@entities = (Entity.fromJSON(ent_def) for ent_def in def.entities)
 		for entity in @entities
 			entity.resolveReferences(@)
