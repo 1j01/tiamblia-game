@@ -38,6 +38,10 @@ closestPointOnLineSegment = (point, a, b)->
 	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
 
 
+debug_drawings = new Map # Arrow to function(ctx)
+
+window.debug_drawings = debug_drawings
+
 module.exports = class Arrow extends Entity
 	addEntityClass(@)
 	constructor: ->
@@ -241,6 +245,21 @@ module.exports = class Arrow extends Entity
 					vy = point.y - point.prev_y
 					speed = Math.hypot(vx, vy)
 
+					if not debug_drawings.has(@)
+						debug_drawings.set(@, [])
+					debug_drawings.get(@).push({
+						type: "line"
+						a: {x: point.x, y: point.y}
+						b: {x: point.x + vx, y: point.y + vy}
+						color: "yellow"
+					})
+					# debug_drawings.get(@).push({
+					# 	type: "circle"
+					# 	center: {x: point.x, y: point.y}
+					# 	radius: 5
+					# 	color: "yellow"
+					# })
+
 					# Project the point back to the surface of the polygon.
 					# This is done by finding the closest point on the polygon's edges.
 					closest_distance = Infinity
@@ -256,6 +275,12 @@ module.exports = class Arrow extends Entity
 						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
+						# debug_drawings.get(@).push({
+						# 	type: "circle"
+						# 	center: {x: point.x, y: point.y}
+						# 	radius: 5
+						# 	color: "lime"
+						# })
 
 					# bounce off the surface, reflecting the angle
 					# (if the surface is known)
@@ -395,6 +420,25 @@ module.exports = class Arrow extends Entity
 
 		return unless window.debug_mode
 		
+		if debug_drawings.get(@)
+			for drawing in debug_drawings.get(@)
+				if drawing.type is "line"
+					ctx.beginPath()
+					ctx.moveTo(drawing.a.x, drawing.a.y)
+					ctx.lineTo(drawing.b.x, drawing.b.y)
+					ctx.lineWidth = 1
+					ctx.lineCap = "round"
+					ctx.strokeStyle = drawing.color ? "#FF0000"
+					ctx.stroke()
+				else if drawing.type is "circle"
+					ctx.beginPath()
+					ctx.arc(drawing.center.x, drawing.center.y, drawing.radius, 0, TAU)
+					ctx.lineWidth = 1
+					ctx.strokeStyle = drawing.color ? "#FF0000"
+					ctx.stroke()
+				else
+					console.error("Unknown debug drawing type: #{drawing.type}")
+
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio, incident_speed, facing_angle_of_incidence, heading_angle_of_incidence} in @lodging_constraints
 			hit_entity = window.the_world.getEntityByID(hit_entity_id)
 			if not hit_entity # no longer exists
