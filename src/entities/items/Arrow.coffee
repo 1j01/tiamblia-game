@@ -289,8 +289,11 @@ module.exports = class Arrow extends Entity
 						surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 						a = surface_angle * 2 - heading_angle
 						a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
-						point.prev_x = point.x - Math.cos(a) * speed * coefficient_of_restitution
-						point.prev_y = point.y - Math.sin(a) * speed * coefficient_of_restitution
+						new_vx = Math.cos(a) * speed * coefficient_of_restitution
+						new_vy = Math.sin(a) * speed * coefficient_of_restitution
+						console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
+						point.prev_x = point.x - new_vx
+						point.prev_y = point.y - new_vy
 						# At this point, the other particle's velocity has not been updated,
 						# and it will often cancel out the bounce even for a perfectly elastic collision.
 						# That's not good enough.
