@@ -42,10 +42,10 @@ module.exports = window.create_arrow_test_scene = ->
 			arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle + off_angle)
 			arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle + off_angle)
 			arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle + off_angle)
-			arrow.structure.points.nock.vx = 5 * Math.cos(arrow_angle)
-			arrow.structure.points.nock.vy = 5 * Math.sin(arrow_angle)
-			arrow.structure.points.tip.vx = 5 * Math.cos(arrow_angle)
-			arrow.structure.points.tip.vy = 5 * Math.sin(arrow_angle)
+			arrow.setVelocity(
+				5 * Math.cos(arrow_angle)
+				5 * Math.sin(arrow_angle)
+			)
 			arrows.push(arrow)
 	
 	world.entities.push(arrows...)
