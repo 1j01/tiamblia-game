@@ -33,10 +33,23 @@ module.exports = class Arrow extends Entity
 		@structure.points.tip.x += @length
 		@structure.points.tip.prev_x = @structure.points.tip.x
 
+	@steps_per_frame = 8
+
+	setVelocity: (vx, vy)->
+		@structure.points.tip.prev_x = @structure.points.tip.x - vx / Arrow.steps_per_frame
+		@structure.points.tip.prev_y = @structure.points.tip.y - vy / Arrow.steps_per_frame
+		@structure.points.nock.prev_x = @structure.points.nock.x - vx / Arrow.steps_per_frame
+		@structure.points.nock.prev_y = @structure.points.nock.y - vy / Arrow.steps_per_frame
+
+	getAverageVelocity: ->
+		{tip, nock} = @structure.points
+		vx = (tip.x - tip.prev_x + nock.x - nock.prev_x) / 2 * Arrow.steps_per_frame
+		vy = (tip.y - tip.prev_y + nock.y - nock.prev_y) / 2 * Arrow.steps_per_frame
+		return [vx, vy]
+
 	step: (world)->
-		steps = 8
-		for [0..steps]
-			@substep(world, 1 / steps)
+		for [0..Arrow.steps_per_frame]
+			@substep(world, 1 / Arrow.steps_per_frame)
 
 	substep: (world, delta_time)->
 

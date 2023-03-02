@@ -185,17 +185,12 @@ module.exports = class Player extends SimpleActor
 			for entity in world.getEntitiesOfType(EntityClass)
 				from_point_in_entity_space = entity.fromWorld(from_point_in_world)
 				moving_too_fast = no
-				for point_name, point of entity.structure.points
-					if point.prev_x? and point.prev_y?
-						vx = point.x - point.prev_x
-						vy = point.y - point.prev_y
-					else
-						vx = point.vx
-						vy = point.vy
-					if vx? and vy?
-						if Math.abs(vx) + Math.abs(vy) > 2
-							moving_too_fast = yes
-							break
+				# Arrow defines getAverageVelocity
+				# Bow doesn't move, and we're not handling picking up anything else yet
+				if entity.getAverageVelocity?
+					[vx, vy] = entity.getAverageVelocity()
+					if Math.abs(vx) + Math.abs(vy) > 2
+						moving_too_fast = yes
 				unless moving_too_fast
 					for segment_name, segment of entity.structure.segments
 						dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
@@ -345,11 +340,10 @@ module.exports = class Player extends SimpleActor
 			else
 				if prime_bow and @holding_arrow and bow.draw_distance > 2
 					force = bow.draw_distance * 2
-					for point_name, point of @holding_arrow.structure.points
-						point_vx = Math.cos(aim_angle) * force + @vx
-						point_vy = Math.sin(aim_angle) * force + @vy
-						point.prev_x = point.x - point_vx
-						point.prev_y = point.y - point_vy
+					@holding_arrow.setVelocity(
+						Math.cos(aim_angle) * force + @vx
+						Math.sin(aim_angle) * force + @vy
+					)
 					@holding_arrow = null
 				bow.draw_distance = 0
 				# FIXME: this should be an ease-in transition, not ease-out
@@ -410,11 +404,9 @@ module.exports = class Player extends SimpleActor
 				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle)
 				arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle)
 
-			# Cancel implicit velocity
-			arrow.structure.points.nock.prev_x = arrow.structure.points.nock.x
-			arrow.structure.points.nock.prev_y = arrow.structure.points.nock.y
-			arrow.structure.points.tip.prev_x = arrow.structure.points.tip.x
-			arrow.structure.points.tip.prev_y = arrow.structure.points.tip.y
+			# Cancel implicit velocity from moving the arrow's "current positions"
+			# (This updates the "previous positions" that imply velocity.)
+			arrow.setVelocity(0, 0)
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
