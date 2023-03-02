@@ -201,6 +201,7 @@ module.exports = class Player extends SimpleActor
 		
 		pick_up_any Bow, "holding_bow"
 		pick_up_any Arrow, "holding_arrow"
+		# Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
 		
 		prevent_idle = =>
 			@idle_timer = 0
