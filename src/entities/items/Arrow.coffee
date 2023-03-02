@@ -240,6 +240,7 @@ module.exports = class Arrow extends Entity
 				hit = world.collision(@toWorld(point))
 				if hit
 					coefficient_of_restitution = if hit.constructor.name is "Rock" then 0.5 else 0.1
+					coefficient_of_friction = 0.1
 
 					vx = point.x - point.prev_x
 					vy = point.y - point.prev_y
@@ -302,6 +303,7 @@ module.exports = class Arrow extends Entity
 						[rotated_vx, rotated_vy] = [vx, vy].map((val, idx) => rot_matrix1[idx][0] * vx + rot_matrix1[idx][1] * vy)
 						# Reflect the velocity vector.
 						rotated_vx *= -coefficient_of_restitution
+						rotated_vy *= (1 - coefficient_of_friction)
 						# Rotate the velocity vector back to the original direction.
 						rot_matrix2 = [
 							[Math.cos(-surface_angle), -Math.sin(-surface_angle)]
