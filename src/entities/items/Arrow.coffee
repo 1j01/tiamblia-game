@@ -284,6 +284,8 @@ module.exports = class Arrow extends Entity
 
 					# bounce off the surface, reflecting the angle
 					if speed > 0
+						vx = point.x - point.prev_x
+						vy = point.y - point.prev_y
 						console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
 						# heading_angle = Math.atan2(vy, vx)
 						surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
