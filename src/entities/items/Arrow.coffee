@@ -204,26 +204,24 @@ module.exports = class Arrow extends Entity
 					back_up_iterations = 0
 					vx = point.x - point.prev_x
 					vy = point.y - point.prev_y
-					while hit and back_up_iterations <= max_iterations
+					while back_up_iterations <= max_iterations
 						back_up_iterations++
 						point.x -= vx / (max_iterations - 1)
 						point.y -= vy / (max_iterations - 1)
-						hit = world.collision(@toWorld(point))
+						break unless world.collision(@toWorld(point))
 					# bounce off the surface, reflecting the angle
-					# This old code uses vx/vy instead of prev_x/prev_y,
-					# would need to be updated for Verlet integration,
-					# and be sure to use x/y before above modification.
-					# With Verlet integration, the particles implicitly bounce,
-					# via changing the position, but I'm not sure if it's as accurate
-					# as an angle reflection could be.
-					# speed = Math.hypot(point.vx, point.vy)
-					# if speed > 0 and surface_angle?
-					# 	console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
-					# 	heading_angle = Math.atan2(point.vy, point.vx)
-					# 	a = surface_angle * 2 - heading_angle
-					# 	a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
-					# 	point.vx = Math.cos(a) * speed * coefficient_of_restitution
-					# 	point.vy = Math.sin(a) * speed * coefficient_of_restitution
+					# (if the surface is known)
+					speed = Math.hypot(vx, vy)
+					if speed > 0 and surface_angle?
+						console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
+						heading_angle = Math.atan2(vy, vx)
+						a = surface_angle * 2 - heading_angle
+						a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
+						if isFinite(a) and isFinite(speed) and isFinite(coefficient_of_restitution)
+							point.prev_x = point.x - Math.cos(a) * speed * coefficient_of_restitution
+							point.prev_y = point.x - Math.sin(a) * speed * coefficient_of_restitution
+						else
+							console.log("not a number???", a, speed, coefficient_of_restitution)
 
 		# Constrain when lodged in an object.
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
