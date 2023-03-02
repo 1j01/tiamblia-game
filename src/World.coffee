@@ -7,9 +7,28 @@ module.exports = class World
 	constructor: ->
 		@entities = []
 	
+	toJSON: ->
+		formatVersion: 1
+		entities: @entities
+
 	fromJSON: (def)->
 		unless def.entities instanceof Array
 			throw new Error "Expected entities to be an array, got #{def.entities}"
+		# upgrade old versions of the format
+		if not def.formatVersion
+			def.formatVersion = 1
+			# Arrow now uses prev_x/prev_y instead of of vx/vy for velocity
+			# (Velocity is now implicit in the difference between prev_x/prev_y and x/y)
+			for ent_def in def.entities when ent_def._class_ is "Arrow"
+				ent_def.structure.points.nock.prev_x = ent_def.structure.points.nock.x - ent_def.structure.points.nock.vx
+				ent_def.structure.points.nock.prev_y = ent_def.structure.points.nock.y - ent_def.structure.points.nock.vy
+				ent_def.structure.points.tip.prev_x = ent_def.structure.points.tip.x - ent_def.structure.points.tip.vx
+				ent_def.structure.points.tip.prev_y = ent_def.structure.points.tip.y - ent_def.structure.points.tip.vy
+				delete ent_def.structure.points.nock.vx
+				delete ent_def.structure.points.nock.vy
+				delete ent_def.structure.points.tip.vx
+				delete ent_def.structure.points.tip.vy
+		
 		@entities = (Entity.fromJSON(ent_def) for ent_def in def.entities)
 		for entity in @entities
 			entity.resolveReferences(@)
