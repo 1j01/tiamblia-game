@@ -187,13 +187,13 @@ module.exports = class Arrow extends Entity
 					# The time subdivision shouldn't affect the speed threshold.
 					incident_speed_global_scale = incident_speed * Arrow.steps_per_frame
 					if incident_speed_global_scale < 2
-						console.log "not lodging, incident_speed_global_scale too low", incident_speed_global_scale
+						# console.log "not lodging, incident_speed_global_scale too low", incident_speed_global_scale
 						continue
 					if facing_angle_of_incidence > Math.PI / 4 # 45 degrees
-						console.log "not lodging, arrow is not facing head-on enough"
+						# console.log "not lodging, arrow is not facing head-on enough"
 						continue
 					if hit.constructor.name is "Rock"
-						console.log "not lodging, hit rock"
+						# console.log "not lodging, hit rock"
 						continue
 					
 					hit_segment = segment
@@ -246,20 +246,20 @@ module.exports = class Arrow extends Entity
 					vy = point.y - point.prev_y
 					speed = Math.hypot(vx, vy)
 
-					if not debug_drawings.has(@)
-						debug_drawings.set(@, [])
-					debug_drawings.get(@).push({
-						type: "line"
-						a: {x: point.x, y: point.y}
-						b: {x: point.x + vx, y: point.y + vy}
-						color: "yellow"
-					})
+					# if not debug_drawings.has(@)
+					# 	debug_drawings.set(@, [])
 					# debug_drawings.get(@).push({
-					# 	type: "circle"
-					# 	center: {x: point.x, y: point.y}
-					# 	radius: 5
+					# 	type: "line"
+					# 	a: {x: point.x, y: point.y}
+					# 	b: {x: point.x + vx, y: point.y + vy}
 					# 	color: "yellow"
 					# })
+					# # debug_drawings.get(@).push({
+					# # 	type: "circle"
+					# # 	center: {x: point.x, y: point.y}
+					# # 	radius: 5
+					# # 	color: "yellow"
+					# # })
 
 					# Project the point back to the surface of the polygon.
 					# This is done by finding the closest point on the polygon's edges.
@@ -287,7 +287,7 @@ module.exports = class Arrow extends Entity
 					if speed > 0
 						vx = point.x - point.prev_x
 						vy = point.y - point.prev_y
-						console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
+						# console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
 						# heading_angle = Math.atan2(vy, vx)
 						surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 						# a = surface_angle * 2 - heading_angle
@@ -311,7 +311,7 @@ module.exports = class Arrow extends Entity
 						]
 						[new_vx, new_vy] = [rotated_vx, rotated_vy].map((val, idx) => rot_matrix2[idx][0] * rotated_vx + rot_matrix2[idx][1] * rotated_vy)
 
-						console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
+						# console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
 						point.prev_x = point.x - new_vx
 						point.prev_y = point.y - new_vy
 						# At this point, the other particle's velocity has not been updated,
