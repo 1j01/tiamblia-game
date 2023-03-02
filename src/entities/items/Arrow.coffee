@@ -217,11 +217,32 @@ module.exports = class Arrow extends Entity
 						heading_angle = Math.atan2(vy, vx)
 						a = surface_angle * 2 - heading_angle
 						a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
-						if isFinite(a) and isFinite(speed) and isFinite(coefficient_of_restitution)
-							point.prev_x = point.x - Math.cos(a) * speed * coefficient_of_restitution
-							point.prev_y = point.x - Math.sin(a) * speed * coefficient_of_restitution
+						point.prev_x = point.x - Math.cos(a) * speed * coefficient_of_restitution
+						point.prev_y = point.y - Math.sin(a) * speed * coefficient_of_restitution
+						# At this point, the other particle's velocity has not been updated,
+						# and it will often cancel out the bounce even for a perfectly elastic collision.
+						# That's not good enough.
+						# Transfer energy along the arrow shaft,
+						# by constraining the distance between the two points.
+						# What this does is cancel the velocity of the other point,
+						# implicit in it having moved forwards in time,
+						# but only in the direction that it needs to.
+						# In contrast to the normal distance constraint, I'm not
+						# going to symmetrically move both points, but rather keep the
+						# collided point stationary so it doesn't get pushed back into the surface,
+						# and move the other point fully rather than halfway.
+						other_point = if point is tip then nock else tip
+						delta_x = point.x - other_point.x
+						delta_y = point.y - other_point.y
+						delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
+						diff = (delta_length - @length) / delta_length
+						if isFinite(diff)
+							other_point.x += delta_x * diff
+							other_point.y += delta_y * diff
 						else
-							console.log("not a number???", a, speed, coefficient_of_restitution)
+							console.warn("diff is not finite, for momentary distance constraint")
+					else if not surface_angle?
+						console.log("unknown surface angle, not bouncing off")
 
 		# Constrain when lodged in an object.
 		for {hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} in @lodging_constraints
