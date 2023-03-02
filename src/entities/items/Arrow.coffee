@@ -180,8 +180,10 @@ module.exports = class Arrow extends Entity
 					# A combination of speed, angle of incidence, and arrow angle is needed.
 
 					# Arrows going fast enough towards the surface (i.e. in the axis perpendicular to the surface) should lodge.
-					if incident_speed < 2
-						console.log "not lodging, incident_speed too low"
+					# The time subdivision shouldn't affect the speed threshold.
+					incident_speed_global_scale = incident_speed * Arrow.steps_per_frame
+					if incident_speed_global_scale < 2
+						console.log "not lodging, incident_speed_global_scale too low", incident_speed_global_scale
 						continue
 					if facing_angle_of_incidence > Math.PI / 4 # 45 degrees
 						console.log "not lodging, arrow is not facing head-on enough"
