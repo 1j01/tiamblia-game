@@ -3,6 +3,41 @@ Entity = require "../abstract/Entity.coffee"
 {lineSegmentsIntersect, distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
 
+###
+def GetClosestPoint(A, B, P)
+
+  a_to_p = [P.x - A.x, P.y - A.y]     # Storing vector A->P
+  a_to_b = [B.x - A.x, B.y - A.y]     # Storing vector A->B
+
+  atb2 = a_to_b[0]**2 + a_to_b[1]**2  # **2 means "squared"
+                                      #   Basically finding the squared magnitude
+                                      #   of a_to_b
+
+  atp_dot_atb = a_to_p[0]*a_to_b[0] + a_to_p[1]*a_to_b[1]
+                                      # The dot product of a_to_p and a_to_b
+
+  t = atp_dot_atb / atb2              # The normalized "distance" from a to
+                                      #   your closest point
+
+  return Point.new( :x => A.x + a_to_b[0]*t,
+                    :y => A.y + a_to_b[1]*t )
+                                      # Add the distance to A, moving
+                                      #   towards B
+
+end
+
+https://stackoverflow.com/a/3122532/2624876
+CoffeeScript converted from above Ruby code:
+###
+closestPointOnLineSegment = (point, a, b)->
+	a_to_p = {x: point.x - a.x, y: point.y - a.y}
+	a_to_b = {x: b.x - a.x, y: b.y - a.y}
+	atb2 = a_to_b.x**2 + a_to_b.y**2
+	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
+	t = atp_dot_atb / atb2
+	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
+
+
 module.exports = class Arrow extends Entity
 	addEntityClass(@)
 	constructor: ->
@@ -198,17 +233,23 @@ module.exports = class Arrow extends Entity
 			for point in [tip, nock]
 				hit = world.collision(@toWorld(point))
 				if hit
-					coefficient_of_restitution = if hit.constructor.name is "Rock" then 0.5 else 0.2
-					# back up until there's no hit
-					max_iterations = 10
-					back_up_iterations = 0
-					vx = point.x - point.prev_x
-					vy = point.y - point.prev_y
-					while back_up_iterations <= max_iterations
-						back_up_iterations++
-						point.x -= vx / (max_iterations - 1)
-						point.y -= vy / (max_iterations - 1)
-						break unless world.collision(@toWorld(point))
+					coefficient_of_restitution = if hit.constructor.name is "Rock" then 0.5 else 0.1
+					# Project the point back to the surface of the polygon.
+					# This is done by finding the closest point on the polygon's edges.
+					closest_distance = Infinity
+					closest_segment = null
+					point_in_hit_space = hit.fromWorld(@toWorld(point))
+					for segment_name, segment of hit.structure.segments
+						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+						if dist < closest_distance
+							closest_distance = dist
+							closest_segment = segment
+					if closest_segment
+						closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+						point.x = closest_point_local.x
+						point.y = closest_point_local.y
+
 					# bounce off the surface, reflecting the angle
 					# (if the surface is known)
 					speed = Math.hypot(vx, vy)
