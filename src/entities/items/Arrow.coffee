@@ -285,12 +285,28 @@ module.exports = class Arrow extends Entity
 					# bounce off the surface, reflecting the angle
 					if speed > 0
 						console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
-						heading_angle = Math.atan2(vy, vx)
+						# heading_angle = Math.atan2(vy, vx)
 						surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
-						a = surface_angle * 2 - heading_angle
-						a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
-						new_vx = Math.cos(a) * speed * coefficient_of_restitution
-						new_vy = Math.sin(a) * speed * coefficient_of_restitution
+						# a = surface_angle * 2 - heading_angle
+						# a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
+						# new_vx = Math.cos(a) * speed * coefficient_of_restitution
+						# new_vy = Math.sin(a) * speed * coefficient_of_restitution
+
+						# Rotate the velocity vector to the surface normal.
+						rot_matrix1 = [
+							[Math.cos(surface_angle), -Math.sin(surface_angle)]
+							[Math.sin(surface_angle), Math.cos(surface_angle)]
+						]
+						[rotated_vx, rotated_vy] = [vx, vy].map((val, idx) => rot_matrix1[idx][0] * vx + rot_matrix1[idx][1] * vy)
+						# Reflect the velocity vector.
+						rotated_vx *= -coefficient_of_restitution
+						# Rotate the velocity vector back to the original direction.
+						rot_matrix2 = [
+							[Math.cos(-surface_angle), -Math.sin(-surface_angle)]
+							[Math.sin(-surface_angle), Math.cos(-surface_angle)]
+						]
+						[new_vx, new_vy] = [rotated_vx, rotated_vy].map((val, idx) => rot_matrix2[idx][0] * rotated_vx + rot_matrix2[idx][1] * rotated_vy)
+
 						console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
 						point.prev_x = point.x - new_vx
 						point.prev_y = point.y - new_vy
