@@ -339,7 +339,11 @@ module.exports = class Player extends SimpleActor
 				bow.draw_distance += (5 - bow.draw_distance) / 5
 				@bow_drawn_to = draw_to
 			else
-				if prime_bow and @holding_arrow and bow.draw_distance > 2
+				if prime_bow and @holding_arrow and bow.draw_distance > 2 and not world.collision(
+					@holding_arrow.toWorld(@holding_arrow.structure.points["tip"])
+				) and not world.collision(
+					@holding_arrow.toWorld(@holding_arrow.structure.points["nock"])
+				)
 					force = bow.draw_distance * 2
 					@holding_arrow.setVelocity(
 						Math.cos(aim_angle) * force + @vx
