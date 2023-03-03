@@ -7,16 +7,18 @@ Arrow = require "./entities/items/Arrow.coffee"
 # and to disable some conditions on lodging and enable visualization of the lodging constraints.
 
 off_angle = 0
-addEventListener "mousemove", (e) ->
-	off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2)
+module.exports = window.enable_arrow_test_scene = ->
+	addEventListener "mousemove", (e) ->
+		off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2)
 
-addEventListener "mousedown", (e) ->
-	if e.button is 1 # middle click
-		window.create_arrow_test_scene()
+	addEventListener "mousedown", (e) ->
+		if e.button is 1 # middle click
+			window.create_arrow_test_scene()
+	
+	window.create_arrow_test_scene()
+	# setTimeout window.create_arrow_test_scene, 1000
 
 module.exports = window.create_arrow_test_scene = ->
-
-	# setTimeout window.create_arrow_test_scene, 1000
 
 	world = window.the_world
 
