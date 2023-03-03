@@ -52,3 +52,23 @@ module.exports = window.create_arrow_test_scene = ->
 	
 	world.entities.push(arrows...)
 		
+
+window.create_arrow_volley = ({x = 0, y = 0, angle_min = -Math.PI*3/4, angle_max = -Math.PI/4, speed_min = 5, speed_max = 20, count = 100}={}) ->
+	world = window.the_world
+	arrows = []
+	for i in [0...count]
+		arrow = new Arrow()
+		arrow.x = x
+		arrow.y = y
+		arrow_angle = Math.random() * (angle_max - angle_min) + angle_min
+		arrow_speed = Math.random() * (speed_max - speed_min) + speed_min
+		arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle)
+		arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle)
+		arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle)
+		arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle)
+		arrow.setVelocity(
+			arrow_speed * Math.cos(arrow_angle)
+			arrow_speed * Math.sin(arrow_angle)
+		)
+		arrows.push(arrow)
+	world.entities.push(arrows...)
