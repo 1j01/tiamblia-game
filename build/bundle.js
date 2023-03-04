@@ -3930,6 +3930,13 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
         enabled: this.world.entities.length
       }));
       menu.append(new Editor_coffee_MenuItem({
+        label: 'Select Same Type',
+        click: () => {
+          return this.selectAllSameType();
+        },
+        enabled: this.world.entities.length && this.selected_entities.length
+      }));
+      menu.append(new Editor_coffee_MenuItem({
         type: 'separator'
       }));
       if (this.editing_entity) {
@@ -4254,6 +4261,33 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
         return results;
       }).call(this);
     }
+  }
+
+  selectAllSameType() {
+    var entity, types;
+    types = this.editing_entity ? [this.editing_entity._class_] : (function() {
+      var j, len, ref, results;
+      ref = this.selected_entities;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        entity = ref[j];
+        results.push(entity._class_);
+      }
+      return results;
+    }).call(this);
+    this.finishEditingEntity();
+    return this.selected_entities = (function() {
+      var j, len, ref, ref1, results;
+      ref = this.world.entities;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        entity = ref[j];
+        if (ref1 = entity._class_, indexOf.call(types, ref1) >= 0) {
+          results.push(entity);
+        }
+      }
+      return results;
+    }).call(this);
   }
 
   delete() {
@@ -5272,104 +5306,269 @@ var Mouse;
 /***/ }),
 
 /***/ 378:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Entity, Terrain, World;
+var Entity, Terrain, World, distanceToLineSegment;
 
 Entity = __webpack_require__(293);
 
 Terrain = __webpack_require__(891);
 
-module.exports = World = class World {
-  constructor() {
-    this.entities = [];
-  }
+({distanceToLineSegment} = (__webpack_require__(432).helpers));
 
-  fromJSON(def) {
-    var ent_def, entity, i, len, ref, results;
-    if (!(def.entities instanceof Array)) {
-      throw new Error(`Expected entities to be an array, got ${def.entities}`);
+module.exports = World = (function() {
+  class World {
+    constructor() {
+      this.entities = [];
     }
-    this.entities = (function() {
-      var i, len, ref, results;
-      ref = def.entities;
+
+    toJSON() {
+      return {
+        formatVersion: World.formatVersion,
+        entities: this.entities
+      };
+    }
+
+    fromJSON(def) {
+      var ent_def, entity, i, j, len, len1, ref, ref1, results;
+      // upgrade old versions of the format
+      if (!def.formatVersion) {
+        if (!(def.entities instanceof Array)) {
+          throw new Error(`Expected entities to be an array, got ${def.entities}`);
+        }
+        def.formatVersion = 1;
+        ref = def.entities;
+        // Arrow now uses prev_x/prev_y instead of of vx/vy for velocity
+        // (Velocity is now implicit in the difference between prev_x/prev_y and x/y)
+        for (i = 0, len = ref.length; i < len; i++) {
+          ent_def = ref[i];
+          if (!(ent_def._class_ === "Arrow")) {
+            continue;
+          }
+          ent_def.structure.points.nock.prev_x = ent_def.structure.points.nock.x - ent_def.structure.points.nock.vx;
+          ent_def.structure.points.nock.prev_y = ent_def.structure.points.nock.y - ent_def.structure.points.nock.vy;
+          ent_def.structure.points.tip.prev_x = ent_def.structure.points.tip.x - ent_def.structure.points.tip.vx;
+          ent_def.structure.points.tip.prev_y = ent_def.structure.points.tip.y - ent_def.structure.points.tip.vy;
+          delete ent_def.structure.points.nock.vx;
+          delete ent_def.structure.points.nock.vy;
+          delete ent_def.structure.points.tip.vx;
+          delete ent_def.structure.points.tip.vy;
+        }
+      }
+      if (def.formatVersion === 1) {
+        def.formatVersion = 2;
+        // spell-checker: disable
+        // "elbo" is now "elbow" in Player's segment names
+        // do regex replace on JSON, since it's way simpler, and handles references too
+        def.entities = JSON.parse(JSON.stringify(def.entities).replace(/\belbo\b/g, 'elbow'));
+      }
+      // spell-checker: enable
+      // Note that the animation data also requires this rename, but there's no automatic upgrade system yet
+      if (def.formatVersion > World.formatVersion) {
+        throw new Error(`The format version ${def.formatVersion} is too new for this version of the game.`);
+      }
+      // In case the format version format changes to a string or something
+      if (def.formatVersion !== World.formatVersion) {
+        throw new Error(`Unsupported format version ${def.formatVersion}`);
+      }
+      
+      // Validate the current format a bit
+      if (!(def.entities instanceof Array)) {
+        throw new Error(`Expected entities to be an array, got ${def.entities}`);
+      }
+      
+      // Initialize the world
+      this.entities = (function() {
+        var j, len1, ref1, results;
+        ref1 = def.entities;
+        results = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          ent_def = ref1[j];
+          results.push(Entity.fromJSON(ent_def));
+        }
+        return results;
+      })();
+      ref1 = this.entities;
       results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        ent_def = ref[i];
-        results.push(Entity.fromJSON(ent_def));
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        entity = ref1[j];
+        results.push(entity.resolveReferences(this));
       }
       return results;
-    })();
-    ref = this.entities;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      results.push(entity.resolveReferences(this));
     }
-    return results;
-  }
 
-  getEntityByID(id) {
-    var entity, i, len, ref;
-    ref = this.entities;
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      if (entity.id === id) {
-        return entity;
-      }
-    }
-  }
-
-  getEntitiesOfType(Class) {
-    var entity, i, len, ref, results;
-    ref = this.entities;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      if (entity instanceof Class) {
-        results.push(entity);
-      }
-    }
-    return results;
-  }
-
-  drawBackground(ctx, view) {
-    ctx.fillStyle = "#32C8FF";
-    return ctx.fillRect(0, 0, view.width, view.height);
-  }
-
-  draw(ctx, view) {
-    var entity, i, len, ref, results;
-    ref = this.entities;
-    // ctx.fillStyle = "#32C8FF"
-    // {x, y} = view.toWorld({x: 0, y: 0})
-    // {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
-    // ctx.fillRect(x, y, width-x, height-y)
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      ctx.save();
-      ctx.translate(entity.x, entity.y);
-      entity.draw(ctx, view);
-      results.push(ctx.restore());
-    }
-    return results;
-  }
-
-  collision(point) {
-    var entity, i, len, ref;
-    ref = this.entities;
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
-      if (entity instanceof Terrain) {
-        if (entity.structure.pointInPolygon(entity.fromWorld(point))) {
-          return true;
+    getEntityByID(id) {
+      var entity, i, len, ref;
+      ref = this.entities;
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (entity.id === id) {
+          return entity;
         }
       }
     }
-    return false;
-  }
 
+    getEntitiesOfType(Class) {
+      var entity, i, len, ref, results;
+      ref = this.entities;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (entity instanceof Class) {
+          results.push(entity);
+        }
+      }
+      return results;
+    }
+
+    drawBackground(ctx, view) {
+      ctx.fillStyle = "#32C8FF";
+      return ctx.fillRect(0, 0, view.width, view.height);
+    }
+
+    draw(ctx, view) {
+      var entity, i, len, ref, results;
+      ref = this.entities;
+      // ctx.fillStyle = "#32C8FF"
+      // {x, y} = view.toWorld({x: 0, y: 0})
+      // {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
+      // ctx.fillRect(x, y, width-x, height-y)
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        ctx.save();
+        ctx.translate(entity.x, entity.y);
+        entity.draw(ctx, view);
+        results.push(ctx.restore());
+      }
+      return results;
+    }
+
+    collision(point, {types = [Terrain], lineThickness = 5} = {}) {
+      var dist, entity, filter, i, len, local_point, ref, ref1, segment, segment_name;
+      // lineThickness doesn't apply to polygons like Terrain
+      // also it's kind of a hack, because different entities could need different lineThicknesses
+      // and different segments within an entity too
+      if (typeof types === "function") {
+        filter = types;
+      } else {
+        filter = (entity) => {
+          return types.some((type) => {
+            var ref;
+            return (entity instanceof type) && ((ref = entity.solid) != null ? ref : true);
+          });
+        };
+      }
+      ref = this.entities;
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (filter(entity)) {
+          if (entity.structure.pointInPolygon != null) {
+            if (entity.structure.pointInPolygon(entity.fromWorld(point))) {
+              return entity;
+            }
+          } else {
+            local_point = entity.fromWorld(point);
+            ref1 = entity.structure.segments;
+            for (segment_name in ref1) {
+              segment = ref1[segment_name];
+              dist = distanceToLineSegment(local_point, segment.a, segment.b);
+              if (dist < lineThickness) {
+                return entity;
+              }
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+  };
+
+  World.formatVersion = 2;
+
+  return World;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 372:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var ArcheryTarget, Arrow, off_angle;
+
+ArcheryTarget = __webpack_require__(233);
+
+Arrow = __webpack_require__(943);
+
+// Note: It helps to disable gravity for this test for symmetry,
+// and to disable some conditions on lodging and enable visualization of the lodging constraints.
+off_angle = 0;
+
+module.exports = window.enable_arrow_test_scene = function() {
+  addEventListener("mousemove", function(e) {
+    return off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2);
+  });
+  addEventListener("mousedown", function(e) {
+    if (e.button === 1) { // middle click
+      return window.create_arrow_test_scene();
+    }
+  });
+  return window.create_arrow_test_scene();
+};
+
+// setTimeout window.create_arrow_test_scene, 1000
+module.exports = window.create_arrow_test_scene = function() {
+  var arrow, arrow_angle, arrows, j, k, ref, ref1, ref2, ref3, ref4, ref5, target, target_angle, world;
+  world = window.the_world;
+  world.entities.length = [];
+  arrows = [];
+  for (target_angle = j = ref = -Math.PI, ref1 = Math.PI, ref2 = Math.PI / 8; ref2 !== 0 && (ref2 > 0 ? j <= ref1 : j >= ref1); target_angle = j += ref2) {
+    target = new ArcheryTarget();
+    target.x = 200 * Math.cos(target_angle);
+    target.y = 200 * Math.sin(target_angle);
+    target.structure.points.a.x = -100 * Math.cos(target_angle);
+    target.structure.points.a.y = -100 * Math.sin(target_angle);
+    target.structure.points.b.x = 100 * Math.cos(target_angle);
+    target.structure.points.b.y = 100 * Math.sin(target_angle);
+    world.entities.push(target);
+
+    // Create arrows shooting at the target from various angles
+    for (arrow_angle = k = ref3 = -Math.PI, ref4 = Math.PI, ref5 = Math.PI / 16; ref5 !== 0 && (ref5 > 0 ? k <= ref4 : k >= ref4); arrow_angle = k += ref5) {
+      arrow = new Arrow();
+      arrow.x = target.x - 50 * Math.cos(arrow_angle);
+      arrow.y = target.y - 50 * Math.sin(arrow_angle);
+      arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle + off_angle);
+      arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle + off_angle);
+      arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle + off_angle);
+      arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle + off_angle);
+      arrow.setVelocity(5 * Math.cos(arrow_angle), 5 * Math.sin(arrow_angle));
+      arrows.push(arrow);
+    }
+  }
+  return world.entities.push(...arrows);
+};
+
+window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 4, angle_max = -Math.PI / 4, speed_min = 5, speed_max = 20, count = 100} = {}) {
+  var arrow, arrow_angle, arrow_speed, arrows, i, j, ref, world;
+  world = window.the_world;
+  arrows = [];
+  for (i = j = 0, ref = count; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
+    arrow = new Arrow();
+    arrow.x = x;
+    arrow.y = y;
+    arrow_angle = Math.random() * (angle_max - angle_min) + angle_min;
+    arrow_speed = Math.random() * (speed_max - speed_min) + speed_min;
+    arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle);
+    arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle);
+    arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle);
+    arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle);
+    arrow.setVelocity(arrow_speed * Math.cos(arrow_angle), arrow_speed * Math.sin(arrow_angle));
+    arrows.push(arrow);
+  }
+  return world.entities.push(...arrows);
 };
 
 
@@ -5553,7 +5752,7 @@ module.exports = GranddaddyLonglegs = (function() {
 /***/ 795:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, Terrain, addEntityClass, distance, distanceToLineSegment, keyboard, lineSegmentsIntersect,
+var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, Terrain, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, keyboard, lineSegmentsIntersect, mouse_detect_from, mouse_detect_threshold,
   modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 SimpleActor = __webpack_require__(339);
@@ -5573,6 +5772,29 @@ keyboard = __webpack_require__(866);
 ({distance, distanceToLineSegment, lineSegmentsIntersect} = (__webpack_require__(432).helpers));
 
 TAU = Math.PI * 2;
+
+gamepad_aiming = false;
+
+gamepad_detect_threshold = 0.5; // axis value (not a deadzone! just switching from mouse to gamepad)
+
+gamepad_deadzone = 0.1; // axis value
+
+gamepad_jump_prev = false;
+
+mouse_detect_threshold = 30; // pixels radius (movement can occur over any number of frames)
+
+mouse_detect_from = {
+  x: 0,
+  y: 0
+};
+
+addEventListener("mousemove", function(e) {
+  if (Math.hypot(e.clientX - mouse_detect_from.x, e.clientY - mouse_detect_from.y) > mouse_detect_threshold) {
+    gamepad_aiming = false;
+    mouse_detect_from.x = e.clientX;
+    return mouse_detect_from.y = e.clientY;
+  }
+});
 
 module.exports = Player = (function() {
   class Player extends SimpleActor {
@@ -5601,24 +5823,24 @@ module.exports = Player = (function() {
       });
       this.structure.addSegment({
         from: "left shoulder",
-        to: "left elbo",
+        to: "left elbow",
         name: "upper left arm",
         length: 10
       });
       this.structure.addSegment({
         from: "right shoulder",
-        to: "right elbo",
+        to: "right elbow",
         name: "upper right arm",
         length: 10
       });
       this.structure.addSegment({
-        from: "left elbo",
+        from: "left elbow",
         to: "left hand",
         name: "lower left arm",
         length: 10
       });
       this.structure.addSegment({
-        from: "right elbo",
+        from: "right elbow",
         to: "right hand",
         name: "lower right arm",
         length: 10
@@ -5689,46 +5911,87 @@ module.exports = Player = (function() {
     }
 
     step(world, view, mouse) {
-      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, draw_bow, draw_to, factor, find_ground_angle, force, from_point_in_world, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, left, max_draw_distance, max_y_diff, mouse_in_world, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbo, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, right, secondary_elbo, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation, x, y;
-      left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
-      right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
-      this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
-      // TODO: gamepad support
-      // TODO: configurable controls
-      this.move_x = right - left;
-      super.step(world);
+      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, down, draw_back_distance, draw_bow, draw_to, factor, find_ground_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, j, left, len, max_draw_distance, max_y_diff, mouse_draw_bow, mouse_in_world, mouse_prime_bow, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, ref3, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation, up, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
+      
+      // mouse controls
       mouse_in_world = view.toWorld(mouse);
       aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x);
+      mouse_prime_bow = mouse.RMB.down;
+      mouse_draw_bow = mouse.LMB.down;
+      // keyboard controls
+      left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
+      right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
+      up = keyboard.isHeld("KeyW") || keyboard.isHeld("ArrowUp"); // applies to swimming/climbing
+      down = keyboard.isHeld("KeyS") || keyboard.isHeld("ArrowDown");
+      this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
+      // gamepad controls
+      gamepad_draw_bow = false;
+      gamepad_prime_bow = false;
+      ref1 = (ref = ((function() {
+        try {
+          return navigator.getGamepads();
+        } catch (error) {}
+      })())) != null ? ref : [];
+      for (j = 0, len = ref1.length; j < len; j++) {
+        gamepad = ref1[j];
+        if (!(gamepad)) {
+          continue;
+        }
+        left || (left = gamepad.axes[0] < -0.5);
+        right || (right = gamepad.axes[0] > 0.5);
+        up || (up = gamepad.axes[1] < -0.5);
+        down || (down = gamepad.axes[1] > 0.5);
+        this.jump || (this.jump = gamepad.buttons[0].pressed && !gamepad_jump_prev);
+        gamepad_jump_prev = gamepad.buttons[0].pressed;
+        gamepad_draw_bow = gamepad.buttons[7].pressed;
+        // gamepad_prime_bow = gamepad.buttons[4].pressed
+        if (Math.hypot(gamepad.axes[2], gamepad.axes[3]) > gamepad_detect_threshold) {
+          gamepad_aiming = true;
+        }
+        if (gamepad_aiming) {
+          aim_angle = Math.atan2(gamepad.axes[3], gamepad.axes[2]);
+          // Reverse aiming can feel more natural, like drawing back the bow
+          // even though it's not the control to draw the bow
+          // TODO: It should be an option.
+          aim_angle += Math.PI;
+          draw_back_distance = Math.hypot(gamepad.axes[2], gamepad.axes[3]);
+          draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone);
+          gamepad_prime_bow = draw_back_distance > 0.3;
+        }
+      }
+      // TODO: configurable controls
+      this.move_x = right - left;
+      this.move_y = down - up;
+      // run SimpleActor physics, which uses @move_x and @jump
+      super.step(world);
       pick_up_any = (EntityClass, prop) => {
-        var dist, entity, from_point_in_entity_space, j, len, moving_too_fast, pickup_item, point, point_name, ref, ref1, ref2, ref3, segment, segment_name;
-        if ((ref = this[prop]) != null ? ref.destroyed : void 0) {
+        var dist, entity, from_point_in_entity_space, k, len1, moving_too_fast, pickup_item, ref2, ref3, ref4, segment, segment_name, vx, vy;
+        if ((ref2 = this[prop]) != null ? ref2.destroyed : void 0) {
           this[prop] = null;
         }
         if (this[prop]) {
           return;
         }
-        ref1 = world.getEntitiesOfType(EntityClass);
+        ref3 = world.getEntitiesOfType(EntityClass);
         // this is ridiculously complicated
-        for (j = 0, len = ref1.length; j < len; j++) {
-          entity = ref1[j];
+        for (k = 0, len1 = ref3.length; k < len1; k++) {
+          entity = ref3[k];
           from_point_in_entity_space = entity.fromWorld(from_point_in_world);
           moving_too_fast = false;
-          ref2 = entity.structure.points;
-          for (point_name in ref2) {
-            point = ref2[point_name];
-            if ((point.vx != null) && (point.vy != null)) {
-              if (Math.abs(point.vx) + Math.abs(point.vy) > 2) {
-                moving_too_fast = true;
-                break;
-              }
+          // Arrow defines getAverageVelocity
+          // Bow doesn't move, and we're not handling picking up anything else yet
+          if (entity.getAverageVelocity != null) {
+            [vx, vy] = entity.getAverageVelocity();
+            if (Math.abs(vx) + Math.abs(vy) > 2) {
+              moving_too_fast = true;
             }
           }
           if (!moving_too_fast) {
-            ref3 = entity.structure.segments;
-            for (segment_name in ref3) {
-              segment = ref3[segment_name];
+            ref4 = entity.structure.segments;
+            for (segment_name in ref4) {
+              segment = ref4[segment_name];
               dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
               if (dist < 50) {
                 pickup_item = entity;
@@ -5743,6 +6006,7 @@ module.exports = Player = (function() {
       };
       pick_up_any(Bow, "holding_bow");
       pick_up_any(Arrow, "holding_arrow");
+      // Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
       prevent_idle = () => {
         this.idle_timer = 0;
         return this.idle_animation = null;
@@ -5766,7 +6030,7 @@ module.exports = Player = (function() {
           this.subtle_idle_animation_position += 1 / 25;
           new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, this.subtle_idle_animation_position);
         } else {
-          new_pose = (ref = Player.poses["Stand"]) != null ? ref : this.structure.getPose();
+          new_pose = (ref2 = Player.poses["Stand"]) != null ? ref2 : this.structure.getPose();
         }
       } else {
         prevent_idle();
@@ -5783,7 +6047,7 @@ module.exports = Player = (function() {
       head_x_before_posing = this.structure.points["head"].x;
       head_y_before_posing = this.structure.points["head"].y;
       find_ground_angle = () => {
-        var a, angle, b, e_a, e_b, entity, j, len, ref1, ref2, segment, segment_name;
+        var a, angle, b, e_a, e_b, entity, k, len1, ref3, ref4, segment, segment_name;
         a = {
           x: this.x,
           y: this.y
@@ -5792,18 +6056,18 @@ module.exports = Player = (function() {
           x: this.x,
           y: this.y + 2 + this.height // slightly further down than collision code uses in SimpleActor
         };
-        ref1 = world.entities;
-        for (j = 0, len = ref1.length; j < len; j++) {
-          entity = ref1[j];
+        ref3 = world.entities;
+        for (k = 0, len1 = ref3.length; k < len1; k++) {
+          entity = ref3[k];
           if (entity instanceof Terrain) {
             if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
               // console.log "found ground"
               // find line segment intersecting ab
               e_a = entity.fromWorld(a);
               e_b = entity.fromWorld(b);
-              ref2 = entity.structure.segments;
-              for (segment_name in ref2) {
-                segment = ref2[segment_name];
+              ref4 = entity.structure.segments;
+              for (segment_name in ref4) {
+                segment = ref4[segment_name];
                 if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
                   // find the angle
                   angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
@@ -5835,9 +6099,9 @@ module.exports = Player = (function() {
           x: center.x,
           y: center.y // copy
         };
-        ref1 = new_pose.points;
-        for (point_name in ref1) {
-          point = ref1[point_name];
+        ref3 = new_pose.points;
+        for (point_name in ref3) {
+          point = ref3[point_name];
           // With this constant this small, it's almost like a conditional
           // of whether the point is below the pelvis or not.
           // With a larger number, it would bend the knees backwards.
@@ -5870,10 +6134,12 @@ module.exports = Player = (function() {
       // (given this)
       primary_hand = this.structure.points["right hand"];
       secondary_hand = this.structure.points["left hand"];
-      primary_elbo = this.structure.points["right elbo"];
-      secondary_elbo = this.structure.points["left elbo"];
-      prime_bow = this.holding_bow && mouse.RMB.down; // and @holding_arrow
-      draw_bow = prime_bow && mouse.LMB.down;
+      primary_elbow = this.structure.points["right elbow"];
+      secondary_elbow = this.structure.points["left elbow"];
+      
+      // Note: You're allowed to prime and draw the bow without an arrow.
+      prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
+      draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
       this.real_facing_x = this.facing_x;
       if (prime_bow) {
         // Restore head position, in order to do linear interpolation.
@@ -5897,14 +6163,9 @@ module.exports = Player = (function() {
           bow.draw_distance += (5 - bow.draw_distance) / 5;
           this.bow_drawn_to = draw_to;
         } else {
-          if (prime_bow && this.holding_arrow && bow.draw_distance > 2) {
+          if (prime_bow && this.holding_arrow && bow.draw_distance > 2 && !world.collision(this.holding_arrow.toWorld(this.holding_arrow.structure.points["tip"])) && !world.collision(this.holding_arrow.toWorld(this.holding_arrow.structure.points["nock"]))) {
             force = bow.draw_distance * 2;
-            ref2 = this.holding_arrow.structure.points;
-            for (point_name in ref2) {
-              point = ref2[point_name];
-              point.vx = Math.cos(aim_angle) * force;
-              point.vy = Math.sin(aim_angle) * force;
-            }
+            this.holding_arrow.setVelocity(Math.cos(aim_angle) * force + this.vx, Math.sin(aim_angle) * force + this.vy);
             this.holding_arrow = null;
           }
           bow.draw_distance = 0;
@@ -5916,13 +6177,13 @@ module.exports = Player = (function() {
           bow_angle = aim_angle;
           primary_hand.x = sternum.x + this.bow_drawn_to * Math.cos(aim_angle);
           primary_hand.y = sternum.y + this.bow_drawn_to * Math.sin(aim_angle);
-          primary_elbo.x = sternum.x + 5 * Math.cos(aim_angle);
-          primary_elbo.y = sternum.y + 5 * Math.sin(aim_angle);
-          // primary_elbo.y = sternum.y - 3
+          primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle);
+          primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle);
+          // primary_elbow.y = sternum.y - 3
           secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle);
           secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle);
-          secondary_elbo.x = sternum.x + 15 * Math.cos(aim_angle);
-          secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle);
+          secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle);
+          secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle);
           // make head look along aim path
           angle = modulo(aim_angle - Math.PI / 2, Math.PI * 2);
           this.real_facing_x = angle < Math.PI ? -1 : 1;
@@ -5932,7 +6193,7 @@ module.exports = Player = (function() {
           head.x += (new_head_x - head.x) / 5;
           head.y += (new_head_y - head.y) / 5;
         } else {
-          bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x);
+          bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x);
         }
         primary_hand_in_bow_space = bow.fromWorld(this.toWorld(primary_hand));
         secondary_hand_in_bow_space = bow.fromWorld(this.toWorld(secondary_hand));
@@ -5948,19 +6209,16 @@ module.exports = Player = (function() {
       }
       if (this.holding_arrow) {
         arrow = this.holding_arrow;
+        arrow.lodging_constraints.length = 0; // pull it out if it's lodged in an object
         arrow.x = this.x;
         arrow.y = this.y;
         primary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(primary_hand));
         secondary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(secondary_hand));
-        arrow.structure.points.nock.vx = 0;
-        arrow.structure.points.nock.vy = 0;
-        arrow.structure.points.tip.vx = 0;
-        arrow.structure.points.tip.vy = 0;
         if (prime_bow) {
           arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle);
           arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle);
           arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * Math.cos(aim_angle);
-          return arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
+          arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
         } else {
           angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x);
           arrow_angle = angle - (TAU / 4 + 0.2) * this.real_facing_x;
@@ -5968,8 +6226,11 @@ module.exports = Player = (function() {
           arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle);
           arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle);
           arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle);
-          return arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle);
+          arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle);
         }
+        // Cancel implicit velocity from moving the arrow's "current positions"
+        // (This updates the "previous positions" that imply velocity.)
+        return arrow.setVelocity(0, 0);
       }
     }
 
@@ -6428,19 +6689,36 @@ module.exports = SimpleActor = (function() {
       this.walk_speed = 4;
       this.run_speed = 6;
       this.move_x = 0;
+      this.move_y = 0;
       this.jump = false;
       this.grounded = false;
       this.facing_x = 0;
     }
 
     step(world) {
-      var go, move_x, move_y, resolution, results;
+      var go, more_submerged, move_x, move_y, resolution, results;
       if (this.y > 400) {
         return;
       }
       this.grounded = world.collision({
         x: this.x,
         y: this.y + 1 + this.height //or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+      });
+      this.submerged = world.collision({
+        x: this.x,
+        y: this.y + this.height * 0.9
+      }, {
+        types: (entity) => {
+          return entity.constructor.name === "Water";
+        }
+      });
+      more_submerged = this.submerged && world.collision({
+        x: this.x,
+        y: this.y + this.height * 0.4
+      }, {
+        types: (entity) => {
+          return entity.constructor.name === "Water";
+        }
       });
       if (this.grounded) {
         // if Math.abs(@vx) >= 1
@@ -6462,6 +6740,19 @@ module.exports = SimpleActor = (function() {
       }
       this.vx = Math.min(this.run_speed, Math.max(-this.run_speed, this.vx));
       this.vy += gravity;
+      if (this.submerged) {
+        if (more_submerged || this.move_y > 0) {
+          this.vy += this.move_y * 0.7;
+        }
+        this.vy *= 0.8;
+        this.vx *= 0.8;
+        if (!more_submerged) {
+          this.submerged.makeWaves({
+            x: this.x,
+            y: this.y + this.height * 0.9
+          }, this.width / 2, this.vy);
+        }
+      }
       this.grounded = false;
       // @vy *= 0.99
       move_x = this.vx;
@@ -6705,16 +6996,109 @@ module.exports = Tree = class Tree extends Entity {
 
 /***/ }),
 
-/***/ 943:
+/***/ 233:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Arrow, Entity, TAU, addEntityClass;
+var ArcheryTarget, Entity, TAU, addEntityClass;
 
 Entity = __webpack_require__(293);
 
 ({addEntityClass} = __webpack_require__(432));
 
 TAU = Math.PI * 2;
+
+module.exports = ArcheryTarget = (function() {
+  class ArcheryTarget extends Entity {
+    constructor() {
+      super();
+      this.structure.addPoint("a");
+      this.structure.addSegment({
+        from: "a",
+        to: "b",
+        name: "target",
+        length: 100
+      });
+      this.bbox_padding = 20;
+    }
+
+    initLayout() {
+      return this.structure.points.b.y += 100;
+    }
+
+    draw(ctx) {
+      var a, angle, b, center, color, colors, diameter, i, j, len, radius;
+      ({a, b} = this.structure.points);
+      angle = Math.atan2(b.y - a.y, b.x - a.x);
+      diameter = Math.hypot(b.x - a.x, b.y - a.y);
+      radius = diameter / 2;
+      center = {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+      };
+      ctx.save();
+      ctx.translate(center.x, center.y);
+      ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x));
+      ctx.scale(1, 1 / 3);
+      // Draw concentric circles
+      colors = ["#fff", "#000", "#0af", "#f00", "#ff0"];
+      for (i = j = 0, len = colors.length; j < len; i = ++j) {
+        color = colors[i];
+        ctx.beginPath();
+        ctx.arc(0, 0, (1 - i / colors.length) * radius, 0, TAU);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(ArcheryTarget);
+
+  return ArcheryTarget;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 943:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Arrow, Entity, TAU, addEntityClass, closestPointOnLineSegment, debug_drawings, distanceToLineSegment, lineSegmentsIntersect,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(432));
+
+({lineSegmentsIntersect, distanceToLineSegment} = (__webpack_require__(432).helpers));
+
+TAU = Math.PI * 2;
+
+closestPointOnLineSegment = function(point, a, b) {
+  var a_to_b, a_to_p, atb2, atp_dot_atb, t;
+  // https://stackoverflow.com/a/3122532/2624876
+  a_to_p = {
+    x: point.x - a.x,
+    y: point.y - a.y
+  };
+  a_to_b = {
+    x: b.x - a.x,
+    y: b.y - a.y
+  };
+  atb2 = a_to_b.x ** 2 + a_to_b.y ** 2;
+  atp_dot_atb = a_to_p.x * a_to_b.x + a_to_p.y * a_to_b.y;
+  t = atp_dot_atb / atb2;
+  return {
+    x: a.x + a_to_b.x * t,
+    y: a.y + a_to_b.y * t
+  };
+};
+
+debug_drawings = new Map(); // Arrow to function(ctx)
+
+window.debug_drawings = debug_drawings;
 
 module.exports = Arrow = (function() {
   class Arrow extends Entity {
@@ -6732,40 +7116,434 @@ module.exports = Arrow = (function() {
       ref = this.structure.points;
       for (point_name in ref) {
         point = ref[point_name];
-        point.vx = 0;
-        point.vy = 0;
+        point.prev_x = point.x;
+        point.prev_y = point.y;
+        point.ax = 0;
+        point.ay = 0;
       }
       this.bbox_padding = 20;
+      // When the arrow hits something, a constraint will be added between
+      // a point on the object, and a point on the arrow which may slide somewhat along the shaft.
+      this.lodging_constraints = [];
     }
 
     initLayout() {
-      return this.structure.points.tip.x += this.length;
+      this.structure.points.tip.x += this.length;
+      return this.structure.points.tip.prev_x = this.structure.points.tip.x;
+    }
+
+    setVelocity(vx, vy) {
+      this.structure.points.tip.prev_x = this.structure.points.tip.x - vx / Arrow.steps_per_frame;
+      this.structure.points.tip.prev_y = this.structure.points.tip.y - vy / Arrow.steps_per_frame;
+      this.structure.points.nock.prev_x = this.structure.points.nock.x - vx / Arrow.steps_per_frame;
+      return this.structure.points.nock.prev_y = this.structure.points.nock.y - vy / Arrow.steps_per_frame;
+    }
+
+    getAverageVelocity() {
+      var nock, tip, vx, vy;
+      ({tip, nock} = this.structure.points);
+      vx = (tip.x - tip.prev_x + nock.x - nock.prev_x) / 2 * Arrow.steps_per_frame;
+      vy = (tip.y - tip.prev_y + nock.y - nock.prev_y) / 2 * Arrow.steps_per_frame;
+      return [vx, vy];
     }
 
     step(world) {
-      var angle, i, nock, ref, steps, tip;
-      // TODO: more physical physics, i.e. if dropped completely sideways, maybe end up lying on the ground
+      var i, j, len, nock, point, ref, ref1, results, tip, too_far_under_water, vx, vy, water;
+      for (i = 0, ref = Arrow.steps_per_frame; (0 <= ref ? i <= ref : i >= ref); 0 <= ref ? i++ : i--) {
+        this.substep(world, 1 / Arrow.steps_per_frame);
+      }
+      
+        // Interact with water
       ({tip, nock} = this.structure.points);
-      tip.vy += 0.1;
-      steps = 10;
-      for (i = 0, ref = steps; (0 <= ref ? i <= ref : i >= ref); 0 <= ref ? i++ : i--) {
-        if (world.collision(this.toWorld(tip))) {
-          tip.vx = 0;
-          tip.vy = 0;
-          nock.vx = 0;
-          nock.vy = 0;
+      ref1 = [tip, nock];
+      results = [];
+      for (j = 0, len = ref1.length; j < len; j++) {
+        point = ref1[j];
+        water = world.collision(this.toWorld(point), {
+          types: (entity) => {
+            return entity.constructor.name === "Water";
+          }
+        });
+        too_far_under_water = water && world.collision(this.toWorld({
+          x: point.x,
+          y: point.y - 5
+        }), {
+          types: (entity) => {
+            return entity.constructor.name === "Water";
+          }
+        });
+        if (water && !too_far_under_water) {
+          vy = (point.y - point.prev_y) * Arrow.steps_per_frame;
+          vx = (point.x - point.prev_x) * Arrow.steps_per_frame;
+          // Make ripples in water
+          water.makeWaves(this.toWorld(point), 2, vy);
+          // Skip off water
+          if ((4 > vy && vy > 2) && Math.abs(vx) > 0.4) {
+            vy *= -0.3;
+            point.prev_y = point.y - vy / Arrow.steps_per_frame;
+          }
+        }
+        // Slow down in water
+        if (water) {
+          point.prev_x += (point.x - point.prev_x) * 0.1;
+          results.push(point.prev_y += (point.y - point.prev_y) * 0.1);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    }
+
+    substep(world, delta_time) {
+      var angle, angle_diff, arrow_angle, arrow_segment_position_ratio, arrow_shaft_pos, arrow_shaft_pos_local, closest_distance, closest_point_in_hit_space, closest_point_local, closest_segment, coefficient_of_friction, coefficient_of_restitution, constraint, delta_length, delta_x, delta_y, diff, dist, drag_force_x, drag_force_y, facing_angle_of_incidence, heading_angle, heading_angle_of_incidence, held, hit, hit_entity, hit_entity_id, hit_segment, hit_segment_angle, hit_segment_name, hit_segment_pos, hit_segment_position_ratio, i, incident_speed, incident_speed_global_scale, j, k, l, len, len1, len2, len3, len4, m, new_vx, new_vy, nock, nock_relative, nock_vx, nock_vy, normal, original_pos, other_point, p1, p2, p3, p4, point, point_in_hit_space, pos_diff, ref, ref1, ref2, ref3, ref4, ref5, ref6, relative_angle, rot_matrix, rot_matrix1, rot_matrix2, rotated_vx, rotated_vy, segment, segment_name, speed, surface_angle, tip, tip_relative, vx, vy;
+      ({tip, nock} = this.structure.points);
+      ref = [tip, nock];
+      
+      // Accumulate forces as acceleration.
+      // (First, reset acceleration to zero.)
+      for (i = 0, len = ref.length; i < len; i++) {
+        point = ref[i];
+        point.ax = 0;
+        point.ay = 0;
+      }
+      // Gravity
+      tip.ay += 0.1;
+      nock.ay += 0.1;
+      // If dropped completely sideways, it should end up lying on the ground
+      // but the fletching should introduce some drag in that direction,
+      // leading to a slight rotation.
+      // However the fletching shouldn't introduce much drag in the direction of travel.
+
+      // Introduce drag on fletched side, perpendicular to the arrow shaft.
+      // First, find the angle of the arrow shaft, and the current velocity.
+      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
+      [nock_vx, nock_vy] = [nock.x - nock.prev_x, nock.y - nock.prev_y];
+      // Then, calculate the rotation matrix to rotate the velocity to the horizontal coordinate system.
+      rot_matrix1 = [[Math.cos(angle), Math.sin(angle)], [-Math.sin(angle), Math.cos(angle)]];
+      // Apply the rotation to the velocity.
+      [nock_vx, nock_vy] = [nock_vx, nock_vy].map((val, idx) => {
+        return rot_matrix1[idx][0] * nock_vx + rot_matrix1[idx][1] * nock_vy;
+      });
+      // Then, calculate drag force based on the nock's velocity.
+      // drag_force_x = -nock_vx * Math.abs(nock_vx) * 0.04 # tangent to arrow shaft
+      // drag_force_y = -nock_vy * Math.abs(nock_vy) * 0.3 # perpendicular to arrow shaft
+      drag_force_x = 0; // tangent to arrow shaft
+      drag_force_y = -nock_vy * Arrow.steps_per_frame * 0.002; // perpendicular to arrow shaft
+      // Then, calculate the rotation matrix to rotate the force back to the original coordinate system.
+      rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]];
+      // Apply the rotation to the force.
+      [drag_force_x, drag_force_y] = [drag_force_x, drag_force_y].map((val, idx) => {
+        return rot_matrix2[idx][0] * drag_force_x + rot_matrix2[idx][1] * drag_force_y;
+      });
+      // Apply the force.
+      if (isFinite(drag_force_x) && isFinite(drag_force_y)) {
+        nock.ax += drag_force_x;
+        nock.ay += drag_force_y;
+      } else {
+        console.warn("NaN in drag force calculation");
+      }
+      ref1 = [tip, nock];
+      // Perform Verlet integration.
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        point = ref1[j];
+        original_pos = {
+          x: point.x,
+          y: point.y
+        };
+        // Ideally I would like to allow the arrow to move while lodged,
+        // and adjust the depth and angle of lodging (with some stiffness),
+        // and maybe allow it to become dislodged, but it was causing numerical instability.
+        if (!this.lodging_constraints.length) {
+          point.x += point.x - point.prev_x + point.ax * delta_time ** 2;
+          point.y += point.y - point.prev_y + point.ay * delta_time ** 2;
+        }
+        point.prev_x = original_pos.x;
+        point.prev_y = original_pos.y;
+      }
+      // Apply constraints.
+
+      // check if player is holding the arrow
+      held = world.entities.some((entity) => {
+        return entity.holding_arrow === this;
+      });
+      // Note: can't require Player here (to use instanceof check) because of circular dependency
+      hit = world.collision(this.toWorld(tip), {
+        types: (entity) => {
+          var ref2;
+          return (ref2 = entity.constructor.name) !== "Arrow" && ref2 !== "Player" && ref2 !== "Bow" && ref2 !== "Water";
+        }
+      });
+      if (hit && !this.lodging_constraints.length && !held) {
+        // collision() doesn't give us the line segment that we hit.
+        // We want to know the segment point in order to add a lodging constraint at the intersection point.
+        tip_relative = hit.fromWorld(this.toWorld(tip));
+        nock_relative = hit.fromWorld(this.toWorld(nock));
+        hit_segment = void 0;
+        surface_angle = void 0;
+        relative_angle = void 0;
+        incident_speed = void 0; // speed along the surface normal (i.e. towards the surface), ignoring motion along the surface
+        heading_angle_of_incidence = void 0;
+        facing_angle_of_incidence = void 0;
+        hit_segment_position_ratio = 0;
+        arrow_segment_position_ratio = 0; // AKA depth ratio
+        ref2 = hit.structure.segments;
+        for (segment_name in ref2) {
+          segment = ref2[segment_name];
+          if (lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+            surface_angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
+            arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x);
+            relative_angle = arrow_angle - surface_angle;
+            normal = surface_angle + Math.PI / 2;
+            vx = tip.x - tip.prev_x;
+            vy = tip.y - tip.prev_y;
+            heading_angle = Math.atan2(vy, vx);
+            incident_speed = Math.abs(Math.cos(normal) * vx + Math.sin(normal) * vy);
+            // incident_speed = Math.abs(Math.sin(-surface_angle) * vx + Math.cos(-surface_angle) * vy) # alternative
+            heading_angle_of_incidence = Math.abs(Math.abs(modulo(heading_angle - surface_angle, Math.PI)) - Math.PI / 2);
+            facing_angle_of_incidence = Math.abs(Math.abs(modulo(arrow_angle - surface_angle, Math.PI)) - Math.PI / 2);
+            // window.debug_max_facing_angle_of_incidence = Math.max(window.debug_max_facing_angle_of_incidence ? 0, facing_angle_of_incidence) # should be Math.PI/2 on arrow test scene
+            // window.debug_max_heading_angle_of_incidence = Math.max(window.debug_max_heading_angle_of_incidence ? 0, heading_angle_of_incidence) # should be Math.PI/2 on arrow test scene
+
+            // Arrows coming in at a grazing angle should bounce off.
+            // Arrows coming straight towards the surface but not facing forward should bounce off.
+            // Arrows going slow should bounce off.
+            // A combination of speed, angle of incidence, and arrow angle is needed.
+
+            // Arrows going fast enough towards the surface (i.e. in the axis perpendicular to the surface) should lodge.
+            // The time subdivision shouldn't affect the speed threshold.
+            incident_speed_global_scale = incident_speed * Arrow.steps_per_frame;
+            if (incident_speed_global_scale < 2) {
+              // console.log "not lodging, incident_speed_global_scale too low", incident_speed_global_scale
+              continue;
+            }
+            if (facing_angle_of_incidence > Math.PI / 4) { // 45 degrees
+              // console.log "not lodging, arrow is not facing head-on enough"
+              continue;
+            }
+            if (hit.constructor.name === "Rock") {
+              // console.log "not lodging, hit rock"
+              continue;
+            }
+            hit_segment = segment;
+            // find position ratios of the intersection point on each segment
+            p1 = segment.a;
+            p2 = segment.b;
+            p3 = tip_relative;
+            p4 = nock_relative;
+            // at segment.a = 0, at segment.b = 1
+            hit_segment_position_ratio = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
+            // at tip = 0, at nock = 1
+            arrow_segment_position_ratio = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
+            // console.log "found intersection", hit_segment_position_ratio, arrow_segment_position_ratio
+            break;
+          }
+        }
+        // I'm only allowing one lodging constraint per arrow for now.
+        // Ideally I would like to allow the arrow to pin an enemy to the ground,
+        // using multiple constraints, but this will probably require the whole game to be
+        // simulated together with something like Verlet integration, so that the
+        // enemy's limb can be constrained in a stable way.
+        // But maybe with specific targets it can be enabled to work.
+        // Also, TODO: bounce off if the angle is not perpendicular enough
+        // (i.e. angle of incidence is too high)
+        if (hit_segment && this.lodging_constraints.length === 0) {
+          constraint = {
+            hit_entity_id: hit.id,
+            hit_segment_name: Object.keys(hit.structure.segments)[Object.values(hit.structure.segments).indexOf(hit_segment)],
+            relative_angle,
+            hit_segment_position_ratio,
+            arrow_segment_position_ratio,
+            incident_speed,
+            heading_angle_of_incidence,
+            facing_angle_of_incidence
+          };
+          this.lodging_constraints.push(constraint);
+        }
+      }
+      
+      // Ideally I would like to allow the arrow to move while lodged,
+      // and adjust the depth and angle of lodging (with some stiffness),
+      // and maybe allow it to become dislodged, but it was causing numerical instability.
+      if (!this.lodging_constraints.length && !held) {
+        ref3 = [tip, nock];
+        // Collide with the ground.
+        for (k = 0, len2 = ref3.length; k < len2; k++) {
+          point = ref3[k];
+          hit = world.collision(this.toWorld(point));
+          if (hit) {
+            coefficient_of_restitution = hit.constructor.name === "Rock" ? 0.5 : 0.1;
+            coefficient_of_friction = 0.1;
+            vx = point.x - point.prev_x;
+            vy = point.y - point.prev_y;
+            speed = Math.hypot(vx, vy);
+            // if not debug_drawings.has(@)
+            // 	debug_drawings.set(@, [])
+            // debug_drawings.get(@).push({
+            // 	type: "line"
+            // 	a: {x: point.x, y: point.y}
+            // 	b: {x: point.x + vx, y: point.y + vy}
+            // 	color: "yellow"
+            // })
+            // # debug_drawings.get(@).push({
+            // # 	type: "circle"
+            // # 	center: {x: point.x, y: point.y}
+            // # 	radius: 5
+            // # 	color: "yellow"
+            // # })
+
+            // Project the point back to the surface of the polygon.
+            // This is done by finding the closest point on the polygon's edges.
+            closest_distance = 2e308;
+            closest_segment = null;
+            point_in_hit_space = hit.fromWorld(this.toWorld(point));
+            ref4 = hit.structure.segments;
+            for (segment_name in ref4) {
+              segment = ref4[segment_name];
+              dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b);
+              if (dist < closest_distance) {
+                closest_distance = dist;
+                closest_segment = segment;
+              }
+            }
+            if (closest_segment) {
+              closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b);
+              closest_point_local = this.fromWorld(hit.toWorld(closest_point_in_hit_space));
+              point.x = closest_point_local.x;
+              point.y = closest_point_local.y;
+            }
+            // debug_drawings.get(@).push({
+            // 	type: "circle"
+            // 	center: {x: point.x, y: point.y}
+            // 	radius: 5
+            // 	color: "lime"
+            // })
+
+            // bounce off the surface, reflecting the angle
+            if (speed > 0) {
+              vx = point.x - point.prev_x;
+              vy = point.y - point.prev_y;
+              // console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
+              // heading_angle = Math.atan2(vy, vx)
+              surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x);
+              // a = surface_angle * 2 - heading_angle
+              // a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
+              // new_vx = Math.cos(a) * speed * coefficient_of_restitution
+              // new_vy = Math.sin(a) * speed * coefficient_of_restitution
+
+              // Rotate the velocity vector to the surface normal.
+              rot_matrix1 = [[Math.cos(surface_angle), -Math.sin(surface_angle)], [Math.sin(surface_angle), Math.cos(surface_angle)]];
+              [rotated_vx, rotated_vy] = [vx, vy].map((val, idx) => {
+                return rot_matrix1[idx][0] * vx + rot_matrix1[idx][1] * vy;
+              });
+              // Reflect the velocity vector.
+              rotated_vx *= -coefficient_of_restitution;
+              rotated_vy *= 1 - coefficient_of_friction;
+              // Rotate the velocity vector back to the original direction.
+              rot_matrix2 = [[Math.cos(-surface_angle), -Math.sin(-surface_angle)], [Math.sin(-surface_angle), Math.cos(-surface_angle)]];
+              [new_vx, new_vy] = [rotated_vx, rotated_vy].map((val, idx) => {
+                return rot_matrix2[idx][0] * rotated_vx + rot_matrix2[idx][1] * rotated_vy;
+              });
+              // console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
+              point.prev_x = point.x - new_vx;
+              point.prev_y = point.y - new_vy;
+              // At this point, the other particle's velocity has not been updated,
+              // and it will often cancel out the bounce even for a perfectly elastic collision.
+              // That's not good enough.
+              // Transfer energy along the arrow shaft,
+              // by constraining the distance between the two points.
+              // What this does is cancel the velocity of the other point,
+              // implicit in it having moved forwards in time,
+              // but only in the direction that it needs to.
+              // In contrast to the normal distance constraint, I'm not
+              // going to symmetrically move both points, but rather keep the
+              // collided point stationary so it doesn't get pushed back into the surface,
+              // and move the other point fully rather than halfway.
+              other_point = point === tip ? nock : tip;
+              delta_x = point.x - other_point.x;
+              delta_y = point.y - other_point.y;
+              delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+              diff = (delta_length - this.length) / delta_length;
+              if (isFinite(diff)) {
+                other_point.x += delta_x * diff;
+                other_point.y += delta_y * diff;
+              } else {
+                console.warn("diff is not finite, for momentary distance constraint");
+              }
+            }
+          }
+        }
+      }
+      ref5 = this.lodging_constraints;
+      // Constrain when lodged in an object.
+      for (l = 0, len3 = ref5.length; l < len3; l++) {
+        ({hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} = ref5[l]);
+        hit_entity = world.getEntityByID(hit_entity_id);
+        if (!hit_entity) { // no longer exists
+          this.lodging_constraints = [];
           break;
         }
-        tip.x += tip.vx / steps;
-        tip.y += tip.vy / steps;
+        hit_segment = hit_entity.structure.segments[hit_segment_name];
+        hit_segment_pos = hit_entity.toWorld({
+          x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio,
+          y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
+        });
+        arrow_shaft_pos = this.toWorld({
+          x: tip.x + (nock.x - tip.x) * arrow_segment_position_ratio,
+          y: tip.y + (nock.y - tip.y) * arrow_segment_position_ratio
+        });
+        pos_diff = {
+          x: hit_segment_pos.x - arrow_shaft_pos.x,
+          y: hit_segment_pos.y - arrow_shaft_pos.y
+        };
+        if (isNaN(pos_diff.x) || isNaN(pos_diff.y)) {
+          console.warn("pos_diff has NaN");
+          continue;
+        }
+        // TODO: for non-static objects,
+        // move the object equally in the opposite direction (each only halfway)
+        // And integrate all physics in the same loop, for Verlet integration.
+        tip.x += pos_diff.x;
+        tip.y += pos_diff.y;
+        nock.x += pos_diff.x;
+        nock.y += pos_diff.y;
+        arrow_angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
+        hit_segment_angle = Math.atan2(hit_segment.b.y - hit_segment.a.y, hit_segment.b.x - hit_segment.a.x);
+        angle_diff = (arrow_angle - hit_segment_angle) - relative_angle;
+        // Rotate the arrow.
+        arrow_shaft_pos_local = this.fromWorld(arrow_shaft_pos); // redundant calculation
+        // Rotate the arrow around the arrow shaft attachment point.
+        rot_matrix = [[Math.cos(angle_diff), Math.sin(angle_diff)], [-Math.sin(angle_diff), Math.cos(angle_diff)]];
+        ref6 = [tip, nock];
+        for (m = 0, len4 = ref6.length; m < len4; m++) {
+          point = ref6[m];
+          // Translate and rotate the arrow.
+          [point.x, point.y] = [point.x, point.y].map((val, idx) => {
+            return rot_matrix[idx][0] * (point.x - arrow_shaft_pos_local.x) + rot_matrix[idx][1] * (point.y - arrow_shaft_pos_local.y);
+          });
+          // Translate the arrow back to its original position.
+          point.x += arrow_shaft_pos_local.x;
+          point.y += arrow_shaft_pos_local.y;
+        }
       }
-      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
-      nock.x = tip.x - Math.cos(angle) * this.length;
-      return nock.y = tip.y - Math.sin(angle) * this.length;
+      // Constrain arrow length, moving both points symmetrically.
+      // I learned this from:
+      // http://web.archive.org/web/20080410171619/http://www.teknikus.dk/tj/gdc2001.htm
+      delta_x = tip.x - nock.x;
+      delta_y = tip.y - nock.y;
+      delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+      diff = (delta_length - this.length) / delta_length;
+      if (isFinite(diff)) {
+        tip.x -= delta_x * 0.5 * diff;
+        tip.y -= delta_y * 0.5 * diff;
+        nock.x += delta_x * 0.5 * diff;
+        return nock.y += delta_y * 0.5 * diff;
+      } else {
+        return console.warn("diff is not finite, for distance constraint");
+      }
     }
 
     draw(ctx) {
-      var angle, nock, tip;
+      var angle, arrow_segment_position_ratio, arrow_shaft_pos, arrow_shaft_pos_local, drawing, facing_angle_of_incidence, heading_angle_of_incidence, hit_entity, hit_entity_id, hit_segment, hit_segment_a_local, hit_segment_b_local, hit_segment_name, hit_segment_pos, hit_segment_pos_local, hit_segment_position_ratio, i, incident_speed, j, len, len1, nock, ref, ref1, ref2, ref3, relative_angle, results, tip;
       ({tip, nock} = this.structure.points);
       ctx.beginPath();
       ctx.moveTo(tip.x, tip.y);
@@ -6799,12 +7577,91 @@ module.exports = Arrow = (function() {
       ctx.lineTo(+2, 2);
       ctx.fillStyle = "#B1280A";
       ctx.fill();
-      return ctx.restore();
+      ctx.restore();
+      if (!window.debug_mode) {
+        return;
+      }
+      if (debug_drawings.get(this)) {
+        ref = debug_drawings.get(this);
+        for (i = 0, len = ref.length; i < len; i++) {
+          drawing = ref[i];
+          if (drawing.type === "line") {
+            ctx.beginPath();
+            ctx.moveTo(drawing.a.x, drawing.a.y);
+            ctx.lineTo(drawing.b.x, drawing.b.y);
+            ctx.lineWidth = 1;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = (ref1 = drawing.color) != null ? ref1 : "#FF0000";
+            ctx.stroke();
+          } else if (drawing.type === "circle") {
+            ctx.beginPath();
+            ctx.arc(drawing.center.x, drawing.center.y, drawing.radius, 0, TAU);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = (ref2 = drawing.color) != null ? ref2 : "#FF0000";
+            ctx.stroke();
+          } else {
+            console.error(`Unknown debug drawing type: ${drawing.type}`);
+          }
+        }
+      }
+      ref3 = this.lodging_constraints;
+      results = [];
+      for (j = 0, len1 = ref3.length; j < len1; j++) {
+        ({hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio, incident_speed, facing_angle_of_incidence, heading_angle_of_incidence} = ref3[j]);
+        hit_entity = window.the_world.getEntityByID(hit_entity_id);
+        if (!hit_entity) { // no longer exists
+          continue;
+        }
+        hit_segment = hit_entity.structure.segments[hit_segment_name];
+        if (!hit_entity.toWorld) {
+          console.error("Need to fix serialization of references to entities (and segments) with something like resurrect.js!");
+          this.lodging_constraints.length = 0;
+          break;
+        }
+        hit_segment_a_local = this.fromWorld(hit_entity.toWorld(hit_segment.a));
+        hit_segment_b_local = this.fromWorld(hit_entity.toWorld(hit_segment.b));
+        ctx.beginPath();
+        ctx.moveTo(hit_segment_a_local.x, hit_segment_a_local.y);
+        ctx.lineTo(hit_segment_b_local.x, hit_segment_b_local.y);
+        ctx.lineWidth = 1;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#FF0000";
+        ctx.stroke();
+        hit_segment_pos = hit_entity.toWorld({
+          x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio,
+          y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
+        });
+        arrow_shaft_pos = this.toWorld({
+          x: tip.x + (nock.x - tip.x) * arrow_segment_position_ratio,
+          y: tip.y + (nock.y - tip.y) * arrow_segment_position_ratio
+        });
+        hit_segment_pos_local = this.fromWorld(hit_segment_pos);
+        arrow_shaft_pos_local = this.fromWorld(arrow_shaft_pos); // redundant calc but whatever
+        ctx.beginPath();
+        ctx.moveTo(hit_segment_pos_local.x, hit_segment_pos_local.y);
+        ctx.lineTo(arrow_shaft_pos_local.x, arrow_shaft_pos_local.y);
+        ctx.lineWidth = 1;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#00FF00";
+        ctx.stroke();
+        // misc debug for colorizing based on a variable like
+        // incident_speed, facing_angle_of_incidence, heading_angle_of_incidence, relative_angle
+        ctx.beginPath();
+        ctx.moveTo(tip.x, tip.y);
+        ctx.lineTo(nock.x, nock.y);
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = `hsl(50, 100%, ${facing_angle_of_incidence * 20}%)`;
+        results.push(ctx.stroke());
+      }
+      return results;
     }
 
   };
 
   addEntityClass(Arrow);
+
+  Arrow.steps_per_frame = 2;
 
   return Arrow;
 
@@ -7172,6 +8029,136 @@ module.exports = SavannaGrass = (function() {
 
 /***/ }),
 
+/***/ 469:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Terrain, Water, addEntityClass;
+
+Terrain = __webpack_require__(891);
+
+({addEntityClass} = __webpack_require__(432));
+
+module.exports = Water = (function() {
+  class Water extends Terrain {
+    constructor() {
+      super();
+      this.bbox_padding = 30;
+      this.solid = false;
+      this.waves_y = []; // indexed by x starting from @min_x
+      this.waves_vy = []; // indexed by x starting from @min_x
+      this.min_x = 2e308;
+      this.max_x = -2e308;
+      this.min_y = 2e308;
+      this.max_y = -2e308;
+      this.structure.onchange = () => {
+        var double_area, i, point, point_name, ref, ref1, ref2, ref3, segment, segment_name, x;
+        this.waves_y = [];
+        this.waves_vy;
+        this.min_x = 2e308;
+        this.max_x = -2e308;
+        this.min_y = 2e308;
+        this.max_y = -2e308;
+        ref = this.structure.points;
+        for (point_name in ref) {
+          point = ref[point_name];
+          this.min_x = Math.min(this.min_x, point.x);
+          this.max_x = Math.max(this.max_x, point.x);
+          this.min_y = Math.min(this.min_y, point.y);
+          this.max_y = Math.max(this.max_y, point.y);
+        }
+        this.min_x = Math.floor(this.min_x);
+        this.max_x = Math.ceil(this.max_x);
+        this.min_y = Math.floor(this.min_y);
+        this.max_y = Math.ceil(this.max_y);
+        for (x = i = ref1 = this.min_x, ref2 = this.max_x; (ref1 <= ref2 ? i < ref2 : i > ref2); x = ref1 <= ref2 ? ++i : --i) {
+          this.waves_y[x - this.min_x] = 0;
+          this.waves_vy[x - this.min_x] = 0;
+        }
+        
+        // detect polygon vertex order
+        double_area = 0;
+        ref3 = this.structure.segments;
+        for (segment_name in ref3) {
+          segment = ref3[segment_name];
+          double_area += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y);
+        }
+        return this.ccw = double_area > 0;
+      };
+    }
+
+    makeWaves(world_pos, radius = 5, velocity_y = 5) {
+      var i, local_pos, ref, ref1, results, x;
+      local_pos = this.fromWorld(world_pos);
+      results = [];
+      for (x = i = ref = Math.round(local_pos.x - radius), ref1 = Math.round(local_pos.x + radius); (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
+        results.push(this.waves_vy[x - this.min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius));
+      }
+      return results;
+    }
+
+    step() {
+      var i, j, neighboring, ref, ref1, ref2, ref3, ref4, ref5, results, x;
+      neighboring = [];
+      for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
+        neighboring[x - this.min_x] = ((ref2 = this.waves_y[x - this.min_x - 1]) != null ? ref2 : 0) + ((ref3 = this.waves_y[x - this.min_x + 1]) != null ? ref3 : 0);
+      }
+      results = [];
+      for (x = j = ref4 = this.min_x, ref5 = this.max_x; (ref4 <= ref5 ? j < ref5 : j > ref5); x = ref4 <= ref5 ? ++j : --j) {
+        this.waves_vy[x - this.min_x] += (neighboring[x - this.min_x] - this.waves_y[x - this.min_x] * 2) * 0.4;
+        this.waves_vy[x - this.min_x] *= 0.99;
+        this.waves_vy[x - this.min_x] -= this.waves_y[x - this.min_x] * 0.2;
+        results.push(this.waves_y[x - this.min_x] += this.waves_vy[x - this.min_x]);
+      }
+      return results;
+    }
+
+    draw(ctx, view) {
+      var i, point, point_name, ref, ref1, ref2, wave_center_y, x;
+      wave_center_y = this.min_y;
+      ctx.save();
+      ctx.beginPath();
+      for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
+        ctx.lineTo(x, this.waves_y[x - this.min_x] + wave_center_y);
+      }
+      ctx.lineTo(this.max_x, this.max_y);
+      ctx.lineTo(this.min_x, this.max_y);
+      ctx.closePath();
+      // ctx.strokeStyle = if @ccw? then (if @ccw then "lime" else "yellow") else "red"
+      // ctx.stroke()
+      ctx.clip();
+      ctx.beginPath();
+      ref2 = this.structure.points;
+      for (point_name in ref2) {
+        point = ref2[point_name];
+        if (point.y < wave_center_y + 2) {
+          if ((point.x > (this.min_x + this.max_x) / 2) === this.ccw) {
+            ctx.lineTo(point.x, point.y);
+            ctx.lineTo(point.x, point.y - 50);
+          } else {
+            ctx.lineTo(point.x, point.y - 50);
+            ctx.lineTo(point.x, point.y);
+          }
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      }
+      ctx.closePath();
+      ctx.fillStyle = "hsla(200, 100%, 50%, 0.5)";
+      ctx.fill();
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Water);
+
+  return Water;
+
+}).call(this);
+
+
+/***/ }),
+
 /***/ 866:
 /***/ ((module) => {
 
@@ -7244,7 +8231,7 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 var __webpack_unused_export__;
-var Editor, Mouse, Player, SavannaGrass, View, World, animate, canvas, ctx, e, editor, keyboard, mouse, terrain, view, view_smoothness, view_to, world;
+var Editor, Mouse, Player, SavannaGrass, View, World, animate, bottom_of_world, canvas, ctx, e, editor, gamepad_start_prev, keyboard, mouse, redraw, terrain, view, view_smoothness, view_to, world;
 
 Math.seedrandom("A world");
 
@@ -7254,9 +8241,13 @@ World = __webpack_require__(378);
 
 keyboard = __webpack_require__(866);
 
+__webpack_require__(372);
+
 SavannaGrass = __webpack_require__(475);
 
 __webpack_require__(91);
+
+__webpack_require__(469);
 
 __webpack_require__(339);
 
@@ -7272,7 +8263,11 @@ __webpack_require__(914);
 
 __webpack_require__(943);
 
+__webpack_require__(233);
+
 world = new World();
+
+window.the_world = world;
 
 terrain = new SavannaGrass();
 
@@ -7283,6 +8278,8 @@ terrain.x = 0;
 terrain.y = 0;
 
 terrain.generate();
+
+bottom_of_world = 300;
 
 canvas = document.createElement("canvas");
 
@@ -7332,8 +8329,25 @@ setInterval(function() {
   }
 }, 200);
 
+redraw = function() {
+  world.drawBackground(ctx, view);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(view.scale, view.scale);
+  ctx.translate(-view.center_x, -view.center_y);
+  world.draw(ctx, view);
+  if (editor.editing) {
+    editor.draw(ctx, view);
+  }
+  return ctx.restore();
+};
+
+window.do_a_redraw = redraw;
+
+gamepad_start_prev = false;
+
 (animate = function() {
-  var entity, i, len, player, ref;
+  var entity, gamepad, i, j, len, len1, player, ref, ref1, ref2;
   if (window.CRASHED) {
     return;
   }
@@ -7345,16 +8359,31 @@ setInterval(function() {
     canvas.height = innerHeight;
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ref1 = (ref = ((function() {
+    try {
+      return navigator.getGamepads();
+    } catch (error) {}
+  })())) != null ? ref : [];
+  for (i = 0, len = ref1.length; i < len; i++) {
+    gamepad = ref1[i];
+    if (!(gamepad)) {
+      continue;
+    }
+    if (gamepad.buttons[9].pressed && !gamepad_start_prev) {
+      editor.toggleEditing();
+    }
+    gamepad_start_prev = gamepad.buttons[9].pressed;
+  }
   if (editor.editing && (editor.entities_bar.hovered_cell || ((editor.hovered_points.length || editor.hovered_entities.length) && !editor.selection_box))) {
     canvas.classList.add("grabbable");
   } else {
     canvas.classList.remove("grabbable");
   }
   if (!editor.editing) {
-    ref = world.entities;
+    ref2 = world.entities;
     // when entity isnt editor.editing_entity and entity not in editor.dragging_entities
-    for (i = 0, len = ref.length; i < len; i++) {
-      entity = ref[i];
+    for (j = 0, len1 = ref2.length; j < len1; j++) {
+      entity = ref2[j];
       entity.step(world, view, mouse);
     }
     
@@ -7365,23 +8394,20 @@ setInterval(function() {
       view_to.center_y = player.y;
     }
   }
+  // clamp view so you can't see below the bottom of the world
+  // view_to.center_y = Math.min(view_to.center_y, bottom_of_world - canvas.height / 2 / view.scale)
   view.width = canvas.width;
   view.height = canvas.height;
   view.easeTowards(view_to, view_smoothness);
+  if (player && !editor.editing) {
+    // clamp view so you can't see below the bottom of the world even while zooming out
+    view.center_y = Math.min(view.center_y, bottom_of_world - canvas.height / 2 / view.scale);
+  }
   if (editor.editing) {
     editor.step();
   }
   mouse.resetForNextStep();
-  world.drawBackground(ctx, view);
-  ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.scale(view.scale, view.scale);
-  ctx.translate(-view.center_x, -view.center_y);
-  world.draw(ctx, view);
-  if (editor.editing) {
-    editor.draw(ctx, view);
-  }
-  ctx.restore();
+  redraw();
   editor.updateGUI();
   return keyboard.resetForNextStep();
 })();
