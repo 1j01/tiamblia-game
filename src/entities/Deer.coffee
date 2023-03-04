@@ -29,7 +29,10 @@ module.exports = class Deer extends SimpleActor
 
 	step: (world)->
 		if @grounded
-			@ground_angle = @find_ground_angle(world) ? 0
+			# @ground_angle = ((@find_ground_angle(world) ? 0) + Math.PI*9002) % (Math.PI)
+			@ground_angle = (@find_ground_angle(world) ? 0)
+			# console.log @ground_angle, Math.atan2(Math.sin(@ground_angle), Math.cos(@ground_angle))
+			@ground_angle = Math.atan2(Math.sin(@ground_angle), Math.cos(@ground_angle))
 			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/5
 			if Math.random() < 0.01
 				@dir = r()
