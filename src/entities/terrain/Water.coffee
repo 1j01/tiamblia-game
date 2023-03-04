@@ -33,6 +33,12 @@ module.exports = class Water extends Terrain
 			for x in [@min_x...@max_x]
 				@waves_y[x - @min_x] = 0
 				@waves_vy[x - @min_x] = 0
+			
+			# detect polygon vertex order
+			double_area = 0
+			for segment_name, segment of @structure.segments
+				double_area += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y)
+			@ccw = double_area > 0
 	
 	makeWaves: (world_pos, radius=5, velocity_y=5)->
 		local_pos = @fromWorld(world_pos)
@@ -58,15 +64,14 @@ module.exports = class Water extends Terrain
 		ctx.lineTo(@max_x, @max_y)
 		ctx.lineTo(@min_x, @max_y)
 		ctx.closePath()
-		# ctx.strokeStyle = "red"
+		# ctx.strokeStyle = if @ccw? then (if @ccw then "lime" else "yellow") else "red"
 		# ctx.stroke()
 		ctx.clip()
 
 		ctx.beginPath()
 		for point_name, point of @structure.points
 			if point.y < wave_center_y + 2
-				# This assumes a particular vertex order
-				if point.x > (@min_x + @max_x) / 2
+				if (point.x > (@min_x + @max_x) / 2) == @ccw
 					ctx.lineTo(point.x, point.y)
 					ctx.lineTo(point.x, point.y - 50)
 				else

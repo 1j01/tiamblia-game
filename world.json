@@ -7241,6 +7241,7 @@
 			"max_x": 235,
 			"min_y": -25,
 			"max_y": 50,
+			"ccw": true,
 			"waves": [
 				0,
 				0,
