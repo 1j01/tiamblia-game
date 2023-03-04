@@ -138,7 +138,7 @@ module.exports = class Player extends SimpleActor
 		@idle_timer = 0
 		@real_facing_x = @facing_x
 
-		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..5]) for [0..5])
+		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
 
 	step: (world, view, mouse)->
 		{sternum} = @structure.points
