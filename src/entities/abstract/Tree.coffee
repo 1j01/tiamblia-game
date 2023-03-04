@@ -4,7 +4,6 @@ TAU = Math.PI * 2
 module.exports = class Tree extends Entity
 	constructor: ->
 		super()
-		@leaf_point_names = []
 		@structure.addPoint("base")
 		@bbox_padding = 60
 	
@@ -26,14 +25,14 @@ module.exports = class Tree extends Entity
 				@branch({from: name, to: "#{to}-c", juice, angle})
 		else
 			leaf_point = @structure.points[name]
-			leaf = @leaf(leaf_point)
-			@leaf_point_names.push(name) if leaf?
+			@leaf(leaf_point)
 	
 	leaf: (leaf)->
 		leaf.radius = Math.random() * 15 + 15
 		leaf.scale_x = 2
 		leaf.scale_y = 1
 		leaf.color = "#627318" #"#363D1B"
+		leaf.is_leaf = true
 		leaf
 	
 	draw: (ctx)->
@@ -46,8 +45,7 @@ module.exports = class Tree extends Entity
 			ctx.strokeStyle = segment.color
 			ctx.stroke()
 		
-		for leaf_point_name in @leaf_point_names
-			leaf = @structure.points[leaf_point_name]
+		for point_name, leaf of @structure.points when leaf.is_leaf
 			ctx.beginPath()
 			ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
 			# ctx.save()

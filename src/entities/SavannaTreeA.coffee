@@ -13,6 +13,7 @@ module.exports = class SavannaTreeA extends Tree
 		leaf.scale_x = 2
 		leaf.scale_y = 1
 		leaf.color = "#627318" #"#363D1B"
+		leaf.is_leaf = true
 		leaf
 	
 	draw: (ctx)->
@@ -25,8 +26,7 @@ module.exports = class SavannaTreeA extends Tree
 			ctx.strokeStyle = segment.color
 			ctx.stroke()
 		
-		for leaf_point_name in @leaf_point_names
-			leaf = @structure.points[leaf_point_name]
+		for point_name, leaf of @structure.points when leaf.is_leaf
 			# ctx.beginPath()
 			# ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
 			ctx.save()

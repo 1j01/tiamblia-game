@@ -7,7 +7,7 @@ module.exports = class World
 	constructor: ->
 		@entities = []
 	
-	@formatVersion: 2
+	@formatVersion: 3
 	toJSON: ->
 		formatVersion: World.formatVersion
 		entities: @entities
@@ -37,6 +37,13 @@ module.exports = class World
 			def.entities = JSON.parse(JSON.stringify(def.entities).replace(/\belbo\b/g, 'elbow'))
 			# spell-checker: enable
 			# Note that the animation data also requires this rename, but there's no automatic upgrade system yet
+		if def.formatVersion is 2
+			def.formatVersion = 3
+			# Removed leaf_point_names from Tree, and added is_leaf property to points
+			for ent_def in def.entities when ent_def._class_.includes("Tree")
+				for point_name, point_def of ent_def.structure.points
+					point_def.is_leaf = point_name in ent_def.leaf_point_names
+				delete ent_def.leaf_point_names
 
 		if def.formatVersion > World.formatVersion
 			throw new Error "The format version #{def.formatVersion} is too new for this version of the game."
