@@ -444,12 +444,18 @@ module.exports = class Player extends SimpleActor
 		{head, neck} = @structure.points
 		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
 
-		hair_iterations = 1
+		hair_iterations = 10
+		for points in @hairs
+			for point in points
+				point.vx -= @vx # simulate relative velocity
+				point.vy -= @vy # simulate relative velocity
 		for [0..hair_iterations]
 			for points in @hairs
 				for point in points
 					point.prev_x = point.x
 					point.prev_y = point.y
+					# point.vx -= @vx / hair_iterations # simulate relative velocity
+					# point.vy -= @vy / hair_iterations # simulate relative velocity
 
 			for points, hair_index in @hairs
 				# points[0].x = head_pos.x + hair_index
@@ -459,25 +465,25 @@ module.exports = class Player extends SimpleActor
 				points[0].y = head.y + Math.sin(a) * 5
 				seg_length = 5
 				for i in [1...points.length]
-					points[i].vy += 0.01
-					points[i].vx += 0.02 * (Math.random() - 0.5)
-					# points[i].vy -= @vy # simulate relative velocity
-					# points[i].vx -= @vx # simulate relative velocity
+					points[i].vy += 0.5 / hair_iterations
+					# points[i].vx += 0.02 * (Math.random() - 0.5)
+					# points[i].vy -= @vy / hair_iterations # simulate relative velocity
+					# points[i].vx -= @vx / hair_iterations # simulate relative velocity
 					points[i].x += points[i].vx
 					points[i].y += points[i].vy
-					points[i].x -= @vx # simulate relative velocity
-					points[i].y -= @vy # simulate relative velocity
+					# points[i].x -= @vx / hair_iterations # simulate relative velocity
+					# points[i].y -= @vy / hair_iterations # simulate relative velocity
 					delta_x = points[i].x - points[i-1].x
 					delta_y = points[i].y - points[i-1].y
 					delta_length = Math.hypot(delta_x, delta_y)
 					diff = (delta_length - seg_length) / delta_length
-					if isFinite(diff) and diff > 0
-						# points[i].x -= delta_x * 0.5 * diff
-						# points[i].y -= delta_y * 0.5 * diff
-						# points[i-1].x += delta_x * 0.5 * diff
-						# points[i-1].y += delta_y * 0.5 * diff
-						points[i].x -= delta_x * diff
-						points[i].y -= delta_y * diff
+					if isFinite(diff) and delta_length > seg_length
+						points[i].x -= delta_x * 0.5 * diff
+						points[i].y -= delta_y * 0.5 * diff
+						points[i-1].x += delta_x * 0.5 * diff
+						points[i-1].y += delta_y * 0.5 * diff
+						# points[i].x -= delta_x * diff
+						# points[i].y -= delta_y * diff
 					else
 						console.warn("diff is not finite, for hair segment distance constraint")
 			
