@@ -7004,6 +7004,141 @@ module.exports = Player = (function() {
 
 /***/ }),
 
+/***/ 33:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var PuffTree, TAU, Tree, addEntityClass;
+
+Tree = __webpack_require__(776);
+
+({addEntityClass} = __webpack_require__(432));
+
+TAU = Math.PI * 2;
+
+module.exports = PuffTree = (function() {
+  class PuffTree extends Tree {
+    constructor() {
+      super();
+      this.branch({
+        from: "base",
+        to: "1",
+        juice: Math.random() * 10 + 5,
+        width: this.trunk_width,
+        length: 9,
+        angle: -TAU / 2
+      });
+      this.bbox_padding = 180;
+      this.species = "kaoyu";
+      this.trunk_width = 10 + Math.floor(Math.random() * 5);
+      this.random_seed = performance.now() + Date.now() + Math.random();
+    }
+
+    branch({from, to, juice, angle, width, length}) {
+      var leaf_point, name;
+      name = to;
+      angle += (Math.random() * 2 - 1) * 0.7;
+      this.structure.addSegment({
+        from,
+        name,
+        length,
+        width,
+        color: "#89594A"
+      });
+      this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
+      this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
+      juice -= 0.3;
+      if (juice > 0) {
+        // @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
+        // @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
+        return this.branch({
+          from: name,
+          to: `${to}-a`,
+          juice,
+          angle,
+          width: juice,
+          length
+        });
+      } else {
+        // @branch({from: name, to: "#{to}-b", juice, angle: angle - Math.random() * TAU/8})
+        // if Math.random() < 0.2
+        // 	@branch({from: name, to: "#{to}-c", juice, angle})
+        leaf_point = this.structure.points[name];
+        return this.leaf(leaf_point);
+      }
+    }
+
+    leaf(leaf) {
+      leaf.is_leaf = true;
+      return leaf;
+    }
+
+    draw(ctx) {
+      var leaf, point_name, ref, ref1, results, segment, segment_name;
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = segment.color;
+        ctx.stroke();
+      }
+      ref1 = this.structure.points;
+      results = [];
+      for (point_name in ref1) {
+        leaf = ref1[point_name];
+        if (leaf.is_leaf) {
+          results.push(this.drawLeaf(ctx, leaf.x, leaf.y, 0, 1, 4, 10));
+        }
+      }
+      return results;
+    }
+
+    drawLeaf(ctx, x, y, angle, life, thickness, seg_length) {
+      var i, j, l, r1, r2;
+      ctx.save();
+      l = Math.random() / 2;
+      ctx.fillStyle = "hsla(" + (150 - l * 50) + "," + 50 + "%," + (50 + l * 20) + "%,1)";
+      ctx.beginPath();
+      ctx.arc(x, y, 10 + Math.random() * 5, 0, Math.PI * 2, true);
+      ctx.fill();
+      for (i = j = 0; j <= 10; i = ++j) {
+        l = Math.random() / 2;
+        ctx.fillStyle = "hsla(" + (150 - l * 50) + "," + 50 + "%," + (50 + l * 20) + "%,1)";
+        ctx.beginPath();
+        r1 = Math.PI * 2 * Math.random();
+        r2 = Math.random() * 15;
+        ctx.arc(x + Math.sin(r1) * r2, y + Math.cos(r1) * r2, 5 + Math.random() * 5, 0, Math.PI * 2, true);
+        ctx.fill();
+      }
+      /*
+      ctx.strokeStyle="#1a5"
+      ctx.lineWidth=thickness
+      ctx.lineCap="round"
+      ctx.beginPath()
+      ctx.moveTo(x,y)
+      angle+=(Math.random()*2-1)/2
+      x+=Math.sin(angle+Math.PI)*seg_length/4
+      y-=Math.cos(angle+Math.PI)*seg_length/4
+      ctx.lineTo(x,y)
+      ctx.stroke()
+      */
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(PuffTree);
+
+  return PuffTree;
+
+}).call(this);
+
+
+/***/ }),
+
 /***/ 101:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
@@ -9005,6 +9140,8 @@ __webpack_require__(339);
 
 __webpack_require__(776);
 
+__webpack_require__(33);
+
 __webpack_require__(521);
 
 __webpack_require__(332);
@@ -9116,6 +9253,7 @@ gamepad_start_prev = false;
     return;
   }
   requestAnimationFrame(animate);
+  Math.seedrandom(performance.now());
   if (canvas.width !== innerWidth) {
     canvas.width = innerWidth;
   }
