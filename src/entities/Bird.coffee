@@ -48,7 +48,7 @@ module.exports = class Bird extends SimpleActor
 		@y+=@vy
 		@flap_timer--
 		# run SimpleActor physics, which uses @move_x and @jump
-		super(world)
+		# super(world)
 	
 	draw: (ctx)->
 		ctx.strokeStyle="#000"

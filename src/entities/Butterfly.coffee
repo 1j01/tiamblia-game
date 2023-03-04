@@ -48,7 +48,7 @@ module.exports = class Butterfly extends SimpleActor
 		@y+=@vy
 		@flap=Math.cos(@t+=0.5)
 		# run SimpleActor physics, which uses @move_x and @jump
-		super(world)
+		# super(world)
 	
 	draw: (ctx)->
 		ctx.beginPath()
