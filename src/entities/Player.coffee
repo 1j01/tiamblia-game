@@ -449,14 +449,19 @@ module.exports = class Player extends SimpleActor
 			for points, hair_index in @hairs
 				# points[0].x = head_pos.x + hair_index
 				# points[0].y = head_pos.y
-				points[0].x = head.x + Math.cos(head_angle) * hair_index
-				points[0].y = head.y + Math.sin(head_angle) * hair_index
+				a = head_angle + hair_index / @hairs.length * Math.PI
+				points[0].x = head.x + Math.cos(a) * 5
+				points[0].y = head.y + Math.sin(a) * 5
 				seg_length = 5
 				for i in [1...points.length]
-					points[i].vy += 0.005
-					points[i].vx += 0.02 * (Math.random() - 0.5)
+					points[i].vy += 0.01
+					# points[i].vx += 0.02 * (Math.random() - 0.5)
+					# points[i].vy -= @vy # simulate relative velocity
+					# points[i].vx -= @vx # simulate relative velocity
 					points[i].x += points[i].vx
 					points[i].y += points[i].vy
+					points[i].x -= @vx # simulate relative velocity
+					points[i].y -= @vy # simulate relative velocity
 					delta_x = points[i].x - points[i-1].x
 					delta_y = points[i].y - points[i-1].y
 					delta_length = Math.hypot(delta_x, delta_y)
