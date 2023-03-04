@@ -444,8 +444,13 @@ module.exports = class Player extends SimpleActor
 		{head, neck} = @structure.points
 		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
 
-		hair_iterations = 5
+		hair_iterations = 1
 		for [0..hair_iterations]
+			for points in @hairs
+				for point in points
+					point.prev_x = point.x
+					point.prev_y = point.y
+
 			for points, hair_index in @hairs
 				# points[0].x = head_pos.x + hair_index
 				# points[0].y = head_pos.y
@@ -455,7 +460,7 @@ module.exports = class Player extends SimpleActor
 				seg_length = 5
 				for i in [1...points.length]
 					points[i].vy += 0.01
-					# points[i].vx += 0.02 * (Math.random() - 0.5)
+					points[i].vx += 0.02 * (Math.random() - 0.5)
 					# points[i].vy -= @vy # simulate relative velocity
 					# points[i].vx -= @vx # simulate relative velocity
 					points[i].x += points[i].vx
@@ -466,7 +471,7 @@ module.exports = class Player extends SimpleActor
 					delta_y = points[i].y - points[i-1].y
 					delta_length = Math.hypot(delta_x, delta_y)
 					diff = (delta_length - seg_length) / delta_length
-					if isFinite(diff)
+					if isFinite(diff) and diff > 0
 						# points[i].x -= delta_x * 0.5 * diff
 						# points[i].y -= delta_y * 0.5 * diff
 						# points[i-1].x += delta_x * 0.5 * diff
@@ -475,6 +480,11 @@ module.exports = class Player extends SimpleActor
 						points[i].y -= delta_y * diff
 					else
 						console.warn("diff is not finite, for hair segment distance constraint")
+			
+			for points in @hairs
+				for point in points
+					point.vx = point.x - point.prev_x
+					point.vy = point.y - point.prev_y
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
