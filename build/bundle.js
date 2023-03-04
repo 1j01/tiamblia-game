@@ -6433,7 +6433,7 @@ module.exports = Player = (function() {
     }
 
     step(world, view, mouse) {
-      var a, aim_angle, air_friction, angle, arm_span, arrow, arrow_angle, back_x, back_y, bow, bow_angle, buoyancy, center, closest_dist, closest_steed, delta_length, delta_x, delta_y, diff, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, fluid_friction, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hair_index, hair_iterations, hair_length, head, head_angle, head_global, head_x_before_posing, head_y_before_posing, hold_offset, i, j, k, l, left, len, len1, len2, len3, len4, m, max_draw_distance, max_y_diff, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, n, neck, new_head_x, new_head_y, new_pose, o, offset_distance, other_idle_animation, p, pick_up_any, point, point_name, points, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, results, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, seg_length, segment, segment_name, sternum, submerged, subtle_idle_animation, up, water_friction, x, y;
+      var a, aim_angle, air_friction, angle, arm_span, arrow, arrow_angle, back_x, back_y, bow, bow_angle, buoyancy, center, closest_dist, closest_steed, delta_length, delta_x, delta_y, diff, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, fluid_friction, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hair_index, hair_iterations, hair_length, head, head_angle, head_global, head_x_before_posing, head_y_before_posing, hold_offset, i, j, k, l, left, len, len1, len2, len3, len4, m, max_draw_distance, max_y_diff, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, n, neck, new_head_x, new_head_y, new_pose, o, offset_distance, other_idle_animation, p, pick_up_any, point, point_name, points, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, results, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, seg_length, segment, segment_name, sternum, submerged, subtle_idle_animation, up, water_friction, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
       
@@ -6576,8 +6576,24 @@ module.exports = Player = (function() {
         this.idle_timer = 0;
         return this.idle_animation = null;
       };
+      more_submerged = this.submerged && world.collision({
+        x: this.x,
+        y: this.y + this.height * 0.5
+      }, {
+        types: (entity) => {
+          return entity.constructor.name === "Water";
+        }
+      });
       if (this.riding) {
         new_pose = (ref4 = Player.poses[prime_bow ? "Riding Aiming" : "Riding"]) != null ? ref4 : this.structure.getPose();
+      } else if (more_submerged) {
+        if (this.move_x !== 0) {
+          this.run_animation_position += 0.1;
+          new_pose = Pose.lerpAnimationLoop(Player.animations["Swim"], this.run_animation_position);
+        } else {
+          this.run_animation_position -= 0.1 * this.move_y;
+          new_pose = Pose.lerpAnimationLoop(Player.animations["Tread Water"], this.run_animation_position);
+        }
       } else if (this.move_x === 0) {
         this.idle_timer += 1;
         subtle_idle_animation = Player.animations["Idle"];
