@@ -137,9 +137,10 @@ module.exports = class Player extends SimpleActor
 		@idle_animation = null
 		@idle_timer = 0
 		@smoothed_vy = 0
-		@hair_x_scales = [1,1,1,1,1,1,1,1,1]
 		@real_facing_x = @facing_x
-	
+
+		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..5]) for [0..5])
+
 	step: (world, view, mouse)->
 		{sternum} = @structure.points
 		from_point_in_world = @toWorld(sternum)
@@ -436,6 +437,35 @@ module.exports = class Player extends SimpleActor
 			# Cancel implicit velocity from moving the arrow's "current positions"
 			# (This updates the "previous positions" that imply velocity.)
 			arrow.setVelocity(0, 0)
+		
+		# Hair physics
+		# head_pos = @structure.points.head
+		# head_pos = new_pose.points.head
+		head_pos = @structure.getPose().points.head
+
+		hair_iterations = 5
+		for [0..hair_iterations]
+			for points, hair_index in @hairs
+				points[0].x = head_pos.x + hair_index
+				points[0].y = head_pos.y
+				seg_length = 5
+				for i in [1...points.length]
+					points[i].x += points[i].vx
+					points[i].y += points[i].vy
+					points[i].vy += 0.005
+					delta_x = points[i].x - points[i-1].x
+					delta_y = points[i].y - points[i-1].y
+					delta_length = Math.hypot(delta_x, delta_y)
+					diff = (delta_length - seg_length) / delta_length
+					if isFinite(diff)
+						# points[i].x -= delta_x * 0.5 * diff
+						# points[i].y -= delta_y * 0.5 * diff
+						# points[i-1].x += delta_x * 0.5 * diff
+						# points[i-1].y += delta_y * 0.5 * diff
+						points[i].x -= delta_x * diff
+						points[i].y -= delta_y * diff
+					else
+						console.warn("diff is not finite, for hair segment distance constraint")
 	
 	draw: (ctx)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
@@ -455,40 +485,20 @@ module.exports = class Player extends SimpleActor
 		# 		head: ->
 		
 		# trailing hair
-		# TODO: better, less fake hair physics
 		ctx.save()
 		ctx.translate(head.x, head.y)
 		ctx.translate(-@real_facing_x * 0.3, 0)
 		@smoothed_vy += ((@vy * not @grounded) - @smoothed_vy) / 5
 		
-		for hxs, i in @hair_x_scales by -1
-			if i is 0
-				@hair_x_scales[i] += (-@real_facing_x - hxs) / 3
-			else
-				# x = @real_facing_x * i/@hair_x_scales.length * 2
-				# @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
-				# @hair_x_scales[i] += (x - hxs) / 2
-				@hair_x_scales[i] += (@hair_x_scales[i-1] - hxs) / 3
-			
-			ctx.save()
-			ctx.scale(hxs, 1)
-			ctx.fillStyle = hair_color
-			r = @hair_x_scales[i] * @vx / 45 - Math.max(0, @smoothed_vy/25)
-			l = 5
-			w = 1
-			ctx.rotate(r)
-			ctx.fillRect(0-w, -2, 5+w, l)
-			ctx.translate(0, l)
-			ctx.rotate(r)
-			ctx.fillRect(1-w, -2, 4+w, l)
-			ctx.translate(0, l)
-			ctx.rotate(r)
-			ctx.fillRect(2-w, -2, 3+w, l)
-			ctx.translate(0, l)
-			ctx.rotate(r)
-			ctx.fillRect(3-w, -2, 2+w, l)
-			ctx.translate(0, l)
-			ctx.restore()
+		for hair_points in @hairs
+			ctx.beginPath()
+			ctx.moveTo(hair_points[0].x, hair_points[0].y)
+			for point in hair_points[1...]
+				ctx.lineTo(point.x, point.y)
+			ctx.lineWidth = 2
+			ctx.lineCap = "round"
+			ctx.strokeStyle = hair_color
+			ctx.stroke()
 		
 		ctx.restore()
 		
