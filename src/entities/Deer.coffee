@@ -24,12 +24,18 @@ module.exports = class Deer extends SimpleActor
 		@dir = 0; @dir_p = 1; @dir_pl = 1
 		@rideable = true
 		@c = "hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)"
+		@ground_angle = 0
+		@ground_angle_smoothed = 0
 
 	step: (world)->
 		if @grounded
+			@ground_angle = @find_ground_angle(world) ? 0
+			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/5
 			if Math.random() < 0.01
 				@dir = r()
 		else
+			@ground_angle = 0
+			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/10
 			if Math.abs(@xp-@x) < 1
 				@t++
 				if @t > 15
@@ -37,7 +43,6 @@ module.exports = class Deer extends SimpleActor
 					@t=0
 			else
 				@t=0
-			
 		
 		@vx += (@dir)/5
 		@lr += Math.abs(@vx)/5
@@ -56,6 +61,7 @@ module.exports = class Deer extends SimpleActor
 		ctx.save()
 		# ctx.translate(@x,@y+@height*3/4)
 		ctx.translate(0,@height*3/4)
+		ctx.rotate(@ground_angle_smoothed)
 		
 		ctx.beginPath()
 		ctx.fillStyle=@c

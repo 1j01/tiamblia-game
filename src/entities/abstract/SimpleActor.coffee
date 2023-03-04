@@ -2,6 +2,8 @@
 # Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
 # SimpleActors have rectangular collision boxes and basic physics.
 
+{Terrain} = require "skele2d"
+{lineSegmentsIntersect} = require("skele2d").helpers
 Entity = require "./Entity.coffee"
 
 module.exports = class SimpleActor extends Entity
@@ -20,7 +22,27 @@ module.exports = class SimpleActor extends Entity
 		@jump = no
 		@grounded = no
 		@facing_x = 0
-	
+
+	find_ground_angle: (world)->
+		a = {x: @x, y: @y}
+		b = {x: @x, y: @y + 2 + @height} # slightly further down than collision code uses
+		for entity in world.entities when entity instanceof Terrain
+			if entity.structure.pointInPolygon(entity.fromWorld(b))
+				# console.log "found ground"
+				# find line segment intersecting ab
+				e_a = entity.fromWorld(a)
+				e_b = entity.fromWorld(b)
+				for segment_name, segment of entity.structure.segments
+					if lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
+						# find the angle
+						angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
+						# console.log "angle", angle
+						if Math.cos(angle) < 0
+							angle -= Math.PI
+							angle = (angle + Math.PI * 2) % (Math.PI * 2)
+						return angle
+		# console.log "no ground found"
+
 	step: (world)->
 		return if @y > 400
 		

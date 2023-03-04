@@ -1,12 +1,12 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 Entity = require "./abstract/Entity.coffee"
-{Pose, Terrain} = require "skele2d"
+{Pose} = require "skele2d"
 Bow = require "./items/Bow.coffee"
 Arrow = require "./items/Arrow.coffee"
 Deer = require "./Deer.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
-{distance, distanceToLineSegment, lineSegmentsIntersect} = require("skele2d").helpers
+{distance, distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
 
 gamepad_aiming = false
@@ -285,30 +285,10 @@ module.exports = class Player extends SimpleActor
 		head_x_before_posing = @structure.points["head"].x
 		head_y_before_posing = @structure.points["head"].y
 
-		find_ground_angle = =>
-			a = {x: @x, y: @y}
-			b = {x: @x, y: @y + 2 + @height} # slightly further down than collision code uses in SimpleActor
-			for entity in world.entities when entity instanceof Terrain
-				if entity.structure.pointInPolygon(entity.fromWorld(b))
-					# console.log "found ground"
-					# find line segment intersecting ab
-					e_a = entity.fromWorld(a)
-					e_b = entity.fromWorld(b)
-					for segment_name, segment of entity.structure.segments
-						if lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)
-							# find the angle
-							angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
-							# console.log "angle", angle
-							if Math.cos(angle) < 0
-								angle -= Math.PI
-								angle = (angle + Math.PI * 2) % (Math.PI * 2)
-							return angle
-			# console.log "no ground found"
-
 		# rotate the pose based on the ground angle
 		# TODO: balance the character better; lean while running; keep feet out of the ground
 		# I may need to define new poses to do this well.
-		ground_angle = find_ground_angle()
+		ground_angle = @find_ground_angle(world)
 		@ground_angle = ground_angle
 		if ground_angle? and isFinite(ground_angle) and not @riding
 			# there's no helper for rotation yet
