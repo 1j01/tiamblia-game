@@ -44,7 +44,7 @@ module.exports = class Water extends Terrain
 		for x in [@min_x...@max_x]
 			neighboring[x - @min_x] = (@waves_y[x - @min_x - 1] ? 0) + (@waves_y[x - @min_x + 1] ? 0)
 		for x in [@min_x...@max_x]
-			@waves_vy[x - @min_x] += (neighboring[x - @min_x] - @waves_y[x - @min_x] * 2) * 0.9
+			@waves_vy[x - @min_x] += (neighboring[x - @min_x] - @waves_y[x - @min_x] * 2) * 0.4
 			@waves_vy[x - @min_x] *= 0.99
 			@waves_vy[x - @min_x] -= @waves_y[x - @min_x] * 0.2
 			@waves_y[x - @min_x] += @waves_vy[x - @min_x]
