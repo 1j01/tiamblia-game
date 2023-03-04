@@ -183,6 +183,10 @@ module.exports = class Player extends SimpleActor
 				draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone)
 				gamepad_prime_bow = draw_back_distance > 0.3
 
+		# Note: You're allowed to prime and draw the bow without an arrow.
+		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
+		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
+		
 		# TODO: configurable controls
 		@move_x = right - left
 		@move_y = down - up
@@ -244,7 +248,7 @@ module.exports = class Player extends SimpleActor
 			@idle_animation = null
 		
 		if @riding
-			new_pose = Player.poses["Ride"] ? Player.poses["Stand"] ? @structure.getPose()
+			new_pose = Player.poses[if prime_bow then "Stand" else "Riding"] ? @structure.getPose()
 		else if @move_x is 0
 			@idle_timer += 1
 			subtle_idle_animation = Player.animations["Idle"]
@@ -345,10 +349,6 @@ module.exports = class Player extends SimpleActor
 		secondary_hand = @structure.points["left hand"]
 		primary_elbow = @structure.points["right elbow"]
 		secondary_elbow = @structure.points["left elbow"]
-		
-		# Note: You're allowed to prime and draw the bow without an arrow.
-		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
-		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
 		
 		@real_facing_x = @facing_x
 
