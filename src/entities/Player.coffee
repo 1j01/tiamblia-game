@@ -249,7 +249,7 @@ module.exports = class Player extends SimpleActor
 			@idle_animation = null
 		
 		if @riding
-			new_pose = Player.poses[if prime_bow then "Stand" else "Riding"] ? @structure.getPose()
+			new_pose = Player.poses[if prime_bow then "Riding Aiming" else "Riding"] ? @structure.getPose()
 		else if @move_x is 0
 			@idle_timer += 1
 			subtle_idle_animation = Player.animations["Idle"]
