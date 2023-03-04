@@ -505,6 +505,7 @@ module.exports = class Player extends SimpleActor
 				ctx.lineTo(local_point.x, local_point.y)
 			ctx.lineWidth = 2
 			ctx.lineCap = "round"
+			ctx.lineJoin = "round"
 			ctx.strokeStyle = hair_color
 			ctx.stroke()
 		
