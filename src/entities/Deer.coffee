@@ -2,7 +2,7 @@ SimpleActor = require "./abstract/SimpleActor.coffee"
 Entity = require "./abstract/Entity.coffee"
 {addEntityClass} = require "skele2d"
 
-`function r(){return Math.random()*2-1;}`
+r = -> Math.random()*2-1
 
 module.exports = class Deer extends SimpleActor
 	addEntityClass(@)
@@ -26,26 +26,20 @@ module.exports = class Deer extends SimpleActor
 		@c = "hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)"
 
 	step: (world)->
-		```
-		function collisionRectangle(x,y,w,h){
-			/*return collisionPoint(x,y)||collisionPoint(x,y+h)||collisionPoint(x+w,y)||collisionPoint(x+w,y+h)
-				||collisionPoint(x,y+h/2)||collisionPoint(x+w/2,y)||collisionPoint(x+w/2,y+h)||collisionPoint(x+w,y+h/2)
-				||collisionPoint(x,y+h/4)||collisionPoint(x+w/4,y)||collisionPoint(x+w/4,y+h)||collisionPoint(x+w,y+h/4)
-				||collisionPoint(x,y+h*3/4)||collisionPoint(x+w*3/4,y)||collisionPoint(x+w*3/4,y+h)||collisionPoint(x+w,y+h*3/4);*/
-			if(collisionPoint(x,y)||collisionPoint(x,y+h)||collisionPoint(x+w,y)||collisionPoint(x+w,y+h))return true;
-			for(var i=0;i<w;i++){
-				for(var j=0;j<h;j++){
-					if(collisionPoint(x+i,y+j)>200){
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-		function collisionPoint(x,y){
-			return world.collision({x, y});
-		}
-		```
+		collisionRectangle = (x,y,w,h)->
+			# return collisionPoint(x,y) or collisionPoint(x,y+h) or collisionPoint(x+w,y) or collisionPoint(x+w,y+h)
+			# 	or collisionPoint(x,y+h/2) or collisionPoint(x+w/2,y) or collisionPoint(x+w/2,y+h) or collisionPoint(x+w,y+h/2)
+			# 	or collisionPoint(x,y+h/4) or collisionPoint(x+w/4,y) or collisionPoint(x+w/4,y+h) or collisionPoint(x+w,y+h/4)
+			# 	or collisionPoint(x,y+h*3/4) or collisionPoint(x+w*3/4,y) or collisionPoint(x+w*3/4,y+h) or collisionPoint(x+w,y+h*3/4)
+			if collisionPoint(x,y) or collisionPoint(x,y+h) or collisionPoint(x+w,y) or collisionPoint(x+w,y+h)
+				return true
+			for i in [0..w]
+				for j in [0..h]
+					if collisionPoint(x+i,y+j) > 200
+						return true
+			return false
+		collisionPoint = (x,y)->
+			return world.collision({x, y})
 
 		if collisionRectangle(@x,@y+4,@width,@height)
 			if Math.random() < 0.01
