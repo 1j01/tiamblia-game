@@ -43,7 +43,7 @@ module.exports = class Rabbit extends SimpleActor
 		@dir = Math.max(-10,Math.min(10,@dir))
 		@xp=@x
 
-		@move_x = @dir*0.2
+		@move_x = @dir*0.02
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
