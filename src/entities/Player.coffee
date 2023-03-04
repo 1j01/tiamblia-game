@@ -444,6 +444,7 @@ module.exports = class Player extends SimpleActor
 
 		hair_iterations = 1
 		air_friction = 0.2
+		hair_length = 30
 		for [0..hair_iterations]
 			for points in @hairs
 				for point in points
@@ -452,9 +453,11 @@ module.exports = class Player extends SimpleActor
 
 			for points, hair_index in @hairs
 				a = head_angle + hair_index / @hairs.length * Math.PI - Math.PI/2
-				points[0].x = head_global.x + Math.cos(a) * 5
-				points[0].y = head_global.y + Math.sin(a) * 5
-				seg_length = 5
+				back_x = Math.sin(head_angle) * 2 * @real_facing_x
+				back_y = Math.cos(head_angle) * 2 * @real_facing_x
+				points[0].x = head_global.x + Math.cos(a) * 3 + back_x
+				points[0].y = head_global.y + Math.sin(a) * 3 + back_y
+				seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length
 				for i in [1...points.length]
 					points[i].vy += 0.5 / hair_iterations
 					points[i].vx *= (1 - air_friction)
@@ -494,7 +497,7 @@ module.exports = class Player extends SimpleActor
 		# 		head: ->
 		
 		# trailing hair
-		for hair_points in @hairs
+		for hair_points, hair_index in @hairs
 			ctx.beginPath()
 			# ctx.moveTo(hair_points[0].x, hair_points[0].y)
 			local_point = @fromWorld(hair_points[0])
@@ -507,6 +510,7 @@ module.exports = class Player extends SimpleActor
 			ctx.lineCap = "round"
 			ctx.lineJoin = "round"
 			ctx.strokeStyle = hair_color
+			# ctx.strokeStyle = "hsla(#{hair_index / @hairs.length * 360}, 100%, 50%, 0.5)"
 			ctx.stroke()
 		
 		# limbs
