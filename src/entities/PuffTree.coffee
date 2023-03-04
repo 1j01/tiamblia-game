@@ -36,8 +36,8 @@ module.exports = class PuffTree extends Tree
 		#if w>~~~--w
 			#r+=(Math.random()*2-1)/50
 			@drawBranch(ctx,x,y,r,life,w,sl)
-			if Math.random() > 0.1 and life > 0.1
-				@drawBranch(ctx,x,y,r+(Math.random()*2-1)/5,life,w,sl)
+			# if Math.random() > 0.1 and life > 0.1
+			# 	@drawBranch(ctx,x,y,r+(Math.random()*2-1)/5,life,w,sl)
 		else
 			@drawLeaf(ctx,x,y,r,life,w+4,sl)
 		ctx.lineCap="butt"
