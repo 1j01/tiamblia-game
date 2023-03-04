@@ -28,6 +28,8 @@ terrain.x = 0
 terrain.y = 0
 terrain.generate()
 
+bottom_of_world = 300
+
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
@@ -101,11 +103,17 @@ do animate = ->
 		if player
 			view_to.center_x = player.x
 			view_to.center_y = player.y
+			# clamp view so you can't see below the bottom of the world
+			# view_to.center_y = Math.min(view_to.center_y, bottom_of_world - canvas.height / 2 / view.scale)
 	
 	view.width = canvas.width
 	view.height = canvas.height
 	
 	view.easeTowards(view_to, view_smoothness)
+	if player and not editor.editing
+		# clamp view so you can't see below the bottom of the world even while zooming out
+		view.center_y = Math.min(view.center_y, bottom_of_world - canvas.height / 2 / view.scale)
+
 	editor.step() if editor.editing
 	mouse.resetForNextStep()
 	
