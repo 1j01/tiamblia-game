@@ -239,8 +239,9 @@ module.exports = class Player extends SimpleActor
 			@riding.dir = @move_x # old code...
 			@riding.jump = @jump
 			@facing_x = @riding.facing_x
-			@x = @riding.x
-			@y = @riding.y - 30
+			offset_distance = 20
+			@x = @riding.x + Math.sin(@riding.ground_angle_smoothed) * offset_distance
+			@y = @riding.y - Math.cos(@riding.ground_angle_smoothed) * offset_distance - 10
 			@vx = @riding.vx
 			@vy = @riding.vy
 
@@ -288,25 +289,29 @@ module.exports = class Player extends SimpleActor
 		# rotate the pose based on the ground angle
 		# TODO: balance the character better; lean while running; keep feet out of the ground
 		# I may need to define new poses to do this well.
-		ground_angle = @find_ground_angle(world)
+		ground_angle = @riding?.ground_angle ? @find_ground_angle(world)
 		@ground_angle = ground_angle
-		if ground_angle? and isFinite(ground_angle) and not @riding
+		if ground_angle? and isFinite(ground_angle)
 			# there's no helper for rotation yet
 			# and we wanna do it a little custom anyway
 			# rotating some points more than others
+			new_pose = Pose.copy(new_pose)
 			center = new_pose.points["pelvis"]
 			center = {x: center.x, y: center.y} # copy
 			for point_name, point of new_pose.points
-				# With this constant this small, it's almost like a conditional
-				# of whether the point is below the pelvis or not.
-				# With a larger number, it would bend the knees backwards.
-				max_y_diff = 2
-				# how much to rotate this point
-				factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff))
-				# It's a bit much on steep slopes, so let's reduce it.
-				# This is still enough to keep the feet from floating,
-				# although the feet go into the ground significantly.
-				factor *= 0.8
+				if @riding
+					factor = 1
+				else
+					# With this constant this small, it's almost like a conditional
+					# of whether the point is below the pelvis or not.
+					# With a larger number, it would bend the knees backwards.
+					max_y_diff = 2
+					# how much to rotate this point
+					factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff))
+					# It's a bit much on steep slopes, so let's reduce it.
+					# This is still enough to keep the feet from floating,
+					# although the feet go into the ground significantly.
+					factor *= 0.8
 				# translate
 				point.x -= center.x
 				point.y -= center.y
