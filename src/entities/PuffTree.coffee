@@ -6,7 +6,7 @@ module.exports = class PuffTree extends Tree
 	addEntityClass(@)
 	constructor: ->
 		super()
-		@branch(from: "base", to: "1", juice: 5, angle: -TAU/2)
+		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
 	
 		@bbox_padding = 180
 
@@ -14,20 +14,20 @@ module.exports = class PuffTree extends Tree
 		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_seed = performance.now()+Date.now()+Math.random()
 
-	branch: ({from, to, juice, angle})->
+	branch: ({from, to, juice, angle, width, length})->
 		name = to
-		length = Math.sqrt(juice * 1000) * (Math.random() + 1)
-		width = Math.sqrt(juice * 20) + 1
-		@structure.addSegment({from, name, length, width, color: "#926B2E"})
+		angle+=(Math.random()*2-1)*0.7
+		@structure.addSegment({from, name, length, width, color: "#89594A"})
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
-		if --juice > 0
+		juice -= 0.3
+		if juice > 0
 			# @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
 			# @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-			@branch({from: name, to: "#{to}-a", juice, angle: angle + Math.random() * TAU/8})
-			@branch({from: name, to: "#{to}-b", juice, angle: angle - Math.random() * TAU/8})
-			if Math.random() < 0.2
-				@branch({from: name, to: "#{to}-c", juice, angle})
+			@branch({from: name, to: "#{to}-a", juice, angle, width: juice, length})
+			# @branch({from: name, to: "#{to}-b", juice, angle: angle - Math.random() * TAU/8})
+			# if Math.random() < 0.2
+			# 	@branch({from: name, to: "#{to}-c", juice, angle})
 		else
 			leaf_point = @structure.points[name]
 			@leaf(leaf_point)
@@ -49,29 +49,6 @@ module.exports = class PuffTree extends Tree
 		for point_name, leaf of @structure.points when leaf.is_leaf
 			@drawLeaf(ctx,leaf.x,leaf.y,0,1,4,10)
 
-	drawBranch: (ctx,x,y,angle,life,thickness,seg_length)->
-		ctx.strokeStyle="#89594A"
-		ctx.lineWidth=thickness
-		ctx.lineCap="round"
-		ctx.beginPath()
-		ctx.moveTo(x,y)
-		angle+=(Math.random()*2-1)*0.7
-		x+=Math.sin(angle)*seg_length
-		y-=Math.cos(angle)*seg_length
-		ctx.lineTo(x,y)
-		ctx.stroke()
-		#thickness=(life-thickness)/2
-		thickness=life
-		if (life-=0.3) > 0
-		#if thickness>~~~--thickness
-			#angle+=(Math.random()*2-1)/50
-			@drawBranch(ctx,x,y,angle,life,thickness,seg_length)
-			# if Math.random() > 0.1 and life > 0.1
-			# 	@drawBranch(ctx,x,y,angle+(Math.random()*2-1)/5,life,thickness,seg_length)
-		else
-			@drawLeaf(ctx,x,y,angle,life,thickness+4,seg_length)
-		ctx.lineCap="butt"
-	
 	drawLeaf: (ctx,x,y,angle,life,thickness,seg_length)->
 		ctx.save()
 		l=Math.random()/2
