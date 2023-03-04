@@ -72,7 +72,7 @@ module.exports = class Arrow extends Entity
 		@structure.points.tip.x += @length
 		@structure.points.tip.prev_x = @structure.points.tip.x
 
-	@steps_per_frame = 8
+	@steps_per_frame = 2
 
 	setVelocity: (vx, vy)->
 		@structure.points.tip.prev_x = @structure.points.tip.x - vx / Arrow.steps_per_frame
