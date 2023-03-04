@@ -251,6 +251,11 @@ module.exports = class Player extends SimpleActor
 		
 		if @riding
 			new_pose = Player.poses[if prime_bow then "Riding Aiming" else "Riding"] ? @structure.getPose()
+		else if @submerged
+			if @move_x isnt 0 or @move_y isnt 0
+				@run_animation_position += 0.1 # treading water require constant movement
+				@run_animation_position += 0.2 if @move_x isnt 0
+			new_pose = Pose.lerpAnimationLoop(Player.animations["Tread Water"], @run_animation_position)
 		else if @move_x is 0
 			@idle_timer += 1
 			subtle_idle_animation = Player.animations["Idle"]
