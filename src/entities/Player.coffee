@@ -443,6 +443,7 @@ module.exports = class Player extends SimpleActor
 		# head_pos = @structure.getPose().points.head
 		{head, neck} = @structure.points
 		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
+		head_global = @toWorld(head)
 
 		hair_iterations = 1
 		# for points in @hairs
@@ -458,11 +459,9 @@ module.exports = class Player extends SimpleActor
 					# point.vy -= @vy / hair_iterations # simulate relative velocity
 
 			for points, hair_index in @hairs
-				# points[0].x = head_pos.x + hair_index
-				# points[0].y = head_pos.y
 				a = head_angle + hair_index / @hairs.length * Math.PI
-				points[0].x = head.x + Math.cos(a) * 5
-				points[0].y = head.y + Math.sin(a) * 5
+				points[0].x = head_global.x + Math.cos(a) * 5
+				points[0].y = head_global.y + Math.sin(a) * 5
 				seg_length = 5
 				for i in [1...points.length]
 					points[i].vy += 0.5 / hair_iterations
@@ -512,9 +511,13 @@ module.exports = class Player extends SimpleActor
 		# trailing hair
 		for hair_points in @hairs
 			ctx.beginPath()
-			ctx.moveTo(hair_points[0].x, hair_points[0].y)
+			# ctx.moveTo(hair_points[0].x, hair_points[0].y)
+			local_point = @fromWorld(hair_points[0])
+			ctx.moveTo(local_point.x, local_point.y)
 			for point in hair_points[1...]
-				ctx.lineTo(point.x, point.y)
+				# ctx.lineTo(point.x, point.y)
+				local_point = @fromWorld(point)
+				ctx.lineTo(local_point.x, local_point.y)
 			ctx.lineWidth = 2
 			ctx.lineCap = "round"
 			ctx.strokeStyle = hair_color
