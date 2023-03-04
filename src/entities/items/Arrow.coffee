@@ -65,7 +65,7 @@ module.exports = class Arrow extends Entity
 		for [0..Arrow.steps_per_frame]
 			@substep(world, 1 / Arrow.steps_per_frame)
 		
-		# Make ripples in water
+		# Interact with water
 		{tip, nock} = @structure.points
 		for point in [tip, nock]
 			water = world.collision(@toWorld(point), types: (entity)=>
@@ -77,6 +77,7 @@ module.exports = class Arrow extends Entity
 			if water and not too_far_under_water
 				vy = (point.y - point.prev_y) * Arrow.steps_per_frame
 				vx = (point.x - point.prev_x) * Arrow.steps_per_frame
+				# Make ripples in water
 				water.makeWaves(@toWorld(point), 2, vy)
 				# Skip off water
 				if 4 > vy > 2 and Math.abs(vx) > 0.4
