@@ -5611,14 +5611,23 @@ module.exports = Deer = (function() {
       this.dir_pl = 1;
       this.rideable = true;
       this.c = "hsla(" + (Math.random() * 20) + "," + 10 + "%," + (50 + Math.random() * 20) + "%,1)";
+      this.ground_angle = 0;
+      this.ground_angle_smoothed = 0;
     }
 
     step(world) {
+      var ref;
       if (this.grounded) {
+        // Note: ground_angle  and ground_angle_smoothed are used by Player while riding
+        this.ground_angle = (ref = this.find_ground_angle(world)) != null ? ref : 0;
+        this.ground_angle = Math.atan2(Math.sin(this.ground_angle), Math.cos(this.ground_angle));
+        this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 5;
         if (Math.random() < 0.01) {
           this.dir = r();
         }
       } else {
+        this.ground_angle = 0;
+        this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 10;
         if (Math.abs(this.xp - this.x) < 1) {
           this.t++;
           if (this.t > 15) {
@@ -5649,6 +5658,7 @@ module.exports = Deer = (function() {
       ctx.save();
       // ctx.translate(@x,@y+@height*3/4)
       ctx.translate(0, this.height * 3 / 4);
+      ctx.rotate(this.ground_angle_smoothed);
       ctx.beginPath();
       ctx.fillStyle = this.c;
       ctx.arc(0, -this.height / 2, this.height / 3, 0, Math.PI * 2, true);
@@ -5879,14 +5889,14 @@ module.exports = GranddaddyLonglegs = (function() {
 /***/ 795:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Arrow, Bow, Deer, Entity, Player, Pose, SimpleActor, TAU, Terrain, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, gamepad_mount_prev, keyboard, lineSegmentsIntersect, mouse_detect_from, mouse_detect_threshold,
+var Arrow, Bow, Deer, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, gamepad_mount_prev, keyboard, mouse_detect_from, mouse_detect_threshold,
   modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 SimpleActor = __webpack_require__(339);
 
 Entity = __webpack_require__(293);
 
-({Pose, Terrain} = __webpack_require__(432));
+({Pose} = __webpack_require__(432));
 
 Bow = __webpack_require__(914);
 
@@ -5898,7 +5908,7 @@ keyboard = __webpack_require__(866);
 
 ({addEntityClass} = __webpack_require__(432));
 
-({distance, distanceToLineSegment, lineSegmentsIntersect} = (__webpack_require__(432).helpers));
+({distance, distanceToLineSegment} = (__webpack_require__(432).helpers));
 
 TAU = Math.PI * 2;
 
@@ -6037,13 +6047,31 @@ module.exports = Player = (function() {
       this.other_idle_animation_position = 0;
       this.idle_animation = null;
       this.idle_timer = 0;
-      this.smoothed_vy = 0;
-      this.hair_x_scales = [1, 1, 1, 1, 1, 1, 1, 1, 1];
       this.real_facing_x = this.facing_x;
+      this.hairs = (function() {
+        var j, results;
+        results = [];
+        for (var j = 0; j <= 5; j++) {
+          results.push((function() {
+            var k, results1;
+            results1 = [];
+            for (var k = 0; k <= 4; k++) {
+              results1.push({
+                x: 0,
+                y: 0,
+                vx: 0,
+                vy: 0
+              });
+            }
+            return results1;
+          })());
+        }
+        return results;
+      })();
     }
 
     step(world, view, mouse) {
-      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, closest_dist, closest_steed, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, find_ground_angle, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, j, k, left, len, len1, max_draw_distance, max_y_diff, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, ref3, ref4, ref5, ref6, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, segment, segment_name, sternum, subtle_idle_animation, up, x, y;
+      var a, aim_angle, air_friction, angle, arm_span, arrow, arrow_angle, back_x, back_y, bow, bow_angle, buoyancy, center, closest_dist, closest_steed, delta_length, delta_x, delta_y, diff, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, fluid_friction, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hair_index, hair_iterations, hair_length, head, head_angle, head_global, head_x_before_posing, head_y_before_posing, hold_offset, i, j, k, l, left, len, len1, len2, len3, len4, m, max_draw_distance, max_y_diff, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, n, neck, new_head_x, new_head_y, new_pose, o, offset_distance, other_idle_animation, p, pick_up_any, point, point_name, points, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, results, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, seg_length, segment, segment_name, sternum, submerged, subtle_idle_animation, up, water_friction, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
       
@@ -6176,8 +6204,9 @@ module.exports = Player = (function() {
         this.riding.dir = this.move_x; // old code...
         this.riding.jump = this.jump;
         this.facing_x = this.riding.facing_x;
-        this.x = this.riding.x;
-        this.y = this.riding.y - 30;
+        offset_distance = 20;
+        this.x = this.riding.x + Math.sin(this.riding.ground_angle_smoothed) * offset_distance;
+        this.y = this.riding.y - Math.cos(this.riding.ground_angle_smoothed) * offset_distance - 10;
         this.vx = this.riding.vx;
         this.vy = this.riding.vy;
       }
@@ -6222,72 +6251,38 @@ module.exports = Player = (function() {
       }
       head_x_before_posing = this.structure.points["head"].x;
       head_y_before_posing = this.structure.points["head"].y;
-      find_ground_angle = () => {
-        var a, angle, b, e_a, e_b, len2, m, ref6, ref7;
-        a = {
-          x: this.x,
-          y: this.y
-        };
-        b = {
-          x: this.x,
-          y: this.y + 2 + this.height // slightly further down than collision code uses in SimpleActor
-        };
-        ref6 = world.entities;
-        for (m = 0, len2 = ref6.length; m < len2; m++) {
-          entity = ref6[m];
-          if (entity instanceof Terrain) {
-            if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
-              // console.log "found ground"
-              // find line segment intersecting ab
-              e_a = entity.fromWorld(a);
-              e_b = entity.fromWorld(b);
-              ref7 = entity.structure.segments;
-              for (segment_name in ref7) {
-                segment = ref7[segment_name];
-                if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
-                  // find the angle
-                  angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
-                  // console.log "angle", angle
-                  if (Math.cos(angle) < 0) {
-                    angle -= Math.PI;
-                    angle = (angle + Math.PI * 2) % (Math.PI * 2);
-                  }
-                  return angle;
-                }
-              }
-            }
-          }
-        }
-      };
-      // console.log "no ground found"
-
       // rotate the pose based on the ground angle
       // TODO: balance the character better; lean while running; keep feet out of the ground
       // I may need to define new poses to do this well.
-      ground_angle = find_ground_angle();
+      ground_angle = (ref6 = (ref7 = this.riding) != null ? ref7.ground_angle_smoothed : void 0) != null ? ref6 : this.find_ground_angle(world);
       this.ground_angle = ground_angle;
-      if ((ground_angle != null) && isFinite(ground_angle) && !this.riding) {
+      if ((ground_angle != null) && isFinite(ground_angle)) {
         // there's no helper for rotation yet
         // and we wanna do it a little custom anyway
         // rotating some points more than others
+        new_pose = Pose.copy(new_pose);
         center = new_pose.points["pelvis"];
         center = {
           x: center.x,
           y: center.y // copy
         };
-        ref6 = new_pose.points;
-        for (point_name in ref6) {
-          point = ref6[point_name];
-          // With this constant this small, it's almost like a conditional
-          // of whether the point is below the pelvis or not.
-          // With a larger number, it would bend the knees backwards.
-          max_y_diff = 2;
-          // how much to rotate this point
-          factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff));
-          // It's a bit much on steep slopes, so let's reduce it.
-          // This is still enough to keep the feet from floating,
-          // although the feet go into the ground significantly.
-          factor *= 0.8;
+        ref8 = new_pose.points;
+        for (point_name in ref8) {
+          point = ref8[point_name];
+          if (this.riding) {
+            factor = 1;
+          } else {
+            // With this constant this small, it's almost like a conditional
+            // of whether the point is below the pelvis or not.
+            // With a larger number, it would bend the knees backwards.
+            max_y_diff = 2;
+            // how much to rotate this point
+            factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff));
+            // It's a bit much on steep slopes, so let's reduce it.
+            // This is still enough to keep the feet from floating,
+            // although the feet go into the ground significantly.
+            factor *= 0.8;
+          }
           // translate
           point.x -= center.x;
           point.y -= center.y;
@@ -6402,12 +6397,94 @@ module.exports = Player = (function() {
         }
         // Cancel implicit velocity from moving the arrow's "current positions"
         // (This updates the "previous positions" that imply velocity.)
-        return arrow.setVelocity(0, 0);
+        arrow.setVelocity(0, 0);
       }
+      
+        // Hair physics
+      ({head, neck} = this.structure.points);
+      head_angle = Math.atan2(head.y - neck.y, head.x - neck.x);
+      head_global = this.toWorld(head);
+      hair_iterations = 1;
+      air_friction = 0.2;
+      water_friction = 0.2;
+      hair_length = 30;
+      results = [];
+      for (l = 0, ref9 = hair_iterations; (0 <= ref9 ? l <= ref9 : l >= ref9); 0 <= ref9 ? l++ : l--) {
+        ref10 = this.hairs;
+        for (m = 0, len2 = ref10.length; m < len2; m++) {
+          points = ref10[m];
+          for (n = 0, len3 = points.length; n < len3; n++) {
+            point = points[n];
+            point.prev_x = point.x;
+            point.prev_y = point.y;
+          }
+        }
+        ref11 = this.hairs;
+        for (hair_index = o = 0, len4 = ref11.length; o < len4; hair_index = ++o) {
+          points = ref11[hair_index];
+          a = head_angle + hair_index / this.hairs.length * Math.PI - Math.PI / 2;
+          back_x = Math.sin(head_angle) * 2 * this.real_facing_x;
+          back_y = Math.cos(head_angle) * 2 * this.real_facing_x;
+          points[0].x = head_global.x + Math.cos(a) * 3 + back_x;
+          points[0].y = head_global.y + Math.sin(a) * 3 + back_y;
+          seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length;
+          for (i = p = 1, ref12 = points.length; (1 <= ref12 ? p < ref12 : p > ref12); i = 1 <= ref12 ? ++p : --p) {
+            gravity = 0.5;
+            submerged = world.collision(points[i], {
+              types: (entity) => {
+                return entity.constructor.name === "Water";
+              }
+            });
+            buoyancy = submerged ? 0.6 : 0;
+            fluid_friction = submerged ? water_friction : air_friction;
+            points[i].vy += (gravity - buoyancy) / hair_iterations;
+            points[i].vx *= 1 - fluid_friction;
+            points[i].vy *= 1 - fluid_friction;
+            if (submerged) {
+              // points[i].vx += Math.sin(performance.now() / 1000 + i/30 + hair_index/10 + Math.sin(points[i].x/100 + points[i].y/100)) * 0.1
+              // points[i].vy += Math.cos(performance.now() / 1000 + i/30 + hair_index/10 + Math.cos(points[i].x/150 + points[i].y/200)) * 0.05
+              points[i].vx += Math.sin(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30)) * 40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05;
+              points[i].vy += Math.cos(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30)) * 40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05;
+            }
+            points[i].x += points[i].vx;
+            points[i].y += points[i].vy;
+            delta_x = points[i].x - points[i - 1].x;
+            delta_y = points[i].y - points[i - 1].y;
+            delta_length = Math.hypot(delta_x, delta_y);
+            diff = (delta_length - seg_length) / delta_length;
+            if (isFinite(diff) && delta_length > seg_length) {
+              points[i].x -= delta_x * diff;
+              points[i].y -= delta_y * diff;
+            } else {
+              console.warn("diff is not finite, for hair segment distance constraint");
+            }
+          }
+        }
+        results.push((function() {
+          var len5, q, ref13, results1;
+          ref13 = this.hairs;
+          results1 = [];
+          for (q = 0, len5 = ref13.length; q < len5; q++) {
+            points = ref13[q];
+            results1.push((function() {
+              var len6, r, results2;
+              results2 = [];
+              for (r = 0, len6 = points.length; r < len6; r++) {
+                point = points[r];
+                point.vx = point.x - point.prev_x;
+                results2.push(point.vy = point.y - point.prev_y);
+              }
+              return results2;
+            })());
+          }
+          return results1;
+        }).call(this));
+      }
+      return results;
     }
 
     draw(ctx) {
-      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, head, head_rotation_angle, hxs, i, j, k, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, r, ref, ref1, ref2, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit, w;
+      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, head, head_rotation_angle, j, k, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
       ({
         head,
         sternum,
@@ -6423,6 +6500,7 @@ module.exports = Player = (function() {
       hair_color = "#000000";
       eye_color = "#000000";
       dress_color = "#AAFFFF";
+      ref = this.hairs;
       
       // TODO: depth
       // @drawStructure
@@ -6432,48 +6510,31 @@ module.exports = Player = (function() {
       // 		head: ->
 
       // trailing hair
-      // TODO: better, less fake hair physics
-      ctx.save();
-      ctx.translate(head.x, head.y);
-      ctx.translate(-this.real_facing_x * 0.3, 0);
-      this.smoothed_vy += ((this.vy * !this.grounded) - this.smoothed_vy) / 5;
-      ref = this.hair_x_scales;
-      for (i = j = ref.length - 1; j >= 0; i = j += -1) {
-        hxs = ref[i];
-        if (i === 0) {
-          this.hair_x_scales[i] += (-this.real_facing_x - hxs) / 3;
-        } else {
-          // x = @real_facing_x * i/@hair_x_scales.length * 2
-          // @hair_x_scales[i] += (@hair_x_scales[i-1] + x - hxs) / 2
-          // @hair_x_scales[i] += (x - hxs) / 2
-          this.hair_x_scales[i] += (this.hair_x_scales[i - 1] - hxs) / 3;
+      for (hair_index = j = 0, len = ref.length; j < len; hair_index = ++j) {
+        hair_points = ref[hair_index];
+        ctx.beginPath();
+        // ctx.moveTo(hair_points[0].x, hair_points[0].y)
+        local_point = this.fromWorld(hair_points[0]);
+        ctx.moveTo(local_point.x, local_point.y);
+        ref1 = hair_points.slice(1);
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          point = ref1[k];
+          // ctx.lineTo(point.x, point.y)
+          local_point = this.fromWorld(point);
+          ctx.lineTo(local_point.x, local_point.y);
         }
-        ctx.save();
-        ctx.scale(hxs, 1);
-        ctx.fillStyle = hair_color;
-        r = this.hair_x_scales[i] * this.vx / 45 - Math.max(0, this.smoothed_vy / 25);
-        l = 5;
-        w = 1;
-        ctx.rotate(r);
-        ctx.fillRect(0 - w, -2, 5 + w, l);
-        ctx.translate(0, l);
-        ctx.rotate(r);
-        ctx.fillRect(1 - w, -2, 4 + w, l);
-        ctx.translate(0, l);
-        ctx.rotate(r);
-        ctx.fillRect(2 - w, -2, 3 + w, l);
-        ctx.translate(0, l);
-        ctx.rotate(r);
-        ctx.fillRect(3 - w, -2, 2 + w, l);
-        ctx.translate(0, l);
-        ctx.restore();
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = hair_color;
+        // ctx.strokeStyle = "hsla(#{hair_index / @hairs.length * 360}, 100%, 50%, 0.5)"
+        ctx.stroke();
       }
-      ctx.restore();
-      ref1 = this.structure.segments;
+      ref2 = this.structure.segments;
       
       // limbs
-      for (segment_name in ref1) {
-        segment = ref1[segment_name];
+      for (segment_name in ref2) {
+        segment = ref2[segment_name];
         ctx.beginPath();
         ctx.moveTo(segment.a.x, segment.a.y);
         ctx.lineTo(segment.b.x, segment.b.y);
@@ -6546,9 +6607,9 @@ module.exports = Player = (function() {
         this.smoothed_facing_x_for_eyes = 0;
       }
       this.smoothed_facing_x_for_eyes += (this.real_facing_x - this.smoothed_facing_x_for_eyes) / 5;
-      ref2 = [-1, 1];
-      for (k = 0, len = ref2.length; k < len; k++) {
-        eye_signature = ref2[k];
+      ref3 = [-1, 1];
+      for (l = 0, len2 = ref3.length; l < len2; l++) {
+        eye_signature = ref3[l];
         // 3D projection in one axis
         head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
         eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5 * 0.9;
@@ -6843,7 +6904,11 @@ module.exports = class Entity
 
 // Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
 // SimpleActors have rectangular collision boxes and basic physics.
-var Entity, SimpleActor;
+var Entity, SimpleActor, Terrain, lineSegmentsIntersect;
+
+({Terrain} = __webpack_require__(432));
+
+({lineSegmentsIntersect} = (__webpack_require__(432).helpers));
 
 Entity = __webpack_require__(293);
 
@@ -6867,6 +6932,45 @@ module.exports = SimpleActor = (function() {
       this.facing_x = 0;
     }
 
+    find_ground_angle(world) {
+      var a, angle, b, e_a, e_b, entity, i, len, ref, ref1, segment, segment_name;
+      a = {
+        x: this.x,
+        y: this.y
+      };
+      b = {
+        x: this.x,
+        y: this.y + 2 + this.height // slightly further down than collision code uses
+      };
+      ref = world.entities;
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (entity instanceof Terrain) {
+          if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
+            // console.log "found ground"
+            // find line segment intersecting ab
+            e_a = entity.fromWorld(a);
+            e_b = entity.fromWorld(b);
+            ref1 = entity.structure.segments;
+            for (segment_name in ref1) {
+              segment = ref1[segment_name];
+              if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+                // find the angle
+                angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
+                // console.log "angle", angle
+                if (Math.cos(angle) < 0) {
+                  angle -= Math.PI;
+                  angle = (angle + Math.PI * 2) % (Math.PI * 2);
+                }
+                return angle;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // console.log "no ground found"
     step(world) {
       var go, more_submerged, move_x, move_y, resolution, results;
       if (this.y > 400) {
@@ -6925,7 +7029,6 @@ module.exports = SimpleActor = (function() {
           }, this.width / 2, this.vy);
         }
       }
-      this.grounded = false;
       // @vy *= 0.99
       move_x = this.vx;
       move_y = this.vy;
@@ -6955,6 +7058,9 @@ module.exports = SimpleActor = (function() {
         }
         move_x -= go;
         this.x += go;
+      }
+      if (Math.abs(move_y) > resolution) {
+        this.grounded = false;
       }
       results = [];
       while (Math.abs(move_y) > resolution) {
