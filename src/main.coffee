@@ -11,6 +11,7 @@ require "./entities/terrain/Rock.coffee"
 require "./entities/terrain/Water.coffee"
 require "./entities/abstract/SimpleActor.coffee"
 require "./entities/abstract/Tree.coffee"
+require "./entities/PuffTree.coffee"
 require "./entities/SavannaTreeA.coffee"
 require "./entities/Cloud.coffee"
 require "./entities/Butterfly.coffee"
@@ -84,6 +85,7 @@ gamepad_start_prev = false
 do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
+	Math.seedrandom(performance.now())
 	
 	canvas.width = innerWidth unless canvas.width is innerWidth
 	canvas.height = innerHeight unless canvas.height is innerHeight
