@@ -249,9 +249,13 @@ module.exports = class Player extends SimpleActor
 			@idle_timer = 0
 			@idle_animation = null
 		
+		more_submerged = @submerged and world.collision({@x, y: @y + @height * 0.5}, types: (entity)=>
+			entity.constructor.name is "Water"
+		)
+
 		if @riding
 			new_pose = Player.poses[if prime_bow then "Riding Aiming" else "Riding"] ? @structure.getPose()
-		else if @submerged
+		else if more_submerged
 			if @move_x isnt 0
 				@run_animation_position += 0.1
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Swim"], @run_animation_position)
