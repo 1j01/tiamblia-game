@@ -10,7 +10,6 @@ module.exports = class PuffTree extends Tree
 	
 		@bbox_padding = 30
 
-		@species = "kaoyu"
 		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_seed = performance.now()+Date.now()+Math.random()
 
@@ -22,12 +21,9 @@ module.exports = class PuffTree extends Tree
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
 		juice -= 0.3
 		if juice > 0
-			# @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-			# @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
 			@branch({from: name, to: "#{to}-a", juice, angle, width: juice, length})
-			# @branch({from: name, to: "#{to}-b", juice, angle: angle - Math.random() * TAU/8})
 			# if Math.random() < 0.2
-			# 	@branch({from: name, to: "#{to}-c", juice, angle})
+			# 	@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
 		else
 			leaf_point = @structure.points[name]
 			@leaf(leaf_point)
@@ -47,9 +43,9 @@ module.exports = class PuffTree extends Tree
 			ctx.stroke()
 		
 		for point_name, leaf of @structure.points when leaf.is_leaf
-			@drawLeaf(ctx,leaf.x,leaf.y,0,1,4,10)
+			@drawLeaf(ctx,leaf.x,leaf.y)
 
-	drawLeaf: (ctx,x,y,angle,life,thickness,seg_length)->
+	drawLeaf: (ctx,x,y)->
 		ctx.save()
 		l=Math.random()/2
 		ctx.fillStyle="hsla("+(150-l*50)+","+(50)+"%,"+(50+l*20)+"%,1)"
@@ -64,18 +60,6 @@ module.exports = class PuffTree extends Tree
 			r2=Math.random()*15
 			ctx.arc(x+Math.sin(r1)*r2,y+Math.cos(r1)*r2,5+Math.random()*5,0,Math.PI*2,true)
 			ctx.fill()
-		###
-		ctx.strokeStyle="#1a5"
-		ctx.lineWidth=thickness
-		ctx.lineCap="round"
-		ctx.beginPath()
-		ctx.moveTo(x,y)
-		angle+=(Math.random()*2-1)/2
-		x+=Math.sin(angle+Math.PI)*seg_length/4
-		y-=Math.cos(angle+Math.PI)*seg_length/4
-		ctx.lineTo(x,y)
-		ctx.stroke()
-		###
 		ctx.restore()
 	
 	
