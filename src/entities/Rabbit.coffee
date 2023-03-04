@@ -50,7 +50,7 @@ module.exports = class Rabbit extends SimpleActor
 	
 	draw: (ctx)->
 		ctx.save() # body center transform
-		ctx.translate(@width/2,@height/2)
+		ctx.translate(@width/2,@height)
 		ctx.fillStyle=@c2
 		# ctx.fillRect(0,0,@width,@height)
 		ctx.beginPath()
