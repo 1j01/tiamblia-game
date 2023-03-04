@@ -76,7 +76,12 @@ module.exports = class Arrow extends Entity
 			)
 			if water and not too_far_under_water
 				vy = (point.y - point.prev_y) * Arrow.steps_per_frame
+				vx = (point.x - point.prev_x) * Arrow.steps_per_frame
 				water.makeWaves(@toWorld(point), 2, vy)
+				# Skip off water
+				if 4 > vy > 2 and Math.abs(vx) > 0.4
+					vy *= -0.3
+					point.prev_y = point.y - vy / Arrow.steps_per_frame
 			# Slow down in water
 			if water
 				point.prev_x += (point.x - point.prev_x) * 0.1
