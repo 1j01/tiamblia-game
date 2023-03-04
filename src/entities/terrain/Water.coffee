@@ -50,15 +50,17 @@ module.exports = class Water extends Terrain
 			@waves_y[x - @min_x] += @waves_vy[x - @min_x]
 
 	draw: (ctx, view)->
+		wave_center_y = @min_y + 10
 		ctx.save()
 		ctx.beginPath()
 		for x in [@min_x...@max_x]
-			ctx.lineTo(x, @waves_y[x - @min_x] + @min_y)
+			ctx.lineTo(x, @waves_y[x - @min_x] + wave_center_y)
 		ctx.lineTo(@max_x, @max_y)
 		ctx.lineTo(@min_x, @max_y)
 		ctx.closePath()
-		ctx.strokeStyle = "red"
-		ctx.stroke()
+		# ctx.strokeStyle = "red"
+		# ctx.stroke()
+		ctx.clip()
 
 		ctx.beginPath()
 		for point_name, point of @structure.points
