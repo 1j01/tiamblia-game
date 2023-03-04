@@ -64,6 +64,19 @@ module.exports = class Arrow extends Entity
 	step: (world)->
 		for [0..Arrow.steps_per_frame]
 			@substep(world, 1 / Arrow.steps_per_frame)
+		
+		# Make ripples in water
+		{tip, nock} = @structure.points
+		for point in [tip, nock]
+			water = world.collision(@toWorld(point), types: (entity)=>
+				entity.constructor.name is "Water"
+			)
+			too_far_under_water = water and world.collision(@toWorld({x: point.x, y: point.y - 5}), types: (entity)=>
+				entity.constructor.name is "Water"
+			)
+			if water and not too_far_under_water
+				vy = (point.y - point.prev_y) * Arrow.steps_per_frame
+				water.makeWaves(@toWorld(point), 2, vy)
 
 	substep: (world, delta_time)->
 
