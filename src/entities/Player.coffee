@@ -240,7 +240,9 @@ module.exports = class Player extends SimpleActor
 			@idle_timer = 0
 			@idle_animation = null
 		
-		if @move_x is 0
+		if @riding
+			new_pose = Player.poses["Ride"] ? Player.poses["Stand"] ? @structure.getPose()
+		else if @move_x is 0
 			@idle_timer += 1
 			subtle_idle_animation = Player.animations["Idle"]
 			
