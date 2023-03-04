@@ -235,6 +235,8 @@ module.exports = class Player extends SimpleActor
 			@riding.dir = @move_x # old code...
 			@x = @riding.x
 			@y = @riding.y - 30
+			@vx = @riding.vx
+			@vy = @riding.vy
 
 		prevent_idle = =>
 			@idle_timer = 0
