@@ -78,7 +78,6 @@ module.exports = class SimpleActor extends Entity
 			if not more_submerged
 				@submerged.makeWaves({x: @x, y: @y + @height * 0.9}, @width/2, @vy)
 
-		@grounded = no
 		# @vy *= 0.99
 		move_x = @vx
 		move_y = @vy
@@ -96,6 +95,8 @@ module.exports = class SimpleActor extends Entity
 					@vy = 0 if @vy > 0
 			move_x -= go
 			@x += go
+		if Math.abs(move_y) > resolution
+			@grounded = no
 		while Math.abs(move_y) > resolution
 			go = Math.sign(move_y) * resolution
 			if world.collision({@x, y: @y + go + @height})
