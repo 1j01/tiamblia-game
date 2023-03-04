@@ -446,6 +446,7 @@ module.exports = class Player extends SimpleActor
 		head_global = @toWorld(head)
 
 		hair_iterations = 1
+		air_friction = 0.2
 		# for points in @hairs
 		# 	for point in points
 		# 		point.vx -= @vx # simulate relative velocity
@@ -468,6 +469,8 @@ module.exports = class Player extends SimpleActor
 					# points[i].vx += 0.02 * (Math.random() - 0.5)
 					# points[i].vy -= @vy / hair_iterations # simulate relative velocity
 					# points[i].vx -= @vx / hair_iterations # simulate relative velocity
+					points[i].vx *= (1 - air_friction)
+					points[i].vy *= (1 - air_friction)
 					points[i].x += points[i].vx
 					points[i].y += points[i].vy
 					# points[i].x -= @vx / hair_iterations # simulate relative velocity
