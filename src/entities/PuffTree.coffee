@@ -6,12 +6,13 @@ module.exports = class PuffTree extends Tree
 	addEntityClass(@)
 	constructor: ->
 		super()
-		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
-	
-		@bbox_padding = 30
+
+		@bbox_padding = 60
 
 		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_seed = performance.now()+Date.now()+Math.random()
+
+		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
 
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
