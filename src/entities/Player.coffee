@@ -444,6 +444,7 @@ module.exports = class Player extends SimpleActor
 
 		hair_iterations = 1
 		air_friction = 0.2
+		water_friction = 0.2
 		hair_length = 30
 		for [0..hair_iterations]
 			for points in @hairs
@@ -459,9 +460,20 @@ module.exports = class Player extends SimpleActor
 				points[0].y = head_global.y + Math.sin(a) * 3 + back_y
 				seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length
 				for i in [1...points.length]
-					points[i].vy += 0.5 / hair_iterations
-					points[i].vx *= (1 - air_friction)
-					points[i].vy *= (1 - air_friction)
+					gravity = 0.5
+					submerged = world.collision(points[i], types: (entity)=>
+						entity.constructor.name is "Water"
+					)
+					buoyancy = if submerged then 0.6 else 0
+					fluid_friction = if submerged then water_friction else air_friction
+					points[i].vy += (gravity - buoyancy) / hair_iterations
+					points[i].vx *= (1 - fluid_friction)
+					points[i].vy *= (1 - fluid_friction)
+					if submerged
+						# points[i].vx += Math.sin(performance.now() / 1000 + i/30 + hair_index/10 + Math.sin(points[i].x/100 + points[i].y/100)) * 0.1
+						# points[i].vy += Math.cos(performance.now() / 1000 + i/30 + hair_index/10 + Math.cos(points[i].x/150 + points[i].y/200)) * 0.05
+						points[i].vx += Math.sin(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30))*40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05
+						points[i].vy += Math.cos(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30))*40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05
 					points[i].x += points[i].vx
 					points[i].y += points[i].vy
 					delta_x = points[i].x - points[i-1].x
