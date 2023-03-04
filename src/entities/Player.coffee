@@ -233,6 +233,7 @@ module.exports = class Player extends SimpleActor
 		if @riding
 			# @riding.move_x = @move_x
 			@riding.dir = @move_x # old code...
+			@riding.jump = @jump
 			@x = @riding.x
 			@y = @riding.y - 30
 			@vx = @riding.vx
