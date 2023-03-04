@@ -441,18 +441,23 @@ module.exports = class Player extends SimpleActor
 		# Hair physics
 		# head_pos = @structure.points.head
 		# head_pos = new_pose.points.head
-		head_pos = @structure.getPose().points.head
+		# head_pos = @structure.getPose().points.head
+		{head, neck} = @structure.points
+		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
 
 		hair_iterations = 5
 		for [0..hair_iterations]
 			for points, hair_index in @hairs
-				points[0].x = head_pos.x + hair_index
-				points[0].y = head_pos.y
+				# points[0].x = head_pos.x + hair_index
+				# points[0].y = head_pos.y
+				points[0].x = head.x + Math.cos(head_angle) * hair_index
+				points[0].y = head.y + Math.sin(head_angle) * hair_index
 				seg_length = 5
 				for i in [1...points.length]
+					points[i].vy += 0.005
+					points[i].vx += 0.02 * (Math.random() - 0.5)
 					points[i].x += points[i].vx
 					points[i].y += points[i].vy
-					points[i].vy += 0.005
 					delta_x = points[i].x - points[i-1].x
 					delta_y = points[i].y - points[i-1].y
 					delta_length = Math.hypot(delta_x, delta_y)
