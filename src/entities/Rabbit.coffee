@@ -38,6 +38,7 @@ module.exports = class Rabbit extends SimpleActor
 				@t=0
 		
 		@vx += (@dir *= 1.1)/5
+		@dir = Math.max(-10,Math.min(10,@dir))
 		@xp=@x
 
 		@move_x = @dir*0.2
