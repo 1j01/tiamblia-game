@@ -227,7 +227,7 @@ module.exports = class Player extends SimpleActor
 						if dist < closest_dist
 							closest_dist = dist
 							closest_steed = entity
-				if closest_steed
+				if closest_dist < 30
 					@riding = closest_steed
 
 		if @riding
