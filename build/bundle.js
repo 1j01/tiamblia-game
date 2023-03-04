@@ -5308,7 +5308,8 @@ var Mouse;
 /***/ 378:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Entity, Terrain, World, distanceToLineSegment;
+var Entity, Terrain, World, distanceToLineSegment,
+  indexOf = [].indexOf;
 
 Entity = __webpack_require__(293);
 
@@ -5330,7 +5331,7 @@ module.exports = World = (function() {
     }
 
     fromJSON(def) {
-      var ent_def, entity, i, j, len, len1, ref, ref1, results;
+      var ent_def, entity, i, j, k, len, len1, len2, point_def, point_name, ref, ref1, ref2, ref3, results;
       // upgrade old versions of the format
       if (!def.formatVersion) {
         if (!(def.entities instanceof Array)) {
@@ -5364,6 +5365,23 @@ module.exports = World = (function() {
       }
       // spell-checker: enable
       // Note that the animation data also requires this rename, but there's no automatic upgrade system yet
+      if (def.formatVersion === 2) {
+        def.formatVersion = 3;
+        ref1 = def.entities;
+        // Removed leaf_point_names from Tree, and added is_leaf property to points
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          ent_def = ref1[j];
+          if (!(ent_def._class_.includes("Tree"))) {
+            continue;
+          }
+          ref2 = ent_def.structure.points;
+          for (point_name in ref2) {
+            point_def = ref2[point_name];
+            point_def.is_leaf = indexOf.call(ent_def.leaf_point_names, point_name) >= 0;
+          }
+          delete ent_def.leaf_point_names;
+        }
+      }
       if (def.formatVersion > World.formatVersion) {
         throw new Error(`The format version ${def.formatVersion} is too new for this version of the game.`);
       }
@@ -5379,19 +5397,19 @@ module.exports = World = (function() {
       
       // Initialize the world
       this.entities = (function() {
-        var j, len1, ref1, results;
-        ref1 = def.entities;
+        var k, len2, ref3, results;
+        ref3 = def.entities;
         results = [];
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          ent_def = ref1[j];
+        for (k = 0, len2 = ref3.length; k < len2; k++) {
+          ent_def = ref3[k];
           results.push(Entity.fromJSON(ent_def));
         }
         return results;
       })();
-      ref1 = this.entities;
+      ref3 = this.entities;
       results = [];
-      for (j = 0, len1 = ref1.length; j < len1; j++) {
-        entity = ref1[j];
+      for (k = 0, len2 = ref3.length; k < len2; k++) {
+        entity = ref3[k];
         results.push(entity.resolveReferences(this));
       }
       return results;
@@ -5485,7 +5503,7 @@ module.exports = World = (function() {
 
   };
 
-  World.formatVersion = 2;
+  World.formatVersion = 3;
 
   return World;
 
@@ -5570,6 +5588,267 @@ window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 
   }
   return world.entities.push(...arrows);
 };
+
+
+/***/ }),
+
+/***/ 653:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Bird, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(432));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Bird = (function() {
+  class Bird extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 8;
+      this.height = 8;
+      this.flap = 0;
+      this.flap_timer = r() * 15;
+      this.wingspan = 10;
+      this.go_x = r() * 5;
+      this.go_y = 0;
+    }
+
+    step(world) {
+      var i, j, x, y;
+      for (i = j = 0; j <= 50; i = ++j) {
+        x = r() * 50;
+        y = r() * 70;
+        if (world.collision({
+          x: this.x + x,
+          y: this.y + y
+        })) {
+          this.go_y -= y / 30;
+          this.go_x -= x / (10 + Math.abs(this.go_y));
+        }
+      }
+      if (this.flap_timer < 0) {
+        if (this.go_y < -1) {
+          this.vy -= 5;
+          this.flap_timer = 15;
+        } else {
+          this.vy -= 1;
+          this.flap_timer = 15;
+        }
+      }
+      this.go_x *= 0.95;
+      this.go_y *= 0.7;
+      this.vx += (this.go_x - this.vx) / 2;
+      this.vy += 0.1;
+      this.x += this.vx;
+      this.y += this.vy;
+      return this.flap_timer--;
+    }
+
+    // run SimpleActor physics, which uses @move_x and @jump
+    // super(world)
+    draw(ctx) {
+      var f;
+      ctx.strokeStyle = "#000";
+      ctx.beginPath();
+      f = 2.8;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 + Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 - Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
+      ctx.stroke();
+      if (this.flap_timer < 0) {
+        this.flap_timer = -1;
+      }
+      this.flap += this.flap_timer / 20;
+      return this.flap += (-this.flap - 0.1) * 0.1;
+    }
+
+  };
+
+  addEntityClass(Bird);
+
+  return Bird;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 739:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Butterfly, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(432));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Butterfly = (function() {
+  class Butterfly extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 4;
+      this.height = 4;
+      this.go_x = r() * 5;
+      this.go_y = r() * 5;
+      this.t = r() * 5;
+      this.flap = r() * 5;
+      this.flap_timer = r() * 15;
+      this.c1 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
+      this.c2 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
+    }
+
+    step(world) {
+      var i, j, x, y;
+      for (i = j = 0; j <= 50; i = ++j) {
+        x = r() * 50;
+        y = r() * 70;
+        if (world.collision({
+          x: this.x + x,
+          y: this.y + y
+        })) {
+          this.go_y -= y / 50;
+          this.go_x -= x / (50 + Math.abs(this.go_y));
+        }
+      }
+      if (this.flap_timer < 0) {
+        if (this.go_y < -1) {
+          this.vy -= 5;
+          this.flap_timer = 15;
+        } else {
+          this.vy -= 1;
+          this.flap_timer = 15;
+        }
+      }
+      this.go_x *= 0.9;
+      this.go_y *= 0.9;
+      this.go_x += r() / 2;
+      this.go_y += r() / 2;
+      this.vx += (this.go_x - this.vx / 2) / 3;
+      this.vy += (this.go_y - this.vy / 2) / 3;
+      this.vy += 0.01;
+      this.x += this.vx;
+      this.y += this.vy;
+      return this.flap = Math.cos(this.t += 0.5);
+    }
+
+    // run SimpleActor physics, which uses @move_x and @jump
+    // super(world)
+    draw(ctx) {
+      var f;
+      ctx.beginPath();
+      f = 2.8;
+      ctx.strokeStyle = this.c1;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 + Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 - Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.strokeStyle = this.c2;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 + Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 - Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
+      ctx.stroke();
+      ctx.beginPath();
+      if (this.flap_timer < 0) {
+        this.flap_timer = -1;
+      }
+      this.flap += this.flap_timer / 20;
+      return this.flap += (-this.flap - 0.1) * 0.1;
+    }
+
+  };
+
+  addEntityClass(Butterfly);
+
+  return Butterfly;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 332:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Cloud, Entity, addEntityClass;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(432));
+
+module.exports = Cloud = (function() {
+  class Cloud extends Entity {
+    constructor() {
+      super();
+      this.structure.addPoint("body");
+      this.bbox_padding = 80;
+      this.width = 45 + Math.random() * 50;
+      this.height = 35 + Math.random() * 10;
+      // @simplex = new SimplexNoise()
+      this.t = 0;
+    }
+
+    step(world) {
+      this.x++;
+      return this.t += 0.001;
+    }
+
+    // if @x > terrain.width+300
+    // 	@poof=true
+    draw(ctx) {
+      var i, j, results;
+      ctx.fillStyle = "#A9D9FA";
+      results = [];
+      for (i = j = 0; j <= 20; i = ++j) {
+        ctx.beginPath();
+        // ctx.arc(
+        // 	@simplex.noise(5+i,@t+i*3.92)*@width+@width/2,
+        // 	@simplex.noise(26+i,@t+i*2.576)*@height+@height/2,
+        // 	Math.abs(@simplex.noise(73+i*5.2,@t+i)*@width),
+        // 	# @simplex.noise(68+i,@t)*-Math.PI*2,
+        // 	# @simplex.noise(20+i,@t)*Math.PI*2,
+        // 	0,Math.PI*2,
+        // 	false
+        // )
+        ctx.arc(Math.sin(this.t + i ** 1.2) * this.width + this.width / 2, Math.sin(this.t + i - i ** 1.1) * this.height + this.height / 2, Math.abs(Math.sin(this.t + i ** 1.3)) * this.width, 0, Math.PI * 2, false);
+        results.push(ctx.fill());
+      }
+      return results;
+    }
+
+  };
+
+  addEntityClass(Cloud);
+
+  return Cloud;
+
+}).call(this);
 
 
 /***/ }),
@@ -5705,6 +5984,89 @@ module.exports = Deer = (function() {
   addEntityClass(Deer);
 
   return Deer;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 162:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Frog, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(432));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Frog = (function() {
+  class Frog extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 8;
+      this.height = 8;
+      this.xp = 0;
+      this.t = 0;
+      this.lr = 0;
+      this.dir = 0;
+      this.c = "hsla(" + (150 - Math.random() * 50) + "," + (50 + Math.random() * 50) + "%," + (50 - Math.random() * 20) + "%,1)";
+    }
+
+    step(world) {
+      if (this.grounded) {
+        this.vx *= 0.1;
+        if (Math.random() > 0.1) {
+          // jump
+          this.vy = Math.random() * -5;
+          this.dir = r();
+          this.t = 0;
+        }
+      } else {
+        this.vx += this.dir *= 2;
+        if (this.xp === this.x) {
+          this.t++;
+          if (this.t > 5) {
+            this.dir = r();
+          }
+        } else {
+          this.t = 0;
+        }
+      }
+      this.xp = this.x;
+      this.move_x = this.dir * 0.2;
+      this.move_y = 0;
+      // run SimpleActor physics, which uses @move_x and @jump
+      return super.step(world);
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.rotate(this.vx / 5);
+      ctx.fillStyle = this.c;
+      //ctx.fillRect(@x,@y,@width,@height)
+      ctx.beginPath();
+      ctx.arc(this.width / 2, this.height / 4 - this.vy, this.height / 2, 0, Math.PI, false);
+      ctx.arc(this.width / 2, this.height, this.height / 2, Math.PI, Math.PI * 2, false);
+      ctx.fill();
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Frog);
+
+  return Frog;
 
 }).call(this);
 
@@ -6642,6 +7004,116 @@ module.exports = Player = (function() {
 
 /***/ }),
 
+/***/ 101:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Rabbit, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(432));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Rabbit = (function() {
+  class Rabbit extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 8;
+      this.height = 8;
+      this.xp = 0;
+      this.t = 0;
+      this.lr = 0;
+      this.dir = 0;
+      this.c = "#FFF";
+      this.c2 = "#DDD";
+      this.eye_color = "#000";
+    }
+
+    step(world) {
+      if (this.grounded) {
+        // @vx*=0.99
+        if (Math.random() < 0.1) {
+          this.dir = r();
+        }
+        if (Math.random() < 0.1) {
+          this.vy = -5;
+        }
+      } else {
+        if (Math.abs(this.xp - this.x) < 1) {
+          this.t++;
+          if (this.t > 15) {
+            this.dir = r();
+          }
+        } else {
+          this.t = 0;
+        }
+      }
+      this.vx += (this.dir *= 1.1) / 5;
+      this.dir = Math.max(-10, Math.min(10, this.dir));
+      this.xp = this.x;
+      this.move_x = this.dir * 0.02;
+      this.move_y = -1;
+      // run SimpleActor physics, which uses @move_x and @jump
+      return super.step(world);
+    }
+
+    draw(ctx) {
+      ctx.save(); // body center transform
+      ctx.translate(this.width / 2, this.height / 2);
+      ctx.fillStyle = this.c2;
+      // ctx.fillRect(0,0,@width,@height)
+      ctx.beginPath();
+      ctx.arc(0, 0, this.height / 2, Math.PI * 0.9, Math.PI * 2.1, false); // body
+      ctx.fill();
+      ctx.fillStyle = this.c;
+      ctx.save(); // head transform
+      ctx.translate(this.facing_x * this.width / 3, -this.height / 3);
+      ctx.beginPath();
+      ctx.arc(0, 0, this.height / 3, Math.PI * 0.9, Math.PI * 2.1, false); // head
+      ctx.fill();
+      ctx.fillStyle = this.eye_color;
+      ctx.beginPath();
+      ctx.arc(0, 0, 1, 0, Math.PI * 2, false); // eye
+      ctx.fill();
+      ctx.fillStyle = this.c;
+      ctx.beginPath();
+      ctx.save(); // ear transform
+      ctx.translate(-this.facing_x * this.width / 9, -this.height / 6);
+      // ctx.rotate(Math.sin(performance.now()/1000))
+      ctx.rotate(-Math.min(Math.PI / 3, Math.max(-Math.PI / 3, this.vx / 3)));
+      ctx.scale(1, 3);
+      ctx.arc(0, -this.height / 9, 1, 0, Math.PI * 2, false); // ear
+      ctx.fill();
+      ctx.restore(); // end ear transform
+      ctx.restore(); // end head transform
+      ctx.fillStyle = this.c;
+      ctx.beginPath();
+      ctx.arc(-this.facing_x * this.width / 2, 0, this.height / 5, 0, Math.PI * 2, false); // tail
+      ctx.fill();
+      return ctx.restore(); // end body center transform
+    }
+
+  };
+
+  addEntityClass(Rabbit);
+
+  return Rabbit;
+
+}).call(this);
+
+
+/***/ }),
+
 /***/ 521:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
@@ -6670,11 +7142,12 @@ module.exports = SavannaTreeA = (function() {
       leaf.scale_x = 2;
       leaf.scale_y = 1;
       leaf.color = "#627318"; //"#363D1B"
+      leaf.is_leaf = true;
       return leaf;
     }
 
     draw(ctx) {
-      var i, leaf, leaf_point_name, len, ref, ref1, results, segment, segment_name;
+      var leaf, point_name, ref, ref1, results, segment, segment_name;
       ref = this.structure.segments;
       for (segment_name in ref) {
         segment = ref[segment_name];
@@ -6686,11 +7159,13 @@ module.exports = SavannaTreeA = (function() {
         ctx.strokeStyle = segment.color;
         ctx.stroke();
       }
-      ref1 = this.leaf_point_names;
+      ref1 = this.structure.points;
       results = [];
-      for (i = 0, len = ref1.length; i < len; i++) {
-        leaf_point_name = ref1[i];
-        leaf = this.structure.points[leaf_point_name];
+      for (point_name in ref1) {
+        leaf = ref1[point_name];
+        if (!leaf.is_leaf) {
+          continue;
+        }
         // ctx.beginPath()
         // ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
         ctx.save();
@@ -7175,7 +7650,6 @@ TAU = Math.PI * 2;
 module.exports = Tree = class Tree extends Entity {
   constructor() {
     super();
-    this.leaf_point_names = [];
     this.structure.addPoint("base");
     this.bbox_padding = 60;
   }
@@ -7183,7 +7657,7 @@ module.exports = Tree = class Tree extends Entity {
   initLayout() {}
 
   branch({from, to, juice, angle}) {
-    var leaf, leaf_point, length, name, width;
+    var leaf_point, length, name, width;
     name = to;
     length = Math.sqrt(juice * 1000) * (Math.random() + 1);
     width = Math.sqrt(juice * 20) + 1;
@@ -7221,10 +7695,7 @@ module.exports = Tree = class Tree extends Entity {
       }
     } else {
       leaf_point = this.structure.points[name];
-      leaf = this.leaf(leaf_point);
-      if (leaf != null) {
-        return this.leaf_point_names.push(name);
-      }
+      return this.leaf(leaf_point);
     }
   }
 
@@ -7233,11 +7704,12 @@ module.exports = Tree = class Tree extends Entity {
     leaf.scale_x = 2;
     leaf.scale_y = 1;
     leaf.color = "#627318"; //"#363D1B"
+    leaf.is_leaf = true;
     return leaf;
   }
 
   draw(ctx) {
-    var i, leaf, leaf_point_name, len, ref, ref1, results, segment, segment_name;
+    var leaf, point_name, ref, ref1, results, segment, segment_name;
     ref = this.structure.segments;
     for (segment_name in ref) {
       segment = ref[segment_name];
@@ -7249,11 +7721,13 @@ module.exports = Tree = class Tree extends Entity {
       ctx.strokeStyle = segment.color;
       ctx.stroke();
     }
-    ref1 = this.leaf_point_names;
+    ref1 = this.structure.points;
     results = [];
-    for (i = 0, len = ref1.length; i < len; i++) {
-      leaf_point_name = ref1[i];
-      leaf = this.structure.points[leaf_point_name];
+    for (point_name in ref1) {
+      leaf = ref1[point_name];
+      if (!leaf.is_leaf) {
+        continue;
+      }
       ctx.beginPath();
       results.push(ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU));
     }
@@ -8532,6 +9006,16 @@ __webpack_require__(339);
 __webpack_require__(776);
 
 __webpack_require__(521);
+
+__webpack_require__(332);
+
+__webpack_require__(739);
+
+__webpack_require__(653);
+
+__webpack_require__(162);
+
+__webpack_require__(101);
 
 __webpack_require__(857);
 
