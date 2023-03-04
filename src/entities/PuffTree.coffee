@@ -19,30 +19,30 @@ module.exports = class PuffTree extends Tree
 		@drawBranch(ctx,0,0,0,Math.random()*10+5,@trunk_width,9)
 		ctx.lineWidth=1
 	
-	drawBranch: (ctx,x,y,r,life,w,sl)->
+	drawBranch: (ctx,x,y,angle,life,thickness,seg_length)->
 		ctx.strokeStyle="#89594A"
-		ctx.lineWidth=w
+		ctx.lineWidth=thickness
 		ctx.lineCap="round"
 		ctx.beginPath()
 		ctx.moveTo(x,y)
-		r+=(Math.random()*2-1)*0.7
-		x+=Math.sin(r)*sl
-		y-=Math.cos(r)*sl
+		angle+=(Math.random()*2-1)*0.7
+		x+=Math.sin(angle)*seg_length
+		y-=Math.cos(angle)*seg_length
 		ctx.lineTo(x,y)
 		ctx.stroke()
-		#w=(life-w)/2
-		w=life
+		#thickness=(life-thickness)/2
+		thickness=life
 		if (life-=0.3) > 0
-		#if w>~~~--w
-			#r+=(Math.random()*2-1)/50
-			@drawBranch(ctx,x,y,r,life,w,sl)
+		#if thickness>~~~--thickness
+			#angle+=(Math.random()*2-1)/50
+			@drawBranch(ctx,x,y,angle,life,thickness,seg_length)
 			# if Math.random() > 0.1 and life > 0.1
-			# 	@drawBranch(ctx,x,y,r+(Math.random()*2-1)/5,life,w,sl)
+			# 	@drawBranch(ctx,x,y,angle+(Math.random()*2-1)/5,life,thickness,seg_length)
 		else
-			@drawLeaf(ctx,x,y,r,life,w+4,sl)
+			@drawLeaf(ctx,x,y,angle,life,thickness+4,seg_length)
 		ctx.lineCap="butt"
 	
-	drawLeaf: (ctx,x,y,r,life,w,sl)->
+	drawLeaf: (ctx,x,y,angle,life,thickness,seg_length)->
 		ctx.save()
 		l=Math.random()/2
 		ctx.fillStyle="hsla("+(150-l*50)+","+(50)+"%,"+(50+l*20)+"%,1)"
@@ -59,13 +59,13 @@ module.exports = class PuffTree extends Tree
 			ctx.fill()
 		###
 		ctx.strokeStyle="#1a5"
-		ctx.lineWidth=w
+		ctx.lineWidth=thickness
 		ctx.lineCap="round"
 		ctx.beginPath()
 		ctx.moveTo(x,y)
-		r+=(Math.random()*2-1)/2
-		x+=Math.sin(r+Math.PI)*sl/4
-		y-=Math.cos(r+Math.PI)*sl/4
+		angle+=(Math.random()*2-1)/2
+		x+=Math.sin(angle+Math.PI)*seg_length/4
+		y-=Math.cos(angle+Math.PI)*seg_length/4
 		ctx.lineTo(x,y)
 		ctx.stroke()
 		###
