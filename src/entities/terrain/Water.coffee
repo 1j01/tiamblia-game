@@ -50,7 +50,7 @@ module.exports = class Water extends Terrain
 			@waves_y[x - @min_x] += @waves_vy[x - @min_x]
 
 	draw: (ctx, view)->
-		wave_center_y = @min_y + 10
+		wave_center_y = @min_y
 		ctx.save()
 		ctx.beginPath()
 		for x in [@min_x...@max_x]
@@ -64,7 +64,16 @@ module.exports = class Water extends Terrain
 
 		ctx.beginPath()
 		for point_name, point of @structure.points
-			ctx.lineTo(point.x, point.y)
+			if point.y < wave_center_y + 2
+				# This assumes a particular vertex order
+				if point.x > (@min_x + @max_x) / 2
+					ctx.lineTo(point.x, point.y)
+					ctx.lineTo(point.x, point.y - 50)
+				else
+					ctx.lineTo(point.x, point.y - 50)
+					ctx.lineTo(point.x, point.y)
+			else
+				ctx.lineTo(point.x, point.y)
 		ctx.closePath()
 		ctx.fillStyle = "hsla(200, 100%, 50%, 0.5)"
 		ctx.fill()
