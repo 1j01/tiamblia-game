@@ -7,13 +7,15 @@ module.exports = class Water extends Terrain
 		super()
 		@bbox_padding = 30
 		@solid = false
-		@waves = [] # indexed by x starting from @min_x
+		@waves_y = [] # indexed by x starting from @min_x
+		@waves_vy = [] # indexed by x starting from @min_x
 		@min_x = Infinity
 		@max_x = -Infinity
 		@min_y = Infinity
 		@max_y = -Infinity
 		@structure.onchange = =>
-			@waves = []
+			@waves_y = []
+			@waves_vy
 			@min_x = Infinity
 			@max_x = -Infinity
 			@min_y = Infinity
@@ -29,27 +31,29 @@ module.exports = class Water extends Terrain
 			@max_y = Math.ceil(@max_y)
 
 			for x in [@min_x...@max_x]
-				@waves[x - @min_x] = 0
+				@waves_y[x - @min_x] = 0
+				@waves_vy[x - @min_x] = 0
 	
-	makeWaves: (world_pos, radius=5, velocity_y=50)->
+	makeWaves: (world_pos, radius=5, velocity_y=5)->
 		local_pos = @fromWorld(world_pos)
 		for x in [Math.round(local_pos.x - radius)...Math.round(local_pos.x + radius)]
-			@waves[x - @min_x] += velocity_y * (1 - Math.abs(x - local_pos.x) / radius)
+			@waves_vy[x - @min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius)
 
 	step: ->
-		# wave propagation (asymmetrical, not very good)
+		neighboring = []
 		for x in [@min_x...@max_x]
-			@waves[x - @min_x] *= 0.9
-		for x in [@min_x+1...@max_x]
-			@waves[x - @min_x] += @waves[x - @min_x - 1] * 0.1
-		for x in [@min_x...@max_x-1] by -1
-			@waves[x - @min_x] += @waves[x - @min_x + 1] * 0.1
+			neighboring[x - @min_x] = (@waves_y[x - @min_x - 1] ? 0) + (@waves_y[x - @min_x + 1] ? 0)
+		for x in [@min_x...@max_x]
+			@waves_vy[x - @min_x] += (neighboring[x - @min_x] - @waves_y[x - @min_x] * 2) * 0.9
+			@waves_vy[x - @min_x] *= 0.99
+			@waves_vy[x - @min_x] -= @waves_y[x - @min_x] * 0.2
+			@waves_y[x - @min_x] += @waves_vy[x - @min_x]
 
 	draw: (ctx, view)->
 		ctx.save()
 		ctx.beginPath()
 		for x in [@min_x...@max_x]
-			ctx.lineTo(x, @waves[x - @min_x] + @min_y)
+			ctx.lineTo(x, @waves_y[x - @min_x] + @min_y)
 		ctx.lineTo(@max_x, @max_y)
 		ctx.lineTo(@min_x, @max_y)
 		ctx.closePath()
