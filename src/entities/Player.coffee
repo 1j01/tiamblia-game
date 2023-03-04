@@ -149,6 +149,8 @@ module.exports = class Player extends SimpleActor
 		# keyboard controls
 		left = keyboard.isHeld("KeyA") or keyboard.isHeld("ArrowLeft")
 		right = keyboard.isHeld("KeyD") or keyboard.isHeld("ArrowRight")
+		up = keyboard.isHeld("KeyW") or keyboard.isHeld("ArrowUp") # applies to swimming/climbing
+		down = keyboard.isHeld("KeyS") or keyboard.isHeld("ArrowDown")
 		@jump = keyboard.wasJustPressed("KeyW") or keyboard.wasJustPressed("ArrowUp")
 		# gamepad controls
 		gamepad_draw_bow = false
@@ -156,6 +158,8 @@ module.exports = class Player extends SimpleActor
 		for gamepad in (try navigator.getGamepads()) ? [] when gamepad
 			left or= gamepad.axes[0] < -0.5
 			right or= gamepad.axes[0] > 0.5
+			up or= gamepad.axes[1] < -0.5
+			down or= gamepad.axes[1] > 0.5
 			@jump or= gamepad.buttons[0].pressed and not gamepad_jump_prev
 			gamepad_jump_prev = gamepad.buttons[0].pressed
 			gamepad_draw_bow = gamepad.buttons[7].pressed
@@ -175,6 +179,7 @@ module.exports = class Player extends SimpleActor
 
 		# TODO: configurable controls
 		@move_x = right - left
+		@move_y = down - up
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
 		

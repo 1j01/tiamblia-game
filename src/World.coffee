@@ -83,7 +83,7 @@ module.exports = class World
 		if typeof types is "function"
 			filter = types
 		else
-			filter = (entity)=> types.some((type)=> entity instanceof type)
+			filter = (entity)=> types.some((type)=> (entity instanceof type) and (entity.solid ? true))
 		
 		for entity in @entities when filter(entity)
 			if entity.structure.pointInPolygon?

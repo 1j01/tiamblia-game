@@ -16,6 +16,7 @@ module.exports = class SimpleActor extends Entity
 		@walk_speed = 4
 		@run_speed = 6
 		@move_x = 0
+		@move_y = 0
 		@jump = no
 		@grounded = no
 		@facing_x = 0
@@ -24,7 +25,13 @@ module.exports = class SimpleActor extends Entity
 		return if @y > 400
 		
 		@grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
-		
+		@submerged = world.collision({@x, y: @y + @height * 0.9}, types: (entity)=>
+			entity.constructor.name is "Water"
+		)
+		more_submerged = @submerged and world.collision({@x, y: @y + @height * 0.4}, types: (entity)=>
+			entity.constructor.name is "Water"
+		)
+
 		if @grounded
 			# if Math.abs(@vx) >= 1
 			# 	@vx -= Math.sign(@vx)
@@ -42,6 +49,11 @@ module.exports = class SimpleActor extends Entity
 			@vx += @move_x * 0.7
 		@vx = Math.min(@run_speed, Math.max(-@run_speed, @vx))
 		@vy += gravity
+		if @submerged
+			@vy += @move_y * 0.7 if more_submerged or @move_y > 0
+			@vy *= 0.8
+			@vx *= 0.8
+
 		@grounded = no
 		# @vy *= 0.99
 		move_x = @vx

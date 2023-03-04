@@ -8,6 +8,7 @@ require "./arrow-test.coffee"
 
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/Rock.coffee"
+require "./entities/terrain/Water.coffee"
 require "./entities/abstract/SimpleActor.coffee"
 require "./entities/abstract/Tree.coffee"
 require "./entities/SavannaTreeA.coffee"
