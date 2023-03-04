@@ -21,6 +21,8 @@ module.exports = class Rabbit extends SimpleActor
 		@lr = 0
 		@dir = 0
 		@c = "#FFF"
+		@c2 = "#DDD"
+		@eye_color = "#000"
 
 	step: (world)->
 		if @grounded
@@ -49,13 +51,29 @@ module.exports = class Rabbit extends SimpleActor
 	draw: (ctx)->
 		ctx.save()
 		ctx.translate(@width/2,@height/2)
-		ctx.rotate(@vx/15)
-		ctx.fillStyle=@c
-		ctx.fillRect(0,0,@width,@height)
+		ctx.fillStyle=@c2
+		# ctx.fillRect(0,0,@width,@height)
 		ctx.beginPath()
-		ctx.arc(0,0,@height/2,Math.PI,Math.PI*2.2,false)
+		ctx.arc(0,0,@height/2,Math.PI*0.9,Math.PI*2.1,false) # body
 		ctx.fill()
+		ctx.fillStyle=@c
 		ctx.beginPath()
-		ctx.arc(@dir*@width/2,0,@height/3,Math.PI,Math.PI*2.2,false)
+		ctx.arc(@facing_x*@width/3,-@height/3,@height/3,Math.PI*0.9,Math.PI*2.1,false) # head
+		ctx.fill()
+		ctx.fillStyle=@eye_color
+		ctx.beginPath()
+		ctx.arc(@facing_x*@width/3,-@height/3,1,0,Math.PI*2,false) # eye
+		ctx.fill()
+		ctx.fillStyle=@c
+		ctx.beginPath()
+		ctx.save()
+		ctx.translate(@facing_x*@width/4,-@height)
+		ctx.scale(1, 3)
+		ctx.arc(0,0,1,0,Math.PI*2,false) # ear
+		ctx.fill()
+		ctx.restore()
+		ctx.fillStyle=@c
+		ctx.beginPath()
+		ctx.arc(-@facing_x*@width/2,0,@height/5,0,Math.PI*2,false) # tail
 		ctx.fill()
 		ctx.restore()
