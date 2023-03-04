@@ -26,22 +26,7 @@ module.exports = class Deer extends SimpleActor
 		@c = "hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)"
 
 	step: (world)->
-		collisionRectangle = (x,y,w,h)->
-			# return collisionPoint(x,y) or collisionPoint(x,y+h) or collisionPoint(x+w,y) or collisionPoint(x+w,y+h)
-			# 	or collisionPoint(x,y+h/2) or collisionPoint(x+w/2,y) or collisionPoint(x+w/2,y+h) or collisionPoint(x+w,y+h/2)
-			# 	or collisionPoint(x,y+h/4) or collisionPoint(x+w/4,y) or collisionPoint(x+w/4,y+h) or collisionPoint(x+w,y+h/4)
-			# 	or collisionPoint(x,y+h*3/4) or collisionPoint(x+w*3/4,y) or collisionPoint(x+w*3/4,y+h) or collisionPoint(x+w,y+h*3/4)
-			if collisionPoint(x,y) or collisionPoint(x,y+h) or collisionPoint(x+w,y) or collisionPoint(x+w,y+h)
-				return true
-			for i in [0..w]
-				for j in [0..h]
-					if collisionPoint(x+i,y+j) > 200
-						return true
-			return false
-		collisionPoint = (x,y)->
-			return world.collision({x, y})
-
-		if collisionRectangle(@x,@y+4,@width,@height)
+		if @grounded
 			if Math.random() < 0.01
 				@dir = r()
 		else
@@ -59,7 +44,7 @@ module.exports = class Deer extends SimpleActor
 		@xp = @x
 
 
-		@move_x = @dir
+		@move_x = @dir*0.2
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
