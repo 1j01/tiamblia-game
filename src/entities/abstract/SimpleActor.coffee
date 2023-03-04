@@ -54,7 +54,7 @@ module.exports = class SimpleActor extends Entity
 			@vy *= 0.8
 			@vx *= 0.8
 			if not more_submerged
-				@submerged.makeWaves({x: @x, y: @y + @height * 0.9})
+				@submerged.makeWaves({x: @x, y: @y + @height * 0.9}, @width/2, @vy)
 
 		@grounded = no
 		# @vy *= 0.99
