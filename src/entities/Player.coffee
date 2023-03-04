@@ -289,7 +289,7 @@ module.exports = class Player extends SimpleActor
 		# rotate the pose based on the ground angle
 		# TODO: balance the character better; lean while running; keep feet out of the ground
 		# I may need to define new poses to do this well.
-		ground_angle = @riding?.ground_angle ? @find_ground_angle(world)
+		ground_angle = @riding?.ground_angle_smoothed ? @find_ground_angle(world)
 		@ground_angle = ground_angle
 		if ground_angle? and isFinite(ground_angle)
 			# there's no helper for rotation yet
