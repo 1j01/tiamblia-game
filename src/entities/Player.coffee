@@ -438,26 +438,17 @@ module.exports = class Player extends SimpleActor
 			arrow.setVelocity(0, 0)
 		
 		# Hair physics
-		# head_pos = @structure.points.head
-		# head_pos = new_pose.points.head
-		# head_pos = @structure.getPose().points.head
 		{head, neck} = @structure.points
 		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
 		head_global = @toWorld(head)
 
 		hair_iterations = 1
 		air_friction = 0.2
-		# for points in @hairs
-		# 	for point in points
-		# 		point.vx -= @vx # simulate relative velocity
-		# 		point.vy -= @vy # simulate relative velocity
 		for [0..hair_iterations]
 			for points in @hairs
 				for point in points
 					point.prev_x = point.x
 					point.prev_y = point.y
-					# point.vx -= @vx / hair_iterations # simulate relative velocity
-					# point.vy -= @vy / hair_iterations # simulate relative velocity
 
 			for points, hair_index in @hairs
 				a = head_angle + hair_index / @hairs.length * Math.PI
@@ -466,24 +457,15 @@ module.exports = class Player extends SimpleActor
 				seg_length = 5
 				for i in [1...points.length]
 					points[i].vy += 0.5 / hair_iterations
-					# points[i].vx += 0.02 * (Math.random() - 0.5)
-					# points[i].vy -= @vy / hair_iterations # simulate relative velocity
-					# points[i].vx -= @vx / hair_iterations # simulate relative velocity
 					points[i].vx *= (1 - air_friction)
 					points[i].vy *= (1 - air_friction)
 					points[i].x += points[i].vx
 					points[i].y += points[i].vy
-					# points[i].x -= @vx / hair_iterations # simulate relative velocity
-					# points[i].y -= @vy / hair_iterations # simulate relative velocity
 					delta_x = points[i].x - points[i-1].x
 					delta_y = points[i].y - points[i-1].y
 					delta_length = Math.hypot(delta_x, delta_y)
 					diff = (delta_length - seg_length) / delta_length
 					if isFinite(diff) and delta_length > seg_length
-						# points[i].x -= delta_x * 0.5 * diff
-						# points[i].y -= delta_y * 0.5 * diff
-						# points[i-1].x += delta_x * 0.5 * diff
-						# points[i-1].y += delta_y * 0.5 * diff
 						points[i].x -= delta_x * diff
 						points[i].y -= delta_y * diff
 					else
