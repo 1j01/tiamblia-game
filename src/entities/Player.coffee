@@ -565,10 +565,10 @@ module.exports = class Player extends SimpleActor
 		ctx.fill()
 		ctx.restore()
 		# top of hair
-		# ctx.beginPath()
-		# ctx.arc(0, 0, 5.5, 0, TAU/2)
-		# ctx.fillStyle = hair_color
-		# ctx.fill()
+		ctx.beginPath()
+		ctx.arc(0, 0, 5.5, 0, TAU/2)
+		ctx.fillStyle = hair_color
+		ctx.fill()
 		# eyes
 		# TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
 		ctx.arc(0, 0, 5.5*0.9, 0, TAU)
