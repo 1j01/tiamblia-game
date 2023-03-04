@@ -451,7 +451,7 @@ module.exports = class Player extends SimpleActor
 					point.prev_y = point.y
 
 			for points, hair_index in @hairs
-				a = head_angle + hair_index / @hairs.length * Math.PI
+				a = head_angle + hair_index / @hairs.length * Math.PI - Math.PI/2
 				points[0].x = head_global.x + Math.cos(a) * 5
 				points[0].y = head_global.y + Math.sin(a) * 5
 				seg_length = 5
