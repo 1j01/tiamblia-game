@@ -136,7 +136,6 @@ module.exports = class Player extends SimpleActor
 		@other_idle_animation_position = 0
 		@idle_animation = null
 		@idle_timer = 0
-		@smoothed_vy = 0
 		@real_facing_x = @facing_x
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..5]) for [0..5])
@@ -490,11 +489,6 @@ module.exports = class Player extends SimpleActor
 		# 		head: ->
 		
 		# trailing hair
-		ctx.save()
-		ctx.translate(head.x, head.y)
-		ctx.translate(-@real_facing_x * 0.3, 0)
-		@smoothed_vy += ((@vy * not @grounded) - @smoothed_vy) / 5
-		
 		for hair_points in @hairs
 			ctx.beginPath()
 			ctx.moveTo(hair_points[0].x, hair_points[0].y)
@@ -504,8 +498,6 @@ module.exports = class Player extends SimpleActor
 			ctx.lineCap = "round"
 			ctx.strokeStyle = hair_color
 			ctx.stroke()
-		
-		ctx.restore()
 		
 		# limbs
 		for segment_name, segment of @structure.segments
