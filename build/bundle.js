@@ -5574,6 +5574,133 @@ window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 
 
 /***/ }),
 
+/***/ 857:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Deer, Entity, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(432));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Deer = (function() {
+  class Deer extends SimpleActor {
+    // Entity.initAnimation(@)
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "neck",
+        length: 5
+      });
+      this.bbox_padding = 30;
+      this.width = 27;
+      this.height = 18;
+      this.xp = 0;
+      this.t = 0;
+      this.lr = 0;
+      this.dir = 0;
+      this.dir_p = 1;
+      this.dir_pl = 1;
+      this.rideable = true;
+      this.c = "hsla(" + (Math.random() * 20) + "," + 10 + "%," + (50 + Math.random() * 20) + "%,1)";
+    }
+
+    step(world) {
+      if (this.grounded) {
+        if (Math.random() < 0.01) {
+          this.dir = r();
+        }
+      } else {
+        if (Math.abs(this.xp - this.x) < 1) {
+          this.t++;
+          if (this.t > 15) {
+            this.dir = r();
+            this.t = 0;
+          }
+        } else {
+          this.t = 0;
+        }
+      }
+      this.vx += this.dir / 5;
+      this.lr += Math.abs(this.vx) / 5;
+      this.xp = this.x;
+      this.move_x = this.dir * 0.2;
+      this.move_y = -1;
+      // run SimpleActor physics, which uses @move_x and @jump
+      return super.step(world);
+    }
+
+    draw(ctx) {
+      if (this.dir < -0.3) {
+        this.dir_p = -1;
+      }
+      if (this.dir > 0.3) {
+        this.dir_p = 1;
+      }
+      this.dir_pl += (this.dir_p - this.dir_pl) / 10;
+      ctx.save();
+      // ctx.translate(@x,@y+@height*3/4)
+      ctx.translate(0, this.height * 3 / 4);
+      ctx.beginPath();
+      ctx.fillStyle = this.c;
+      ctx.arc(0, -this.height / 2, this.height / 3, 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.scale(this.dir_pl, 1);
+      // ctx.rotate(@vx/-10)
+      // legs
+      ctx.strokeStyle = "#a55";
+      ctx.beginPath();
+      ctx.moveTo(-this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
+      ctx.moveTo(-this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr + Math.PI) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr + Math.PI) * 8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr + 0.1) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
+      ctx.moveTo(this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr + Math.PI + 0.2) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr + Math.PI) * 8);
+      ctx.stroke();
+      ctx.fillStyle = this.c;
+      ctx.save(); // head
+      ctx.translate(this.width / 2, this.height * -3 / 4);
+      ctx.rotate(-0.4 + Math.cos(this.x / 50));
+      ctx.fillRect(-5, -5, 15, 8);
+      ctx.translate(12, 0);
+      ctx.rotate(0.6 - Math.cos(this.x / 50) / 2);
+      // ctx.fillRect(-5,-5,15,8)
+      ctx.beginPath();
+      ctx.moveTo(-5, -5);
+      ctx.lineTo(-5, 3);
+      ctx.lineTo(10, 1);
+      ctx.lineTo(10, -2);
+      ctx.fill();
+      ctx.restore();
+      
+      // body
+      ctx.fillRect(this.width / -2, this.height / -1, this.width, this.height * 3 / 4);
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Deer);
+
+  return Deer;
+
+}).call(this);
+
+
+/***/ }),
+
 /***/ 668:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
@@ -5752,7 +5879,7 @@ module.exports = GranddaddyLonglegs = (function() {
 /***/ 795:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Arrow, Bow, Entity, Player, Pose, SimpleActor, TAU, Terrain, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, keyboard, lineSegmentsIntersect, mouse_detect_from, mouse_detect_threshold,
+var Arrow, Bow, Deer, Entity, Player, Pose, SimpleActor, TAU, Terrain, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, gamepad_mount_prev, keyboard, lineSegmentsIntersect, mouse_detect_from, mouse_detect_threshold,
   modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 SimpleActor = __webpack_require__(339);
@@ -5764,6 +5891,8 @@ Entity = __webpack_require__(293);
 Bow = __webpack_require__(914);
 
 Arrow = __webpack_require__(943);
+
+Deer = __webpack_require__(857);
 
 keyboard = __webpack_require__(866);
 
@@ -5780,6 +5909,8 @@ gamepad_detect_threshold = 0.5; // axis value (not a deadzone! just switching fr
 gamepad_deadzone = 0.1; // axis value
 
 gamepad_jump_prev = false;
+
+gamepad_mount_prev = false;
 
 mouse_detect_threshold = 30; // pixels radius (movement can occur over any number of frames)
 
@@ -5899,6 +6030,7 @@ module.exports = Player = (function() {
       this.bbox_padding = 10;
       this.holding_bow = null;
       this.holding_arrow = null;
+      this.riding = null;
       this.bow_drawn_to = 0;
       this.run_animation_position = 0;
       this.subtle_idle_animation_position = 0;
@@ -5911,7 +6043,7 @@ module.exports = Player = (function() {
     }
 
     step(world, view, mouse) {
-      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, down, draw_back_distance, draw_bow, draw_to, factor, find_ground_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, j, left, len, max_draw_distance, max_y_diff, mouse_draw_bow, mouse_in_world, mouse_prime_bow, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, ref3, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, sternum, subtle_idle_animation, up, x, y;
+      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, closest_dist, closest_steed, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, find_ground_angle, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, j, k, left, len, len1, max_draw_distance, max_y_diff, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, neck, new_head_x, new_head_y, new_pose, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, ref3, ref4, ref5, ref6, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, segment, segment_name, sternum, subtle_idle_animation, up, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
       
@@ -5926,6 +6058,7 @@ module.exports = Player = (function() {
       up = keyboard.isHeld("KeyW") || keyboard.isHeld("ArrowUp"); // applies to swimming/climbing
       down = keyboard.isHeld("KeyS") || keyboard.isHeld("ArrowDown");
       this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
+      mount_dismount = keyboard.wasJustPressed("KeyS") || keyboard.wasJustPressed("ArrowDown");
       // gamepad controls
       gamepad_draw_bow = false;
       gamepad_prime_bow = false;
@@ -5944,7 +6077,9 @@ module.exports = Player = (function() {
         up || (up = gamepad.axes[1] < -0.5);
         down || (down = gamepad.axes[1] > 0.5);
         this.jump || (this.jump = gamepad.buttons[0].pressed && !gamepad_jump_prev);
+        mount_dismount || (mount_dismount = gamepad.buttons[1].pressed && !gamepad_mount_prev);
         gamepad_jump_prev = gamepad.buttons[0].pressed;
+        gamepad_mount_prev = gamepad.buttons[1].pressed;
         gamepad_draw_bow = gamepad.buttons[7].pressed;
         // gamepad_prime_bow = gamepad.buttons[4].pressed
         if (Math.hypot(gamepad.axes[2], gamepad.axes[3]) > gamepad_detect_threshold) {
@@ -5961,6 +6096,10 @@ module.exports = Player = (function() {
           gamepad_prime_bow = draw_back_distance > 0.3;
         }
       }
+      // Note: You're allowed to prime and draw the bow without an arrow.
+      prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
+      draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
+      
       // TODO: configurable controls
       this.move_x = right - left;
       this.move_y = down - up;
@@ -6007,11 +6146,48 @@ module.exports = Player = (function() {
       pick_up_any(Bow, "holding_bow");
       pick_up_any(Arrow, "holding_arrow");
       // Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
+      if (mount_dismount) {
+        if (this.riding) {
+          this.riding = null;
+        } else {
+          closest_dist = 2e308;
+          closest_steed = null;
+          ref2 = world.getEntitiesOfType(Deer);
+          for (k = 0, len1 = ref2.length; k < len1; k++) {
+            entity = ref2[k];
+            from_point_in_entity_space = entity.fromWorld(from_point_in_world);
+            ref3 = entity.structure.segments;
+            for (segment_name in ref3) {
+              segment = ref3[segment_name];
+              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
+              if (dist < closest_dist) {
+                closest_dist = dist;
+                closest_steed = entity;
+              }
+            }
+          }
+          if (closest_dist < 30) {
+            this.riding = closest_steed;
+          }
+        }
+      }
+      if (this.riding) {
+        // @riding.move_x = @move_x
+        this.riding.dir = this.move_x; // old code...
+        this.riding.jump = this.jump;
+        this.facing_x = this.riding.facing_x;
+        this.x = this.riding.x;
+        this.y = this.riding.y - 30;
+        this.vx = this.riding.vx;
+        this.vy = this.riding.vy;
+      }
       prevent_idle = () => {
         this.idle_timer = 0;
         return this.idle_animation = null;
       };
-      if (this.move_x === 0) {
+      if (this.riding) {
+        new_pose = (ref4 = Player.poses[prime_bow ? "Riding Aiming" : "Riding"]) != null ? ref4 : this.structure.getPose();
+      } else if (this.move_x === 0) {
         this.idle_timer += 1;
         subtle_idle_animation = Player.animations["Idle"];
         if (this.idle_timer > 1000) {
@@ -6030,7 +6206,7 @@ module.exports = Player = (function() {
           this.subtle_idle_animation_position += 1 / 25;
           new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, this.subtle_idle_animation_position);
         } else {
-          new_pose = (ref2 = Player.poses["Stand"]) != null ? ref2 : this.structure.getPose();
+          new_pose = (ref5 = Player.poses["Stand"]) != null ? ref5 : this.structure.getPose();
         }
       } else {
         prevent_idle();
@@ -6047,7 +6223,7 @@ module.exports = Player = (function() {
       head_x_before_posing = this.structure.points["head"].x;
       head_y_before_posing = this.structure.points["head"].y;
       find_ground_angle = () => {
-        var a, angle, b, e_a, e_b, entity, k, len1, ref3, ref4, segment, segment_name;
+        var a, angle, b, e_a, e_b, len2, m, ref6, ref7;
         a = {
           x: this.x,
           y: this.y
@@ -6056,18 +6232,18 @@ module.exports = Player = (function() {
           x: this.x,
           y: this.y + 2 + this.height // slightly further down than collision code uses in SimpleActor
         };
-        ref3 = world.entities;
-        for (k = 0, len1 = ref3.length; k < len1; k++) {
-          entity = ref3[k];
+        ref6 = world.entities;
+        for (m = 0, len2 = ref6.length; m < len2; m++) {
+          entity = ref6[m];
           if (entity instanceof Terrain) {
             if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
               // console.log "found ground"
               // find line segment intersecting ab
               e_a = entity.fromWorld(a);
               e_b = entity.fromWorld(b);
-              ref4 = entity.structure.segments;
-              for (segment_name in ref4) {
-                segment = ref4[segment_name];
+              ref7 = entity.structure.segments;
+              for (segment_name in ref7) {
+                segment = ref7[segment_name];
                 if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
                   // find the angle
                   angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
@@ -6090,7 +6266,7 @@ module.exports = Player = (function() {
       // I may need to define new poses to do this well.
       ground_angle = find_ground_angle();
       this.ground_angle = ground_angle;
-      if ((ground_angle != null) && isFinite(ground_angle)) {
+      if ((ground_angle != null) && isFinite(ground_angle) && !this.riding) {
         // there's no helper for rotation yet
         // and we wanna do it a little custom anyway
         // rotating some points more than others
@@ -6099,9 +6275,9 @@ module.exports = Player = (function() {
           x: center.x,
           y: center.y // copy
         };
-        ref3 = new_pose.points;
-        for (point_name in ref3) {
-          point = ref3[point_name];
+        ref6 = new_pose.points;
+        for (point_name in ref6) {
+          point = ref6[point_name];
           // With this constant this small, it's almost like a conditional
           // of whether the point is below the pelvis or not.
           // With a larger number, it would bend the knees backwards.
@@ -6136,10 +6312,6 @@ module.exports = Player = (function() {
       secondary_hand = this.structure.points["left hand"];
       primary_elbow = this.structure.points["right elbow"];
       secondary_elbow = this.structure.points["left elbow"];
-      
-      // Note: You're allowed to prime and draw the bow without an arrow.
-      prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
-      draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
       this.real_facing_x = this.facing_x;
       if (prime_bow) {
         // Restore head position, in order to do linear interpolation.
@@ -8254,6 +8426,8 @@ __webpack_require__(339);
 __webpack_require__(776);
 
 __webpack_require__(521);
+
+__webpack_require__(857);
 
 __webpack_require__(668);
 
