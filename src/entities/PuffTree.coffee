@@ -8,7 +8,7 @@ module.exports = class PuffTree extends Tree
 		super()
 		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
 	
-		@bbox_padding = 180
+		@bbox_padding = 30
 
 		@species = "kaoyu"
 		@trunk_width = 10+Math.floor(Math.random()*5)
