@@ -7019,6 +7019,9 @@ module.exports = PuffTree = (function() {
   class PuffTree extends Tree {
     constructor() {
       super();
+      this.bbox_padding = 60;
+      this.trunk_width = 10 + Math.floor(Math.random() * 5);
+      this.random_seed = performance.now() + Date.now() + Math.random();
       this.branch({
         from: "base",
         to: "1",
@@ -7027,10 +7030,6 @@ module.exports = PuffTree = (function() {
         length: 9,
         angle: -TAU / 2
       });
-      this.bbox_padding = 180;
-      this.species = "kaoyu";
-      this.trunk_width = 10 + Math.floor(Math.random() * 5);
-      this.random_seed = performance.now() + Date.now() + Math.random();
     }
 
     branch({from, to, juice, angle, width, length}) {
@@ -7048,8 +7047,6 @@ module.exports = PuffTree = (function() {
       this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
       juice -= 0.3;
       if (juice > 0) {
-        // @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-        // @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
         return this.branch({
           from: name,
           to: `${to}-a`,
@@ -7059,9 +7056,8 @@ module.exports = PuffTree = (function() {
           length
         });
       } else {
-        // @branch({from: name, to: "#{to}-b", juice, angle: angle - Math.random() * TAU/8})
         // if Math.random() < 0.2
-        // 	@branch({from: name, to: "#{to}-c", juice, angle})
+        // 	@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
         leaf_point = this.structure.points[name];
         return this.leaf(leaf_point);
       }
@@ -7074,6 +7070,7 @@ module.exports = PuffTree = (function() {
 
     draw(ctx) {
       var leaf, point_name, ref, ref1, results, segment, segment_name;
+      Math.seedrandom(this.random_seed);
       ref = this.structure.segments;
       for (segment_name in ref) {
         segment = ref[segment_name];
@@ -7090,13 +7087,13 @@ module.exports = PuffTree = (function() {
       for (point_name in ref1) {
         leaf = ref1[point_name];
         if (leaf.is_leaf) {
-          results.push(this.drawLeaf(ctx, leaf.x, leaf.y, 0, 1, 4, 10));
+          results.push(this.drawLeaf(ctx, leaf.x, leaf.y));
         }
       }
       return results;
     }
 
-    drawLeaf(ctx, x, y, angle, life, thickness, seg_length) {
+    drawLeaf(ctx, x, y) {
       var i, j, l, r1, r2;
       ctx.save();
       l = Math.random() / 2;
@@ -7113,18 +7110,6 @@ module.exports = PuffTree = (function() {
         ctx.arc(x + Math.sin(r1) * r2, y + Math.cos(r1) * r2, 5 + Math.random() * 5, 0, Math.PI * 2, true);
         ctx.fill();
       }
-      /*
-      ctx.strokeStyle="#1a5"
-      ctx.lineWidth=thickness
-      ctx.lineCap="round"
-      ctx.beginPath()
-      ctx.moveTo(x,y)
-      angle+=(Math.random()*2-1)/2
-      x+=Math.sin(angle+Math.PI)*seg_length/4
-      y-=Math.cos(angle+Math.PI)*seg_length/4
-      ctx.lineTo(x,y)
-      ctx.stroke()
-      */
       return ctx.restore();
     }
 
@@ -7204,7 +7189,7 @@ module.exports = Rabbit = (function() {
 
     draw(ctx) {
       ctx.save(); // body center transform
-      ctx.translate(this.width / 2, this.height / 2);
+      ctx.translate(this.width / 2, this.height);
       ctx.fillStyle = this.c2;
       // ctx.fillRect(0,0,@width,@height)
       ctx.beginPath();
