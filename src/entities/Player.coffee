@@ -304,7 +304,7 @@ module.exports = class Player extends SimpleActor
 		# I may need to define new poses to do this well.
 		ground_angle = find_ground_angle()
 		@ground_angle = ground_angle
-		if ground_angle? and isFinite(ground_angle)
+		if ground_angle? and isFinite(ground_angle) and not @riding
 			# there's no helper for rotation yet
 			# and we wanna do it a little custom anyway
 			# rotating some points more than others
