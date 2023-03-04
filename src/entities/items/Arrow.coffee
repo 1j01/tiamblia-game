@@ -118,8 +118,10 @@ module.exports = class Arrow extends Entity
 		# Apply the rotation to the velocity.
 		[nock_vx, nock_vy] = [nock_vx, nock_vy].map((val, idx) => rot_matrix1[idx][0] * nock_vx + rot_matrix1[idx][1] * nock_vy)
 		# Then, calculate drag force based on the nock's velocity.
-		drag_force_x = 0
-		drag_force_y = -Math.abs(nock_vy ** 2) * 0.01
+		# drag_force_x = -nock_vx * Math.abs(nock_vx) * 0.04 # tangent to arrow shaft
+		# drag_force_y = -nock_vy * Math.abs(nock_vy) * 0.3 # perpendicular to arrow shaft
+		drag_force_x = 0 # tangent to arrow shaft
+		drag_force_y = -nock_vy * Arrow.steps_per_frame * 0.002 # perpendicular to arrow shaft
 		# Then, calculate the rotation matrix to rotate the force back to the original coordinate system.
 		rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]]
 		# Apply the rotation to the force.
