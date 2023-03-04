@@ -5500,15 +5500,15 @@
 						"y": -0.03972362732601425,
 						"name": "right shoulder"
 					},
-					"left elbo": {
+					"left elbow": {
 						"x": 1.5882319277196721,
 						"y": 9.839038058112532,
-						"name": "left elbo"
+						"name": "left elbow"
 					},
-					"right elbo": {
+					"right elbow": {
 						"x": -8.89234391513184,
 						"y": 8.109040023343038,
-						"name": "right elbo"
+						"name": "right elbow"
 					},
 					"left hand": {
 						"x": 8.189092104752099,
@@ -5583,24 +5583,24 @@
 					},
 					"upper left arm": {
 						"from": "left shoulder",
-						"to": "left elbo",
+						"to": "left elbow",
 						"name": "upper left arm",
 						"length": 10
 					},
 					"upper right arm": {
 						"from": "right shoulder",
-						"to": "right elbo",
+						"to": "right elbow",
 						"name": "upper right arm",
 						"length": 10
 					},
 					"lower left arm": {
-						"from": "left elbo",
+						"from": "left elbow",
 						"to": "left hand",
 						"name": "lower left arm",
 						"length": 10
 					},
 					"lower right arm": {
-						"from": "right elbo",
+						"from": "right elbow",
 						"to": "right hand",
 						"name": "lower right arm",
 						"length": 10

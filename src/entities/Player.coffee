@@ -48,24 +48,24 @@ module.exports = class Player extends SimpleActor
 		)
 		@structure.addSegment(
 			from: "left shoulder"
-			to: "left elbo"
+			to: "left elbow"
 			name: "upper left arm"
 			length: 10
 		)
 		@structure.addSegment(
 			from: "right shoulder"
-			to: "right elbo"
+			to: "right elbow"
 			name: "upper right arm"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "left elbo"
+			from: "left elbow"
 			to: "left hand"
 			name: "lower left arm"
 			length: 10
 		)
 		@structure.addSegment(
-			from: "right elbo"
+			from: "right elbow"
 			to: "right hand"
 			name: "lower right arm"
 			length: 10
@@ -305,8 +305,8 @@ module.exports = class Player extends SimpleActor
 		# (given this)
 		primary_hand = @structure.points["right hand"]
 		secondary_hand = @structure.points["left hand"]
-		primary_elbo = @structure.points["right elbo"]
-		secondary_elbo = @structure.points["left elbo"]
+		primary_elbow = @structure.points["right elbow"]
+		secondary_elbow = @structure.points["left elbow"]
 		
 		# Note: You're allowed to prime and draw the bow without an arrow.
 		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
@@ -359,13 +359,13 @@ module.exports = class Player extends SimpleActor
 				bow_angle = aim_angle
 				primary_hand.x = sternum.x + @bow_drawn_to * Math.cos(aim_angle)
 				primary_hand.y = sternum.y + @bow_drawn_to * Math.sin(aim_angle)
-				primary_elbo.x = sternum.x + 5 * Math.cos(aim_angle)
-				primary_elbo.y = sternum.y + 5 * Math.sin(aim_angle)
-				# primary_elbo.y = sternum.y - 3
+				primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle)
+				primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle)
+				# primary_elbow.y = sternum.y - 3
 				secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle)
 				secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle)
-				secondary_elbo.x = sternum.x + 15 * Math.cos(aim_angle)
-				secondary_elbo.y = sternum.y + 15 * Math.sin(aim_angle)
+				secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle)
+				secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle)
 				# make head look along aim path
 				angle = (aim_angle - Math.PI / 2) %% (Math.PI * 2)
 				@real_facing_x = if angle < Math.PI then -1 else 1
@@ -375,7 +375,7 @@ module.exports = class Player extends SimpleActor
 				head.x += (new_head_x - head.x) / 5
 				head.y += (new_head_y - head.y) / 5
 			else
-				bow_angle = Math.atan2(secondary_hand.y - secondary_elbo.y, secondary_hand.x - secondary_elbo.x)
+				bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x)
 			
 			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_bow_space = bow.fromWorld(@toWorld(secondary_hand))

@@ -7,8 +7,9 @@ module.exports = class World
 	constructor: ->
 		@entities = []
 	
+	@formatVersion: 2
 	toJSON: ->
-		formatVersion: 1
+		formatVersion: World.formatVersion
 		entities: @entities
 
 	fromJSON: (def)->
@@ -28,10 +29,19 @@ module.exports = class World
 				delete ent_def.structure.points.nock.vy
 				delete ent_def.structure.points.tip.vx
 				delete ent_def.structure.points.tip.vy
-		if def.formatVersion > 1
+		if def.formatVersion is 1
+			def.formatVersion = 2
+			# spell-checker: disable
+			# "elbo" is now "elbow" in Player's segment names
+			# do regex replace on JSON, since it's way simpler, and handles references too
+			def.entities = JSON.parse(JSON.stringify(def.entities).replace(/\belbo\b/g, 'elbow'))
+			# spell-checker: enable
+			# Note that the animation data also requires this rename, but there's no automatic upgrade system yet
+
+		if def.formatVersion > World.formatVersion
 			throw new Error "The format version #{def.formatVersion} is too new for this version of the game."
 		# In case the format version format changes to a string or something
-		if def.formatVersion isnt 1
+		if def.formatVersion isnt World.formatVersion
 			throw new Error "Unsupported format version #{def.formatVersion}"
 		
 		# Validate the current format a bit
