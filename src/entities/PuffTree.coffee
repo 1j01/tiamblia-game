@@ -33,6 +33,8 @@ module.exports = class PuffTree extends Tree
 		leaf
 	
 	draw: (ctx)->
+		Math.seedrandom(@random_seed)
+		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
 			ctx.moveTo(segment.a.x, segment.a.y)
