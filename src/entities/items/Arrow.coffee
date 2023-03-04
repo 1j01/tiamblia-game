@@ -3,33 +3,8 @@ Entity = require "../abstract/Entity.coffee"
 {lineSegmentsIntersect, distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
 
-###
-def GetClosestPoint(A, B, P)
-
-  a_to_p = [P.x - A.x, P.y - A.y]     # Storing vector A->P
-  a_to_b = [B.x - A.x, B.y - A.y]     # Storing vector A->B
-
-  atb2 = a_to_b[0]**2 + a_to_b[1]**2  # **2 means "squared"
-                                      #   Basically finding the squared magnitude
-                                      #   of a_to_b
-
-  atp_dot_atb = a_to_p[0]*a_to_b[0] + a_to_p[1]*a_to_b[1]
-                                      # The dot product of a_to_p and a_to_b
-
-  t = atp_dot_atb / atb2              # The normalized "distance" from a to
-                                      #   your closest point
-
-  return Point.new( :x => A.x + a_to_b[0]*t,
-                    :y => A.y + a_to_b[1]*t )
-                                      # Add the distance to A, moving
-                                      #   towards B
-
-end
-
-https://stackoverflow.com/a/3122532/2624876
-CoffeeScript converted from above Ruby code:
-###
 closestPointOnLineSegment = (point, a, b)->
+	# https://stackoverflow.com/a/3122532/2624876
 	a_to_p = {x: point.x - a.x, y: point.y - a.y}
 	a_to_b = {x: b.x - a.x, y: b.y - a.y}
 	atb2 = a_to_b.x**2 + a_to_b.y**2
