@@ -7,49 +7,52 @@ module.exports = class Water extends Terrain
 		super()
 		@bbox_padding = 30
 		@solid = false
-		@waves = {} # (local) x to y
+		@waves = [] # indexed by x starting from @min_x
+		@min_x = Infinity
+		@max_x = -Infinity
+		@min_y = Infinity
+		@max_y = -Infinity
 		@structure.onchange = =>
-			@waves = {}
-			min_x = Infinity
-			max_x = -Infinity
+			@waves = []
+			@min_x = Infinity
+			@max_x = -Infinity
+			@min_y = Infinity
+			@max_y = -Infinity
 			for point_name, point of @structure.points
-				min_x = Math.min(min_x, point.x)
-				max_x = Math.max(max_x, point.x)
-			for x in [Math.floor(min_x)..Math.ceil(max_x)]
-				@waves[x] = 0
+				@min_x = Math.min(@min_x, point.x)
+				@max_x = Math.max(@max_x, point.x)
+				@min_y = Math.min(@min_y, point.y)
+				@max_y = Math.max(@max_y, point.y)
+			@min_x = Math.floor(@min_x)
+			@max_x = Math.ceil(@max_x)
+			@min_y = Math.floor(@min_y)
+			@max_y = Math.ceil(@max_y)
+
+			for x in [@min_x...@max_x]
+				@waves[x - @min_x] = 0
 	
-	makeWaves: (world_pos)->
+	makeWaves: (world_pos, radius=5, velocity_y=50)->
 		local_pos = @fromWorld(world_pos)
-		@waves[Math.round(local_pos.x)] = 50
+		for x in [Math.round(local_pos.x - radius)...Math.round(local_pos.x + radius)]
+			@waves[x - @min_x] += velocity_y * (1 - Math.abs(x - local_pos.x) / radius)
 
 	step: ->
-		for k in Object.keys(@waves)
-			x = Number(k)
-			@waves[x] *= 0.9
-		for k in Object.keys(@waves)
-			x = Number(k)
-			@waves[x] += @waves[x - 1] * 0.1 if @waves[x - 1]?
-		for k in Object.keys(@waves) by -1
-			x = Number(k)
-			@waves[x] += @waves[x + 1] * 0.1 if @waves[x + 1]?
+		# wave propagation (asymmetrical, not very good)
+		for x in [@min_x...@max_x]
+			@waves[x - @min_x] *= 0.9
+		for x in [@min_x+1...@max_x]
+			@waves[x - @min_x] += @waves[x - @min_x - 1] * 0.1
+		for x in [@min_x...@max_x-1] by -1
+			@waves[x - @min_x] += @waves[x - @min_x + 1] * 0.1
 
 	draw: (ctx, view)->
-		min_y = Infinity
-		max_y = -Infinity
-		min_x = Infinity
-		max_x = -Infinity
-		for point_name, point of @structure.points
-			min_y = Math.min(min_y, point.y)
-			max_y = Math.max(max_y, point.y)
-			min_x = Math.min(min_x, point.x)
-			max_x = Math.max(max_x, point.x)
 		ctx.save()
 		ctx.beginPath()
-		for x, y of @waves
-			ctx.lineTo(x, min_y - y)
-		# ctx.lineTo(max_x, max_y)
-		# ctx.lineTo(min_x, max_y)
-		# ctx.closePath()
+		for x in [@min_x...@max_x]
+			ctx.lineTo(x, @waves[x - @min_x] + @min_y)
+		ctx.lineTo(@max_x, @max_y)
+		ctx.lineTo(@min_x, @max_y)
+		ctx.closePath()
 		ctx.strokeStyle = "red"
 		ctx.stroke()
 
