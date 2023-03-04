@@ -3,6 +3,7 @@ Entity = require "./abstract/Entity.coffee"
 {Pose, Terrain} = require "skele2d"
 Bow = require "./items/Bow.coffee"
 Arrow = require "./items/Arrow.coffee"
+Deer = require "./Deer.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
 {distance, distanceToLineSegment, lineSegmentsIntersect} = require("skele2d").helpers
@@ -12,6 +13,7 @@ gamepad_aiming = false
 gamepad_detect_threshold = 0.5 # axis value (not a deadzone! just switching from mouse to gamepad)
 gamepad_deadzone = 0.1 # axis value
 gamepad_jump_prev = false
+gamepad_mount_prev = false
 mouse_detect_threshold = 30 # pixels radius (movement can occur over any number of frames)
 mouse_detect_from = {x: 0, y: 0}
 addEventListener "mousemove", (e) ->
@@ -125,6 +127,7 @@ module.exports = class Player extends SimpleActor
 		
 		@holding_bow = null
 		@holding_arrow = null
+		@riding = null
 		
 		@bow_drawn_to = 0
 		
@@ -152,6 +155,7 @@ module.exports = class Player extends SimpleActor
 		up = keyboard.isHeld("KeyW") or keyboard.isHeld("ArrowUp") # applies to swimming/climbing
 		down = keyboard.isHeld("KeyS") or keyboard.isHeld("ArrowDown")
 		@jump = keyboard.wasJustPressed("KeyW") or keyboard.wasJustPressed("ArrowUp")
+		mount_dismount = keyboard.wasJustPressed("KeyS") or keyboard.wasJustPressed("ArrowDown")
 		# gamepad controls
 		gamepad_draw_bow = false
 		gamepad_prime_bow = false
@@ -161,7 +165,9 @@ module.exports = class Player extends SimpleActor
 			up or= gamepad.axes[1] < -0.5
 			down or= gamepad.axes[1] > 0.5
 			@jump or= gamepad.buttons[0].pressed and not gamepad_jump_prev
+			mount_dismount or= gamepad.buttons[1].pressed and not gamepad_mount_prev
 			gamepad_jump_prev = gamepad.buttons[0].pressed
+			gamepad_mount_prev = gamepad.buttons[1].pressed
 			gamepad_draw_bow = gamepad.buttons[7].pressed
 			# gamepad_prime_bow = gamepad.buttons[4].pressed
 
@@ -208,6 +214,28 @@ module.exports = class Player extends SimpleActor
 		pick_up_any Arrow, "holding_arrow"
 		# Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
 		
+		if mount_dismount
+			if @riding
+				@riding = null
+			else
+				closest_dist = Infinity
+				closest_steed = null
+				for entity in world.getEntitiesOfType(Deer)
+					from_point_in_entity_space = entity.fromWorld(from_point_in_world)
+					for segment_name, segment of entity.structure.segments
+						dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
+						if dist < closest_dist
+							closest_dist = dist
+							closest_steed = entity
+				if closest_steed
+					@riding = closest_steed
+
+		if @riding
+			# @riding.move_x = @move_x
+			@riding.dir = @move_x # old code...
+			@x = @riding.x
+			@y = @riding.y - 30
+
 		prevent_idle = =>
 			@idle_timer = 0
 			@idle_animation = null
