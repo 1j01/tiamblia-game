@@ -130,3 +130,7 @@ do animate = ->
 	editor.updateGUI()
 	
 	keyboard.resetForNextStep()
+
+	# So that the editor will give new random entities each time you pull one into the world
+	# (given that some entities use seedrandom, and fix the seed)
+	Math.seedrandom(performance.now())
