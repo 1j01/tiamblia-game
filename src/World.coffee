@@ -93,11 +93,11 @@ module.exports = class World
 			filter = (entity)=> types.some((type)=> (entity instanceof type) and (entity.solid ? true))
 		
 		for entity in @entities when filter(entity)
+			local_point = entity.fromWorld(point)
 			if entity.structure.pointInPolygon?
-				if entity.structure.pointInPolygon(entity.fromWorld(point))
+				if entity.structure.pointInPolygon(local_point)
 					return entity
 			else
-				local_point = entity.fromWorld(point)
 				for segment_name, segment of entity.structure.segments
 					dist = distanceToLineSegment(local_point, segment.a, segment.b)
 					if dist < lineThickness
