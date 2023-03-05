@@ -494,7 +494,7 @@ module.exports = class Player extends SimpleActor
 					if isFinite(diff) and delta_length > seg_length
 						points[i].x -= delta_x * diff
 						points[i].y -= delta_y * diff
-					else
+					else if not isFinite(diff)
 						console.warn("diff is not finite, for hair segment distance constraint")
 			
 			for points in @hairs
