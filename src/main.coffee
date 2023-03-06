@@ -6,28 +6,26 @@ World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 require "./arrow-test.coffee"
 
-Entity = require "./entities/abstract/Entity.coffee"
-Terrain = require "./entities/abstract/Terrain.coffee"
 # Why are these here?
 require "./entities/abstract/SimpleActor.coffee"
 require "./entities/abstract/Tree.coffee"
 # require each entity to add it to the entity registry
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/Rock.coffee"
-Water = require "./entities/terrain/Water.coffee"
+require "./entities/terrain/Water.coffee"
 require "./entities/PuffTree.coffee"
 require "./entities/SavannaTreeA.coffee"
-Cloud = require "./entities/Cloud.coffee"
+require "./entities/Cloud.coffee"
 require "./entities/Butterfly.coffee"
 require "./entities/Bird.coffee"
 require "./entities/Frog.coffee"
 require "./entities/Rabbit.coffee"
-Deer = require "./entities/Deer.coffee"
+require "./entities/Deer.coffee"
 require "./entities/GranddaddyLonglegs.coffee"
-Player = require "./entities/Player.coffee"
-Bow = require "./entities/items/Bow.coffee"
-Arrow = require "./entities/items/Arrow.coffee"
-ArcheryTarget = require "./entities/items/ArcheryTarget.coffee"
+require "./entities/Player.coffee"
+require "./entities/items/Bow.coffee"
+require "./entities/items/Arrow.coffee"
+require "./entities/items/ArcheryTarget.coffee"
 
 world = new World
 
@@ -86,32 +84,48 @@ window.do_a_redraw = redraw
 
 gamepad_start_prev = false
 
-c = (entity_class) -> (entity) -> entity instanceof entity_class
-anything_other_than_c = (entity_class) -> (entity) -> entity not instanceof entity_class
+# Check if the object is an instance of the base class or its ancestors, by name.
+# This doesn't handle all cases, like [] instanceof Object, but it's good enough for this.
+is_instance = (obj, class_name) ->
+	if obj.constructor.name is class_name
+		return true
+	if Object?.getPrototypeOf
+		proto = Object.getPrototypeOf(obj)
+		if proto and proto.constructor.name isnt "Object"
+			return is_instance(proto, class_name)
+		return false
+	else
+		if obj.__proto__ and obj.__proto__.constructor.name isnt "Object"
+			return is_instance(obj.__proto__, class_name)
+		else
+			return false
+
+c = (class_name) -> (entity) -> is_instance(entity, class_name)
+anything_other_than_c = (class_name) -> (entity) -> not is_instance(entity, class_name)
 relative_sorts = [
 	# [A, B] denotes A in front of B
 	# If the filters result in true for a pair and its reverse,
 	# it will be handled below and shouldn't cause instability.
 
 	# The one background element.
-	[anything_other_than_c(Cloud), c(Cloud)]
+	[anything_other_than_c("Cloud"), c("Cloud")]
 	# The archery target is effectively a line, but displayed as an oval, implying perspective.
 	# Arrows need to be visible when sticking into the target.
-	[c(Arrow), c(ArcheryTarget)]
+	[c("Arrow"), c("ArcheryTarget")]
 	# For riding, player's legs go in front; it's implied that one goes behind,
 	# by posing the legs on top of each other.
-	[c(Player), c(Deer)]
+	[c("Player"), c("Deer")]
 	# It looks best holding the arrow in front of the bow.
-	[c(Arrow), c(Player)]
-	# [c(Player), c(Bow)] # can look better in some cases, but not while aiming or turning
-	[c(Bow), c(Player)]
-	[c(Arrow), c(Bow)]
+	[c("Arrow"), c("Player")]
+	# [c("Player"), c("Bow")] # can look better in some cases, but not while aiming or turning
+	[c("Bow"), c("Player")]
+	[c("Arrow"), c("Bow")]
 	# Water is transparent, and it should discolor any entities submerged in it.
-	[c(Water), anything_other_than_c(Terrain)]
+	[c("Water"), anything_other_than_c("Terrain")]
 	
 	# This may end up being too general
 	# I'm keeping it at the end so any rules can override it
-	[anything_other_than_c(Terrain), c(Terrain)]
+	[anything_other_than_c("Terrain"), c("Terrain")]
 ]
 compare_entities = (a, b) ->
 	# This comparator is intransitive, so it can't be used for sort().
