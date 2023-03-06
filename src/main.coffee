@@ -111,7 +111,7 @@ relative_sorts = [
 	
 	# This may end up being too general
 	# I'm keeping it at the end so any rules can override it
-	[c(Terrain), anything_other_than_c(Terrain)]
+	[anything_other_than_c(Terrain), c(Terrain)]
 ]
 sort_entities = ->
 	before_sort = world.entities.slice()
