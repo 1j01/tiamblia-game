@@ -10,6 +10,7 @@ require "./arrow-test.coffee"
 
 # require each entity to add it to the entity registry
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
+require "./entities/terrain/LushGrass.coffee"
 require "./entities/terrain/Rock.coffee"
 require "./entities/terrain/Water.coffee"
 require "./entities/PuffTree.coffee"

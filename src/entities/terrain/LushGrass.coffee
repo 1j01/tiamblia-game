@@ -1,10 +1,10 @@
 GrassyTerrain = require("../abstract/GrassyTerrain.coffee")
 {addEntityClass} = require("skele2d")
 
-module.exports = class SavannaGrass extends GrassyTerrain
+module.exports = class LushGrass extends GrassyTerrain
 	addEntityClass(@)
 	constructor: ->
 		super()
-		@color = "#C29853"
-		@color_dark = "#B7863E"
-		@color_light = "#D6AE77"
+		@color = "#57c122"
+		@color_dark = "#46a517"
+		@color_light = "#8eeb4a"
