@@ -148,6 +148,12 @@ do animate = ->
 	if editor.editing and keyboard.wasJustPressed("KeyR")
 		editor.undoable ->
 			for entity in editor.selected_entities
+				# Use two new entities to detect what properties get randomized,
+				# and change only those.
+				# (If you just used one new entity, you couldn't distinguish between
+				# properties that were different because they were randomized at construction,
+				# or because they were manually modified, such as by posing an entity,
+				# or modified by simulation, although that's less important.)
 				new_entity_a = new entity.constructor()
 				new_entity_b = new entity.constructor()
 				apply_differences = (a, b, cur)->
