@@ -83,4 +83,38 @@ module.exports = class Water extends Terrain
 		ctx.fillStyle = "hsla(200, 100%, 50%, 0.5)"
 		ctx.fill()
 
+		ctx.clip()
+		# For debugging, disable ctx.clip() and uncomment this to escape the other clip:
+		# ctx.restore()
+		# ctx.save()
+
+		# Draw reflections by drawing the canvas upside down on top of itself
+
+		# Undo the entity space transform
+		ctx.translate(-@x, -@y)
+		# Undo the view transform which looks like this:
+		#   ctx.translate(canvas.width / 2, canvas.height / 2)
+		#   ctx.scale(view.scale, view.scale)
+		#   ctx.translate(-view.center_x, -view.center_y)
+		ctx.translate(view.center_x, view.center_y)
+		ctx.scale(1 / view.scale, 1 / view.scale)
+		ctx.translate(-ctx.canvas.width / 2, -ctx.canvas.height / 2)
+		# We're now in canvas space
+
+		# We need to know the y coordinate of the reflecting line in canvas space
+		reflecting_line_y = (@y + wave_center_y - view.center_y) * view.scale + ctx.canvas.height / 2
+
+		# Debug
+		# ctx.beginPath()
+		# ctx.moveTo(0, reflecting_line_y)
+		# ctx.lineTo(ctx.canvas.width, reflecting_line_y)
+		# ctx.strokeStyle = "red"
+		# ctx.stroke()
+
+		ctx.globalAlpha = 0.2
+		ctx.translate(0, reflecting_line_y * 2)
+		ctx.scale(1, -1)
+
+		ctx.drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height)
+		
 		ctx.restore()
