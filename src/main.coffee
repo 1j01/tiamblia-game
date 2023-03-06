@@ -1,7 +1,7 @@
 
 Math.seedrandom("A world")
 
-{View, Mouse, Editor} = require "skele2d"
+{View, Mouse, Editor, Structure} = require "skele2d"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 require "./arrow-test.coffee"
@@ -365,8 +365,43 @@ do animate = ->
 
 	editor.updateGUI()
 	
-	keyboard.resetForNextStep()
-
 	# So that the editor will give new random entities each time you pull one into the world
 	# (given that some entities use seedrandom, and fix the seed)
+	# And also for the below.
 	Math.seedrandom(performance.now())
+
+	# A little tool to randomize entities by pressing 'r'
+	if editor.editing and keyboard.wasJustPressed("KeyR")
+		editor.undoable ->
+			for entity in editor.selected_entities
+				new_entity_a = new entity.constructor()
+				new_entity_b = new entity.constructor()
+				apply_differences = (a, b, cur)->
+					for own key, val_a of a when key isnt "id"
+						val_b = b[key]
+						if val_a instanceof Structure
+							# Replace the structure wholesale.
+							# Avoids issues with trees, which would get split up with floating branches.
+							if JSON.stringify(val_a) isnt JSON.stringify(val_b)
+								cur[key] = val_a
+						else if Array.isArray(val_a)
+							# Replace the array wholesale.
+							# That way it can shrink, and can't leave blanks in the middle.
+							# If e.g. a = [1, 0, 1] and b = [1, 0, 1, 0, 1] and cur = []
+							# the "object" path could leave cur = [, , , 0, 1], I think.
+							if JSON.stringify(val_a) isnt JSON.stringify(val_b)
+								cur[key] = val_a
+						else if (
+							typeof val_a is "object" and val_a isnt null and
+							typeof val_b is "object" and val_b isnt null and
+							typeof cur[key] is "object" and cur[key] isnt null
+						)
+							apply_differences(val_a, val_b, cur[key])
+						else if val_a isnt val_b
+							cur[key] = val_a
+					return
+				apply_differences(new_entity_a, new_entity_b, entity)
+			return
+
+	# End of frame. Nothing must use wasJustPressed after this.
+	keyboard.resetForNextStep()
