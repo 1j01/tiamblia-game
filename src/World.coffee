@@ -79,7 +79,10 @@ module.exports = class World
 		for entity in @entities
 			ctx.save()
 			ctx.translate(entity.x, entity.y)
-			entity.draw(ctx, view)
+			try
+				entity.draw(ctx, view)
+			catch error
+				console.error "Error drawing entity #{entity.constructor.name} #{entity.id}:", error
 			ctx.restore()
 	
 	collision: (point, {types=[Terrain], lineThickness=5}={})->
