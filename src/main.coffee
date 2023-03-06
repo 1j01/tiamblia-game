@@ -8,9 +8,6 @@ sort_entities = require "./sort-entities.coffee"
 randomize_entities = require "./randomize-entities.coffee"
 require "./arrow-test.coffee"
 
-# Why are these here?
-require "./entities/abstract/SimpleActor.coffee"
-require "./entities/abstract/Tree.coffee"
 # require each entity to add it to the entity registry
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/Rock.coffee"
