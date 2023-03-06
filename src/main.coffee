@@ -6,24 +6,28 @@ World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 require "./arrow-test.coffee"
 
-SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
-require "./entities/terrain/Rock.coffee"
-require "./entities/terrain/Water.coffee"
+Entity = require "./entities/abstract/Entity.coffee"
+Terrain = require "./entities/abstract/Terrain.coffee"
+# Why are these here?
 require "./entities/abstract/SimpleActor.coffee"
 require "./entities/abstract/Tree.coffee"
+# require each entity to add it to the entity registry
+SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
+require "./entities/terrain/Rock.coffee"
+Water = require "./entities/terrain/Water.coffee"
 require "./entities/PuffTree.coffee"
 require "./entities/SavannaTreeA.coffee"
-require "./entities/Cloud.coffee"
+Cloud = require "./entities/Cloud.coffee"
 require "./entities/Butterfly.coffee"
 require "./entities/Bird.coffee"
 require "./entities/Frog.coffee"
 require "./entities/Rabbit.coffee"
-require "./entities/Deer.coffee"
+Deer = require "./entities/Deer.coffee"
 require "./entities/GranddaddyLonglegs.coffee"
 Player = require "./entities/Player.coffee"
-require "./entities/items/Bow.coffee"
-require "./entities/items/Arrow.coffee"
-require "./entities/items/ArcheryTarget.coffee"
+Bow = require "./entities/items/Bow.coffee"
+Arrow = require "./entities/items/Arrow.coffee"
+ArcheryTarget = require "./entities/items/ArcheryTarget.coffee"
 
 world = new World
 
@@ -82,6 +86,48 @@ window.do_a_redraw = redraw
 
 gamepad_start_prev = false
 
+c = (entity_class) -> (entity) -> entity instanceof entity_class
+anything_other_than_c = (entity_class) -> (entity) -> entity not instanceof entity_class
+relative_sorts = [
+	# [A, B] denotes A in front of B
+	# If the filters result in true for a pair and its reverse,
+	# it will be handled below and shouldn't cause instability.
+
+	# The one background element.
+	[anything_other_than_c(Cloud), c(Cloud)]
+	# The archery target is effectively a line, but displayed as an oval, implying perspective.
+	# Arrows need to be visible when sticking into the target.
+	[c(Arrow), c(ArcheryTarget)]
+	# For riding, player's legs go in front; it's implied that one goes behind,
+	# by posing the legs on top of each other.
+	[c(Player), c(Deer)]
+	# It looks best holding the arrow in front of the bow.
+	[c(Arrow), c(Player)]
+	# [c(Player), c(Bow)] # can look better in some cases, but not while aiming or turning
+	[c(Bow), c(Player)]
+	[c(Arrow), c(Bow)]
+	# Water is transparent, and it should discolor any entities submerged in it.
+	[c(Water), anything_other_than_c(Terrain)]
+	
+	# This may end up being too general
+	# I'm keeping it at the end so any rules can override it
+	[c(Terrain), anything_other_than_c(Terrain)]
+]
+sort_entities = ->
+	before_sort = world.entities.slice()
+	world.entities.sort (a, b) ->
+		for [a_filter, b_filter] in relative_sorts
+			if a_filter(a) and b_filter(b) and not b_filter(a) and not a_filter(b)
+				return 1
+			if b_filter(a) and a_filter(b) and not a_filter(a) and not b_filter(b)
+				return -1
+		return 0
+	changed = world.entities.some (entity, i) -> entity isnt before_sort[i]
+	if changed
+		console.log "Sort changed"
+		console.log "Before: #{before_sort.map((e) -> e.constructor.name).join(", ")}"
+		console.log "After: #{world.entities.map((e) -> e.constructor.name).join(", ")}"
+
 do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
@@ -102,6 +148,13 @@ do animate = ->
 	else
 		canvas.classList.remove("grabbable")
 	
+	if editor.editing
+		# Not sorting while game is running for performance reasons.
+		# TODO: run only when an entity is added in the editor.
+		# (I could also use the relative sorts list to sort only the added entity,
+		# and this could be useful for gameplay code that might want to add entities.)
+		sort_entities()
+
 	unless editor.editing
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world, view, mouse)
