@@ -49,6 +49,17 @@ mouse = new Mouse(canvas)
 
 editor = new Editor(world, view, view_to, canvas, mouse)
 window.the_editor = editor
+
+# hacky way to make it play by default instead of edit
+# but not mess up the editor's undo state that it creates when you start playing
+world_loaded = false
+_fromJSON = world.fromJSON
+world.fromJSON = (json) ->
+	_fromJSON.call(world, json)
+	editor.toggleEditing() if editor.editing
+	world.fromJSON = _fromJSON
+	world_loaded = true
+
 try
 	editor.load()
 catch e
@@ -93,6 +104,15 @@ do animate = ->
 	requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
 	
+	# Hide welcome message after you start playing or toggle editing.
+	if the_world.entities.some((entity) -> entity instanceof Player and entity.jump) or (editor.editing and world_loaded)
+		welcome = document.getElementById("welcome")
+		if welcome and welcome.style.opacity isnt "0"
+			welcome.style.opacity = 0
+			welcome.style.pointerEvents = "none"
+			welcome.addEventListener "transitionend", ->
+				welcome.remove()
+
 	canvas.width = innerWidth unless canvas.width is innerWidth
 	canvas.height = innerHeight unless canvas.height is innerHeight
 	

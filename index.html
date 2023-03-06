@@ -9,6 +9,25 @@
 	<script src="https://code.getmdl.io/1.1.3/material.min.js"></script>
 </head>
 <body>
+	<div id="welcome">
+		<h1>Welcome to Tiamblia</h1>
+		<p>Use the arrow keys
+			<span style="display: inline-block; text-align: left;">
+				<kbd style="margin-left: calc(1.2em + 4px); margin-bottom: -7px;">↑</kbd><br aria-hidden="true">
+				<kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
+			</span>
+			or
+			<span style="display: inline-block; text-align: left;">
+				<kbd style="margin-left: calc(1.2em + 4px); margin-bottom: -7px;">W</kbd><br aria-hidden="true">
+				<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+			</span> or a gamepad
+			<span style="font-size: 2em;">🎮</span>
+			to move.</p>
+		<p>
+			<span style="font-size: 2em;">🏹</span>
+			To fire the bow, use both mouse buttons in sequence.</p>
+		<p>Press <kbd>Space</kbd> to edit the world.</p>
+	</div>
 	<style>
 		html, body {
 			padding: 0;
@@ -18,6 +37,39 @@
 			overflow: hidden;
 			background: black;
 		}
+		#welcome {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 100%;
+			transform: translate(-50%, -50%);
+			text-align: center;
+			color: white;
+			transition: opacity 1s;
+		}
+
+		kbd:not(.grouping-kbd) {
+			display: inline-block;
+			padding: 3px 5px;
+			font: 11px SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+			line-height: 10px;
+			color: #444d56;
+			vertical-align: middle;
+			background-color: #dddddd;
+			border: 1px solid #fefbf0;
+			border-left-color: #dddddd;
+			border-bottom-color: #dddddd;
+			border-radius: 6px;
+			box-shadow: 1px -1px 0 #fefbf0, 3px 2px 0 #808080;
+			margin-right: 2px;
+		}
+
+		.grouping-kbd {
+			border-radius: 6px;
+			border: 1px solid #c0c0c0;
+			padding: 5px;
+		}
+
 	</style>
 	<script>
 		if(window.nw){
