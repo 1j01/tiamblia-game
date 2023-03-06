@@ -115,6 +115,22 @@ module.exports = class Water extends Terrain
 		ctx.translate(0, reflecting_line_y * 2)
 		ctx.scale(1, -1)
 
-		ctx.drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height)
+		# ctx.drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height)
+		# Optimization: draw only the part of the canvas that's visible
+		bbox_min = view.fromWorld({x: @min_x + @x, y: @min_y + @y})
+		bbox_max = view.fromWorld({x: @max_x + @x, y: @max_y + @y})
+		# Invert the y coordinates over the reflecting line
+		bbox_min.y = reflecting_line_y * 2 - bbox_min.y
+		bbox_max.y = reflecting_line_y * 2 - bbox_max.y
+		ctx.drawImage(ctx.canvas,
+			bbox_min.x, bbox_min.y,
+			bbox_max.x - bbox_min.x, bbox_max.y - bbox_min.y,
+			bbox_min.x, bbox_min.y,
+			bbox_max.x - bbox_min.x, bbox_max.y - bbox_min.y)
 		
+		# Note that the reflections can't draw what's beyond the canvas,
+		# which can cause an artifact when the top of the water is near the top of the canvas.
+		# This could be fixed by drawing the game world in a larger canvas and then
+		# cropping it to the normal viewport size.
+
 		ctx.restore()
