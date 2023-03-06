@@ -47,7 +47,8 @@ view_to = new View
 view_smoothness = 7
 mouse = new Mouse(canvas)
 
-editor = @editor = new Editor(world, view, view_to, canvas, mouse)
+editor = new Editor(world, view, view_to, canvas, mouse)
+window.the_editor = editor
 try
 	editor.load()
 catch e
@@ -79,6 +80,10 @@ redraw = ->
 	
 	ctx.restore()
 
+# This is useful when debugging.
+# You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
+# and then see how entities are changed while stepping through simulation code.
+# (In Chrome this doesn't work, the canvas doesn't update, as of 2023.)
 window.do_a_redraw = redraw
 
 gamepad_start_prev = false
