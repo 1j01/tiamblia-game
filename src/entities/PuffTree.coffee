@@ -23,8 +23,8 @@ module.exports = class PuffTree extends Tree
 		juice -= 0.3
 		if juice > 0
 			@branch({from: name, to: "#{to}-a", juice, angle, width: juice, length})
-			# if Math.random() < 0.2
-			# 	@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
+			if Math.random() < 0.1 - juice / 200
+				@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
 		else
 			leaf_point = @structure.points[name]
 			@leaf(leaf_point)
