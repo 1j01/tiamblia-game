@@ -58,13 +58,13 @@ module.exports = class PuffTree extends Tree
 	drawLeaf: (ctx,x,y)->
 		ctx.save()
 		l=@random()/2
-		ctx.fillStyle="hsla("+(150-l*50)+","+(50)+"%,"+(50+l*20)+"%,1)"
+		ctx.fillStyle="hsl(#{~~(150-l*50)},#{~~(50)}%,#{~~(50+l*20)}%)"
 		ctx.beginPath()
 		ctx.arc(x,y,10+@random()*5,0,Math.PI*2,true)
 		ctx.fill()
 		for i in [0..10]
 			l=@random()/2
-			ctx.fillStyle="hsla("+(150-l*50)+","+(50)+"%,"+(50+l*20)+"%,1)"
+			ctx.fillStyle="hsl(#{~~(150-l*50)},#{~~(50)}%,#{~~(50+l*20)}%)"
 			ctx.beginPath()
 			r1=Math.PI*2*@random()
 			r2=@random()*15
