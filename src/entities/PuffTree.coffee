@@ -10,9 +10,14 @@ module.exports = class PuffTree extends Tree
 		@bbox_padding = 60
 
 		@trunk_width = 10+Math.floor(Math.random()*5)
-		@random_seed = performance.now()+Date.now()+Math.random()
+		@random_index = 0
+		@random_values = []
 
 		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
+
+	random: ->
+		@random_index++
+		return @random_values[@random_index] ?= Math.random()
 
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
@@ -28,13 +33,14 @@ module.exports = class PuffTree extends Tree
 		else
 			leaf_point = @structure.points[name]
 			@leaf(leaf_point)
+		return
 	
 	leaf: (leaf)->
 		leaf.is_leaf = true
-		leaf
+		return leaf
 	
 	draw: (ctx)->
-		Math.seedrandom(@random_seed)
+		@random_index = 0
 		
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
@@ -47,22 +53,24 @@ module.exports = class PuffTree extends Tree
 		
 		for point_name, leaf of @structure.points when leaf.is_leaf
 			@drawLeaf(ctx,leaf.x,leaf.y)
+		return
 
 	drawLeaf: (ctx,x,y)->
 		ctx.save()
-		l=Math.random()/2
+		l=@random()/2
 		ctx.fillStyle="hsla("+(150-l*50)+","+(50)+"%,"+(50+l*20)+"%,1)"
 		ctx.beginPath()
-		ctx.arc(x,y,10+Math.random()*5,0,Math.PI*2,true)
+		ctx.arc(x,y,10+@random()*5,0,Math.PI*2,true)
 		ctx.fill()
 		for i in [0..10]
-			l=Math.random()/2
+			l=@random()/2
 			ctx.fillStyle="hsla("+(150-l*50)+","+(50)+"%,"+(50+l*20)+"%,1)"
 			ctx.beginPath()
-			r1=Math.PI*2*Math.random()
-			r2=Math.random()*15
-			ctx.arc(x+Math.sin(r1)*r2,y+Math.cos(r1)*r2,5+Math.random()*5,0,Math.PI*2,true)
+			r1=Math.PI*2*@random()
+			r2=@random()*15
+			ctx.arc(x+Math.sin(r1)*r2,y+Math.cos(r1)*r2,5+@random()*5,0,Math.PI*2,true)
 			ctx.fill()
 		ctx.restore()
+		return
 	
 	
