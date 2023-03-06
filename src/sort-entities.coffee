@@ -27,8 +27,11 @@ relative_sorts = [
 	# [c(Player), c(Bow)] # can look better in some cases, but not while aiming or turning
 	[c(Bow), c(Player)]
 	[c(Arrow), c(Bow)]
+
 	# Water is transparent, and it should discolor any entities submerged in it.
-	[c(Water), anything_other_than_c(Terrain)]
+	# [c(Water), anything_other_than_c(Terrain)]
+	# For the reflection effect, the water should be drawn after the terrain too.
+	[c(Water), anything_other_than_c(Water)]
 	
 	# This may end up being too general
 	# I'm keeping it at the end so any rules can override it
