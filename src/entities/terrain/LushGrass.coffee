@@ -5,6 +5,6 @@ module.exports = class LushGrass extends GrassyTerrain
 	addEntityClass(@)
 	constructor: ->
 		super()
-		@color = "#57c122"
+		@color = "#4d8e2c"
 		@color_dark = "#46a517"
-		@color_light = "#8eeb4a"
+		@color_light = "#7fcc37"
