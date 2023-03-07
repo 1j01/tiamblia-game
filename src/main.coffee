@@ -51,15 +51,20 @@ mouse = new Mouse(canvas)
 editor = new Editor(world, view, view_to, canvas, mouse)
 window.the_editor = editor
 
-# hacky way to make it play by default instead of edit
-# but not mess up the editor's undo state that it creates when you start playing
-world_loaded = false
-_fromJSON = world.fromJSON
-world.fromJSON = (json) ->
-	_fromJSON.call(world, json)
-	editor.toggleEditing() if editor.editing
-	world.fromJSON = _fromJSON
-	world_loaded = true
+welcome = document.getElementById("welcome")
+disable_welcome_message = (try localStorage["tiamblia.disable_welcome_message"]) is "true"
+if disable_welcome_message
+	welcome.remove()
+else
+	# hacky way to make it play by default instead of edit
+	# but not mess up the editor's undo state that it creates when you start playing
+	world_loaded = false
+	_fromJSON = world.fromJSON
+	world.fromJSON = (json) ->
+		_fromJSON.call(world, json)
+		editor.toggleEditing() if editor.editing
+		world.fromJSON = _fromJSON
+		world_loaded = true
 
 try
 	editor.load()
@@ -106,13 +111,13 @@ do animate = ->
 	Math.seedrandom(performance.now())
 	
 	# Hide welcome message after you start playing or toggle editing.
-	if the_world.entities.some((entity) -> entity instanceof Player and entity.jump) or (editor.editing and world_loaded)
-		welcome = document.getElementById("welcome")
-		if welcome and welcome.style.opacity isnt "0"
-			welcome.style.opacity = 0
-			welcome.style.pointerEvents = "none"
-			welcome.addEventListener "transitionend", ->
-				welcome.remove()
+	unless disable_welcome_message
+		if the_world.entities.some((entity) -> entity instanceof Player and entity.jump) or (editor.editing and world_loaded)
+			if welcome and welcome.style.opacity isnt "0"
+				welcome.style.opacity = 0
+				welcome.style.pointerEvents = "none"
+				welcome.addEventListener "transitionend", ->
+					welcome.remove()
 
 	canvas.width = innerWidth unless canvas.width is innerWidth
 	canvas.height = innerHeight unless canvas.height is innerHeight
