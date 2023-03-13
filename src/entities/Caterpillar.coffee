@@ -46,8 +46,9 @@ module.exports = class Caterpillar extends Entity
 		collision = (point)=> world.collision(@toWorld(point))
 		point_index = 0
 		for point_name, point of @structure.points
-			if point.attachment
-				attachment_world = point.attachment.entity.toWorld(point.attachment.point)
+			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
+			if attachment_entity
+				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
 				point.x = attachment_local.x
 				point.y = attachment_local.y
@@ -58,7 +59,7 @@ module.exports = class Caterpillar extends Entity
 				if ground
 					point.vx = 0
 					point.vy = 0
-					point.attachment = {entity: ground, point: ground.fromWorld(@fromWorld(point))}
+					point.attachment = {entity_id: ground.id, point: ground.fromWorld(@fromWorld(point))}
 				else
 					# point.vy += 0.5
 					@structure.stepLayout({gravity: 0.005, collision})
