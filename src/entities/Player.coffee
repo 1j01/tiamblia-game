@@ -449,6 +449,9 @@ module.exports = class Player extends SimpleActor
 			arrow.setVelocity(0, 0)
 		
 		# Hair physics
+		@simulate_hair(world)
+	
+	simulate_hair: (world)->
 		{head, neck} = @structure.points
 		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
 		head_global = @toWorld(head)
@@ -472,7 +475,7 @@ module.exports = class Player extends SimpleActor
 				seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length
 				for i in [1...points.length]
 					gravity = 0.5
-					submerged = world.collision(points[i], types: (entity)=>
+					submerged = world?.collision(points[i], types: (entity)=>
 						entity.constructor.name is "Water"
 					)
 					buoyancy = if submerged then 0.6 else 0
@@ -502,7 +505,7 @@ module.exports = class Player extends SimpleActor
 					point.vx = point.x - point.prev_x
 					point.vy = point.y - point.prev_y
 	
-	draw: (ctx)->
+	draw: (ctx, view)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
@@ -520,6 +523,8 @@ module.exports = class Player extends SimpleActor
 		# 		head: ->
 		
 		# trailing hair
+		if view.is_preview
+			@simulate_hair()
 		for hair_points, hair_index in @hairs
 			ctx.beginPath()
 			# ctx.moveTo(hair_points[0].x, hair_points[0].y)
