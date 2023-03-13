@@ -9,6 +9,7 @@ randomize_entities = require "./randomize-entities.coffee"
 require "./arrow-test.coffee"
 
 # require each entity to add it to the entity registry
+require "./entities/Caterpillar.coffee"
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/LushGrass.coffee"
 require "./entities/terrain/Rock.coffee"
