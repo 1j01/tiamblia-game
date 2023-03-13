@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "build": "webpack --mode production && node src/make-app-build.js",
-    "start": "webpack-dev-server --hot --mode development",
+    "start": "webpack-dev-server --mode development",
     "deploy": "npm run build && gh-pages -d app-build",
     "start-nw": "npm run build && nw"
   },
