@@ -136,7 +136,7 @@ module.exports = class Player extends SimpleActor
 		@other_idle_animation_position = 0
 		@idle_animation = null
 		@idle_timer = 0
-		@real_facing_x = @facing_x
+		@real_facing_x = @facing_x = 1
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
 
