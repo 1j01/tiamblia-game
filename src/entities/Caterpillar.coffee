@@ -63,7 +63,9 @@ module.exports = class Caterpillar extends Entity
 			for other_point in points_list when other_point isnt point
 				if other_point.attachment
 					otherwise_attached += 1
-			lift_feet = Math.sin(t + point_index/3) < 0 and otherwise_attached >= 2
+			lift_feet = Math.sin(t + point_index/points_list.length*Math.PI) < 0 and otherwise_attached >= 2
+			if point_index > 3 and point_index < points_list.length - 3
+				lift_feet = true # don't let the middle of the caterpillar act as feet
 			if lift_feet
 				point.attachment = null
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
