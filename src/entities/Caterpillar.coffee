@@ -77,7 +77,7 @@ module.exports = class Caterpillar extends Entity
 				point.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
-				for angle_offset in [-TAU/4..TAU/3] by TAU/10
+				for angle_offset in [TAU/3..-TAU/3] by -TAU/10
 					crawl_speed = 1
 					test_point_world = {
 						x: attachment_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
@@ -104,7 +104,10 @@ module.exports = class Caterpillar extends Entity
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 								point.attachment = {entity_id: hit.id, point: hit.fromWorld(test_point_world), ground_angle}
-
+							break
+				
+				if not hit and otherwise_attached >= 2
+					point.attachment = null
 			else
 				# point.x += point.vx
 				# point.y += point.vy
