@@ -101,7 +101,7 @@ module.exports = class Caterpillar extends Entity
 					unless lift_feet
 						point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
 				else
-					point.vy += 0.05
+					point.vy += 0.005
 					point.vx *= 0.99
 					point.vy *= 0.99
 					# @structure.stepLayout({gravity: 0.005, collision})
@@ -119,14 +119,14 @@ module.exports = class Caterpillar extends Entity
 				@accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle)
 		
 		# apply forces
-		for point in points_list
-			point.vx += point.fx
-			point.vy += point.fy
-			point.x += point.fx
-			point.y += point.fy
 
 		# constrain distances
 		for i in [0...4]
+			for point in points_list
+				point.vx += point.fx
+				point.vy += point.fy
+				point.x += point.fx
+				point.y += point.fy
 			for point, point_index in points_list
 				attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 				if attachment_entity
@@ -186,8 +186,8 @@ module.exports = class Caterpillar extends Entity
 		# using the combined distance conserves overall angular momentum,
 		# to say nothing of the physicality of the rest of this system
 		# but it's a clear difference in zero gravity
-		f_a = f / Math.max(1, Math.max(0, distance - 6) ** 1)
-		f_b = f / Math.max(1, Math.max(0, distance - 6) ** 1)
+		f_a = f / Math.max(1, Math.max(0, distance - 1) ** 1)
+		f_b = f / Math.max(1, Math.max(0, distance - 1) ** 1)
 
 		# Turn difference in position into velocity.
 		point_a.fx += (point_a.x - old_point_a.x) * f_a unless point_a.attachment
