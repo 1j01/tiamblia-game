@@ -97,7 +97,7 @@ module.exports = class Caterpillar extends Entity
 					unless lift_feet
 						point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
 				else
-					point.vy += 0.005
+					point.vy += 0.05
 					# @structure.stepLayout({gravity: 0.005, collision})
 					# @structure.stepLayout() for [0..10]
 					# @structure.stepLayout({collision}) for [0..4]
@@ -105,7 +105,7 @@ module.exports = class Caterpillar extends Entity
 					point.y += point.vy
 			
 			# angular constraint pivoting on this point
-			relative_angle = Math.sin(cycle) * Math.PI/10
+			relative_angle = Math.sin(cycle) * Math.PI/5
 			prev_point = Object.values(@structure.points)[point_index-1]
 			next_point = Object.values(@structure.points)[point_index+1]
 			if prev_point and next_point
