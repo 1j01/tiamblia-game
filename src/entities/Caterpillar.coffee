@@ -54,7 +54,7 @@ module.exports = class Caterpillar extends Entity
 		
 		# move
 		collision = (point)=> world.collision(@toWorld(point))
-		t = performance.now()/500
+		t = performance.now()/1000
 		for point in points_list
 			point.fx = 0
 			point.fy = 0
@@ -108,7 +108,7 @@ module.exports = class Caterpillar extends Entity
 					point.y += point.vy
 			
 			# angular constraint pivoting on this point
-			relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/5
+			relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/points_list.length/4 #- Math.PI/8
 			prev_point = points_list[point_index-1]
 			next_point = points_list[point_index+1]
 			if prev_point and next_point
