@@ -111,6 +111,7 @@ module.exports = class Caterpillar extends Entity
 			
 			# angular constraint pivoting on this point
 			relative_angle = (Math.sin(Math.sin(t)*Math.PI/4) - 0.5) * Math.PI/points_list.length/2
+			point.relative_angle = relative_angle
 			prev_point = points_list[point_index-1]
 			next_point = points_list[point_index+1]
 			if prev_point and next_point
@@ -226,7 +227,8 @@ module.exports = class Caterpillar extends Entity
 			ctx.beginPath()
 			ctx.arc(point.x, point.y, point.radius, 0, TAU)
 			# ctx.fillStyle = if point.attachment then "lime" else color
-			ctx.fillStyle = color
+			ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, 0.5)"
+			# ctx.fillStyle = color
 			ctx.fill()
 			ctx.clip()
 			# highlight
