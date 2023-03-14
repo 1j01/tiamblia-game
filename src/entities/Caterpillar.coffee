@@ -315,6 +315,23 @@ module.exports = class Caterpillar extends Entity
 		for i in [keys.length-1..0]
 			point_name = keys[i]
 			point = @structure.points[point_name]
+			# legs
+			if point_name isnt "head"
+				point.smoothed_normal ?= {x: 0, y: 0}
+				point.smoothed_normal.x += ((point.attachment?.normal?.x ? 0) - point.smoothed_normal.x) * 0.1
+				point.smoothed_normal.y += ((point.attachment?.normal?.y ? 0) - point.smoothed_normal.y) * 0.1
+				leg_length = point.radius + 2
+				ctx.save()
+				ctx.translate(point.x, point.y)
+				ctx.rotate(Math.sin(performance.now() / 80 + i) * 0.1)
+				ctx.beginPath()
+				ctx.moveTo(0, 0)
+				ctx.lineTo(-point.smoothed_normal.x * leg_length, -point.smoothed_normal.y * leg_length)
+				ctx.lineWidth = 1
+				ctx.lineCap = "round"
+				ctx.strokeStyle = color
+				ctx.stroke()
+				ctx.restore()
 			# body part
 			ctx.save()
 			ctx.beginPath()
