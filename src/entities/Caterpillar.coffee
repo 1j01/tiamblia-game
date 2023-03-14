@@ -114,18 +114,19 @@ module.exports = class Caterpillar extends Entity
 			point_index += 1
 		
 		# constrain distances
-		for segment_name, segment of @structure.segments
-			delta_x = segment.a.x - segment.b.x
-			delta_y = segment.a.y - segment.b.y
-			delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
-			diff = (delta_length - segment.length) / delta_length
-			if isFinite(diff)
-				segment.a.x -= delta_x * 0.5 * diff
-				segment.a.y -= delta_y * 0.5 * diff
-				segment.b.x += delta_x * 0.5 * diff
-				segment.b.y += delta_y * 0.5 * diff
-			else
-				console.warn("diff is not finite, for Caterpillar distance constraint")
+		for i in [0...4]
+			for segment_name, segment of @structure.segments
+				delta_x = segment.a.x - segment.b.x
+				delta_y = segment.a.y - segment.b.y
+				delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
+				diff = (delta_length - segment.length) / delta_length
+				if isFinite(diff)
+					segment.a.x -= delta_x * 0.5 * diff
+					segment.a.y -= delta_y * 0.5 * diff
+					segment.b.x += delta_x * 0.5 * diff
+					segment.b.y += delta_y * 0.5 * diff
+				else
+					console.warn("diff is not finite, for Caterpillar distance constraint")
 
 	
 	constrain_angle: (point_a, point_b, pivot, relative_angle)->
@@ -151,7 +152,7 @@ module.exports = class Caterpillar extends Entity
 			point.x += pivot.x
 			point.y += pivot.y
 
-		f = 0.1
+		f = 0.3
 
 		# Turn difference in position into velocity.
 		point_a.vx += (point_a.x - old_point_a.x) * f unless point_a.attachment
