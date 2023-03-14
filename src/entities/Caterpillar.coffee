@@ -150,6 +150,8 @@ module.exports = class Caterpillar extends Entity
 		angle_diff = (angle_a - angle_b) - relative_angle
 
 		# angle_diff *= 0.9
+		distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
+		angle_diff /= Math.max(4, distance/10)
 
 		old_point_a = {x: point_a.x, y: point_a.y}
 		old_point_b = {x: point_b.x, y: point_b.y}
