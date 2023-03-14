@@ -216,6 +216,32 @@ module.exports = class Caterpillar extends Entity
 					segment.b.vy += delta_y * 0.5 * diff
 				else
 					console.warn("diff is not finite, for Caterpillar distance constraint")
+			# self-collision
+			for point, point_index in points_list
+				for other_point, other_point_index in points_list #when point_index isnt other_point_index
+					if Math.abs(point_index - other_point_index) < 3
+						continue
+					delta_x = point.x - other_point.x
+					delta_y = point.y - other_point.y
+					delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
+					target_min_length = point.radius - other_point.radius
+					if delta_length < target_min_length
+						diff = (delta_length - target_min_length) / delta_length
+						if isFinite(diff)
+							diff *= 50
+							point.x -= delta_x * 0.5 * diff
+							point.y -= delta_y * 0.5 * diff
+							other_point.x += delta_x * 0.5 * diff
+							other_point.y += delta_y * 0.5 * diff
+							point.vx -= delta_x * 0.5 * diff
+							point.vy -= delta_y * 0.5 * diff
+							other_point.vx += delta_x * 0.5 * diff
+							other_point.vy += delta_y * 0.5 * diff
+							if Math.random() < 0.5
+								point.attachment = null
+								other_point.attachment = null
+						else
+							console.warn("diff is not finite, for Caterpillar self-collision constraint")
 
 	
 	accumulate_angular_constraint_forces: (point_a, point_b, pivot, relative_angle)->
