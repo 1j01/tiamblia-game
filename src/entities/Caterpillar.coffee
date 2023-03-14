@@ -75,7 +75,7 @@ module.exports = class Caterpillar extends Entity
 			if attachment_entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
-				crawl_speed = 1
+				crawl_speed = 0 + 2 * (otherwise_attached > 4) # also affected by fixity parameter
 				# point.x = attachment_local.x
 				# point.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
@@ -190,7 +190,7 @@ module.exports = class Caterpillar extends Entity
 				if attachment_entity
 					attachment_world = attachment_entity.toWorld(point.attachment.point)
 					attachment_local = @fromWorld(attachment_world)
-					fixity = 0.1
+					fixity = 0.1 # also affects crawling speed
 					point.x += (attachment_local.x - point.x) * fixity
 					point.y += (attachment_local.y - point.y) * fixity
 			for segment_name, segment of @structure.segments
