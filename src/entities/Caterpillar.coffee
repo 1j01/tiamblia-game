@@ -101,6 +101,8 @@ module.exports = class Caterpillar extends Entity
 						point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
 				else
 					point.vy += 0.05
+					point.vx *= 0.99
+					point.vy *= 0.99
 					# @structure.stepLayout({gravity: 0.005, collision})
 					# @structure.stepLayout() for [0..10]
 					# @structure.stepLayout({collision}) for [0..4]
