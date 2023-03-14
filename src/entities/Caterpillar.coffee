@@ -140,6 +140,10 @@ module.exports = class Caterpillar extends Entity
 					segment.a.y -= delta_y * 0.5 * diff
 					segment.b.x += delta_x * 0.5 * diff
 					segment.b.y += delta_y * 0.5 * diff
+					segment.a.vx -= delta_x * 0.5 * diff
+					segment.a.vy -= delta_y * 0.5 * diff
+					segment.b.vx += delta_x * 0.5 * diff
+					segment.b.vy += delta_y * 0.5 * diff
 				else
 					console.warn("diff is not finite, for Caterpillar distance constraint")
 
