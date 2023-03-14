@@ -81,10 +81,10 @@ module.exports = class Caterpillar extends Entity
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
 				for angle_offset in [TAU/3..-TAU/3] by -TAU/10
-
+					part_in_world = @toWorld(point)
 					test_point_world = {
-						x: attachment_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
-						y: attachment_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
+						x: part_in_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
+						y: part_in_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
 					}
 					# search towards the ground, in the direction it was last found
 					if point.attachment.normal
