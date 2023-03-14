@@ -103,13 +103,13 @@ module.exports = class Caterpillar extends Entity
 					# @structure.stepLayout({collision}) for [0..4]
 					point.x += point.vx
 					point.y += point.vy
-					
-					# angular constraint pivoting on this point
-					relative_angle = Math.sin(cycle) * Math.PI/10
-					prev_point = Object.values(@structure.points)[point_index-1]
-					next_point = Object.values(@structure.points)[point_index+1]
-					if prev_point and next_point
-						@constrain_angle(prev_point, next_point, point, relative_angle)
+			
+			# angular constraint pivoting on this point
+			relative_angle = Math.sin(cycle) * Math.PI/10
+			prev_point = Object.values(@structure.points)[point_index-1]
+			next_point = Object.values(@structure.points)[point_index+1]
+			if prev_point and next_point
+				@constrain_angle(prev_point, next_point, point, relative_angle)
 
 			point_index += 1
 		
@@ -154,16 +154,16 @@ module.exports = class Caterpillar extends Entity
 		f = 0.1
 
 		# Turn difference in position into velocity.
-		point_a.vx += (point_a.x - old_point_a.x) * f
-		point_a.vy += (point_a.y - old_point_a.y) * f
-		point_b.vx += (point_b.x - old_point_b.x) * f
-		point_b.vy += (point_b.y - old_point_b.y) * f
+		point_a.vx += (point_a.x - old_point_a.x) * f unless point_a.attachment
+		point_a.vy += (point_a.y - old_point_a.y) * f unless point_a.attachment
+		point_b.vx += (point_b.x - old_point_b.x) * f unless point_b.attachment
+		point_b.vy += (point_b.y - old_point_b.y) * f unless point_b.attachment
 
 		# Opposite force on pivot.
-		pivot.vx -= (point_a.x - old_point_a.x) * f
-		pivot.vy -= (point_a.y - old_point_a.y) * f
-		pivot.vx -= (point_b.x - old_point_b.x) * f
-		pivot.vy -= (point_b.y - old_point_b.y) * f
+		pivot.vx -= (point_a.x - old_point_a.x) * f unless pivot.attachment
+		pivot.vy -= (point_a.y - old_point_a.y) * f unless pivot.attachment
+		pivot.vx -= (point_b.x - old_point_b.x) * f unless pivot.attachment
+		pivot.vy -= (point_b.y - old_point_b.y) * f unless pivot.attachment
 
 		# Restore old position.
 		point_a.x = old_point_a.x
