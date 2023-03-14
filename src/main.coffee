@@ -142,6 +142,13 @@ do animate = ->
 		# and this could be useful for gameplay code that might want to add entities.)
 		sort_entities(world)
 
+		# Fix hair attachment when dragging after simulating.
+		# A better fix would be to have an event that fires while dragging
+		# (or otherwise moving an entity, such as with the arrow keys, which isn't supported yet.)
+		for entity in world.entities
+			if entity instanceof Player
+				entity.hair_initialized = false
+
 	unless editor.editing
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world, view, mouse)
