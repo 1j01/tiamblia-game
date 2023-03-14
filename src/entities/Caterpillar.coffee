@@ -1,7 +1,16 @@
 Entity = require("./abstract/Entity.coffee")
 {addEntityClass} = require("skele2d")
-{distance} = require("skele2d").helpers
+{distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
+
+closestPointOnLineSegment = (point, a, b)->
+	# https://stackoverflow.com/a/3122532/2624876
+	a_to_p = {x: point.x - a.x, y: point.y - a.y}
+	a_to_b = {x: b.x - a.x, y: b.y - a.y}
+	atb2 = a_to_b.x**2 + a_to_b.y**2
+	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
+	t = atp_dot_atb / atb2
+	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
 
 module.exports = class Caterpillar extends Entity
 	addEntityClass(@)
@@ -55,11 +64,28 @@ module.exports = class Caterpillar extends Entity
 			else
 				# point.x += point.vx
 				# point.y += point.vy
-				ground = collision(point)
-				if ground
+				hit = collision(point)
+				if hit
 					point.vx = 0
 					point.vy = 0
-					point.attachment = {entity_id: ground.id, point: ground.fromWorld(@toWorld(point))}
+
+					# Project the point back to the surface of the ground.
+					# This is done by finding the closest point on the polygon's edges.
+					closest_distance = Infinity
+					closest_segment = null
+					point_in_hit_space = hit.fromWorld(@toWorld(point))
+					for segment_name, segment of hit.structure.segments
+						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+						if dist < closest_distance
+							closest_distance = dist
+							closest_segment = segment
+					if closest_segment
+						closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+						point.x = closest_point_local.x
+						point.y = closest_point_local.y
+
+					point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
 				else
 					point.vy += 0.5
 					# @structure.stepLayout({gravity: 0.005, collision})
