@@ -84,6 +84,10 @@ module.exports = class Caterpillar extends Entity
 						x: attachment_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
 						y: attachment_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
 					}
+					# search towards the ground, in the direction it was last found
+					if point.attachment.normal
+						test_point_world.x -= point.attachment.normal.x * point.radius
+						test_point_world.y -= point.attachment.normal.y * point.radius
 
 					hit = world.collision(test_point_world)
 					if hit
@@ -99,12 +103,24 @@ module.exports = class Caterpillar extends Entity
 								closest_segment = segment
 						if closest_segment
 							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
-							closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+							closest_point_world = hit.toWorld(closest_point_in_hit_space)
+							closest_point_local = @fromWorld(closest_point_world)
+							normal = {x: closest_point_world.x - test_point_world.x, y: closest_point_world.y - test_point_world.y}
+							normal_length = Math.hypot(normal.x, normal.y)
+							normal.x /= normal_length
+							normal.y /= normal_length
+
 							# point.x = closest_point_local.x
 							# point.y = closest_point_local.y
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
-								point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
+								attachment_hit_space = {
+									# x: closest_point_in_hit_space.x + Math.cos(ground_angle) * point.radius
+									# y: closest_point_in_hit_space.y + Math.sin(ground_angle) * point.radius
+									x: closest_point_in_hit_space.x + normal.x * point.radius
+									y: closest_point_in_hit_space.y + normal.y * point.radius
+								}
+								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle, normal}
 							break
 				
 				if not hit and otherwise_attached >= 2
@@ -121,7 +137,8 @@ module.exports = class Caterpillar extends Entity
 					# This is done by finding the closest point on the polygon's edges.
 					closest_distance = Infinity
 					closest_segment = null
-					point_in_hit_space = hit.fromWorld(@toWorld(point))
+					point_world = @toWorld(point)
+					point_in_hit_space = hit.fromWorld(point_world)
 					for segment_name, segment of hit.structure.segments
 						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
 						if dist < closest_distance
@@ -129,12 +146,18 @@ module.exports = class Caterpillar extends Entity
 							closest_segment = segment
 					if closest_segment
 						closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
-						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+						closest_point_world = hit.toWorld(closest_point_in_hit_space)
+						closest_point_local = @fromWorld(closest_point_world)
+						normal = {x: closest_point_world.x - point_world.x, y: closest_point_world.y - point_world.y}
+						normal_length = Math.hypot(normal.x, normal.y)
+						normal.x /= normal_length
+						normal.y /= normal_length
+
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
 						unless lift_feet
 							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
-							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
+							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle, normal}
 				else
 					point.vy += 0.05
 					point.vx *= 0.99
