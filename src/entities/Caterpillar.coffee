@@ -115,6 +115,13 @@ module.exports = class Caterpillar extends Entity
 		
 		# constrain distances
 		for i in [0...4]
+			for point_name, point of @structure.points
+				attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
+				if attachment_entity
+					attachment_world = attachment_entity.toWorld(point.attachment.point)
+					attachment_local = @fromWorld(attachment_world)
+					point.x = attachment_local.x
+					point.y = attachment_local.y
 			for segment_name, segment of @structure.segments
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
