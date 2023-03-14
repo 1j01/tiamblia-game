@@ -54,14 +54,14 @@ module.exports = class Caterpillar extends Entity
 		# move
 		collision = (point)=> world.collision(@toWorld(point))
 		point_index = 0
+		t = performance.now()/500
 		for point_name, point of @structure.points
-			cycle = performance.now()/500 + point_index/3
 			otherwise_attached = false
 			for other_point_name, other_point of @structure.points when other_point_name isnt point_name
 				if other_point.attachment
 					otherwise_attached = true
 					break
-			lift_feet = Math.sin(cycle) < 0 and otherwise_attached
+			lift_feet = Math.sin(t + point_index/3) < 0 and otherwise_attached
 			if lift_feet
 				point.attachment = null
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
@@ -105,7 +105,7 @@ module.exports = class Caterpillar extends Entity
 					point.y += point.vy
 			
 			# angular constraint pivoting on this point
-			relative_angle = Math.sin(cycle) * Math.PI/5
+			relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/5
 			prev_point = Object.values(@structure.points)[point_index-1]
 			next_point = Object.values(@structure.points)[point_index+1]
 			if prev_point and next_point
