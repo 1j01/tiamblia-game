@@ -267,7 +267,7 @@ module.exports = class Caterpillar extends Entity
 		point_b.y = old_point_b.y
 
 	draw: (ctx)->
-		color = "gray"
+		color = "green"
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
 			ctx.moveTo(segment.a.x, segment.a.y)
@@ -288,8 +288,8 @@ module.exports = class Caterpillar extends Entity
 			ctx.arc(point.x, point.y, point.radius, 0, TAU)
 			# ctx.fillStyle = if point.attachment then "lime" else color
 			# ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, 0.5)"
-			ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if point.attachment then 1 else 0.3})"
-			# ctx.fillStyle = color
+			# ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if point.attachment then 1 else 0.3})"
+			ctx.fillStyle = color
 			ctx.fill()
 			ctx.clip()
 			# highlight
