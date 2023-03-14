@@ -59,6 +59,7 @@ module.exports = class Caterpillar extends Entity
 		for point in points_list
 			point.fx = 0
 			point.fy = 0
+		slowing_needed = 0
 		for point, point_index in points_list
 			otherwise_attached = 0
 			for other_point in points_list when other_point isnt point
@@ -82,7 +83,8 @@ module.exports = class Caterpillar extends Entity
 				if point_index >= 2
 					distance_to_second_adjacent = Math.hypot(point.x - points_list[point_index-2].x, point.y - points_list[point_index-2].y)
 					distance_if_straight = segments_list[point_index-1].length + segments_list[point_index-2].length
-					crawl_speed -= 0.5 * Math.min(1, distance_to_second_adjacent / distance_if_straight)
+					slowing_needed += Math.max(0, distance_to_second_adjacent - distance_if_straight)
+					crawl_speed += 0.5 * slowing_needed
 				# point.x = attachment_local.x
 				# point.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
