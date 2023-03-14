@@ -50,7 +50,7 @@ module.exports = class Caterpillar extends Entity
 
 		# stop at end of the world
 		for point in points_list
-			if point.y > 400
+			if point.y + @y > 400
 				return
 		
 		# move
