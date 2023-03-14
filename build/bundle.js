@@ -1,7 +1,4822 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 432:
+/***/ 378:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Entity, Terrain, World, distanceToLineSegment,
+  indexOf = [].indexOf;
+
+Entity = __webpack_require__(293);
+
+Terrain = __webpack_require__(891);
+
+({distanceToLineSegment} = (__webpack_require__(505).helpers));
+
+module.exports = World = (function() {
+  class World {
+    constructor() {
+      this.entities = [];
+    }
+
+    toJSON() {
+      return {
+        formatVersion: World.formatVersion,
+        entities: this.entities
+      };
+    }
+
+    fromJSON(def) {
+      var ent_def, entity, i, j, k, len, len1, len2, point_def, point_name, ref, ref1, ref2, ref3, results;
+      // upgrade old versions of the format
+      if (!def.formatVersion) {
+        if (!(def.entities instanceof Array)) {
+          throw new Error(`Expected entities to be an array, got ${def.entities}`);
+        }
+        def.formatVersion = 1;
+        ref = def.entities;
+        // Arrow now uses prev_x/prev_y instead of of vx/vy for velocity
+        // (Velocity is now implicit in the difference between prev_x/prev_y and x/y)
+        for (i = 0, len = ref.length; i < len; i++) {
+          ent_def = ref[i];
+          if (!(ent_def._class_ === "Arrow")) {
+            continue;
+          }
+          ent_def.structure.points.nock.prev_x = ent_def.structure.points.nock.x - ent_def.structure.points.nock.vx;
+          ent_def.structure.points.nock.prev_y = ent_def.structure.points.nock.y - ent_def.structure.points.nock.vy;
+          ent_def.structure.points.tip.prev_x = ent_def.structure.points.tip.x - ent_def.structure.points.tip.vx;
+          ent_def.structure.points.tip.prev_y = ent_def.structure.points.tip.y - ent_def.structure.points.tip.vy;
+          delete ent_def.structure.points.nock.vx;
+          delete ent_def.structure.points.nock.vy;
+          delete ent_def.structure.points.tip.vx;
+          delete ent_def.structure.points.tip.vy;
+        }
+      }
+      if (def.formatVersion === 1) {
+        def.formatVersion = 2;
+        // spell-checker: disable
+        // "elbo" is now "elbow" in Player's segment names
+        // do regex replace on JSON, since it's way simpler, and handles references too
+        def.entities = JSON.parse(JSON.stringify(def.entities).replace(/\belbo\b/g, 'elbow'));
+      }
+      // spell-checker: enable
+      // Note that the animation data also requires this rename, but there's no automatic upgrade system yet
+      if (def.formatVersion === 2) {
+        def.formatVersion = 3;
+        ref1 = def.entities;
+        // Removed leaf_point_names from Tree, and added is_leaf property to points
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          ent_def = ref1[j];
+          if (!(ent_def._class_.includes("Tree"))) {
+            continue;
+          }
+          ref2 = ent_def.structure.points;
+          for (point_name in ref2) {
+            point_def = ref2[point_name];
+            point_def.is_leaf = indexOf.call(ent_def.leaf_point_names, point_name) >= 0;
+          }
+          delete ent_def.leaf_point_names;
+        }
+      }
+      if (def.formatVersion > World.formatVersion) {
+        throw new Error(`The format version ${def.formatVersion} is too new for this version of the game.`);
+      }
+      // In case the format version format changes to a string or something
+      if (def.formatVersion !== World.formatVersion) {
+        throw new Error(`Unsupported format version ${def.formatVersion}`);
+      }
+      
+      // Validate the current format a bit
+      if (!(def.entities instanceof Array)) {
+        throw new Error(`Expected entities to be an array, got ${def.entities}`);
+      }
+      
+      // Initialize the world
+      this.entities = (function() {
+        var k, len2, ref3, results;
+        ref3 = def.entities;
+        results = [];
+        for (k = 0, len2 = ref3.length; k < len2; k++) {
+          ent_def = ref3[k];
+          results.push(Entity.fromJSON(ent_def));
+        }
+        return results;
+      })();
+      ref3 = this.entities;
+      results = [];
+      for (k = 0, len2 = ref3.length; k < len2; k++) {
+        entity = ref3[k];
+        results.push(entity.resolveReferences(this));
+      }
+      return results;
+    }
+
+    getEntityByID(id) {
+      var entity, i, len, ref;
+      ref = this.entities;
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (entity.id === id) {
+          return entity;
+        }
+      }
+    }
+
+    getEntitiesOfType(Class) {
+      var entity, i, len, ref, results;
+      ref = this.entities;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (entity instanceof Class) {
+          results.push(entity);
+        }
+      }
+      return results;
+    }
+
+    drawBackground(ctx, view) {
+      ctx.fillStyle = "#32C8FF";
+      return ctx.fillRect(0, 0, view.width, view.height);
+    }
+
+    draw(ctx, view) {
+      var _restore, _save, entity, error, i, len, n_saved_states, ref, results;
+      ref = this.entities;
+      // ctx.fillStyle = "#32C8FF"
+      // {x, y} = view.toWorld({x: 0, y: 0})
+      // {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
+      // ctx.fillRect(x, y, width-x, height-y)
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        ctx.save();
+        ctx.translate(entity.x, entity.y);
+        _save = ctx.save;
+        _restore = ctx.restore;
+        n_saved_states = 0;
+        ctx.save = function() {
+          n_saved_states++;
+          return _save.apply(this, arguments);
+        };
+        ctx.restore = function() {
+          n_saved_states--;
+          return _restore.apply(this, arguments);
+        };
+        try {
+          entity.draw(ctx, view);
+        } catch (error1) {
+          error = error1;
+          console.error(`Error drawing entity ${entity.constructor.name} ${entity.id}:`, error);
+          while (n_saved_states) {
+            ctx.restore();
+          }
+        }
+        ctx.save = _save;
+        ctx.restore = _restore;
+        results.push(ctx.restore());
+      }
+      return results;
+    }
+
+    collision(point, {types = [Terrain], lineThickness = 5} = {}) {
+      var dist, entity, filter, i, len, local_point, ref, ref1, segment, segment_name;
+      // lineThickness doesn't apply to polygons like Terrain
+      // also it's kind of a hack, because different entities could need different lineThicknesses
+      // and different segments within an entity too
+      if (typeof types === "function") {
+        filter = types;
+      } else {
+        filter = (entity) => {
+          return types.some((type) => {
+            var ref;
+            return (entity instanceof type) && ((ref = entity.solid) != null ? ref : true);
+          });
+        };
+      }
+      ref = this.entities;
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (!(filter(entity))) {
+          continue;
+        }
+        local_point = entity.fromWorld(point);
+        if (entity.structure.pointInPolygon != null) {
+          if (entity.structure.pointInPolygon(local_point)) {
+            return entity;
+          }
+        } else {
+          ref1 = entity.structure.segments;
+          for (segment_name in ref1) {
+            segment = ref1[segment_name];
+            dist = distanceToLineSegment(local_point, segment.a, segment.b);
+            if (dist < lineThickness) {
+              return entity;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+  };
+
+  World.formatVersion = 3;
+
+  return World;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 372:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var ArcheryTarget, Arrow, off_angle;
+
+ArcheryTarget = __webpack_require__(233);
+
+Arrow = __webpack_require__(943);
+
+// Note: It helps to disable gravity for this test for symmetry,
+// and to disable some conditions on lodging and enable visualization of the lodging constraints.
+off_angle = 0;
+
+module.exports = window.enable_arrow_test_scene = function() {
+  addEventListener("mousemove", function(e) {
+    return off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2);
+  });
+  addEventListener("mousedown", function(e) {
+    if (e.button === 1) { // middle click
+      return window.create_arrow_test_scene();
+    }
+  });
+  return window.create_arrow_test_scene();
+};
+
+// setTimeout window.create_arrow_test_scene, 1000
+module.exports = window.create_arrow_test_scene = function() {
+  var arrow, arrow_angle, arrows, j, k, ref, ref1, ref2, ref3, ref4, ref5, target, target_angle, world;
+  world = window.the_world;
+  world.entities.length = [];
+  arrows = [];
+  for (target_angle = j = ref = -Math.PI, ref1 = Math.PI, ref2 = Math.PI / 8; ref2 !== 0 && (ref2 > 0 ? j <= ref1 : j >= ref1); target_angle = j += ref2) {
+    target = new ArcheryTarget();
+    target.x = 200 * Math.cos(target_angle);
+    target.y = 200 * Math.sin(target_angle);
+    target.structure.points.a.x = -100 * Math.cos(target_angle);
+    target.structure.points.a.y = -100 * Math.sin(target_angle);
+    target.structure.points.b.x = 100 * Math.cos(target_angle);
+    target.structure.points.b.y = 100 * Math.sin(target_angle);
+    world.entities.push(target);
+
+    // Create arrows shooting at the target from various angles
+    for (arrow_angle = k = ref3 = -Math.PI, ref4 = Math.PI, ref5 = Math.PI / 16; ref5 !== 0 && (ref5 > 0 ? k <= ref4 : k >= ref4); arrow_angle = k += ref5) {
+      arrow = new Arrow();
+      arrow.x = target.x - 50 * Math.cos(arrow_angle);
+      arrow.y = target.y - 50 * Math.sin(arrow_angle);
+      arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle + off_angle);
+      arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle + off_angle);
+      arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle + off_angle);
+      arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle + off_angle);
+      arrow.setVelocity(5 * Math.cos(arrow_angle), 5 * Math.sin(arrow_angle));
+      arrows.push(arrow);
+    }
+  }
+  return world.entities.push(...arrows);
+};
+
+window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 4, angle_max = -Math.PI / 4, speed_min = 5, speed_max = 20, count = 100} = {}) {
+  var arrow, arrow_angle, arrow_speed, arrows, i, j, ref, world;
+  world = window.the_world;
+  arrows = [];
+  for (i = j = 0, ref = count; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
+    arrow = new Arrow();
+    arrow.x = x;
+    arrow.y = y;
+    arrow_angle = Math.random() * (angle_max - angle_min) + angle_min;
+    arrow_speed = Math.random() * (speed_max - speed_min) + speed_min;
+    arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle);
+    arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle);
+    arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle);
+    arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle);
+    arrow.setVelocity(arrow_speed * Math.cos(arrow_angle), arrow_speed * Math.sin(arrow_angle));
+    arrows.push(arrow);
+  }
+  return world.entities.push(...arrows);
+};
+
+
+/***/ }),
+
+/***/ 653:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Bird, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(505));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Bird = (function() {
+  class Bird extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 8;
+      this.height = 8;
+      this.flap = 0;
+      this.flap_timer = r() * 15;
+      this.wingspan = 10;
+      this.go_x = r() * 5;
+      this.go_y = 0;
+    }
+
+    step(world) {
+      var i, j, x, y;
+      for (i = j = 0; j <= 50; i = ++j) {
+        x = r() * 50;
+        y = r() * 70;
+        if (world.collision({
+          x: this.x + x,
+          y: this.y + y
+        })) {
+          this.go_y -= y / 30;
+          this.go_x -= x / (10 + Math.abs(this.go_y));
+        }
+      }
+      if (this.flap_timer < 0) {
+        if (this.go_y < -1) {
+          this.vy -= 5;
+          this.flap_timer = 15;
+        } else {
+          this.vy -= 1;
+          this.flap_timer = 15;
+        }
+      }
+      this.go_x *= 0.95;
+      this.go_y *= 0.7;
+      this.vx += (this.go_x - this.vx) / 2;
+      this.vy += 0.1;
+      this.x += this.vx;
+      this.y += this.vy;
+      return this.flap_timer--;
+    }
+
+    // run SimpleActor physics, which uses @move_x and @jump
+    // super(world)
+    draw(ctx) {
+      var f;
+      ctx.strokeStyle = "#000";
+      ctx.beginPath();
+      f = 2.8;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 + Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 - Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
+      ctx.stroke();
+      if (this.flap_timer < 0) {
+        this.flap_timer = -1;
+      }
+      this.flap += this.flap_timer / 20;
+      return this.flap += (-this.flap - 0.1) * 0.1;
+    }
+
+  };
+
+  addEntityClass(Bird);
+
+  return Bird;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 739:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Butterfly, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(505));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Butterfly = (function() {
+  class Butterfly extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 4;
+      this.height = 4;
+      this.go_x = r() * 5;
+      this.go_y = r() * 5;
+      this.t = r() * 5;
+      this.flap = r() * 5;
+      this.flap_timer = r() * 15;
+      this.c1 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
+      this.c2 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
+    }
+
+    step(world) {
+      var i, j, x, y;
+      for (i = j = 0; j <= 50; i = ++j) {
+        x = r() * 50;
+        y = r() * 70;
+        if (world.collision({
+          x: this.x + x,
+          y: this.y + y
+        })) {
+          this.go_y -= y / 50;
+          this.go_x -= x / (50 + Math.abs(this.go_y));
+        }
+      }
+      if (this.flap_timer < 0) {
+        if (this.go_y < -1) {
+          this.vy -= 5;
+          this.flap_timer = 15;
+        } else {
+          this.vy -= 1;
+          this.flap_timer = 15;
+        }
+      }
+      this.go_x *= 0.9;
+      this.go_y *= 0.9;
+      this.go_x += r() / 2;
+      this.go_y += r() / 2;
+      this.vx += (this.go_x - this.vx / 2) / 3;
+      this.vy += (this.go_y - this.vy / 2) / 3;
+      this.vy += 0.01;
+      this.x += this.vx;
+      this.y += this.vy;
+      return this.flap = Math.cos(this.t += 0.5);
+    }
+
+    // run SimpleActor physics, which uses @move_x and @jump
+    // super(world)
+    draw(ctx) {
+      var f;
+      ctx.beginPath();
+      f = 2.8;
+      ctx.strokeStyle = this.c1;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 + Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 - Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.strokeStyle = this.c2;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 + Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0 - Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
+      ctx.stroke();
+      ctx.beginPath();
+      if (this.flap_timer < 0) {
+        this.flap_timer = -1;
+      }
+      this.flap += this.flap_timer / 20;
+      return this.flap += (-this.flap - 0.1) * 0.1;
+    }
+
+  };
+
+  addEntityClass(Butterfly);
+
+  return Butterfly;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 847:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Caterpillar, Entity, TAU, addEntityClass, closestPointOnLineSegment, distanceToLineSegment;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+({distanceToLineSegment} = (__webpack_require__(505).helpers));
+
+TAU = Math.PI * 2;
+
+closestPointOnLineSegment = function(point, a, b) {
+  var a_to_b, a_to_p, atb2, atp_dot_atb, t;
+  // https://stackoverflow.com/a/3122532/2624876
+  a_to_p = {
+    x: point.x - a.x,
+    y: point.y - a.y
+  };
+  a_to_b = {
+    x: b.x - a.x,
+    y: b.y - a.y
+  };
+  atb2 = a_to_b.x ** 2 + a_to_b.y ** 2;
+  atp_dot_atb = a_to_p.x * a_to_b.x + a_to_p.y * a_to_b.y;
+  t = atp_dot_atb / atb2;
+  return {
+    x: a.x + a_to_b.x * t,
+    y: a.y + a_to_b.y * t
+  };
+};
+
+module.exports = Caterpillar = (function() {
+  class Caterpillar extends Entity {
+    constructor() {
+      var i, j, k, len, point, point_index, points_list, previous;
+      super();
+      // relying on key order, so points & segments must not be named with simple numbers,
+      // since numeric keys are sorted before other keys
+      this.structure.addPoint("head");
+      previous = "head";
+      for (i = j = 1; j < 10; i = ++j) {
+        previous = this.structure.addSegment({
+          from: previous,
+          to: `part_${i}`,
+          name: `part_${i}`,
+          length: 5,
+          width: 4
+        });
+      }
+      points_list = Object.values(this.structure.points);
+      for (point_index = k = 0, len = points_list.length; k < len; point_index = ++k) {
+        point = points_list[point_index];
+        point.vx = 0;
+        point.vy = 0;
+        point.attachment = null;
+        point.radius = 5 - point_index * 0.1;
+      }
+      this.structure.points.head.radius = 7;
+      this.bbox_padding = 15;
+    }
+
+    initLayout() {
+      var ref, results, segment, segment_name;
+      ref = this.structure.segments;
+      results = [];
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        results.push(segment.b.x = segment.a.x + segment.length);
+      }
+      return results;
+    }
+
+    step(world) {
+      var angle_offset, attachment_entity, attachment_hit_space, attachment_local, attachment_world, closest_distance, closest_point_in_hit_space, closest_point_local, closest_point_world, closest_segment, collision, crawl_speed, delta_length, delta_x, delta_y, diff, dist, dist_to_previous, fixity, ground_angle, head_heading, hit, i, j, k, l, len, len1, len2, len3, len4, len5, lift_feet, m, n, next_point, normal, normal_length, o, other_point, other_point_index, otherwise_attached, p, part_in_world, point, point_in_hit_space, point_index, point_world, points_list, prev_point, q, ref, ref1, ref2, ref3, ref4, ref5, relative_angle, results, segment, segment_name, segments_list, t, target_min_length, test_point_world;
+      points_list = Object.values(this.structure.points);
+      segments_list = Object.values(this.structure.segments);
+// stop at end of the world
+      for (j = 0, len = points_list.length; j < len; j++) {
+        point = points_list[j];
+        if (point.y + this.y > 400) {
+          return;
+        }
+      }
+      
+      // move
+      collision = (point) => {
+        return world.collision(this.toWorld(point));
+      };
+      t = performance.now() / 1000;
+      for (k = 0, len1 = points_list.length; k < len1; k++) {
+        point = points_list[k];
+        point.fx = 0;
+        point.fy = 0;
+      }
+      for (point_index = l = 0, len2 = points_list.length; l < len2; point_index = ++l) {
+        point = points_list[point_index];
+        otherwise_attached = 0;
+        for (m = 0, len3 = points_list.length; m < len3; m++) {
+          other_point = points_list[m];
+          if (other_point !== point) {
+            if (other_point.attachment) {
+              otherwise_attached += 1;
+            }
+          }
+        }
+        // lift_feet = Math.sin(t + point_index/points_list.length*Math.PI) < 0 and otherwise_attached >= 2
+        // if point_index > 3 and point_index < points_list.length - 3
+        // 	lift_feet = true # don't let the middle of the caterpillar act as feet
+        dist_to_previous = point_index > 0 ? Math.hypot(point.x - points_list[point_index - 1].x, point.y - points_list[point_index - 1].y) : 0;
+        lift_feet = dist_to_previous > 10;
+        if (lift_feet) {
+          point.attachment = null;
+        }
+        attachment_entity = point.attachment ? world.getEntityByID(point.attachment.entity_id) : void 0;
+        if (attachment_entity) {
+          attachment_world = attachment_entity.toWorld(point.attachment.point);
+          attachment_local = this.fromWorld(attachment_world);
+          crawl_speed = 0 + 2 * (otherwise_attached > 4); // also affected by fixity parameter
+          // Reverse crawl direction if point.attachment.ground_angle points head-to-tail
+          // (or more specifically, along the head-to-second-point vector)
+          head_heading = Math.atan2(points_list[0].y - points_list[1].y, points_list[0].x - points_list[1].x);
+          if (Math.cos(point.attachment.ground_angle - head_heading) < 0) {
+            crawl_speed *= -1;
+          }
+// point.x = attachment_local.x
+// point.y = attachment_local.y
+// Move attachment point along the ground, using ground angle.
+// Test multiple angles in order to wrap around corners.
+          for (angle_offset = n = ref = TAU / 5, ref1 = -TAU / 5, ref2 = -TAU / 15; ref2 !== 0 && (ref2 > 0 ? n <= ref1 : n >= ref1); angle_offset = n += ref2) {
+            // for angle_offset in [TAU/3..-TAU/3] by -TAU/10
+            part_in_world = this.toWorld(point);
+            test_point_world = {
+              x: part_in_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed,
+              y: part_in_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
+            };
+            // search towards the ground, in the direction it was last found
+            if (point.attachment.normal) {
+              test_point_world.x -= point.attachment.normal.x * point.radius;
+              test_point_world.y -= point.attachment.normal.y * point.radius;
+            }
+            hit = world.collision(test_point_world);
+            if (hit) {
+              // Project the point back to the surface of the ground.
+              // This is done by finding the closest point on the polygon's edges.
+              closest_distance = 2e308;
+              closest_segment = null;
+              point_in_hit_space = hit.fromWorld(test_point_world);
+              ref3 = hit.structure.segments;
+              for (segment_name in ref3) {
+                segment = ref3[segment_name];
+                dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b);
+                if (dist < closest_distance) {
+                  closest_distance = dist;
+                  closest_segment = segment;
+                }
+              }
+              if (closest_segment) {
+                closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b);
+                closest_point_world = hit.toWorld(closest_point_in_hit_space);
+                closest_point_local = this.fromWorld(closest_point_world);
+                normal = {
+                  x: closest_point_world.x - test_point_world.x,
+                  y: closest_point_world.y - test_point_world.y
+                };
+                normal_length = Math.hypot(normal.x, normal.y);
+                normal.x /= normal_length;
+                normal.y /= normal_length;
+                // point.x = closest_point_local.x
+                // point.y = closest_point_local.y
+                if (!lift_feet) {
+                  ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x);
+                  attachment_hit_space = {
+                    x: closest_point_in_hit_space.x + normal.x * point.radius,
+                    y: closest_point_in_hit_space.y + normal.y * point.radius
+                  };
+                  point.attachment = {
+                    entity_id: hit.id,
+                    point: attachment_hit_space,
+                    ground_angle,
+                    normal
+                  };
+                }
+                break;
+              }
+            }
+          }
+          if (!hit && otherwise_attached >= 2) {
+            point.attachment = null;
+          }
+        } else {
+          // point.x += point.vx
+          // point.y += point.vy
+          hit = collision(point);
+          if (hit) {
+            point.vx = 0;
+            point.vy = 0;
+            // Project the point back to the surface of the ground.
+            // This is done by finding the closest point on the polygon's edges.
+            closest_distance = 2e308;
+            closest_segment = null;
+            point_world = this.toWorld(point);
+            point_in_hit_space = hit.fromWorld(point_world);
+            ref4 = hit.structure.segments;
+            for (segment_name in ref4) {
+              segment = ref4[segment_name];
+              dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b);
+              if (dist < closest_distance) {
+                closest_distance = dist;
+                closest_segment = segment;
+              }
+            }
+            if (closest_segment) {
+              closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b);
+              closest_point_world = hit.toWorld(closest_point_in_hit_space);
+              closest_point_local = this.fromWorld(closest_point_world);
+              normal = {
+                x: closest_point_world.x - point_world.x,
+                y: closest_point_world.y - point_world.y
+              };
+              normal_length = Math.hypot(normal.x, normal.y);
+              normal.x /= normal_length;
+              normal.y /= normal_length;
+              point.x = closest_point_local.x;
+              point.y = closest_point_local.y;
+              if (!lift_feet) {
+                ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x);
+                point.attachment = {
+                  entity_id: hit.id,
+                  point: closest_point_in_hit_space,
+                  ground_angle,
+                  normal
+                };
+              }
+            }
+          } else {
+            point.vy += 0.5;
+            point.vx *= 0.99;
+            point.vy *= 0.99;
+            // @structure.stepLayout({gravity: 0.005, collision})
+            // @structure.stepLayout() for [0..10]
+            // @structure.stepLayout({collision}) for [0..4]
+            point.x += point.vx;
+            point.y += point.vy;
+          }
+        }
+        
+        // angular constraint pivoting on this point
+        relative_angle = (Math.sin(Math.sin(t) * Math.PI / 4) - 0.5) * Math.PI / points_list.length / 2;
+        point.relative_angle = relative_angle;
+        prev_point = points_list[point_index - 1];
+        next_point = points_list[point_index + 1];
+        if (prev_point && next_point) {
+          this.accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle);
+        }
+      }
+
+      // apply forces
+      for (o = 0, len4 = points_list.length; o < len4; o++) {
+        point = points_list[o];
+        point.vx += point.fx;
+        point.vy += point.fy;
+        point.x += point.fx;
+        point.y += point.fy;
+      }
+// constrain distances
+      results = [];
+      for (i = p = 0; p < 4; i = ++p) {
+        for (point_index = q = 0, len5 = points_list.length; q < len5; point_index = ++q) {
+          point = points_list[point_index];
+          attachment_entity = point.attachment ? world.getEntityByID(point.attachment.entity_id) : void 0;
+          if (attachment_entity) {
+            attachment_world = attachment_entity.toWorld(point.attachment.point);
+            attachment_local = this.fromWorld(attachment_world);
+            fixity = 0.1; // also affects crawling speed
+            point.x += (attachment_local.x - point.x) * fixity;
+            point.y += (attachment_local.y - point.y) * fixity;
+          }
+        }
+        ref5 = this.structure.segments;
+        for (segment_name in ref5) {
+          segment = ref5[segment_name];
+          delta_x = segment.a.x - segment.b.x;
+          delta_y = segment.a.y - segment.b.y;
+          delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+          diff = (delta_length - segment.length) / delta_length;
+          if (isFinite(diff)) {
+            segment.a.x -= delta_x * 0.5 * diff;
+            segment.a.y -= delta_y * 0.5 * diff;
+            segment.b.x += delta_x * 0.5 * diff;
+            segment.b.y += delta_y * 0.5 * diff;
+            segment.a.vx -= delta_x * 0.5 * diff;
+            segment.a.vy -= delta_y * 0.5 * diff;
+            segment.b.vx += delta_x * 0.5 * diff;
+            segment.b.vy += delta_y * 0.5 * diff;
+          } else {
+            console.warn("diff is not finite, for Caterpillar distance constraint");
+          }
+        }
+        results.push((function() {
+          var len6, r, results1;
+// self-collision
+          results1 = [];
+          for (point_index = r = 0, len6 = points_list.length; r < len6; point_index = ++r) {
+            point = points_list[point_index];
+            results1.push((function() {
+              var len7, results2, s;
+//when point_index isnt other_point_index
+              results2 = [];
+              for (other_point_index = s = 0, len7 = points_list.length; s < len7; other_point_index = ++s) {
+                other_point = points_list[other_point_index];
+                if (Math.abs(point_index - other_point_index) < 3) {
+                  continue;
+                }
+                delta_x = point.x - other_point.x;
+                delta_y = point.y - other_point.y;
+                delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+                target_min_length = point.radius - other_point.radius;
+                if (delta_length < target_min_length) {
+                  diff = (delta_length - target_min_length) / delta_length;
+                  if (isFinite(diff)) {
+                    diff *= 50;
+                    point.x -= delta_x * 0.5 * diff;
+                    point.y -= delta_y * 0.5 * diff;
+                    other_point.x += delta_x * 0.5 * diff;
+                    other_point.y += delta_y * 0.5 * diff;
+                    point.vx -= delta_x * 0.5 * diff;
+                    point.vy -= delta_y * 0.5 * diff;
+                    other_point.vx += delta_x * 0.5 * diff;
+                    other_point.vy += delta_y * 0.5 * diff;
+                    if (Math.random() < 0.5) {
+                      point.attachment = null;
+                      results2.push(other_point.attachment = null);
+                    } else {
+                      results2.push(void 0);
+                    }
+                  } else {
+                    results2.push(console.warn("diff is not finite, for Caterpillar self-collision constraint"));
+                  }
+                } else {
+                  results2.push(void 0);
+                }
+              }
+              return results2;
+            })());
+          }
+          return results1;
+        })());
+      }
+      return results;
+    }
+
+    accumulate_angular_constraint_forces(point_a, point_b, pivot, relative_angle) {
+      var angle_a, angle_b, angle_diff, distance, f, f_a, f_b, j, len, old_point_a, old_point_b, point, ref, rot_matrix, rot_matrix_inverse;
+      angle_a = Math.atan2(point_a.y - point_b.y, point_a.x - point_b.x);
+      angle_b = Math.atan2(pivot.y - point_b.y, pivot.x - point_b.x);
+      angle_diff = (angle_a - angle_b) - relative_angle;
+      // angle_diff *= 0.9
+      distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y);
+      // distance_a = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y)
+      // distance_b = Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
+      // angle_diff /= Math.max(1, (distance / 5) ** 2.4)
+      old_point_a = {
+        x: point_a.x,
+        y: point_a.y
+      };
+      old_point_b = {
+        x: point_b.x,
+        y: point_b.y
+      };
+      // Rotate around pivot.
+      rot_matrix = [[Math.cos(angle_diff), Math.sin(angle_diff)], [-Math.sin(angle_diff), Math.cos(angle_diff)]];
+      rot_matrix_inverse = [[Math.cos(-angle_diff), Math.sin(-angle_diff)], [-Math.sin(-angle_diff), Math.cos(-angle_diff)]];
+      ref = [point_a, point_b];
+      for (j = 0, len = ref.length; j < len; j++) {
+        point = ref[j];
+        // Translate and rotate.
+        [point.x, point.y] = [point.x, point.y].map((value, index) => {
+          return (point === point_a ? rot_matrix : rot_matrix_inverse)[index][0] * (point.x - pivot.x) + (point === point_a ? rot_matrix : rot_matrix_inverse)[index][1] * (point.y - pivot.y);
+        });
+        // Translate back.
+        point.x += pivot.x;
+        point.y += pivot.y;
+      }
+      f = 0.5;
+      // using individual distances can cause spinning (overall angular momentum from nothing)
+      // f_a = f / Math.max(1, Math.max(0, distance_a - 3) ** 1)
+      // f_b = f / Math.max(1, Math.max(0, distance_b - 3) ** 1)
+      // using the combined distance conserves overall angular momentum,
+      // to say nothing of the physicality of the rest of this system
+      // but it's a clear difference in zero gravity
+      f_a = f / Math.max(1, Math.max(0, distance - 6) ** 1);
+      f_b = f / Math.max(1, Math.max(0, distance - 6) ** 1);
+      if (!point_a.attachment) {
+        // Turn difference in position into velocity.
+        point_a.fx += (point_a.x - old_point_a.x) * f_a;
+      }
+      if (!point_a.attachment) {
+        point_a.fy += (point_a.y - old_point_a.y) * f_a;
+      }
+      if (!point_b.attachment) {
+        point_b.fx += (point_b.x - old_point_b.x) * f_b;
+      }
+      if (!point_b.attachment) {
+        point_b.fy += (point_b.y - old_point_b.y) * f_b;
+      }
+      if (!pivot.attachment) {
+        // Opposite force on pivot.
+        pivot.fx -= (point_a.x - old_point_a.x) * f_a;
+      }
+      if (!pivot.attachment) {
+        pivot.fy -= (point_a.y - old_point_a.y) * f_a;
+      }
+      if (!pivot.attachment) {
+        pivot.fx -= (point_b.x - old_point_b.x) * f_b;
+      }
+      if (!pivot.attachment) {
+        pivot.fy -= (point_b.y - old_point_b.y) * f_b;
+      }
+      // Restore old position.
+      point_a.x = old_point_a.x;
+      point_a.y = old_point_a.y;
+      point_b.x = old_point_b.x;
+      return point_b.y = old_point_b.y;
+    }
+
+    draw(ctx) {
+      var color, i, j, keys, leg_length, point, point_name, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, results, segment, segment_name;
+      color = "green";
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      }
+      // for point, point_index in points_list
+      // reverse order to draw head on top
+      keys = Object.keys(this.structure.points);
+      results = [];
+      for (i = j = ref1 = keys.length - 1; (ref1 <= 0 ? j <= 0 : j >= 0); i = ref1 <= 0 ? ++j : --j) {
+        point_name = keys[i];
+        point = this.structure.points[point_name];
+        // legs
+        if (point_name !== "head") {
+          if (point.smoothed_normal == null) {
+            point.smoothed_normal = {
+              x: 0,
+              y: 0
+            };
+          }
+          point.smoothed_normal.x += (((ref2 = (ref3 = point.attachment) != null ? (ref4 = ref3.normal) != null ? ref4.x : void 0 : void 0) != null ? ref2 : 0) - point.smoothed_normal.x) * 0.1;
+          point.smoothed_normal.y += (((ref5 = (ref6 = point.attachment) != null ? (ref7 = ref6.normal) != null ? ref7.y : void 0 : void 0) != null ? ref5 : 0) - point.smoothed_normal.y) * 0.1;
+          leg_length = point.radius + 2;
+          ctx.save();
+          ctx.translate(point.x, point.y);
+          ctx.rotate(Math.sin(performance.now() / 80 + i) * 0.1);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(-point.smoothed_normal.x * leg_length, -point.smoothed_normal.y * leg_length);
+          ctx.lineWidth = 1;
+          ctx.lineCap = "round";
+          ctx.strokeStyle = color;
+          ctx.stroke();
+          ctx.restore();
+        }
+        // body part
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius, 0, TAU);
+        // ctx.fillStyle = if point.attachment then "lime" else color
+        // ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, 0.5)"
+        // ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if point.attachment then 1 else 0.3})"
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.clip();
+        // highlight
+        ctx.beginPath();
+        ctx.arc(point.x + point.radius / 3, point.y - point.radius / 3, point.radius / 2, 0, TAU);
+        // ctx.fillStyle = "rgba(255, 255, 155, 0.5)"
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.fill();
+        ctx.restore();
+        // eye
+        if (point_name === "head") {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, point.radius / 2, 0, TAU);
+          ctx.fillStyle = "black";
+          ctx.fill();
+          // highlight
+          ctx.beginPath();
+          ctx.arc(point.x + point.radius / 6, point.y - point.radius / 6, point.radius / 5, 0, TAU);
+          ctx.fillStyle = "white";
+          results.push(ctx.fill());
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    }
+
+  };
+
+  addEntityClass(Caterpillar);
+
+  return Caterpillar;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 332:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Cloud, Entity, addEntityClass;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+module.exports = Cloud = (function() {
+  class Cloud extends Entity {
+    constructor() {
+      super();
+      this.structure.addPoint("body");
+      this.bbox_padding = 80;
+      this.width = 45 + Math.random() * 50;
+      this.height = 35 + Math.random() * 10;
+      this.simplex = new SimplexNoise();
+      this.t = 0;
+    }
+
+    toJSON() {
+      var def, k, ref, v;
+      def = {};
+      ref = this;
+      for (k in ref) {
+        v = ref[k];
+        if (k !== "simplex") {
+          def[k] = v;
+        }
+      }
+      return def;
+    }
+
+    step(world) {
+      this.x++;
+      return this.t += 0.001;
+    }
+
+    // if @x > terrain.width+300
+    // 	@poof=true
+    draw(ctx) {
+      var i, j, results;
+      ctx.fillStyle = "#A9D9FA";
+      results = [];
+      for (i = j = 0; j <= 20; i = ++j) {
+        ctx.beginPath();
+        // @simplex.noise2D(68+i,@t)*-Math.PI*2,
+        // @simplex.noise2D(20+i,@t)*Math.PI*2,
+        ctx.arc(this.simplex.noise2D(5 + i, this.t + i * 3.92) * this.width + this.width / 2, this.simplex.noise2D(26 + i, this.t + i * 2.576) * this.height + this.height / 2, Math.abs(this.simplex.noise2D(73 + i * 5.2, this.t + i) * this.width), 0, Math.PI * 2, false);
+        results.push(ctx.fill());
+      }
+      return results;
+    }
+
+  };
+
+  addEntityClass(Cloud);
+
+  return Cloud;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 857:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Deer, Entity, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Deer = (function() {
+  class Deer extends SimpleActor {
+    // Entity.initAnimation(@)
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "neck",
+        length: 5
+      });
+      this.bbox_padding = 30;
+      this.width = 27;
+      this.height = 18;
+      this.xp = 0;
+      this.t = 0;
+      this.lr = 0;
+      this.dir = 0;
+      this.dir_p = 1;
+      this.dir_pl = 1;
+      this.rideable = true;
+      this.c = "hsla(" + (Math.random() * 20) + "," + 10 + "%," + (50 + Math.random() * 20) + "%,1)";
+      this.ground_angle = 0;
+      this.ground_angle_smoothed = 0;
+    }
+
+    step(world) {
+      var ref;
+      if (this.grounded) {
+        // Note: ground_angle  and ground_angle_smoothed are used by Player while riding
+        this.ground_angle = (ref = this.find_ground_angle(world)) != null ? ref : 0;
+        this.ground_angle = Math.atan2(Math.sin(this.ground_angle), Math.cos(this.ground_angle));
+        this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 5;
+        if (Math.random() < 0.01) {
+          this.dir = r();
+        }
+      } else {
+        this.ground_angle = 0;
+        this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 10;
+        if (Math.abs(this.xp - this.x) < 1) {
+          this.t++;
+          if (this.t > 15) {
+            this.dir = r();
+            this.t = 0;
+          }
+        } else {
+          this.t = 0;
+        }
+      }
+      this.vx += this.dir / 5;
+      this.lr += Math.abs(this.vx) / 5;
+      this.xp = this.x;
+      this.move_x = this.dir * 0.2;
+      this.move_y = -1;
+      // run SimpleActor physics, which uses @move_x and @jump
+      return super.step(world);
+    }
+
+    draw(ctx) {
+      if (this.dir < -0.3) {
+        this.dir_p = -1;
+      }
+      if (this.dir > 0.3) {
+        this.dir_p = 1;
+      }
+      this.dir_pl += (this.dir_p - this.dir_pl) / 10;
+      ctx.save();
+      // ctx.translate(@x,@y+@height*3/4)
+      ctx.translate(0, this.height * 3 / 4);
+      ctx.rotate(this.ground_angle_smoothed);
+      ctx.beginPath();
+      ctx.fillStyle = this.c;
+      ctx.arc(0, -this.height / 2, this.height / 3, 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.scale(this.dir_pl, 1);
+      // ctx.rotate(@vx/-10)
+      // legs
+      ctx.strokeStyle = "#a55";
+      ctx.beginPath();
+      ctx.moveTo(-this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
+      ctx.moveTo(-this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr + Math.PI) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr + Math.PI) * 8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr + 0.1) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
+      ctx.moveTo(this.width / 2, -this.height / 2);
+      ctx.lineTo(Math.cos(this.lr + Math.PI + 0.2) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr + Math.PI) * 8);
+      ctx.stroke();
+      ctx.fillStyle = this.c;
+      ctx.save(); // head
+      ctx.translate(this.width / 2, this.height * -3 / 4);
+      ctx.rotate(-0.4 + Math.cos(this.x / 50));
+      ctx.fillRect(-5, -5, 15, 8);
+      ctx.translate(12, 0);
+      ctx.rotate(0.6 - Math.cos(this.x / 50) / 2);
+      // ctx.fillRect(-5,-5,15,8)
+      ctx.beginPath();
+      ctx.moveTo(-5, -5);
+      ctx.lineTo(-5, 3);
+      ctx.lineTo(10, 1);
+      ctx.lineTo(10, -2);
+      ctx.fill();
+      ctx.restore();
+      
+      // body
+      ctx.fillRect(this.width / -2, this.height / -1, this.width, this.height * 3 / 4);
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Deer);
+
+  return Deer;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 162:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Frog, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(505));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Frog = (function() {
+  class Frog extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 8;
+      this.height = 8;
+      this.xp = 0;
+      this.t = 0;
+      this.lr = 0;
+      this.dir = 0;
+      this.c = "hsla(" + (150 - Math.random() * 50) + "," + (50 + Math.random() * 50) + "%," + (50 - Math.random() * 20) + "%,1)";
+    }
+
+    step(world) {
+      if (this.grounded) {
+        this.vx *= 0.1;
+        if (Math.random() > 0.1) {
+          // jump
+          this.vy = Math.random() * -5;
+          this.dir = r();
+          this.t = 0;
+        }
+      } else {
+        this.vx += this.dir *= 2;
+        if (this.xp === this.x) {
+          this.t++;
+          if (this.t > 5) {
+            this.dir = r();
+          }
+        } else {
+          this.t = 0;
+        }
+      }
+      this.xp = this.x;
+      this.move_x = this.dir * 0.2;
+      this.move_y = 0;
+      // run SimpleActor physics, which uses @move_x and @jump
+      return super.step(world);
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.rotate(this.vx / 5);
+      ctx.fillStyle = this.c;
+      //ctx.fillRect(@x,@y,@width,@height)
+      ctx.beginPath();
+      ctx.arc(this.width / 2, this.height / 4 - this.vy, this.height / 2, 0, Math.PI, false);
+      ctx.arc(this.width / 2, this.height, this.height / 2, Math.PI, Math.PI * 2, false);
+      ctx.fill();
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Frog);
+
+  return Frog;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 668:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Entity, GranddaddyLonglegs, TAU, addEntityClass, distance,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; },
+  indexOf = [].indexOf;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+({distance} = (__webpack_require__(505).helpers));
+
+TAU = Math.PI * 2;
+
+module.exports = GranddaddyLonglegs = (function() {
+  class GranddaddyLonglegs extends Entity {
+    constructor() {
+      var foot_point_name, i, j, k, l, leg, leg_pair_n, len, len1, len2, point, point_name, previous, ref, ref1, ref2, ref3, segment_name, side;
+      super();
+      this.structure.addPoint("body");
+      this.foot_point_names = [];
+      this.legs = [];
+      for (leg_pair_n = i = 1; i <= 4; leg_pair_n = ++i) {
+        ref = ["left", "right"];
+        for (j = 0, len = ref.length; j < len; j++) {
+          side = ref[j];
+          leg = {
+            point_names_by_segment_name: {}
+          };
+          this.legs.push(leg);
+          previous = "body";
+          ref1 = ["upper", "middle", "lower"];
+          for (k = 0, len1 = ref1.length; k < len1; k++) {
+            segment_name = ref1[k];
+            point_name = segment_name === "lower" ? foot_point_name = `${side} foot ${leg_pair_n}` : (foot_point_name = void 0, `${segment_name} ${side} leg ${leg_pair_n}`);
+            previous = this.structure.addSegment({
+              from: previous,
+              to: foot_point_name,
+              name: `${segment_name} ${side} leg ${leg_pair_n}`,
+              length: 50,
+              // NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
+              // often have vastly more spindly legs
+              width: (function() {
+                switch (segment_name) {
+                  case "upper":
+                    return 4;
+                  case "middle":
+                    return 3;
+                  case "lower":
+                    return 2;
+                }
+              })()
+            });
+            leg.point_names_by_segment_name[segment_name] = point_name;
+            leg.foot_point_name = foot_point_name;
+            if (foot_point_name != null) {
+              this.foot_point_names.push(foot_point_name);
+            }
+          }
+        }
+      }
+      this.step_index = 0;
+      this.step_timer = 0;
+      this.next_foot_positions = {};
+      ref2 = this.foot_point_names;
+      for (l = 0, len2 = ref2.length; l < len2; l++) {
+        point_name = ref2[l];
+        this.next_foot_positions[point_name] = {
+          x: 0,
+          y: 0
+        };
+      }
+      ref3 = this.structure.points;
+      for (point_name in ref3) {
+        point = ref3[point_name];
+        point.vx = 0;
+        point.vy = 0;
+      }
+      this.bbox_padding = 20;
+    }
+
+    step(world) {
+      var collision, current_foot_point_name, current_foot_pos, dist, foot_point, force, i, j, k, l, leg, len, next_foot_pos, point_name, ref, ref1, results, segment_name;
+      if (this.toWorld(this.structure.points[this.foot_point_names[0]]).y > 400) {
+        return;
+      }
+      if (++this.step_timer >= 10) {
+        this.step_timer = 0;
+        this.step_index += 1;
+        current_foot_point_name = this.foot_point_names[modulo(this.step_index, this.foot_point_names.length)];
+        current_foot_pos = this.structure.points[current_foot_point_name];
+        next_foot_pos = {
+          x: current_foot_pos.x,
+          y: current_foot_pos.y
+        };
+        next_foot_pos.x += 50;
+        next_foot_pos.y -= 50;
+        for (var i = 0; i <= 50; i++) {
+          next_foot_pos.y += 5;
+          if (world.collision(this.toWorld(next_foot_pos))) {
+            next_foot_pos.y -= 5;
+            break;
+          }
+        }
+        this.next_foot_positions[current_foot_point_name] = next_foot_pos;
+      }
+      ref = this.legs;
+      for (j = 0, len = ref.length; j < len; j++) {
+        leg = ref[j];
+        foot_point = this.structure.points[leg.foot_point_name];
+        next_foot_pos = this.next_foot_positions[leg.foot_point_name];
+        ref1 = leg.point_names_by_segment_name;
+        for (segment_name in ref1) {
+          point_name = ref1[segment_name];
+          this.structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 200;
+          if (indexOf.call(this.foot_point_names, point_name) < 0) {
+            this.structure.points[point_name].vy -= 0.6;
+          }
+        }
+        dist = distance(next_foot_pos, foot_point);
+        force = 2;
+        foot_point.vx += (next_foot_pos.x - foot_point.x) / dist * force;
+        foot_point.vy += (next_foot_pos.y - foot_point.y) / dist * force;
+      }
+      this.structure.points["body"].vy -= 0.2;
+      collision = (point) => {
+        return world.collision(this.toWorld(point));
+      };
+      this.structure.stepLayout({
+        gravity: 0.5,
+        collision
+      });
+      for (var k = 0; k <= 10; k++) {
+        this.structure.stepLayout();
+      }
+      results = [];
+      for (var l = 0; l <= 4; l++) {
+        results.push(this.structure.stepLayout({collision}));
+      }
+      return results;
+    }
+
+    draw(ctx) {
+      var ref, segment, segment_name;
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#2c1c0a"; //"brown"
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.translate(this.structure.points.body.x, this.structure.points.body.y);
+      ctx.scale(1, 0.7);
+      ctx.arc(0, 0, 10, 0, TAU);
+      ctx.fillStyle = "#2c1c0a"; //"#C15723" #"brown"
+      return ctx.fill();
+    }
+
+  };
+
+  addEntityClass(GranddaddyLonglegs);
+
+  return GranddaddyLonglegs;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 795:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Arrow, Bow, Deer, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, gamepad_mount_prev, keyboard, mouse_detect_from, mouse_detect_threshold,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+
+SimpleActor = __webpack_require__(339);
+
+Entity = __webpack_require__(293);
+
+({Pose} = __webpack_require__(505));
+
+Bow = __webpack_require__(914);
+
+Arrow = __webpack_require__(943);
+
+Deer = __webpack_require__(857);
+
+keyboard = __webpack_require__(866);
+
+({addEntityClass} = __webpack_require__(505));
+
+({distance, distanceToLineSegment} = (__webpack_require__(505).helpers));
+
+TAU = Math.PI * 2;
+
+gamepad_aiming = false;
+
+gamepad_detect_threshold = 0.5; // axis value (not a deadzone! just switching from mouse to gamepad)
+
+gamepad_deadzone = 0.1; // axis value
+
+gamepad_jump_prev = false;
+
+gamepad_mount_prev = false;
+
+mouse_detect_threshold = 30; // pixels radius (movement can occur over any number of frames)
+
+mouse_detect_from = {
+  x: 0,
+  y: 0
+};
+
+addEventListener("mousemove", function(e) {
+  if (Math.hypot(e.clientX - mouse_detect_from.x, e.clientY - mouse_detect_from.y) > mouse_detect_threshold) {
+    gamepad_aiming = false;
+    mouse_detect_from.x = e.clientX;
+    return mouse_detect_from.y = e.clientY;
+  }
+});
+
+module.exports = Player = (function() {
+  class Player extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "neck",
+        length: 5
+      });
+      this.structure.addSegment({
+        from: "neck",
+        name: "sternum",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "sternum",
+        name: "left shoulder",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "sternum",
+        name: "right shoulder",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "left shoulder",
+        to: "left elbow",
+        name: "upper left arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right shoulder",
+        to: "right elbow",
+        name: "upper right arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "left elbow",
+        to: "left hand",
+        name: "lower left arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right elbow",
+        to: "right hand",
+        name: "lower right arm",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "sternum",
+        to: "pelvis",
+        name: "torso",
+        length: 20
+      });
+      this.structure.addSegment({
+        from: "pelvis",
+        name: "left hip",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "pelvis",
+        name: "right hip",
+        length: 2
+      });
+      this.structure.addSegment({
+        from: "left hip",
+        to: "left knee",
+        name: "upper left leg",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right hip",
+        to: "right knee",
+        name: "upper right leg",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "left knee",
+        to: "left foot",
+        name: "lower left leg",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "right knee",
+        to: "right foot",
+        name: "lower right leg",
+        length: 10
+      });
+      // for abc in "ABC"
+      // 	hair_from = "head"
+      // 	for i in [0..5]
+      // 		@structure.addSegment(
+      // 			from: "head"
+      // 			name: "hair #{abc} #{i}"
+      // 			length: 2
+      // 		)
+      // TODO: adjust proportions? https://en.wikipedia.org/wiki/Body_proportions
+      // TODO: add some constraints to hips, shoulders, and neck
+      // TODO: min/max_length for pseudo-3D purposes
+      this.bbox_padding = 10;
+      this.holding_bow = null;
+      this.holding_arrow = null;
+      this.riding = null;
+      this.bow_drawn_to = 0;
+      this.run_animation_position = 0;
+      this.subtle_idle_animation_position = 0;
+      this.other_idle_animation_position = 0;
+      this.idle_animation = null;
+      this.idle_timer = 0;
+      this.real_facing_x = this.facing_x = 1;
+      this.hairs = (function() {
+        var j, results;
+        results = [];
+        for (var j = 0; j <= 5; j++) {
+          results.push((function() {
+            var k, results1;
+            results1 = [];
+            for (var k = 0; k <= 4; k++) {
+              results1.push({
+                x: 0,
+                y: 0,
+                vx: 0,
+                vy: 0
+              });
+            }
+            return results1;
+          })());
+        }
+        return results;
+      })();
+      this.hair_initialized = false;
+    }
+
+    step(world, view, mouse) {
+      var aim_angle, angle, arm_span, arrow, arrow_angle, bow, bow_angle, center, closest_dist, closest_steed, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, ground_angle, head, head_x_before_posing, head_y_before_posing, hold_offset, j, k, left, len, len1, max_draw_distance, max_y_diff, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, neck, new_head_x, new_head_y, new_pose, offset_distance, other_idle_animation, pick_up_any, point, point_name, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, segment, segment_name, sternum, subtle_idle_animation, up, x, y;
+      ({sternum} = this.structure.points);
+      from_point_in_world = this.toWorld(sternum);
+      
+      // mouse controls
+      mouse_in_world = view.toWorld(mouse);
+      aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x);
+      mouse_prime_bow = mouse.RMB.down;
+      mouse_draw_bow = mouse.LMB.down;
+      // keyboard controls
+      left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
+      right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
+      up = keyboard.isHeld("KeyW") || keyboard.isHeld("ArrowUp"); // applies to swimming/climbing
+      down = keyboard.isHeld("KeyS") || keyboard.isHeld("ArrowDown");
+      this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
+      mount_dismount = keyboard.wasJustPressed("KeyS") || keyboard.wasJustPressed("ArrowDown");
+      // gamepad controls
+      gamepad_draw_bow = false;
+      gamepad_prime_bow = false;
+      ref1 = (ref = ((function() {
+        try {
+          return navigator.getGamepads();
+        } catch (error) {}
+      })())) != null ? ref : [];
+      for (j = 0, len = ref1.length; j < len; j++) {
+        gamepad = ref1[j];
+        if (!(gamepad)) {
+          continue;
+        }
+        left || (left = gamepad.axes[0] < -0.5);
+        right || (right = gamepad.axes[0] > 0.5);
+        up || (up = gamepad.axes[1] < -0.5);
+        down || (down = gamepad.axes[1] > 0.5);
+        this.jump || (this.jump = gamepad.buttons[0].pressed && !gamepad_jump_prev);
+        mount_dismount || (mount_dismount = gamepad.buttons[1].pressed && !gamepad_mount_prev);
+        gamepad_jump_prev = gamepad.buttons[0].pressed;
+        gamepad_mount_prev = gamepad.buttons[1].pressed;
+        gamepad_draw_bow = gamepad.buttons[7].pressed;
+        // gamepad_prime_bow = gamepad.buttons[4].pressed
+        if (Math.hypot(gamepad.axes[2], gamepad.axes[3]) > gamepad_detect_threshold) {
+          gamepad_aiming = true;
+        }
+        if (gamepad_aiming) {
+          aim_angle = Math.atan2(gamepad.axes[3], gamepad.axes[2]);
+          // Reverse aiming can feel more natural, like drawing back the bow
+          // even though it's not the control to draw the bow
+          // TODO: It should be an option.
+          aim_angle += Math.PI;
+          draw_back_distance = Math.hypot(gamepad.axes[2], gamepad.axes[3]);
+          draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone);
+          gamepad_prime_bow = draw_back_distance > 0.3;
+        }
+      }
+      // Note: You're allowed to prime and draw the bow without an arrow.
+      prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
+      draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
+      
+      // TODO: configurable controls
+      this.move_x = right - left;
+      this.move_y = down - up;
+      // run SimpleActor physics, which uses @move_x and @jump
+      super.step(world);
+      pick_up_any = (EntityClass, prop) => {
+        var dist, entity, from_point_in_entity_space, k, len1, moving_too_fast, pickup_item, ref2, ref3, ref4, segment, segment_name, vx, vy;
+        if ((ref2 = this[prop]) != null ? ref2.destroyed : void 0) {
+          this[prop] = null;
+        }
+        if (this[prop]) {
+          return;
+        }
+        ref3 = world.getEntitiesOfType(EntityClass);
+        // this is ridiculously complicated
+        for (k = 0, len1 = ref3.length; k < len1; k++) {
+          entity = ref3[k];
+          from_point_in_entity_space = entity.fromWorld(from_point_in_world);
+          moving_too_fast = false;
+          // Arrow defines getAverageVelocity
+          // Bow doesn't move, and we're not handling picking up anything else yet
+          if (entity.getAverageVelocity != null) {
+            [vx, vy] = entity.getAverageVelocity();
+            if (Math.abs(vx) + Math.abs(vy) > 2) {
+              moving_too_fast = true;
+            }
+          }
+          if (!moving_too_fast) {
+            ref4 = entity.structure.segments;
+            for (segment_name in ref4) {
+              segment = ref4[segment_name];
+              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
+              if (dist < 50) {
+                pickup_item = entity;
+              }
+            }
+          }
+        }
+        if (pickup_item) {
+          // TODO: pickup animation
+          return this[prop] = pickup_item;
+        }
+      };
+      pick_up_any(Bow, "holding_bow");
+      pick_up_any(Arrow, "holding_arrow");
+      // Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
+      if (mount_dismount) {
+        if (this.riding) {
+          this.riding = null;
+        } else {
+          closest_dist = 2e308;
+          closest_steed = null;
+          ref2 = world.getEntitiesOfType(Deer);
+          for (k = 0, len1 = ref2.length; k < len1; k++) {
+            entity = ref2[k];
+            from_point_in_entity_space = entity.fromWorld(from_point_in_world);
+            ref3 = entity.structure.segments;
+            for (segment_name in ref3) {
+              segment = ref3[segment_name];
+              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
+              if (dist < closest_dist) {
+                closest_dist = dist;
+                closest_steed = entity;
+              }
+            }
+          }
+          if (closest_dist < 30) {
+            this.riding = closest_steed;
+          }
+        }
+      }
+      if (this.riding) {
+        // @riding.move_x = @move_x
+        this.riding.dir = this.move_x; // old code...
+        this.riding.jump = this.jump;
+        this.facing_x = this.riding.facing_x;
+        offset_distance = 20;
+        this.x = this.riding.x + Math.sin(this.riding.ground_angle_smoothed) * offset_distance;
+        this.y = this.riding.y - Math.cos(this.riding.ground_angle_smoothed) * offset_distance - 10;
+        this.vx = this.riding.vx;
+        this.vy = this.riding.vy;
+      }
+      prevent_idle = () => {
+        this.idle_timer = 0;
+        return this.idle_animation = null;
+      };
+      more_submerged = this.submerged && world.collision({
+        x: this.x,
+        y: this.y + this.height * 0.5
+      }, {
+        types: (entity) => {
+          return entity.constructor.name === "Water";
+        }
+      });
+      if (this.riding) {
+        new_pose = (ref4 = Player.poses[prime_bow ? "Riding Aiming" : "Riding"]) != null ? ref4 : this.structure.getPose();
+      } else if (more_submerged) {
+        if (this.move_x !== 0) {
+          this.run_animation_position += 0.1;
+          new_pose = Pose.lerpAnimationLoop(Player.animations["Swim"], this.run_animation_position);
+        } else {
+          this.run_animation_position -= 0.1 * this.move_y;
+          new_pose = Pose.lerpAnimationLoop(Player.animations["Tread Water"], this.run_animation_position);
+        }
+      } else if (this.move_x === 0) {
+        this.idle_timer += 1;
+        subtle_idle_animation = Player.animations["Idle"];
+        if (this.idle_timer > 1000) {
+          this.idle_animation = "Yawn";
+          this.idle_timer = 0;
+          this.other_idle_animation_position = 0;
+        }
+        other_idle_animation = this.idle_animation && Player.animations[this.idle_animation];
+        if (other_idle_animation) {
+          this.other_idle_animation_position += 1 / 25;
+          if (this.other_idle_animation_position > other_idle_animation.length) {
+            this.idle_animation = null;
+          }
+          new_pose = Pose.lerpAnimationLoop(other_idle_animation, this.other_idle_animation_position);
+        } else if (subtle_idle_animation) {
+          this.subtle_idle_animation_position += 1 / 25;
+          new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, this.subtle_idle_animation_position);
+        } else {
+          new_pose = (ref5 = Player.poses["Stand"]) != null ? ref5 : this.structure.getPose();
+        }
+      } else {
+        prevent_idle();
+        if (Player.animations["Run"]) {
+          this.run_animation_position += Math.abs(this.move_x) / 5 * this.facing_x * this.real_facing_x;
+          new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], this.run_animation_position);
+        } else {
+          new_pose = this.structure.getPose();
+        }
+      }
+      if (this.real_facing_x < 0) {
+        new_pose = Pose.horizontallyFlip(new_pose);
+      }
+      head_x_before_posing = this.structure.points["head"].x;
+      head_y_before_posing = this.structure.points["head"].y;
+      // rotate the pose based on the ground angle
+      // TODO: balance the character better; lean while running; keep feet out of the ground
+      // I may need to define new poses to do this well.
+      ground_angle = (ref6 = (ref7 = this.riding) != null ? ref7.ground_angle_smoothed : void 0) != null ? ref6 : this.find_ground_angle(world);
+      this.ground_angle = ground_angle;
+      if ((ground_angle != null) && isFinite(ground_angle)) {
+        // there's no helper for rotation yet
+        // and we wanna do it a little custom anyway
+        // rotating some points more than others
+        new_pose = Pose.copy(new_pose);
+        center = new_pose.points["pelvis"];
+        center = {
+          x: center.x,
+          y: center.y // copy
+        };
+        ref8 = new_pose.points;
+        for (point_name in ref8) {
+          point = ref8[point_name];
+          if (this.riding) {
+            factor = 1;
+          } else {
+            // With this constant this small, it's almost like a conditional
+            // of whether the point is below the pelvis or not.
+            // With a larger number, it would bend the knees backwards.
+            max_y_diff = 2;
+            // how much to rotate this point
+            factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff));
+            // It's a bit much on steep slopes, so let's reduce it.
+            // This is still enough to keep the feet from floating,
+            // although the feet go into the ground significantly.
+            factor *= 0.8;
+          }
+          // translate
+          point.x -= center.x;
+          point.y -= center.y;
+          // rotate
+          ({x, y} = point);
+          point.x = x * Math.cos(ground_angle) - y * Math.sin(ground_angle);
+          point.y = x * Math.sin(ground_angle) + y * Math.cos(ground_angle);
+          // while we've got the x and y from before the rotation handy,
+          // let's use them to apply the factor, using linear interpolation
+          point.x += (x - point.x) * (1 - factor);
+          point.y += (y - point.y) * (1 - factor);
+          // translate back
+          point.x += center.x;
+          point.y += center.y;
+        }
+      }
+      this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
+      
+      // (her dominant eye is, of course, *whichever one she would theoretically be using*)
+      // (given this)
+      primary_hand = this.structure.points["right hand"];
+      secondary_hand = this.structure.points["left hand"];
+      primary_elbow = this.structure.points["right elbow"];
+      secondary_elbow = this.structure.points["left elbow"];
+      this.real_facing_x = this.facing_x;
+      if (prime_bow) {
+        // Restore head position, in order to do linear interpolation.
+        // In this state, the head is not controlled by the pose, but by the bow aiming.
+        this.structure.points["head"].x = head_x_before_posing;
+        this.structure.points["head"].y = head_y_before_posing;
+      }
+      // TODO: transition (both ways) between primed and not
+      // also maybe relax the "primed" state when running and not drawn back
+      if (this.holding_bow) {
+        bow = this.holding_bow;
+        bow.x = this.x;
+        bow.y = this.y;
+        arm_span = this.structure.segments["upper right arm"].length + this.structure.segments["lower right arm"].length;
+        max_draw_distance = 6;
+        // max_draw_distance = arm_span / 2.5 #- bow.fistmele
+        bow.draw_distance += ((max_draw_distance * draw_bow) - bow.draw_distance) / 15;
+        draw_to = arm_span - bow.fistmele - bow.draw_distance;
+        if (draw_bow) {
+          // TODO: use better transition to allow for greater control over release velocity
+          bow.draw_distance += (5 - bow.draw_distance) / 5;
+          this.bow_drawn_to = draw_to;
+        } else {
+          if (prime_bow && this.holding_arrow && bow.draw_distance > 2 && !world.collision(this.holding_arrow.toWorld(this.holding_arrow.structure.points["tip"])) && !world.collision(this.holding_arrow.toWorld(this.holding_arrow.structure.points["nock"]))) {
+            force = bow.draw_distance * 2;
+            this.holding_arrow.setVelocity(Math.cos(aim_angle) * force + this.vx, Math.sin(aim_angle) * force + this.vy);
+            this.holding_arrow = null;
+          }
+          bow.draw_distance = 0;
+          // FIXME: this should be an ease-in transition, not ease-out
+          this.bow_drawn_to += (arm_span - bow.fistmele - this.bow_drawn_to) / 10;
+        }
+        if (prime_bow) {
+          prevent_idle();
+          bow_angle = aim_angle;
+          primary_hand.x = sternum.x + this.bow_drawn_to * Math.cos(aim_angle);
+          primary_hand.y = sternum.y + this.bow_drawn_to * Math.sin(aim_angle);
+          primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle);
+          primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle);
+          // primary_elbow.y = sternum.y - 3
+          secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle);
+          secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle);
+          secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle);
+          secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle);
+          // make head look along aim path
+          angle = modulo(aim_angle - Math.PI / 2, Math.PI * 2);
+          this.real_facing_x = angle < Math.PI ? -1 : 1;
+          ({head, neck} = this.structure.points);
+          new_head_x = neck.x + 5 * Math.cos(angle + (angle < Math.PI ? Math.PI : 0));
+          new_head_y = neck.y + 5 * Math.sin(angle + (angle < Math.PI ? Math.PI : 0));
+          head.x += (new_head_x - head.x) / 5;
+          head.y += (new_head_y - head.y) / 5;
+        } else {
+          bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x);
+        }
+        primary_hand_in_bow_space = bow.fromWorld(this.toWorld(primary_hand));
+        secondary_hand_in_bow_space = bow.fromWorld(this.toWorld(secondary_hand));
+        bow.structure.points.grip.x = secondary_hand_in_bow_space.x;
+        bow.structure.points.grip.y = secondary_hand_in_bow_space.y;
+        if (prime_bow) {
+          bow.structure.points.serving.x = sternum.x + draw_to * Math.cos(aim_angle);
+          bow.structure.points.serving.y = sternum.y + draw_to * Math.sin(aim_angle);
+        } else {
+          bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle);
+          bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle);
+        }
+      }
+      if (this.holding_arrow) {
+        arrow = this.holding_arrow;
+        arrow.lodging_constraints.length = 0; // pull it out if it's lodged in an object
+        arrow.x = this.x;
+        arrow.y = this.y;
+        primary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(primary_hand));
+        secondary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(secondary_hand));
+        if (prime_bow) {
+          arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle);
+          arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle);
+          arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * Math.cos(aim_angle);
+          arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
+        } else {
+          angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x);
+          arrow_angle = angle - (TAU / 4 + 0.2) * this.real_facing_x;
+          hold_offset = -5;
+          arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle);
+          arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle);
+          arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle);
+          arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle);
+        }
+        // Cancel implicit velocity from moving the arrow's "current positions"
+        // (This updates the "previous positions" that imply velocity.)
+        arrow.setVelocity(0, 0);
+      }
+      
+      // Hair physics
+      return this.simulate_hair(world);
+    }
+
+    simulate_hair(world) {
+      var a, air_friction, back_x, back_y, buoyancy, delta_length, delta_x, delta_y, diff, fluid_friction, gravity, hair_index, hair_iterations, hair_length, head, head_angle, head_global, i, j, k, l, len, len1, len2, len3, len4, m, n, neck, o, p, point, points, ref, ref1, ref2, ref3, ref4, results, seg_length, submerged, water_friction;
+      ({head, neck} = this.structure.points);
+      head_angle = Math.atan2(head.y - neck.y, head.x - neck.x);
+      head_global = this.toWorld(head);
+      hair_iterations = 1;
+      air_friction = 0.2;
+      water_friction = 0.2;
+      hair_length = 30;
+      results = [];
+      for (j = 0, ref = hair_iterations; (0 <= ref ? j <= ref : j >= ref); 0 <= ref ? j++ : j--) {
+        ref1 = this.hairs;
+        for (k = 0, len = ref1.length; k < len; k++) {
+          points = ref1[k];
+          for (l = 0, len1 = points.length; l < len1; l++) {
+            point = points[l];
+            point.prev_x = point.x;
+            point.prev_y = point.y;
+          }
+        }
+        ref2 = this.hairs;
+        for (hair_index = m = 0, len2 = ref2.length; m < len2; hair_index = ++m) {
+          points = ref2[hair_index];
+          a = head_angle + hair_index / this.hairs.length * Math.PI - Math.PI / 2;
+          back_x = Math.sin(head_angle) * 2 * this.real_facing_x;
+          back_y = Math.cos(head_angle) * 2 * this.real_facing_x;
+          points[0].x = head_global.x + Math.cos(a) * 3 + back_x;
+          points[0].y = head_global.y + Math.sin(a) * 3 + back_y;
+          seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length;
+          for (i = n = 1, ref3 = points.length; (1 <= ref3 ? n < ref3 : n > ref3); i = 1 <= ref3 ? ++n : --n) {
+            if (!this.hair_initialized) {
+              points[i].x = points[i - 1].x;
+              points[i].y = points[i - 1].y + seg_length;
+              points[i].prev_x = points[i].x;
+              points[i].prev_y = points[i].y;
+            }
+            gravity = 0.5;
+            submerged = world != null ? world.collision(points[i], {
+              types: (entity) => {
+                return entity.constructor.name === "Water";
+              }
+            }) : void 0;
+            buoyancy = submerged ? 0.6 : 0;
+            fluid_friction = submerged ? water_friction : air_friction;
+            points[i].vy += (gravity - buoyancy) / hair_iterations;
+            points[i].vx *= 1 - fluid_friction;
+            points[i].vy *= 1 - fluid_friction;
+            if (submerged) {
+              // points[i].vx += Math.sin(performance.now() / 1000 + i/30 + hair_index/10 + Math.sin(points[i].x/100 + points[i].y/100)) * 0.1
+              // points[i].vy += Math.cos(performance.now() / 1000 + i/30 + hair_index/10 + Math.cos(points[i].x/150 + points[i].y/200)) * 0.05
+              points[i].vx += Math.sin(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30)) * 40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05;
+              points[i].vy += Math.cos(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30)) * 40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05;
+            }
+            points[i].x += points[i].vx;
+            points[i].y += points[i].vy;
+            delta_x = points[i].x - points[i - 1].x;
+            delta_y = points[i].y - points[i - 1].y;
+            delta_length = Math.hypot(delta_x, delta_y);
+            diff = (delta_length - seg_length) / delta_length;
+            if (isFinite(diff) && delta_length > seg_length) {
+              points[i].x -= delta_x * diff;
+              points[i].y -= delta_y * diff;
+            } else if (!isFinite(diff)) {
+              console.warn("diff is not finite, for hair segment distance constraint");
+            }
+          }
+        }
+        ref4 = this.hairs;
+        for (o = 0, len3 = ref4.length; o < len3; o++) {
+          points = ref4[o];
+          for (p = 0, len4 = points.length; p < len4; p++) {
+            point = points[p];
+            point.vx = point.x - point.prev_x;
+            point.vy = point.y - point.prev_y;
+          }
+        }
+        results.push(this.hair_initialized = true);
+      }
+      return results;
+    }
+
+    draw(ctx, view) {
+      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, head, head_rotation_angle, j, k, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
+      ({
+        head,
+        sternum,
+        pelvis,
+        "left knee": left_knee,
+        "right knee": right_knee,
+        "left shoulder": left_shoulder,
+        "right shoulder": right_shoulder
+      } = this.structure.points);
+      // ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
+      // or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
+      skin_color = "#6B422C";
+      hair_color = "#000000";
+      eye_color = "#000000";
+      dress_color = "#AAFFFF";
+      
+      // TODO: depth
+      // @drawStructure
+      // 	segments:
+      // 		torso: ->
+      // 	points:
+      // 		head: ->
+
+      // trailing hair
+      if (view.is_preview || !this.hair_initialized) {
+        this.simulate_hair();
+        if (!view.is_preview) {
+          this.hair_initialized = false; // so it will move when you drag the entity
+        }
+      }
+      ref = this.hairs;
+      for (hair_index = j = 0, len = ref.length; j < len; hair_index = ++j) {
+        hair_points = ref[hair_index];
+        ctx.beginPath();
+        // ctx.moveTo(hair_points[0].x, hair_points[0].y)
+        local_point = this.fromWorld(hair_points[0]);
+        ctx.moveTo(local_point.x, local_point.y);
+        ref1 = hair_points.slice(1);
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          point = ref1[k];
+          // ctx.lineTo(point.x, point.y)
+          local_point = this.fromWorld(point);
+          ctx.lineTo(local_point.x, local_point.y);
+        }
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = hair_color;
+        // ctx.strokeStyle = "hsla(#{hair_index / @hairs.length * 360}, 100%, 50%, 0.5)"
+        ctx.stroke();
+      }
+      ref2 = this.structure.segments;
+      
+      // limbs
+      for (segment_name in ref2) {
+        segment = ref2[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = skin_color;
+        ctx.stroke();
+      }
+      
+      // dress
+      ctx.beginPath();
+      ctx.save();
+      ctx.translate(sternum.x, sternum.y);
+      torso_angle = Math.atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU / 4;
+      torso_length = distance(pelvis, sternum);
+      ctx.rotate(torso_angle);
+      left_leg_angle = Math.atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle;
+      right_leg_angle = Math.atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle;
+      left_shoulder_angle = Math.atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle;
+      right_shoulder_angle = Math.atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle;
+      shoulder_distance = distance(left_shoulder, sternum);
+      min_shoulder_cos = Math.min(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
+      max_shoulder_cos = Math.max(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
+      if (Math.cos(left_shoulder_angle) < Math.cos(right_shoulder_angle)) {
+        min_cos_shoulder_angle = left_shoulder_angle;
+        max_cos_shoulder_angle = right_shoulder_angle;
+      } else {
+        min_cos_shoulder_angle = right_shoulder_angle;
+        max_cos_shoulder_angle = left_shoulder_angle;
+      }
+      ctx.lineTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5);
+      ctx.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5);
+      min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
+      max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
+      min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
+      max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
+      ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length / 2);
+      ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin));
+      ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin));
+      ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length / 2);
+      ctx.fillStyle = dress_color;
+      ctx.fill();
+      ctx.restore();
+      
+      // head, including top of hair
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU / 4);
+      // head
+      ctx.save();
+      ctx.scale(0.9, 1);
+      ctx.beginPath();
+      ctx.arc(0, 0, 5.5, 0, TAU);
+      ctx.fillStyle = skin_color;
+      ctx.fill();
+      ctx.restore();
+      // top of hair
+      ctx.beginPath();
+      ctx.arc(0, 0, 5.5, 0, TAU / 2);
+      ctx.fillStyle = hair_color;
+      ctx.fill();
+      // eyes
+      // TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
+      ctx.arc(0, 0, 5.5 * 0.9, 0, TAU);
+      ctx.clip();
+      eye_spacing = 0.6; // radians
+      turn_limit = TAU / 8; // radians, TAU/4 = head facing completely sideways, only one eye visible
+      ctx.fillStyle = eye_color;
+      if (this.smoothed_facing_x_for_eyes == null) {
+        this.smoothed_facing_x_for_eyes = 0;
+      }
+      this.smoothed_facing_x_for_eyes += (this.real_facing_x - this.smoothed_facing_x_for_eyes) / 5;
+      ref3 = [-1, 1];
+      for (l = 0, len2 = ref3.length; l < len2; l++) {
+        eye_signature = ref3[l];
+        // 3D projection in one axis
+        head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
+        eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5 * 0.9;
+        ctx.beginPath();
+        ctx.arc(eye_x, -1, 1, 0, TAU);
+        ctx.fill();
+      }
+      // /head
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Player);
+
+  Entity.initAnimation(Player);
+
+  return Player;
+
+}).call(this);
+
+// debug draw
+// show the ground angle
+// ctx.beginPath()
+// ctx.moveTo(0, 0)
+// ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
+// ctx.strokeStyle = "red"
+// ctx.stroke()
+
+
+/***/ }),
+
+/***/ 33:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var PuffTree, TAU, Tree, addEntityClass;
+
+Tree = __webpack_require__(776);
+
+({addEntityClass} = __webpack_require__(505));
+
+TAU = Math.PI * 2;
+
+module.exports = PuffTree = (function() {
+  class PuffTree extends Tree {
+    constructor() {
+      super();
+      this.bbox_padding = 60;
+      this.trunk_width = 10 + Math.floor(Math.random() * 5);
+      this.random_index = 0;
+      this.random_values = [];
+      this.branch({
+        from: "base",
+        to: "1",
+        juice: Math.random() * 10 + 5,
+        width: this.trunk_width,
+        length: 9,
+        angle: -TAU / 2
+      });
+    }
+
+    random() {
+      var base, name1;
+      this.random_index++;
+      return (base = this.random_values)[name1 = this.random_index] != null ? base[name1] : base[name1] = Math.random();
+    }
+
+    branch({from, to, juice, angle, width, length}) {
+      var leaf_point, name;
+      name = to;
+      angle += (Math.random() * 2 - 1) * 0.7;
+      this.structure.addSegment({
+        from,
+        name,
+        length,
+        width,
+        color: "#89594A"
+      });
+      this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
+      this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
+      juice -= 0.3;
+      if (juice > 0) {
+        this.branch({
+          from: name,
+          to: `${to}-a`,
+          juice,
+          angle,
+          width: juice,
+          length
+        });
+        if (Math.random() < 0.1 - juice / 200) {
+          this.branch({
+            from: name,
+            to: `${to}-b`,
+            juice,
+            angle: angle + (Math.random() - 1 / 2) * TAU / 4,
+            width: juice,
+            length
+          });
+        }
+      } else {
+        leaf_point = this.structure.points[name];
+        this.leaf(leaf_point);
+      }
+    }
+
+    leaf(leaf) {
+      leaf.is_leaf = true;
+      return leaf;
+    }
+
+    draw(ctx) {
+      var leaf, point_name, ref, ref1, segment, segment_name;
+      this.random_index = 0;
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = segment.color;
+        ctx.stroke();
+      }
+      ref1 = this.structure.points;
+      for (point_name in ref1) {
+        leaf = ref1[point_name];
+        if (leaf.is_leaf) {
+          this.drawLeaf(ctx, leaf.x, leaf.y);
+        }
+      }
+    }
+
+    drawLeaf(ctx, x, y) {
+      var i, j, l, r1, r2;
+      ctx.save();
+      l = this.random() / 2;
+      ctx.fillStyle = `hsl(${~~(150 - l * 50)},${~~50}%,${~~(50 + l * 20)}%)`;
+      ctx.beginPath();
+      ctx.arc(x, y, 10 + this.random() * 5, 0, Math.PI * 2, true);
+      ctx.fill();
+      for (i = j = 0; j <= 10; i = ++j) {
+        l = this.random() / 2;
+        ctx.fillStyle = `hsl(${~~(150 - l * 50)},${~~50}%,${~~(50 + l * 20)}%)`;
+        ctx.beginPath();
+        r1 = Math.PI * 2 * this.random();
+        r2 = this.random() * 15;
+        ctx.arc(x + Math.sin(r1) * r2, y + Math.cos(r1) * r2, 5 + this.random() * 5, 0, Math.PI * 2, true);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+  };
+
+  addEntityClass(PuffTree);
+
+  return PuffTree;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 101:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Rabbit, SimpleActor, addEntityClass, r;
+
+SimpleActor = __webpack_require__(339);
+
+({addEntityClass} = __webpack_require__(505));
+
+r = function() {
+  return Math.random() * 2 - 1;
+};
+
+module.exports = Rabbit = (function() {
+  class Rabbit extends SimpleActor {
+    constructor() {
+      super();
+      this.structure.addPoint("head");
+      this.structure.addSegment({
+        from: "head",
+        name: "body",
+        length: 5
+      });
+      this.bbox_padding = 20;
+      this.width = 8;
+      this.height = 8;
+      this.xp = 0;
+      this.t = 0;
+      this.lr = 0;
+      this.dir = 0;
+      this.c = "#FFF";
+      this.c2 = "#DDD";
+      this.eye_color = "#000";
+    }
+
+    step(world) {
+      if (this.grounded) {
+        // @vx*=0.99
+        if (Math.random() < 0.1) {
+          this.dir = r();
+        }
+        if (Math.random() < 0.1) {
+          this.vy = -5;
+        }
+      } else {
+        if (Math.abs(this.xp - this.x) < 1) {
+          this.t++;
+          if (this.t > 15) {
+            this.dir = r();
+          }
+        } else {
+          this.t = 0;
+        }
+      }
+      this.vx += (this.dir *= 1.1) / 5;
+      this.dir = Math.max(-10, Math.min(10, this.dir));
+      this.xp = this.x;
+      this.move_x = this.dir * 0.02;
+      this.move_y = -1;
+      // run SimpleActor physics, which uses @move_x and @jump
+      return super.step(world);
+    }
+
+    draw(ctx) {
+      ctx.save(); // body center transform
+      ctx.translate(this.width / 2, this.height);
+      ctx.fillStyle = this.c2;
+      // ctx.fillRect(0,0,@width,@height)
+      ctx.beginPath();
+      ctx.arc(0, 0, this.height / 2, Math.PI * 0.9, Math.PI * 2.1, false); // body
+      ctx.fill();
+      ctx.fillStyle = this.c;
+      ctx.save(); // head transform
+      ctx.translate(this.facing_x * this.width / 3, -this.height / 3);
+      ctx.beginPath();
+      ctx.arc(0, 0, this.height / 3, Math.PI * 0.9, Math.PI * 2.1, false); // head
+      ctx.fill();
+      ctx.fillStyle = this.eye_color;
+      ctx.beginPath();
+      ctx.arc(0, 0, 1, 0, Math.PI * 2, false); // eye
+      ctx.fill();
+      ctx.fillStyle = this.c;
+      ctx.beginPath();
+      ctx.save(); // ear transform
+      ctx.translate(-this.facing_x * this.width / 9, -this.height / 6);
+      // ctx.rotate(Math.sin(performance.now()/1000))
+      ctx.rotate(-Math.min(Math.PI / 3, Math.max(-Math.PI / 3, this.vx / 3)));
+      ctx.scale(1, 3);
+      ctx.arc(0, -this.height / 9, 1, 0, Math.PI * 2, false); // ear
+      ctx.fill();
+      ctx.restore(); // end ear transform
+      ctx.restore(); // end head transform
+      ctx.fillStyle = this.c;
+      ctx.beginPath();
+      ctx.arc(-this.facing_x * this.width / 2, 0, this.height / 5, 0, Math.PI * 2, false); // tail
+      ctx.fill();
+      return ctx.restore(); // end body center transform
+    }
+
+  };
+
+  addEntityClass(Rabbit);
+
+  return Rabbit;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 521:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var SavannaTreeA, TAU, Tree, addEntityClass;
+
+Tree = __webpack_require__(776);
+
+({addEntityClass} = __webpack_require__(505));
+
+TAU = Math.PI * 2;
+
+module.exports = SavannaTreeA = (function() {
+  class SavannaTreeA extends Tree {
+    constructor() {
+      super();
+      this.branch({
+        from: "base",
+        to: "1",
+        juice: 5,
+        angle: -TAU / 2
+      });
+    }
+
+    leaf(leaf) {
+      leaf.radius = Math.random() * 15 + 15;
+      leaf.scale_x = 2;
+      leaf.scale_y = 1;
+      leaf.color = "#627318"; //"#363D1B"
+      leaf.is_leaf = true;
+      return leaf;
+    }
+
+    draw(ctx) {
+      var leaf, point_name, ref, ref1, results, segment, segment_name;
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        ctx.beginPath();
+        ctx.moveTo(segment.a.x, segment.a.y);
+        ctx.lineTo(segment.b.x, segment.b.y);
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = segment.color;
+        ctx.stroke();
+      }
+      ref1 = this.structure.points;
+      results = [];
+      for (point_name in ref1) {
+        leaf = ref1[point_name];
+        if (!leaf.is_leaf) {
+          continue;
+        }
+        // ctx.beginPath()
+        // ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(leaf.x, leaf.y);
+        ctx.scale(leaf.scale_x, leaf.scale_y);
+        ctx.arc(0, 0, leaf.radius, 0, TAU);
+        ctx.fillStyle = leaf.color;
+        ctx.fill();
+        results.push(ctx.restore());
+      }
+      return results;
+    }
+
+  };
+
+  addEntityClass(SavannaTreeA);
+
+  return SavannaTreeA;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 293:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+module.exports = __webpack_require__(505).Entity;
+
+/*
+fs = require? "fs"
+path = require? "path"
+ * XXX: hack for webpack
+ * TODO: use ifdef conditionals or something
+fs = null if not fs.readFileSync
+path = null if not path.join
+
+module.exports = class Entity
+	constructor: ->
+		@structure = new BoneStructure
+		@x = 0
+		@y = 0
+		@id = uuid()
+
+		@bbox_padding = 2
+ * TODO: depth system
+ * @drawing_pieces = {}
+
+		@_class_ = @constructor.name
+
+	@initAnimation: (EntityClass)->
+		EntityClass.poses = {}
+		EntityClass.animations = {}
+		EntityClass.animation_json_path = "./animations/#{EntityClass.name}.json"
+		Entity.loadAnimations(EntityClass)
+
+	@loadAnimations: (EntityClass)->
+		animationsFromJSON = ({poses, animations})->
+			EntityClass.poses = {}
+			EntityClass.animations = {}
+			for pose_name, pose of poses
+				EntityClass.poses[pose_name] = new Pose(pose)
+			for animation_name, animation of animations
+				EntityClass.animations[animation_name] = (new Pose(pose) for pose in animation)
+
+		if fs?
+			try
+				json = fs.readFileSync(EntityClass.animation_json_path)
+			catch e
+				throw e unless e.code is "ENOENT"
+		else
+			json = localStorage["Tiamblia #{EntityClass.name} animations"]
+		if json
+			animationsFromJSON(JSON.parse(json)) if json
+		else
+			req = new XMLHttpRequest
+			req.addEventListener "load", (e)=>
+				json = req.responseText
+				animationsFromJSON(JSON.parse(json)) if json
+			req.open("GET", EntityClass.animation_json_path)
+			req.send()
+
+	@saveAnimations: (EntityClass)->
+		{poses, animations} = EntityClass
+		json = JSON.stringify({poses, animations}, null, "\t")
+		if fs?
+			try
+				fs.mkdirSync(path.dirname(EntityClass.animation_json_path))
+			catch e
+				throw e unless e.code is "EEXIST"
+			fs.writeFileSync(EntityClass.animation_json_path, json)
+		else
+			localStorage["Tiamblia #{EntityClass.name} animations"] = json
+
+	@fromJSON: (def)->
+		unless typeof def._class_ is "string"
+			console.error "Erroneous entity definition:", def
+			throw new Error "Expected entity to have a string _class_, _class_ is #{def._class_}"
+		unless entity_classes[def._class_]
+			throw new Error "Entity class '#{def._class_}' does not exist"
+		entity = new entity_classes[def._class_]
+		entity.fromJSON(def)
+		entity
+
+	fromJSON: (def)->
+		if def._class_ isnt @_class_
+			throw new Error "Tried to initialize #{@_class_} entity from JSON with _class_ #{JSON.stringify(def._class_)}"
+		for k, v of def when k isnt "_class_"
+			if @[k]?.fromJSON
+				@[k].fromJSON(v)
+			else
+				@[k] = v
+
+	resolveReferences: (world)->
+		if @_refs_
+			for k, id of @_refs_
+				@[k] = world.getEntityByID(id)
+			delete @_refs_
+
+	toJSON: ->
+		obj = {}
+		for k, v of @ when k isnt "_refs_"
+			if v instanceof Entity
+				obj._refs_ ?= {}
+				obj._refs_[k] = v.id
+			else
+				obj[k] = v
+		obj
+
+	toWorld: (point)->
+		x: point.x + @x
+		y: point.y + @y
+
+	fromWorld: (point)->
+		x: point.x - @x
+		y: point.y - @y
+
+	bbox: ->
+		min_point = {x: +Infinity, y: +Infinity}
+		max_point = {x: -Infinity, y: -Infinity}
+		for point_name, point of @structure.points
+			min_point.x = Math.min(min_point.x, point.x)
+			min_point.y = Math.min(min_point.y, point.y)
+			max_point.x = Math.max(max_point.x, point.x)
+			max_point.y = Math.max(max_point.y, point.y)
+		min_point.x = 0 unless isFinite(min_point.x)
+		min_point.y = 0 unless isFinite(min_point.y)
+		max_point.x = 0 unless isFinite(max_point.x)
+		max_point.y = 0 unless isFinite(max_point.y)
+		min_point.x -= @bbox_padding
+		min_point.y -= @bbox_padding
+		max_point.x += @bbox_padding
+		max_point.y += @bbox_padding
+		min_point_in_world = @toWorld(min_point)
+		max_point_in_world = @toWorld(max_point)
+		x: min_point_in_world.x
+		y: min_point_in_world.y
+		width: max_point_in_world.x - min_point_in_world.x
+		height: max_point_in_world.y - min_point_in_world.y
+
+ * animate: ()->
+ * 	@structure.setPose(Pose.lerp(various_poses))
+
+	initLayout: ->
+		EntityClass = @constructor
+		if EntityClass.poses
+			default_pose = EntityClass.poses["Default"] ? EntityClass.poses["Stand"] ? EntityClass.poses["Standing"] ? EntityClass.poses["Idle"]
+			if default_pose
+				@structure.setPose(default_pose)
+				return
+		ys = {}
+		y = 0
+		for point_name, point of @structure.points
+			side = point_name.match(/left|right/)?[0]
+			if side
+				sideless_point_name = point_name.replace(/left|right/, "")
+				if ys[sideless_point_name]
+					y = ys[sideless_point_name]
+				else
+					y += 10
+					ys[sideless_point_name] = y
+				if side is "left"
+					point.x = -5.5
+				if side is "right"
+					point.x = +5.5
+				point.x *= 0.7 if point_name.match(/lower/)
+			point.y = y
+
+		for [0..2000]
+			@structure.stepLayout(center: yes, repel: yes)
+		for [0..4000]
+			@structure.stepLayout()
+
+	step: (world)->
+	draw: (ctx)->
+
+ * TODO: function to call into the depth system
+ * drawStructure: (drawing_functions)->
+ * 	for point_name, fn of drawing_functions.points
+ * 		fn(@structure.points[point_name])
+ * 	for segment_name, fn of drawing_functions.segments
+ * 		fn(@structure.segments[segment_name])
+ */
+
+
+/***/ }),
+
+/***/ 968:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var GrassyTerrain, Terrain, lineSegmentsIntersect;
+
+Terrain = __webpack_require__(891);
+
+({lineSegmentsIntersect} = (__webpack_require__(505).helpers));
+
+module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
+  constructor() {
+    super();
+    this.bbox_padding = 30;
+    this.grass_tiles = new Map();
+    this.grass_tiles.fromJSON = (map_obj) => {};
+    this.grass_tiles.toJSON = (map_obj) => {
+      return {};
+    };
+    this.structure.onchange = () => {
+      return this.grass_tiles.forEach((tile) => {
+        var blade, i, len, ref, results, shade;
+        ref = ["dark", "light"];
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          shade = ref[i];
+          results.push((function() {
+            var k, len1, ref1, results1;
+            ref1 = tile[`${shade}_blades`];
+            results1 = [];
+            for (k = 0, len1 = ref1.length; k < len1; k++) {
+              blade = ref1[k];
+              results1.push(delete blade.visible);
+            }
+            return results1;
+          })());
+        }
+        return results;
+      });
+    };
+    this.color = "#C29853";
+    this.color_dark = "#A17A3F";
+    this.color_light = "#D2B06A";
+  }
+
+  draw(ctx, view) {
+    var bbox, blade, bottom, contains_any_points, dark_blades, first_tile_xi, first_tile_yi, i, j, k, l, last_tile_xi, last_tile_yi, left, len, len1, len2, len3, light_blades, m, n, o, p, point, point_name, q, random, rect_contains_any_points, rect_is_empty, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, right, shade, tile, tile_name, tile_size, tile_x, tile_xi, tile_y, tile_yi, top, view_point, x, y;
+    rect_contains_any_points = (x, y, width, height) => {
+      var contains_any_points, point, point_name, ref, ref1, ref2;
+      contains_any_points = false;
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        if ((x <= (ref1 = point.x) && ref1 <= x + width) && (y <= (ref2 = point.y) && ref2 <= y + height)) {
+          contains_any_points = true;
+        }
+      }
+      return contains_any_points;
+    };
+    rect_is_empty = (x, y, width, height) => {
+      var center_of_rect_is_in_polygon, center_point, ref, segment, segment_name, view_point;
+      center_point = {
+        x: this.x + x + width / 2,
+        y: this.y + y + height / 2
+      };
+      view_point = view.fromWorld(center_point);
+      center_of_rect_is_in_polygon = ctx.isPointInPath(view_point.x, view_point.y);
+      ref = this.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        if (lineSegmentsIntersect(x, y, x, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y, x + width, y, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x + width, y, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y + height, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+          // return center_of_rect_is_in_polygon
+          return false;
+        }
+      }
+      return !center_of_rect_is_in_polygon;
+    };
+    ctx.beginPath();
+    ref = this.structure.points;
+    for (point_name in ref) {
+      point = ref[point_name];
+      ctx.lineTo(point.x, point.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    Math.seedrandom(5);
+    random = Math.random;
+    // TODO: try layers of chained triangles
+    // like https://jsfiddle.net/evarildo/ds2ajjks/
+    // and order tufts of grass based on y (along with the layers of triangles)?
+    dark_blades = [];
+    light_blades = [];
+    bbox = this.bbox();
+    tile_size = 300;
+    // first_tile_x = floor(bbox.x / tile_size) * tile_size
+    // last_tile_x = ceil((bbox.x + bbox.width) / tile_size) * tile_size
+    // first_tile_y = floor(bbox.y / tile_size) * tile_size
+    // last_tile_y = ceil((bbox.y + bbox.height) / tile_size) * tile_size
+    // first_tile_x = (bbox.x // tile_size) * tile_size
+    // last_tile_x = ((bbox.x + bbox.width) // tile_size) * tile_size
+    // first_tile_y = (bbox.y // tile_size) * tile_size
+    // last_tile_y = ((bbox.y + bbox.height) // tile_size) * tile_size
+    // first_tile_xi = bbox.x // tile_size
+    // last_tile_xi = (bbox.x + bbox.width) // tile_size
+    // first_tile_yi = bbox.y // tile_size
+    // last_tile_yi = (bbox.y + bbox.height) // tile_size
+    // first_tile_x = first_tile_x * tile_size
+    // last_tile_x = last_tile_x * tile_size
+    // first_tile_y = first_tile_y * tile_size
+    // last_tile_y = last_tile_y * tile_size
+    // for tile_x in [first_tile_x..last_tile_x] by tile_size
+    // 	tile_x -= @x
+    // 	for tile_y in [first_tile_y..last_tile_y] by tile_size
+    // 		tile_name = "(#{tile_x}, #{tile_y})"
+    // 		tile_y -= @y
+    left = bbox.x - this.x;
+    top = bbox.y - this.y;
+    right = left + bbox.width;
+    bottom = top + bbox.height;
+    first_tile_xi = Math.floor(left / tile_size);
+    last_tile_xi = Math.floor(right / tile_size);
+    first_tile_yi = Math.floor(top / tile_size);
+    last_tile_yi = Math.floor(bottom / tile_size);
+    for (tile_xi = i = ref1 = first_tile_xi, ref2 = last_tile_xi; (ref1 <= ref2 ? i <= ref2 : i >= ref2); tile_xi = ref1 <= ref2 ? ++i : --i) {
+      for (tile_yi = k = ref3 = first_tile_yi, ref4 = last_tile_yi; (ref3 <= ref4 ? k <= ref4 : k >= ref4); tile_yi = ref3 <= ref4 ? ++k : --k) {
+        tile_name = `(${tile_xi}, ${tile_yi})`;
+        // tile_x = @x + tile_xi * tile_size
+        // tile_y = @y + tile_yi * tile_size
+        // tile_x = tile_xi * tile_size - @x
+        // tile_y = tile_yi * tile_size - @y
+        tile_x = tile_xi * tile_size;
+        tile_y = tile_yi * tile_size;
+        tile = this.grass_tiles.get(tile_name);
+        contains_any_points = rect_contains_any_points(tile_x, tile_y, tile_size, tile_size);
+        if (!((!contains_any_points) && rect_is_empty(tile_x, tile_y, tile_size, tile_size))) {
+          if (tile == null) {
+            tile = {
+              dark_blades: [],
+              light_blades: []
+            };
+            for (var l = 0; l <= 350; l++) {
+              x = tile_x + random() * tile_size;
+              y = tile_y + random() * tile_size;
+              for (j = m = 0, ref5 = random() * 3 + 1; (0 <= ref5 ? m <= ref5 : m >= ref5); j = 0 <= ref5 ? ++m : --m) {
+                shade = random() < 0.5 ? "dark" : "light";
+                tile[`${shade}_blades`].push({x, y});
+                x += (random() + 1) * 3;
+              }
+            }
+            this.grass_tiles.set(tile_name, tile);
+          }
+          ref6 = ["dark", "light"];
+          
+          // ctx.strokeStyle = "#f0f"
+          // ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
+          // ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
+          // ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
+          // # ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
+          // # ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
+          for (n = 0, len = ref6.length; n < len; n++) {
+            shade = ref6[n];
+            ref7 = tile[`${shade}_blades`];
+            for (o = 0, len1 = ref7.length; o < len1; o++) {
+              blade = ref7[o];
+              point = this.toWorld(blade);
+              if (view.testRect(point.x, point.y - 10, 0, 10, 15)) {
+                view_point = view.fromWorld(point);
+                if (blade.visible != null ? blade.visible : blade.visible = ctx.isPointInPath(view_point.x, view_point.y)) {
+                  // if (not contains_any_points) or ctx.isPointInPath(view_point.x, view_point.y)
+                  (shade === "dark" ? dark_blades : light_blades).push(blade);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    ctx.beginPath();
+    for (p = 0, len2 = dark_blades.length; p < len2; p++) {
+      ({x, y} = dark_blades[p]);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
+    }
+    ctx.strokeStyle = this.color_dark;
+    ctx.stroke();
+    ctx.beginPath();
+    for (q = 0, len3 = light_blades.length; q < len3; q++) {
+      ({x, y} = light_blades[q]);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
+    }
+    ctx.strokeStyle = this.color_light;
+    return ctx.stroke();
+  }
+
+};
+
+
+/***/ }),
+
+/***/ 339:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+// Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
+// SimpleActors have rectangular collision boxes and basic physics.
+var Entity, SimpleActor, Terrain, lineSegmentsIntersect;
+
+({Terrain} = __webpack_require__(505));
+
+({lineSegmentsIntersect} = (__webpack_require__(505).helpers));
+
+Entity = __webpack_require__(293);
+
+module.exports = SimpleActor = (function() {
+  var gravity;
+
+  class SimpleActor extends Entity {
+    constructor() {
+      super();
+      this.vx = 0;
+      this.vy = 0;
+      this.width = 10;
+      this.height = 40;
+      this.jump_height = 50;
+      this.walk_speed = 4;
+      this.run_speed = 6;
+      this.move_x = 0;
+      this.move_y = 0;
+      this.jump = false;
+      this.grounded = false;
+      this.facing_x = 0;
+    }
+
+    find_ground_angle(world) {
+      var a, angle, b, e_a, e_b, entity, i, len, ref, ref1, segment, segment_name;
+      a = {
+        x: this.x,
+        y: this.y
+      };
+      b = {
+        x: this.x,
+        y: this.y + 2 + this.height // slightly further down than collision code uses
+      };
+      ref = world.entities;
+      for (i = 0, len = ref.length; i < len; i++) {
+        entity = ref[i];
+        if (entity instanceof Terrain) {
+          if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
+            // console.log "found ground"
+            // find line segment intersecting ab
+            e_a = entity.fromWorld(a);
+            e_b = entity.fromWorld(b);
+            ref1 = entity.structure.segments;
+            for (segment_name in ref1) {
+              segment = ref1[segment_name];
+              if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+                // find the angle
+                angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
+                // console.log "angle", angle
+                if (Math.cos(angle) < 0) {
+                  angle -= Math.PI;
+                  angle = (angle + Math.PI * 2) % (Math.PI * 2);
+                }
+                return angle;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // console.log "no ground found"
+    step(world) {
+      var go, more_submerged, move_x, move_y, resolution, results;
+      if (this.y > 400) {
+        return;
+      }
+      this.grounded = world.collision({
+        x: this.x,
+        y: this.y + 1 + this.height //or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+      });
+      this.submerged = world.collision({
+        x: this.x,
+        y: this.y + this.height * 0.9
+      }, {
+        types: (entity) => {
+          return entity.constructor.name === "Water";
+        }
+      });
+      more_submerged = this.submerged && world.collision({
+        x: this.x,
+        y: this.y + this.height * 0.4
+      }, {
+        types: (entity) => {
+          return entity.constructor.name === "Water";
+        }
+      });
+      if (this.grounded) {
+        // if Math.abs(@vx) >= 1
+        // 	@vx -= Math.sign(@vx)
+        // else
+        // 	@vx = 0
+        // @vx += @move_x
+        if (this.move_x === 0) {
+          this.vx *= 0.7;
+        } else {
+          this.vx += this.move_x;
+        }
+        this.vy += Math.abs(this.vx);
+        if (this.jump) {
+          this.vy = -Math.sqrt(2 * gravity * this.jump_height);
+        }
+      } else {
+        this.vx += this.move_x * 0.7;
+      }
+      this.vx = Math.min(this.run_speed, Math.max(-this.run_speed, this.vx));
+      this.vy += gravity;
+      if (this.submerged) {
+        if (more_submerged || this.move_y > 0) {
+          this.vy += this.move_y * 0.7;
+        }
+        this.vy *= 0.8;
+        this.vx *= 0.8;
+        if (!more_submerged) {
+          this.submerged.makeWaves({
+            x: this.x,
+            y: this.y + this.height * 0.9
+          }, this.width / 2, this.vy);
+        }
+      }
+      // @vy *= 0.99
+      move_x = this.vx;
+      move_y = this.vy;
+      if (move_x !== 0) {
+        this.facing_x = Math.sign(move_x);
+      }
+      resolution = 0.5;
+      while (Math.abs(move_x) > resolution) {
+        go = Math.sign(move_x) * resolution;
+        if (world.collision({
+          x: this.x + go,
+          y: this.y + this.height
+        })) {
+          this.vx *= 0.99;
+          // TODO: clamber over tiny divots and maybe even stones and twigs
+          if (world.collision({
+            x: this.x + go,
+            y: this.y + this.height - 1
+          })) {
+            break;
+          } else {
+            this.y -= 1;
+            if (this.vy > 0) {
+              this.vy = 0;
+            }
+          }
+        }
+        move_x -= go;
+        this.x += go;
+      }
+      if (Math.abs(move_y) > resolution) {
+        this.grounded = false;
+      }
+      results = [];
+      while (Math.abs(move_y) > resolution) {
+        go = Math.sign(move_y) * resolution;
+        if (world.collision({
+          x: this.x,
+          y: this.y + go + this.height
+        })) {
+          this.vy = 0;
+          this.grounded = true;
+          break;
+        }
+        move_y -= go;
+        results.push(this.y += go);
+      }
+      return results;
+    }
+
+  };
+
+  gravity = 0.5;
+
+  return SimpleActor;
+
+}).call(this);
+
+// @jump_height = @y - view.toWorld(editor.mouse).y
+
+// if @jump
+// 	console.log world.collision({@x, y: @y + i + @height}) for i in [0..5]
+// 	console.log @vy, world.collision({@x, y: @y + @vy + @height})
+
+// console.log "RES", world.collision({@x, y: @y + resolution + @height})
+
+// @grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
+
+// if @grounded and @jump
+// 	@vy = -Math.sqrt(2 * gravity * @jump_height)
+
+
+/***/ }),
+
+/***/ 891:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+module.exports = __webpack_require__(505).Terrain;
+
+/*
+Entity = require "./Entity.coffee"
+
+module.exports = class Terrain extends Entity
+	constructor: ->
+		super()
+		@structure = new PolygonStructure
+		@simplex = new SimplexNoise
+		@seed = random()
+
+	initLayout: ->
+		radius = 30
+		for theta in [0..TAU] by TAU/15
+			point_x = Math.sin(theta) * radius
+			point_y = Math.cos(theta) * radius
+			non_squished_point_y_component = Math.max(point_y, -radius*0.5)
+			point_y = non_squished_point_y_component + (point_y - non_squished_point_y_component) * 0.4
+ * point_y = non_squished_point_y_component + pow(0.9, point_y - non_squished_point_y_component)
+ * point_y = non_squished_point_y_component + pow(point_y - non_squished_point_y_component, 0.9)
+			@structure.addVertex(point_x, point_y)
+
+	toJSON: ->
+		def = {}
+		def[k] = v for k, v of @ when k isnt "simplex"
+		def
+
+	generate: ->
+		@width = 5000
+		@left = -2500
+		@right = @left + @width
+		@max_height = 400
+		@bottom = 300
+		res = 20
+		@structure.clear()
+		@structure.addVertex(@right, @bottom)
+		@structure.addVertex(@left, @bottom)
+		for x in [@left..@right] by res
+			noise =
+				@simplex.noise2D(x / 2400, 0) +
+				@simplex.noise2D(x / 500, 10) / 5 +
+				@simplex.noise2D(x / 50, 30) / 100
+			@structure.addVertex(x, @bottom - (noise + 1) / 2 * @max_height)
+
+	draw: (ctx, view)->
+		ctx.beginPath()
+		for point_name, point of @structure.points
+			ctx.lineTo(point.x, point.y)
+		ctx.closePath()
+		ctx.fillStyle = "#a5f"
+		ctx.fill()
+ */
+
+
+/***/ }),
+
+/***/ 776:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Entity, TAU, Tree;
+
+Entity = __webpack_require__(293);
+
+TAU = Math.PI * 2;
+
+module.exports = Tree = class Tree extends Entity {
+  constructor() {
+    super();
+    this.structure.addPoint("base");
+    this.bbox_padding = 60;
+  }
+
+  initLayout() {}
+
+  branch({from, to, juice, angle}) {
+    var leaf_point, length, name, width;
+    name = to;
+    length = Math.sqrt(juice * 1000) * (Math.random() + 1);
+    width = Math.sqrt(juice * 20) + 1;
+    this.structure.addSegment({
+      from,
+      name,
+      length,
+      width,
+      color: "#926B2E"
+    });
+    this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
+    this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
+    if (--juice > 0) {
+      // @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
+      // @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
+      this.branch({
+        from: name,
+        to: `${to}-a`,
+        juice,
+        angle: angle + Math.random() * TAU / 8
+      });
+      this.branch({
+        from: name,
+        to: `${to}-b`,
+        juice,
+        angle: angle - Math.random() * TAU / 8
+      });
+      if (Math.random() < 0.2) {
+        return this.branch({
+          from: name,
+          to: `${to}-c`,
+          juice,
+          angle
+        });
+      }
+    } else {
+      leaf_point = this.structure.points[name];
+      return this.leaf(leaf_point);
+    }
+  }
+
+  leaf(leaf) {
+    leaf.radius = Math.random() * 15 + 15;
+    leaf.scale_x = 2;
+    leaf.scale_y = 1;
+    leaf.color = "#627318"; //"#363D1B"
+    leaf.is_leaf = true;
+    return leaf;
+  }
+
+  draw(ctx) {
+    var leaf, point_name, ref, ref1, results, segment, segment_name;
+    ref = this.structure.segments;
+    for (segment_name in ref) {
+      segment = ref[segment_name];
+      ctx.beginPath();
+      ctx.moveTo(segment.a.x, segment.a.y);
+      ctx.lineTo(segment.b.x, segment.b.y);
+      ctx.lineWidth = segment.width;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = segment.color;
+      ctx.stroke();
+    }
+    ref1 = this.structure.points;
+    results = [];
+    for (point_name in ref1) {
+      leaf = ref1[point_name];
+      if (!leaf.is_leaf) {
+        continue;
+      }
+      ctx.beginPath();
+      results.push(ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU));
+    }
+    return results;
+  }
+
+};
+
+// ctx.save()
+// ctx.beginPath()
+// ctx.translate(leaf.x, leaf.y)
+// ctx.scale(leaf.scale_x, leaf.scale_y)
+// ctx.arc(0, 0, leaf.radius, 0, TAU)
+// ctx.fillStyle = leaf.color
+// ctx.fill()
+// ctx.restore()
+
+
+/***/ }),
+
+/***/ 233:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var ArcheryTarget, Entity, TAU, addEntityClass;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+TAU = Math.PI * 2;
+
+module.exports = ArcheryTarget = (function() {
+  class ArcheryTarget extends Entity {
+    constructor() {
+      super();
+      this.structure.addPoint("a");
+      this.structure.addSegment({
+        from: "a",
+        to: "b",
+        name: "target",
+        length: 100
+      });
+      this.bbox_padding = 20;
+    }
+
+    initLayout() {
+      return this.structure.points.b.y += 100;
+    }
+
+    draw(ctx) {
+      var a, angle, b, center, color, colors, diameter, i, j, len, radius;
+      ({a, b} = this.structure.points);
+      angle = Math.atan2(b.y - a.y, b.x - a.x);
+      diameter = Math.hypot(b.x - a.x, b.y - a.y);
+      radius = diameter / 2;
+      center = {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+      };
+      ctx.save();
+      ctx.translate(center.x, center.y);
+      ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x));
+      ctx.scale(1, 1 / 3);
+      // Draw concentric circles
+      colors = ["#fff", "#000", "#0af", "#f00", "#ff0"];
+      for (i = j = 0, len = colors.length; j < len; i = ++j) {
+        color = colors[i];
+        ctx.beginPath();
+        ctx.arc(0, 0, (1 - i / colors.length) * radius, 0, TAU);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(ArcheryTarget);
+
+  return ArcheryTarget;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 943:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Arrow, Entity, TAU, addEntityClass, closestPointOnLineSegment, debug_drawings, distanceToLineSegment, lineSegmentsIntersect,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+({lineSegmentsIntersect, distanceToLineSegment} = (__webpack_require__(505).helpers));
+
+TAU = Math.PI * 2;
+
+closestPointOnLineSegment = function(point, a, b) {
+  var a_to_b, a_to_p, atb2, atp_dot_atb, t;
+  // https://stackoverflow.com/a/3122532/2624876
+  a_to_p = {
+    x: point.x - a.x,
+    y: point.y - a.y
+  };
+  a_to_b = {
+    x: b.x - a.x,
+    y: b.y - a.y
+  };
+  atb2 = a_to_b.x ** 2 + a_to_b.y ** 2;
+  atp_dot_atb = a_to_p.x * a_to_b.x + a_to_p.y * a_to_b.y;
+  t = atp_dot_atb / atb2;
+  return {
+    x: a.x + a_to_b.x * t,
+    y: a.y + a_to_b.y * t
+  };
+};
+
+debug_drawings = new Map(); // Arrow to function(ctx)
+
+window.debug_drawings = debug_drawings;
+
+module.exports = Arrow = (function() {
+  class Arrow extends Entity {
+    constructor() {
+      var point, point_name, ref;
+      super();
+      this.length = 20;
+      this.structure.addPoint("tip");
+      this.structure.addSegment({
+        from: "tip",
+        to: "nock",
+        name: "shaft",
+        length: this.length
+      });
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        point.prev_x = point.x;
+        point.prev_y = point.y;
+        point.ax = 0;
+        point.ay = 0;
+      }
+      this.bbox_padding = 20;
+      // When the arrow hits something, a constraint will be added between
+      // a point on the object, and a point on the arrow which may slide somewhat along the shaft.
+      this.lodging_constraints = [];
+    }
+
+    initLayout() {
+      this.structure.points.tip.x += this.length;
+      return this.structure.points.tip.prev_x = this.structure.points.tip.x;
+    }
+
+    setVelocity(vx, vy) {
+      this.structure.points.tip.prev_x = this.structure.points.tip.x - vx / Arrow.steps_per_frame;
+      this.structure.points.tip.prev_y = this.structure.points.tip.y - vy / Arrow.steps_per_frame;
+      this.structure.points.nock.prev_x = this.structure.points.nock.x - vx / Arrow.steps_per_frame;
+      return this.structure.points.nock.prev_y = this.structure.points.nock.y - vy / Arrow.steps_per_frame;
+    }
+
+    getAverageVelocity() {
+      var nock, tip, vx, vy;
+      ({tip, nock} = this.structure.points);
+      vx = (tip.x - tip.prev_x + nock.x - nock.prev_x) / 2 * Arrow.steps_per_frame;
+      vy = (tip.y - tip.prev_y + nock.y - nock.prev_y) / 2 * Arrow.steps_per_frame;
+      return [vx, vy];
+    }
+
+    step(world) {
+      var i, j, len, nock, point, ref, ref1, results, tip, too_far_under_water, vx, vy, water;
+      for (i = 0, ref = Arrow.steps_per_frame; (0 <= ref ? i <= ref : i >= ref); 0 <= ref ? i++ : i--) {
+        this.substep(world, 1 / Arrow.steps_per_frame);
+      }
+      
+        // Interact with water
+      ({tip, nock} = this.structure.points);
+      ref1 = [tip, nock];
+      results = [];
+      for (j = 0, len = ref1.length; j < len; j++) {
+        point = ref1[j];
+        water = world.collision(this.toWorld(point), {
+          types: (entity) => {
+            return entity.constructor.name === "Water";
+          }
+        });
+        too_far_under_water = water && world.collision(this.toWorld({
+          x: point.x,
+          y: point.y - 5
+        }), {
+          types: (entity) => {
+            return entity.constructor.name === "Water";
+          }
+        });
+        if (water && !too_far_under_water) {
+          vy = (point.y - point.prev_y) * Arrow.steps_per_frame;
+          vx = (point.x - point.prev_x) * Arrow.steps_per_frame;
+          // Make ripples in water
+          water.makeWaves(this.toWorld(point), 2, vy);
+          // Skip off water
+          if ((4 > vy && vy > 2) && Math.abs(vx) > 0.4) {
+            vy *= -0.3;
+            point.prev_y = point.y - vy / Arrow.steps_per_frame;
+          }
+        }
+        // Slow down in water
+        if (water) {
+          point.prev_x += (point.x - point.prev_x) * 0.1;
+          results.push(point.prev_y += (point.y - point.prev_y) * 0.1);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    }
+
+    substep(world, delta_time) {
+      var angle, angle_diff, arrow_angle, arrow_segment_position_ratio, arrow_shaft_pos, arrow_shaft_pos_local, closest_distance, closest_point_in_hit_space, closest_point_local, closest_segment, coefficient_of_friction, coefficient_of_restitution, constraint, delta_length, delta_x, delta_y, diff, dist, drag_force_x, drag_force_y, facing_angle_of_incidence, heading_angle, heading_angle_of_incidence, held, hit, hit_entity, hit_entity_id, hit_segment, hit_segment_angle, hit_segment_name, hit_segment_pos, hit_segment_position_ratio, i, incident_speed, incident_speed_global_scale, j, k, l, len, len1, len2, len3, len4, m, new_vx, new_vy, nock, nock_relative, nock_vx, nock_vy, normal, original_pos, other_point, p1, p2, p3, p4, point, point_in_hit_space, pos_diff, ref, ref1, ref2, ref3, ref4, ref5, ref6, relative_angle, rot_matrix, rot_matrix1, rot_matrix2, rotated_vx, rotated_vy, segment, segment_name, speed, surface_angle, tip, tip_relative, vx, vy;
+      ({tip, nock} = this.structure.points);
+      ref = [tip, nock];
+      
+      // Accumulate forces as acceleration.
+      // (First, reset acceleration to zero.)
+      for (i = 0, len = ref.length; i < len; i++) {
+        point = ref[i];
+        point.ax = 0;
+        point.ay = 0;
+      }
+      // Gravity
+      tip.ay += 0.1;
+      nock.ay += 0.1;
+      // If dropped completely sideways, it should end up lying on the ground
+      // but the fletching should introduce some drag in that direction,
+      // leading to a slight rotation.
+      // However the fletching shouldn't introduce much drag in the direction of travel.
+
+      // Introduce drag on fletched side, perpendicular to the arrow shaft.
+      // First, find the angle of the arrow shaft, and the current velocity.
+      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
+      [nock_vx, nock_vy] = [nock.x - nock.prev_x, nock.y - nock.prev_y];
+      // Then, calculate the rotation matrix to rotate the velocity to the horizontal coordinate system.
+      rot_matrix1 = [[Math.cos(angle), Math.sin(angle)], [-Math.sin(angle), Math.cos(angle)]];
+      // Apply the rotation to the velocity.
+      [nock_vx, nock_vy] = [nock_vx, nock_vy].map((val, idx) => {
+        return rot_matrix1[idx][0] * nock_vx + rot_matrix1[idx][1] * nock_vy;
+      });
+      // Then, calculate drag force based on the nock's velocity.
+      // drag_force_x = -nock_vx * Math.abs(nock_vx) * 0.04 # tangent to arrow shaft
+      // drag_force_y = -nock_vy * Math.abs(nock_vy) * 0.3 # perpendicular to arrow shaft
+      drag_force_x = 0; // tangent to arrow shaft
+      drag_force_y = -nock_vy * Arrow.steps_per_frame * 0.002; // perpendicular to arrow shaft
+      // Then, calculate the rotation matrix to rotate the force back to the original coordinate system.
+      rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]];
+      // Apply the rotation to the force.
+      [drag_force_x, drag_force_y] = [drag_force_x, drag_force_y].map((val, idx) => {
+        return rot_matrix2[idx][0] * drag_force_x + rot_matrix2[idx][1] * drag_force_y;
+      });
+      // Apply the force.
+      if (isFinite(drag_force_x) && isFinite(drag_force_y)) {
+        nock.ax += drag_force_x;
+        nock.ay += drag_force_y;
+      } else {
+        console.warn("NaN in drag force calculation");
+      }
+      ref1 = [tip, nock];
+      // Perform Verlet integration.
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        point = ref1[j];
+        original_pos = {
+          x: point.x,
+          y: point.y
+        };
+        // Ideally I would like to allow the arrow to move while lodged,
+        // and adjust the depth and angle of lodging (with some stiffness),
+        // and maybe allow it to become dislodged, but it was causing numerical instability.
+        if (!this.lodging_constraints.length) {
+          point.x += point.x - point.prev_x + point.ax * delta_time ** 2;
+          point.y += point.y - point.prev_y + point.ay * delta_time ** 2;
+        }
+        point.prev_x = original_pos.x;
+        point.prev_y = original_pos.y;
+      }
+      // Apply constraints.
+
+      // check if player is holding the arrow
+      held = world.entities.some((entity) => {
+        return entity.holding_arrow === this;
+      });
+      // Note: can't require Player here (to use instanceof check) because of circular dependency
+      hit = world.collision(this.toWorld(tip), {
+        types: (entity) => {
+          var ref2;
+          return (ref2 = entity.constructor.name) !== "Arrow" && ref2 !== "Player" && ref2 !== "Bow" && ref2 !== "Water";
+        }
+      });
+      if (hit && !this.lodging_constraints.length && !held) {
+        // collision() doesn't give us the line segment that we hit.
+        // We want to know the segment point in order to add a lodging constraint at the intersection point.
+        tip_relative = hit.fromWorld(this.toWorld(tip));
+        nock_relative = hit.fromWorld(this.toWorld(nock));
+        hit_segment = void 0;
+        surface_angle = void 0;
+        relative_angle = void 0;
+        incident_speed = void 0; // speed along the surface normal (i.e. towards the surface), ignoring motion along the surface
+        heading_angle_of_incidence = void 0;
+        facing_angle_of_incidence = void 0;
+        hit_segment_position_ratio = 0;
+        arrow_segment_position_ratio = 0; // AKA depth ratio
+        ref2 = hit.structure.segments;
+        for (segment_name in ref2) {
+          segment = ref2[segment_name];
+          if (lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
+            surface_angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
+            arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x);
+            relative_angle = arrow_angle - surface_angle;
+            normal = surface_angle + Math.PI / 2;
+            vx = tip.x - tip.prev_x;
+            vy = tip.y - tip.prev_y;
+            heading_angle = Math.atan2(vy, vx);
+            incident_speed = Math.abs(Math.cos(normal) * vx + Math.sin(normal) * vy);
+            // incident_speed = Math.abs(Math.sin(-surface_angle) * vx + Math.cos(-surface_angle) * vy) # alternative
+            heading_angle_of_incidence = Math.abs(Math.abs(modulo(heading_angle - surface_angle, Math.PI)) - Math.PI / 2);
+            facing_angle_of_incidence = Math.abs(Math.abs(modulo(arrow_angle - surface_angle, Math.PI)) - Math.PI / 2);
+            // window.debug_max_facing_angle_of_incidence = Math.max(window.debug_max_facing_angle_of_incidence ? 0, facing_angle_of_incidence) # should be Math.PI/2 on arrow test scene
+            // window.debug_max_heading_angle_of_incidence = Math.max(window.debug_max_heading_angle_of_incidence ? 0, heading_angle_of_incidence) # should be Math.PI/2 on arrow test scene
+
+            // Arrows coming in at a grazing angle should bounce off.
+            // Arrows coming straight towards the surface but not facing forward should bounce off.
+            // Arrows going slow should bounce off.
+            // A combination of speed, angle of incidence, and arrow angle is needed.
+
+            // Arrows going fast enough towards the surface (i.e. in the axis perpendicular to the surface) should lodge.
+            // The time subdivision shouldn't affect the speed threshold.
+            incident_speed_global_scale = incident_speed * Arrow.steps_per_frame;
+            if (incident_speed_global_scale < 2) {
+              // console.log "not lodging, incident_speed_global_scale too low", incident_speed_global_scale
+              continue;
+            }
+            if (facing_angle_of_incidence > Math.PI / 4) { // 45 degrees
+              // console.log "not lodging, arrow is not facing head-on enough"
+              continue;
+            }
+            if (hit.constructor.name === "Rock") {
+              // console.log "not lodging, hit rock"
+              continue;
+            }
+            hit_segment = segment;
+            // find position ratios of the intersection point on each segment
+            p1 = segment.a;
+            p2 = segment.b;
+            p3 = tip_relative;
+            p4 = nock_relative;
+            // at segment.a = 0, at segment.b = 1
+            hit_segment_position_ratio = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
+            // at tip = 0, at nock = 1
+            arrow_segment_position_ratio = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
+            // console.log "found intersection", hit_segment_position_ratio, arrow_segment_position_ratio
+            break;
+          }
+        }
+        // I'm only allowing one lodging constraint per arrow for now.
+        // Ideally I would like to allow the arrow to pin an enemy to the ground,
+        // using multiple constraints, but this will probably require the whole game to be
+        // simulated together with something like Verlet integration, so that the
+        // enemy's limb can be constrained in a stable way.
+        // But maybe with specific targets it can be enabled to work.
+        // Also, TODO: bounce off if the angle is not perpendicular enough
+        // (i.e. angle of incidence is too high)
+        if (hit_segment && this.lodging_constraints.length === 0) {
+          constraint = {
+            hit_entity_id: hit.id,
+            hit_segment_name: Object.keys(hit.structure.segments)[Object.values(hit.structure.segments).indexOf(hit_segment)],
+            relative_angle,
+            hit_segment_position_ratio,
+            arrow_segment_position_ratio,
+            incident_speed,
+            heading_angle_of_incidence,
+            facing_angle_of_incidence
+          };
+          this.lodging_constraints.push(constraint);
+        }
+      }
+      
+      // Ideally I would like to allow the arrow to move while lodged,
+      // and adjust the depth and angle of lodging (with some stiffness),
+      // and maybe allow it to become dislodged, but it was causing numerical instability.
+      if (!this.lodging_constraints.length && !held) {
+        ref3 = [tip, nock];
+        // Collide with the ground.
+        for (k = 0, len2 = ref3.length; k < len2; k++) {
+          point = ref3[k];
+          hit = world.collision(this.toWorld(point));
+          if (hit) {
+            coefficient_of_restitution = hit.constructor.name === "Rock" ? 0.5 : 0.1;
+            coefficient_of_friction = 0.1;
+            vx = point.x - point.prev_x;
+            vy = point.y - point.prev_y;
+            speed = Math.hypot(vx, vy);
+            // if not debug_drawings.has(@)
+            // 	debug_drawings.set(@, [])
+            // debug_drawings.get(@).push({
+            // 	type: "line"
+            // 	a: {x: point.x, y: point.y}
+            // 	b: {x: point.x + vx, y: point.y + vy}
+            // 	color: "yellow"
+            // })
+            // # debug_drawings.get(@).push({
+            // # 	type: "circle"
+            // # 	center: {x: point.x, y: point.y}
+            // # 	radius: 5
+            // # 	color: "yellow"
+            // # })
+
+            // Project the point back to the surface of the polygon.
+            // This is done by finding the closest point on the polygon's edges.
+            closest_distance = 2e308;
+            closest_segment = null;
+            point_in_hit_space = hit.fromWorld(this.toWorld(point));
+            ref4 = hit.structure.segments;
+            for (segment_name in ref4) {
+              segment = ref4[segment_name];
+              dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b);
+              if (dist < closest_distance) {
+                closest_distance = dist;
+                closest_segment = segment;
+              }
+            }
+            if (closest_segment) {
+              closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b);
+              closest_point_local = this.fromWorld(hit.toWorld(closest_point_in_hit_space));
+              point.x = closest_point_local.x;
+              point.y = closest_point_local.y;
+            }
+            // debug_drawings.get(@).push({
+            // 	type: "circle"
+            // 	center: {x: point.x, y: point.y}
+            // 	radius: 5
+            // 	color: "lime"
+            // })
+
+            // bounce off the surface, reflecting the angle
+            if (speed > 0) {
+              vx = point.x - point.prev_x;
+              vy = point.y - point.prev_y;
+              // console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
+              // heading_angle = Math.atan2(vy, vx)
+              surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x);
+              // a = surface_angle * 2 - heading_angle
+              // a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
+              // new_vx = Math.cos(a) * speed * coefficient_of_restitution
+              // new_vy = Math.sin(a) * speed * coefficient_of_restitution
+
+              // Rotate the velocity vector to the surface normal.
+              rot_matrix1 = [[Math.cos(surface_angle), -Math.sin(surface_angle)], [Math.sin(surface_angle), Math.cos(surface_angle)]];
+              [rotated_vx, rotated_vy] = [vx, vy].map((val, idx) => {
+                return rot_matrix1[idx][0] * vx + rot_matrix1[idx][1] * vy;
+              });
+              // Reflect the velocity vector.
+              rotated_vx *= -coefficient_of_restitution;
+              rotated_vy *= 1 - coefficient_of_friction;
+              // Rotate the velocity vector back to the original direction.
+              rot_matrix2 = [[Math.cos(-surface_angle), -Math.sin(-surface_angle)], [Math.sin(-surface_angle), Math.cos(-surface_angle)]];
+              [new_vx, new_vy] = [rotated_vx, rotated_vy].map((val, idx) => {
+                return rot_matrix2[idx][0] * rotated_vx + rot_matrix2[idx][1] * rotated_vy;
+              });
+              // console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
+              point.prev_x = point.x - new_vx;
+              point.prev_y = point.y - new_vy;
+              // At this point, the other particle's velocity has not been updated,
+              // and it will often cancel out the bounce even for a perfectly elastic collision.
+              // That's not good enough.
+              // Transfer energy along the arrow shaft,
+              // by constraining the distance between the two points.
+              // What this does is cancel the velocity of the other point,
+              // implicit in it having moved forwards in time,
+              // but only in the direction that it needs to.
+              // In contrast to the normal distance constraint, I'm not
+              // going to symmetrically move both points, but rather keep the
+              // collided point stationary so it doesn't get pushed back into the surface,
+              // and move the other point fully rather than halfway.
+              other_point = point === tip ? nock : tip;
+              delta_x = point.x - other_point.x;
+              delta_y = point.y - other_point.y;
+              delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+              diff = (delta_length - this.length) / delta_length;
+              if (isFinite(diff)) {
+                other_point.x += delta_x * diff;
+                other_point.y += delta_y * diff;
+              } else {
+                console.warn("diff is not finite, for momentary distance constraint");
+              }
+            }
+          }
+        }
+      }
+      ref5 = this.lodging_constraints;
+      // Constrain when lodged in an object.
+      for (l = 0, len3 = ref5.length; l < len3; l++) {
+        ({hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} = ref5[l]);
+        hit_entity = world.getEntityByID(hit_entity_id);
+        if (!hit_entity) { // no longer exists
+          this.lodging_constraints = [];
+          break;
+        }
+        hit_segment = hit_entity.structure.segments[hit_segment_name];
+        hit_segment_pos = hit_entity.toWorld({
+          x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio,
+          y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
+        });
+        arrow_shaft_pos = this.toWorld({
+          x: tip.x + (nock.x - tip.x) * arrow_segment_position_ratio,
+          y: tip.y + (nock.y - tip.y) * arrow_segment_position_ratio
+        });
+        pos_diff = {
+          x: hit_segment_pos.x - arrow_shaft_pos.x,
+          y: hit_segment_pos.y - arrow_shaft_pos.y
+        };
+        if (isNaN(pos_diff.x) || isNaN(pos_diff.y)) {
+          console.warn("pos_diff has NaN");
+          continue;
+        }
+        // TODO: for non-static objects,
+        // move the object equally in the opposite direction (each only halfway)
+        // And integrate all physics in the same loop, for Verlet integration.
+        tip.x += pos_diff.x;
+        tip.y += pos_diff.y;
+        nock.x += pos_diff.x;
+        nock.y += pos_diff.y;
+        arrow_angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
+        hit_segment_angle = Math.atan2(hit_segment.b.y - hit_segment.a.y, hit_segment.b.x - hit_segment.a.x);
+        angle_diff = (arrow_angle - hit_segment_angle) - relative_angle;
+        // Rotate the arrow.
+        arrow_shaft_pos_local = this.fromWorld(arrow_shaft_pos); // redundant calculation
+        // Rotate the arrow around the arrow shaft attachment point.
+        rot_matrix = [[Math.cos(angle_diff), Math.sin(angle_diff)], [-Math.sin(angle_diff), Math.cos(angle_diff)]];
+        ref6 = [tip, nock];
+        for (m = 0, len4 = ref6.length; m < len4; m++) {
+          point = ref6[m];
+          // Translate and rotate the arrow.
+          [point.x, point.y] = [point.x, point.y].map((val, idx) => {
+            return rot_matrix[idx][0] * (point.x - arrow_shaft_pos_local.x) + rot_matrix[idx][1] * (point.y - arrow_shaft_pos_local.y);
+          });
+          // Translate the arrow back to its original position.
+          point.x += arrow_shaft_pos_local.x;
+          point.y += arrow_shaft_pos_local.y;
+        }
+      }
+      // Constrain arrow length, moving both points symmetrically.
+      // I learned this from:
+      // http://web.archive.org/web/20080410171619/http://www.teknikus.dk/tj/gdc2001.htm
+      delta_x = tip.x - nock.x;
+      delta_y = tip.y - nock.y;
+      delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+      diff = (delta_length - this.length) / delta_length;
+      if (isFinite(diff)) {
+        tip.x -= delta_x * 0.5 * diff;
+        tip.y -= delta_y * 0.5 * diff;
+        nock.x += delta_x * 0.5 * diff;
+        return nock.y += delta_y * 0.5 * diff;
+      } else {
+        return console.warn("diff is not finite, for distance constraint");
+      }
+    }
+
+    draw(ctx) {
+      var angle, arrow_segment_position_ratio, arrow_shaft_pos, arrow_shaft_pos_local, drawing, facing_angle_of_incidence, heading_angle_of_incidence, hit_entity, hit_entity_id, hit_segment, hit_segment_a_local, hit_segment_b_local, hit_segment_name, hit_segment_pos, hit_segment_pos_local, hit_segment_position_ratio, i, incident_speed, j, len, len1, nock, ref, ref1, ref2, ref3, relative_angle, results, tip;
+      ({tip, nock} = this.structure.points);
+      ctx.beginPath();
+      ctx.moveTo(tip.x, tip.y);
+      ctx.lineTo(nock.x, nock.y);
+      ctx.lineWidth = 1;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#74552B";
+      ctx.stroke();
+      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x) + TAU / 4;
+      ctx.save();
+      ctx.translate(tip.x, tip.y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, -2);
+      ctx.lineTo(-2, 2);
+      ctx.lineTo(0, 1);
+      ctx.lineTo(+2, 2);
+      ctx.fillStyle = "#2D1813";
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(nock.x, nock.y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.translate(0, -4);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-2, 2);
+      ctx.lineTo(-2, 4);
+      ctx.lineTo(0, 3);
+      ctx.lineTo(+2, 4);
+      ctx.lineTo(+2, 2);
+      ctx.fillStyle = "#B1280A";
+      ctx.fill();
+      ctx.restore();
+      if (!window.debug_mode) {
+        return;
+      }
+      if (debug_drawings.get(this)) {
+        ref = debug_drawings.get(this);
+        for (i = 0, len = ref.length; i < len; i++) {
+          drawing = ref[i];
+          if (drawing.type === "line") {
+            ctx.beginPath();
+            ctx.moveTo(drawing.a.x, drawing.a.y);
+            ctx.lineTo(drawing.b.x, drawing.b.y);
+            ctx.lineWidth = 1;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = (ref1 = drawing.color) != null ? ref1 : "#FF0000";
+            ctx.stroke();
+          } else if (drawing.type === "circle") {
+            ctx.beginPath();
+            ctx.arc(drawing.center.x, drawing.center.y, drawing.radius, 0, TAU);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = (ref2 = drawing.color) != null ? ref2 : "#FF0000";
+            ctx.stroke();
+          } else {
+            console.error(`Unknown debug drawing type: ${drawing.type}`);
+          }
+        }
+      }
+      ref3 = this.lodging_constraints;
+      results = [];
+      for (j = 0, len1 = ref3.length; j < len1; j++) {
+        ({hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio, incident_speed, facing_angle_of_incidence, heading_angle_of_incidence} = ref3[j]);
+        hit_entity = window.the_world.getEntityByID(hit_entity_id);
+        if (!hit_entity) { // no longer exists
+          continue;
+        }
+        hit_segment = hit_entity.structure.segments[hit_segment_name];
+        if (!hit_entity.toWorld) {
+          console.error("Need to fix serialization of references to entities (and segments) with something like resurrect.js!");
+          this.lodging_constraints.length = 0;
+          break;
+        }
+        hit_segment_a_local = this.fromWorld(hit_entity.toWorld(hit_segment.a));
+        hit_segment_b_local = this.fromWorld(hit_entity.toWorld(hit_segment.b));
+        ctx.beginPath();
+        ctx.moveTo(hit_segment_a_local.x, hit_segment_a_local.y);
+        ctx.lineTo(hit_segment_b_local.x, hit_segment_b_local.y);
+        ctx.lineWidth = 1;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#FF0000";
+        ctx.stroke();
+        hit_segment_pos = hit_entity.toWorld({
+          x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio,
+          y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
+        });
+        arrow_shaft_pos = this.toWorld({
+          x: tip.x + (nock.x - tip.x) * arrow_segment_position_ratio,
+          y: tip.y + (nock.y - tip.y) * arrow_segment_position_ratio
+        });
+        hit_segment_pos_local = this.fromWorld(hit_segment_pos);
+        arrow_shaft_pos_local = this.fromWorld(arrow_shaft_pos); // redundant calc but whatever
+        ctx.beginPath();
+        ctx.moveTo(hit_segment_pos_local.x, hit_segment_pos_local.y);
+        ctx.lineTo(arrow_shaft_pos_local.x, arrow_shaft_pos_local.y);
+        ctx.lineWidth = 1;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#00FF00";
+        ctx.stroke();
+        // misc debug for colorizing based on a variable like
+        // incident_speed, facing_angle_of_incidence, heading_angle_of_incidence, relative_angle
+        ctx.beginPath();
+        ctx.moveTo(tip.x, tip.y);
+        ctx.lineTo(nock.x, nock.y);
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = `hsl(50, 100%, ${facing_angle_of_incidence * 20}%)`;
+        results.push(ctx.stroke());
+      }
+      return results;
+    }
+
+  };
+
+  addEntityClass(Arrow);
+
+  Arrow.steps_per_frame = 2;
+
+  return Arrow;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 914:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Bow, Entity, TAU, addEntityClass;
+
+Entity = __webpack_require__(293);
+
+({addEntityClass} = __webpack_require__(505));
+
+TAU = Math.PI * 2;
+
+module.exports = Bow = (function() {
+  class Bow extends Entity {
+    constructor() {
+      var point, point_name, ref;
+      super();
+      this.height = 30;
+      this.fistmele = 6;
+      this.draw_distance = 0;
+      this.structure.addPoint("grip");
+      this.structure.addSegment({
+        from: "grip",
+        to: "top",
+        name: "upper limb",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "grip",
+        to: "bottom",
+        name: "lower limb",
+        length: 10
+      });
+      this.structure.addSegment({
+        from: "grip",
+        name: "serving",
+        length: this.fistmele
+      });
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        point.vx = 0;
+        point.vy = 0;
+      }
+      this.bbox_padding = 20;
+    }
+
+    initLayout() {
+      this.structure.points.serving.x -= this.fistmele;
+      return this.layout();
+    }
+
+    step(world) {
+      return this.layout();
+    }
+
+    layout() {
+      var bottom, bow_angle, grip, serving, top;
+      ({top, bottom, grip, serving} = this.structure.points);
+      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
+      top.x = grip.x + this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
+      top.y = grip.y + this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
+      bottom.x = grip.x - this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
+      return bottom.y = grip.y - this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
+    }
+
+    draw(ctx) {
+      var arc_r, bottom, bow_angle, center_x, center_y, grip, serving, top;
+      ({top, bottom, grip, serving} = this.structure.points);
+      ctx.beginPath();
+      ctx.moveTo(top.x, top.y);
+      ctx.lineTo(serving.x, serving.y);
+      ctx.lineTo(bottom.x, bottom.y);
+      ctx.lineWidth = 0.5;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "white";
+      ctx.stroke();
+      ctx.beginPath();
+      center_x = (top.x + bottom.x) / 2;
+      center_y = (top.y + bottom.y) / 2;
+      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
+      ctx.save();
+      ctx.translate(grip.x, grip.y);
+      ctx.rotate(bow_angle);
+      arc_r = this.fistmele;
+      ctx.beginPath();
+      ctx.save();
+      ctx.translate(0, -arc_r);
+      ctx.save();
+      ctx.scale(this.height / 2 / arc_r + 0.1, 1);
+      ctx.arc(0, -0.5, arc_r, 0, TAU / 2);
+      ctx.restore();
+      ctx.save();
+      ctx.scale(this.height / 2 / arc_r, 0.7);
+      ctx.arc(0, 0, arc_r - 0.1, TAU / 2, 0, true);
+      ctx.restore();
+      ctx.closePath();
+      ctx.fillStyle = "#AB7939";
+      ctx.fill();
+      ctx.restore();
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Bow);
+
+  return Bow;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 50:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var GrassyTerrain, LushGrass, addEntityClass;
+
+GrassyTerrain = __webpack_require__(968);
+
+({addEntityClass} = __webpack_require__(505));
+
+module.exports = LushGrass = (function() {
+  class LushGrass extends GrassyTerrain {
+    constructor() {
+      super();
+      this.color = "#4d8e2c";
+      this.color_dark = "#46a517";
+      this.color_light = "#7fcc37";
+    }
+
+  };
+
+  addEntityClass(LushGrass);
+
+  return LushGrass;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 91:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Rock, Terrain, addEntityClass;
+
+Terrain = __webpack_require__(891);
+
+({addEntityClass} = __webpack_require__(505));
+
+module.exports = Rock = (function() {
+  class Rock extends Terrain {
+    constructor() {
+      super();
+      this.bbox_padding = 20;
+    }
+
+    draw(ctx, view) {
+      var point, point_name, ref;
+      ctx.beginPath();
+      ref = this.structure.points;
+      for (point_name in ref) {
+        point = ref[point_name];
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#63625F";
+      return ctx.fill();
+    }
+
+  };
+
+  addEntityClass(Rock);
+
+  return Rock;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 475:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var GrassyTerrain, SavannaGrass, addEntityClass;
+
+GrassyTerrain = __webpack_require__(968);
+
+({addEntityClass} = __webpack_require__(505));
+
+module.exports = SavannaGrass = (function() {
+  class SavannaGrass extends GrassyTerrain {
+    constructor() {
+      super();
+      this.color = "#C29853";
+      this.color_dark = "#B7863E";
+      this.color_light = "#D6AE77";
+    }
+
+  };
+
+  addEntityClass(SavannaGrass);
+
+  return SavannaGrass;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 469:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var Terrain, Water, addEntityClass;
+
+Terrain = __webpack_require__(891);
+
+({addEntityClass} = __webpack_require__(505));
+
+module.exports = Water = (function() {
+  class Water extends Terrain {
+    constructor() {
+      super();
+      this.bbox_padding = 30;
+      this.solid = false;
+      this.waves_y = []; // indexed by x starting from @min_x
+      this.waves_vy = []; // indexed by x starting from @min_x
+      this.min_x = 2e308;
+      this.max_x = -2e308;
+      this.min_y = 2e308;
+      this.max_y = -2e308;
+      this.structure.onchange = () => {
+        var double_area, i, point, point_name, ref, ref1, ref2, ref3, segment, segment_name, x;
+        this.waves_y = [];
+        this.waves_vy;
+        this.min_x = 2e308;
+        this.max_x = -2e308;
+        this.min_y = 2e308;
+        this.max_y = -2e308;
+        ref = this.structure.points;
+        for (point_name in ref) {
+          point = ref[point_name];
+          this.min_x = Math.min(this.min_x, point.x);
+          this.max_x = Math.max(this.max_x, point.x);
+          this.min_y = Math.min(this.min_y, point.y);
+          this.max_y = Math.max(this.max_y, point.y);
+        }
+        this.min_x = Math.floor(this.min_x);
+        this.max_x = Math.ceil(this.max_x);
+        this.min_y = Math.floor(this.min_y);
+        this.max_y = Math.ceil(this.max_y);
+        for (x = i = ref1 = this.min_x, ref2 = this.max_x; (ref1 <= ref2 ? i < ref2 : i > ref2); x = ref1 <= ref2 ? ++i : --i) {
+          this.waves_y[x - this.min_x] = 0;
+          this.waves_vy[x - this.min_x] = 0;
+        }
+        
+        // detect polygon vertex order
+        double_area = 0;
+        ref3 = this.structure.segments;
+        for (segment_name in ref3) {
+          segment = ref3[segment_name];
+          double_area += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y);
+        }
+        return this.ccw = double_area > 0;
+      };
+    }
+
+    makeWaves(world_pos, radius = 5, velocity_y = 5) {
+      var i, local_pos, ref, ref1, results, x;
+      local_pos = this.fromWorld(world_pos);
+      results = [];
+      for (x = i = ref = Math.round(local_pos.x - radius), ref1 = Math.round(local_pos.x + radius); (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
+        results.push(this.waves_vy[x - this.min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius));
+      }
+      return results;
+    }
+
+    step() {
+      var i, j, neighboring, ref, ref1, ref2, ref3, ref4, ref5, results, x;
+      neighboring = [];
+      for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
+        neighboring[x - this.min_x] = ((ref2 = this.waves_y[x - this.min_x - 1]) != null ? ref2 : 0) + ((ref3 = this.waves_y[x - this.min_x + 1]) != null ? ref3 : 0);
+      }
+      results = [];
+      for (x = j = ref4 = this.min_x, ref5 = this.max_x; (ref4 <= ref5 ? j < ref5 : j > ref5); x = ref4 <= ref5 ? ++j : --j) {
+        this.waves_vy[x - this.min_x] += (neighboring[x - this.min_x] - this.waves_y[x - this.min_x] * 2) * 0.4;
+        this.waves_vy[x - this.min_x] *= 0.99;
+        this.waves_vy[x - this.min_x] -= this.waves_y[x - this.min_x] * 0.2;
+        results.push(this.waves_y[x - this.min_x] += this.waves_vy[x - this.min_x]);
+      }
+      return results;
+    }
+
+    draw(ctx, view) {
+      var bbox_max, bbox_min, i, point, point_name, ref, ref1, ref2, reflecting_line_y, wave_center_y, x;
+      wave_center_y = this.min_y;
+      ctx.save();
+      ctx.beginPath();
+      for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
+        ctx.lineTo(x, this.waves_y[x - this.min_x] + wave_center_y);
+      }
+      ctx.lineTo(this.max_x, this.max_y);
+      ctx.lineTo(this.min_x, this.max_y);
+      ctx.closePath();
+      // ctx.strokeStyle = if @ccw? then (if @ccw then "lime" else "yellow") else "red"
+      // ctx.stroke()
+      ctx.clip();
+      ctx.beginPath();
+      ref2 = this.structure.points;
+      for (point_name in ref2) {
+        point = ref2[point_name];
+        if (point.y < wave_center_y + 2) {
+          if ((point.x > (this.min_x + this.max_x) / 2) === this.ccw) {
+            ctx.lineTo(point.x, point.y);
+            ctx.lineTo(point.x, point.y - 50);
+          } else {
+            ctx.lineTo(point.x, point.y - 50);
+            ctx.lineTo(point.x, point.y);
+          }
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      }
+      ctx.closePath();
+      ctx.fillStyle = "hsla(200, 100%, 50%, 0.5)";
+      ctx.fill();
+      ctx.clip();
+      // For debugging, disable ctx.clip() and uncomment this to escape the other clip:
+      // ctx.restore()
+      // ctx.save()
+
+      // Draw reflections by drawing the canvas upside down on top of itself
+
+      // Undo the entity space transform
+      ctx.translate(-this.x, -this.y);
+      // Undo the view transform which looks like this:
+      //   ctx.translate(canvas.width / 2, canvas.height / 2)
+      //   ctx.scale(view.scale, view.scale)
+      //   ctx.translate(-view.center_x, -view.center_y)
+      ctx.translate(view.center_x, view.center_y);
+      ctx.scale(1 / view.scale, 1 / view.scale);
+      ctx.translate(-ctx.canvas.width / 2, -ctx.canvas.height / 2);
+      // We're now in canvas space
+
+      // We need to know the y coordinate of the reflecting line in canvas space
+      reflecting_line_y = (this.y + wave_center_y - view.center_y) * view.scale + ctx.canvas.height / 2;
+      // Debug
+      // ctx.beginPath()
+      // ctx.moveTo(0, reflecting_line_y)
+      // ctx.lineTo(ctx.canvas.width, reflecting_line_y)
+      // ctx.strokeStyle = "red"
+      // ctx.stroke()
+      ctx.globalAlpha = 0.2;
+      ctx.translate(0, reflecting_line_y * 2);
+      ctx.scale(1, -1);
+      // ctx.drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height)
+      // Optimization: draw only the part of the canvas that's visible
+      bbox_min = view.fromWorld({
+        x: this.min_x + this.x,
+        y: this.min_y + this.y
+      });
+      bbox_max = view.fromWorld({
+        x: this.max_x + this.x,
+        y: this.max_y + this.y
+      });
+      // Invert the y coordinates over the reflecting line
+      bbox_min.y = reflecting_line_y * 2 - bbox_min.y;
+      bbox_max.y = reflecting_line_y * 2 - bbox_max.y;
+      ctx.drawImage(ctx.canvas, bbox_min.x, bbox_min.y, bbox_max.x - bbox_min.x, bbox_max.y - bbox_min.y, bbox_min.x, bbox_min.y, bbox_max.x - bbox_min.x, bbox_max.y - bbox_min.y);
+      
+      // Note that the reflections can't draw what's beyond the canvas,
+      // which can cause an artifact when the top of the water is near the top of the canvas.
+      // This could be fixed by drawing the game world in a larger canvas and then
+      // cropping it to the normal viewport size.
+      return ctx.restore();
+    }
+
+  };
+
+  addEntityClass(Water);
+
+  return Water;
+
+}).call(this);
+
+
+/***/ }),
+
+/***/ 866:
+/***/ ((module) => {
+
+var keyboard, keys, prev_keys;
+
+keys = {};
+
+prev_keys = {};
+
+addEventListener("keydown", function(e) {
+  return keys[e.code] = true;
+});
+
+addEventListener("keyup", function(e) {
+  return delete keys[e.code];
+});
+
+keyboard = {
+  wasJustPressed: function(code) {
+    return (keys[code] != null) && (prev_keys[code] == null);
+  },
+  isHeld: function(code) {
+    return keys[code] != null;
+  },
+  resetForNextStep: function() {
+    var k, results, v;
+    prev_keys = {};
+    results = [];
+    for (k in keys) {
+      v = keys[k];
+      results.push(prev_keys[k] = v);
+    }
+    return results;
+  }
+};
+
+module.exports = keyboard;
+
+
+/***/ }),
+
+/***/ 880:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Structure, randomize_entities,
+  hasProp = {}.hasOwnProperty;
+
+({Structure} = __webpack_require__(505));
+
+module.exports = randomize_entities = function(entities) {
+  var apply_differences, entity, i, len, new_entity_a, new_entity_b;
+  for (i = 0, len = entities.length; i < len; i++) {
+    entity = entities[i];
+    // Use two new entities to detect what properties get randomized,
+    // and change only those.
+    // (If you just used one new entity, you couldn't distinguish between
+    // properties that were different because they were randomized at construction,
+    // or because they were manually modified, such as by posing an entity,
+    // or modified by simulation, although that's less important.)
+    new_entity_a = new entity.constructor();
+    new_entity_b = new entity.constructor();
+    apply_differences = function(a, b, cur) {
+      var key, val_a, val_b;
+      for (key in a) {
+        if (!hasProp.call(a, key)) continue;
+        val_a = a[key];
+        if (!(key !== "id")) {
+          continue;
+        }
+        val_b = b[key];
+        if (val_a instanceof Structure) {
+          // Replace the structure wholesale.
+          // Avoids issues with trees, which would get split up with floating branches.
+          if (JSON.stringify(val_a) !== JSON.stringify(val_b)) {
+            cur[key] = val_a;
+          }
+        } else if (Array.isArray(val_a)) {
+          // Replace the array wholesale.
+          // That way it can shrink, and can't leave blanks in the middle.
+          // If e.g. a = [1, 0, 1] and b = [1, 0, 1, 0, 1] and cur = []
+          // the "object" path could leave cur = [, , , 0, 1], I think.
+          if (JSON.stringify(val_a) !== JSON.stringify(val_b)) {
+            cur[key] = val_a;
+          }
+        } else if (typeof val_a === "object" && val_a !== null && typeof val_b === "object" && val_b !== null && typeof cur[key] === "object" && cur[key] !== null) {
+          apply_differences(val_a, val_b, cur[key]);
+        } else if (val_a !== val_b) {
+          cur[key] = val_a;
+        }
+      }
+    };
+    apply_differences(new_entity_a, new_entity_b, entity);
+  }
+};
+
+
+/***/ }),
+
+/***/ 351:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var ArcheryTarget, Arrow, Bow, Cloud, Deer, Player, Terrain, Water, anything_other_than_c, c, compare_entities, relative_sorts, sort_entities, topological_sort;
+
+Terrain = __webpack_require__(891);
+
+Water = __webpack_require__(469);
+
+Cloud = __webpack_require__(332);
+
+Deer = __webpack_require__(857);
+
+Player = __webpack_require__(795);
+
+Bow = __webpack_require__(914);
+
+Arrow = __webpack_require__(943);
+
+ArcheryTarget = __webpack_require__(233);
+
+c = function(entity_class) {
+  return function(entity) {
+    return entity instanceof entity_class;
+  };
+};
+
+anything_other_than_c = function(entity_class) {
+  return function(entity) {
+    return !(entity instanceof entity_class);
+  };
+};
+
+relative_sorts = [
+  // [A, B] denotes A in front of B
+  // If the filters result in true for a pair and its reverse,
+  // it will be handled below and shouldn't cause instability.
+
+    // The one background element.
+  [anything_other_than_c(Cloud),
+  c(Cloud)],
+  // The archery target is effectively a line, but displayed as an oval, implying perspective.
+  // Arrows need to be visible when sticking into the target.
+  [c(Arrow),
+  c(ArcheryTarget)],
+  // For riding, player's legs go in front; it's implied that one goes behind,
+  // by posing the legs on top of each other.
+  [c(Player),
+  c(Deer)],
+  // It looks best holding the arrow in front of the bow.
+  [c(Arrow),
+  c(Player)],
+  // [c(Player), c(Bow)] # can look better in some cases, but not while aiming or turning
+  [c(Bow),
+  c(Player)],
+  [c(Arrow),
+  c(Bow)],
+  // Water is transparent, and it should discolor any entities submerged in it.
+  // [c(Water), anything_other_than_c(Terrain)]
+  // For the reflection effect, the water should be drawn after the terrain too.
+  [c(Water),
+  anything_other_than_c(Water)],
+  
+    // This may end up being too general
+  // I'm keeping it at the end so any rules can override it
+  [anything_other_than_c(Terrain),
+  c(Terrain)]
+];
+
+compare_entities = function(a, b) {
+  var a_filter, b_filter, k, len;
+// This comparator is intransitive, so it can't be used for sort().
+  for (k = 0, len = relative_sorts.length; k < len; k++) {
+    [a_filter, b_filter] = relative_sorts[k];
+    if (a_filter(a) && b_filter(b) && !b_filter(a) && !a_filter(b)) {
+      return 1;
+    }
+    if (b_filter(a) && a_filter(b) && !a_filter(a) && !b_filter(b)) {
+      return -1;
+    }
+  }
+  // If we get here, we don't know which should be in front.
+  return 0;
+};
+
+module.exports = sort_entities = function(world) {
+  var before_sort, changed;
+  before_sort = world.entities.slice();
+  // world.entities.sort(compare_entities)
+  // sort() is stable, but it will fail to sort [a, b, c] if there is only a rule for [a, c]
+  // It takes 0 to mean "equal", not "unknown".
+  // We need a sorting algorithm that compares more than just adjacent pairs,
+  // and gives a total ordering, with an intransitive comparator.
+
+  // Bubble sort doesn't work either.
+  // n = world.entities.length
+  // loop
+  // 	new_n = 0
+  // 	for i in [1...n]
+  // 		a = world.entities[i - 1]
+  // 		b = world.entities[i]
+  // 		if compare_entities(a, b) > 0
+  // 			world.entities[i - 1] = b
+  // 			world.entities[i] = a
+  // 			new_n = i
+  // 	n = new_n
+  // 	break if n <= 1
+
+  // An insertion sort that DOESN'T work with an intransitive comparator:
+  // i = 1
+  // while i < world.entities.length
+  // 	x = world.entities[i]
+  // 	j = i - 1
+  // 	while j >= 0 and compare_entities(world.entities[j], x) > 0
+  // 		world.entities[j + 1] = world.entities[j]
+  // 		j -= 1
+  // 	world.entities[j + 1] = x
+  // 	i += 1
+
+  // An insertion sort that DOES work with an intransitive comparator:
+  // new_list = []
+  // for entity in world.entities
+  // 	inserted = false
+  // 	for i in [0...new_list.length]
+  // 		if compare_entities(entity, new_list[i]) < 0
+  // 			new_list.splice(i, 0, entity)
+  // 			inserted = true
+  // 			break
+  // 	new_list.push(entity) unless inserted
+  // world.entities = new_list
+
+  // Topological sort is better because it can tell us if there is a cycle, i.e. inconsistency.
+  world.entities = topological_sort(world.entities, compare_entities);
+  changed = world.entities.some(function(entity, i) {
+    return entity !== before_sort[i];
+  });
+  if (changed) {
+    console.log("Sort changed");
+    console.log(`Before: ${before_sort.map(function(e) {
+      return e.constructor.name;
+    }).join(", ")}`);
+    return console.log(`After: ${world.entities.map(function(e) {
+      return e.constructor.name;
+    }).join(", ")}`);
+  }
+};
+
+// topological_sort = (array, comparator) ->
+// 	# Create an empty dictionary to hold the graph.
+// 	graph = {}
+
+// 	# Add each entity to the graph.
+// 	for entity in array
+// 		graph[entity] = []
+
+// 	# For each pair of array, check if one should come before the other.
+// 	for i in [0..array.length-1]
+// 		for j in [i+1..array.length-1]
+// 			result = comparator(array[i], array[j])
+// 			if result == 1
+// 				# If entity i should come before entity j, add an edge from i to j.
+// 				graph[array[i]].push(array[j])
+// 			else if result == -1
+// 				# If entity j should come before entity i, add an edge from j to i.
+// 				graph[array[j]].push(array[i])
+
+// 	# Create a dictionary to hold the number of incoming edges for each node.
+// 	in_degrees = {}
+// 	for node, neighbors of graph
+// 		in_degrees[node] = 0
+// 	for node, neighbors of graph
+// 		for neighbor in neighbors
+// 			in_degrees[neighbor] += 1
+
+// 	# Initialize a queue with nodes that have no incoming edges.
+// 	queue = []
+// 	for node, in_degree of in_degrees
+// 		if in_degree == 0
+// 			queue.push(node)
+
+// 	# Perform the topological sort.
+// 	result = []
+// 	while queue.length > 0
+// 		# Get the next node from the queue.
+// 		node = queue.shift()
+// 		result.push(node)
+
+// 		# Remove the node and its outgoing edges from the graph.
+// 		for neighbor in graph[node]
+// 			in_degrees[neighbor] -= 1
+// 			if in_degrees[neighbor] == 0
+// 				queue.push(neighbor)
+
+// 	# Check if the sort was successful (i.e., all nodes were visited).
+// 	if result.length == array.length
+// 		return result
+// 	else
+// 		throw new Error("Graph contains cycle: #{JSON.stringify(graph)}")
+
+// topological_sort = (array, comparator) ->
+// 	# Build a map of array that depend on each item
+// 	dependencies = new Map()
+// 	for item in array
+// 		dependencies.set(item, [])
+// 		for other_item in array
+// 			if comparator(item, other_item) > 0
+// 				dependencies.get(item).push(other_item)
+
+// 	# Perform topological sort using Kahn's algorithm
+// 	sorted_array = []
+// 	no_incoming_edges = []
+// 	for [item, edges] from dependencies
+// 		if edges.length == 0
+// 			no_incoming_edges.push(item)
+// 	while no_incoming_edges.length > 0
+// 		item = no_incoming_edges.shift()
+// 		sorted_array.push(item)
+// 		for edge in dependencies.get(item)
+// 			incoming_edges = dependencies.get(edge)
+// 			incoming_edges.splice(incoming_edges.indexOf(item), 1)
+// 			if incoming_edges.length == 0
+// 				no_incoming_edges.push(edge)
+
+// 	# Check for cycles
+// 	if sorted_array.length < array.length
+// 		throw new Error("Cycle detected. Comparator must not be consistent.")
+
+// 	return sorted_array
+topological_sort = function(array, comparator) {
+  var adjacency_list, comparison, current, cycle, degree, i, in_degree, item, j, k, l, len, len1, len2, m, n, neighbor, neighbors, node, o, queue, ref, ref1, ref2, ref3, result, reverse_adjacency_list, x, y;
+  // Construct the adjacency list and reverse adjacency list
+  adjacency_list = new Map();
+  reverse_adjacency_list = new Map();
+  for (k = 0, len = array.length; k < len; k++) {
+    node = array[k];
+    adjacency_list.set(node, []);
+    reverse_adjacency_list.set(node, []);
+  }
+  for (i = l = 0, ref = array.length; (0 <= ref ? l < ref : l > ref); i = 0 <= ref ? ++l : --l) {
+    for (j = m = ref1 = i + 1, ref2 = array.length; (ref1 <= ref2 ? m < ref2 : m > ref2); j = ref1 <= ref2 ? ++m : --m) {
+      comparison = comparator(array[i], array[j]);
+      if (comparison < 0) {
+        adjacency_list.get(array[i]).push(array[j]);
+        reverse_adjacency_list.get(array[j]).push(array[i]);
+      } else if (comparison > 0) {
+        adjacency_list.get(array[j]).push(array[i]);
+        reverse_adjacency_list.get(array[i]).push(array[j]);
+      }
+    }
+  }
+  // Perform the topological sort using Kahn's algorithm
+  in_degree = new Map();
+  for (x of reverse_adjacency_list) {
+    [node, neighbors] = x;
+    in_degree.set(node, neighbors.length);
+  }
+  queue = [];
+  for (y of in_degree) {
+    [node, degree] = y;
+    if (degree === 0) {
+      queue.push(node);
+    }
+  }
+  result = [];
+  while (queue.length > 0) {
+    node = queue.shift();
+    result.push(node);
+    ref3 = adjacency_list.get(node);
+    for (n = 0, len1 = ref3.length; n < len1; n++) {
+      neighbor = ref3[n];
+      in_degree.set(neighbor, in_degree.get(neighbor) - 1);
+      if (in_degree.get(neighbor) === 0) {
+        queue.push(neighbor);
+      }
+    }
+  }
+  // Check for cycles and throw an error if found
+  if (result.length !== array.length) {
+    for (o = 0, len2 = array.length; o < len2; o++) {
+      item = array[o];
+      if (!result.includes(item)) {
+        cycle = [item];
+        current = adjacency_list.get(item)[0];
+        while (current !== item) {
+          cycle.push(current);
+          current = adjacency_list.get(current)[0];
+        }
+        cycle.push(item);
+        cycle = cycle.map((item) => {
+          if (`${item}` === "[object Object]") {
+            return item.constructor.name;
+          } else {
+            return item;
+          }
+        }).join(" > ");
+        throw new Error("Comparator is inconsistent. Cycle: " + cycle);
+      }
+    }
+  }
+  // Return the topologically sorted array
+  return result;
+};
+
+window.topological_sort = topological_sort;
+
+
+/***/ }),
+
+/***/ 505:
 /***/ ((module) => {
 
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -52,7 +4867,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, "html, body {\n\tmargin: 0;\n\theight: 
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".editor {\n\t-webkit-touch-callout: none;\n\t-webkit-user-select: none;\n\t-moz-user-select: none;\n\tuser-select: none;\n}\n.grabbable {\n\tcursor: move; /* fallback if grab cursor is unsupported */\n\tcursor: grab;\n\tcursor: -moz-grab;\n\tcursor: -webkit-grab;\n}\n/* Apply a \"closed-hand\" cursor during drag operation. */\n.grabbable:active { \n\tcursor: grabbing;\n\tcursor: -moz-grabbing;\n\tcursor: -webkit-grabbing;\n}\n/* Sidebars */\n.bar {\n\tbackground: white;\n\ttransition: opacity 0.2s ease;\n\tdisplay: flex;\n\talign-items: stretch;\n\talign-content: flex-start;\n}\n.bar:not(.visible) {\n\topacity: 0;\n\tpointer-events: none;\n}\n.sidebar {\n\tposition: absolute;\n\tz-index: 1;\n\tleft: 0;\n\ttop: 0;\n\theight: 100%;\n\tbox-shadow: 0 0 5px rgba(0, 0, 0, 0.4);\n\tflex-direction: column;\n}\n.bar article,\n.terrain-tools {\n\tpadding: 1rem;\n\tpadding-top: 0.5rem;\n\tdisplay: flex;\n\tflex-direction: column;\n}\n.terrain-tools label {\n\tmargin-bottom: 1em;\n}\n.bar article:hover {\n\tbackground: rgba(0, 0, 0, 0.08);\n}\n.bar article:active,\n.bar article.selected {\n\tbackground: rgba(0, 0, 0, 0.12);\n}\n.bar article canvas {\n\tbackground: rgba(50, 200, 255, 0.7);\n}\n.bar article:hover canvas,\n.bar article:active canvas,\n.bar article.selected canvas {\n\tbackground: rgba(50, 200, 255, 1);\n}\n.bar h1 {\n\ttext-align: center;\n\tfont-size: 2em;\n\tfont-weight: normal;\n\tmargin: 0.1em 0;\n}\n.bar article > h1 {\n\tpointer-events: none;\n}\n.bar article .title-bar {\n\tdisplay: flex;\n\tflex-direction: row;\n}\n.bar .name {\n\tfont-size: 1.2em;\n\tfont-weight: normal;\n\tfont-family: sans-serif;\n\tmargin: 0;\n\tmargin-bottom: 0.1em;\n}\n.entities-bar .name {\n\ttext-align: center;\n}\n.bar article .mdl-textfield {\n\twidth: auto;\n\tpadding: 0;\n\tpadding-bottom: 0.3rem;\n}\nbutton,\ncanvas,\nimg,\narticle, /* representing entities, poses, animations, animation frames - things with EntityPreviews in them */\n.anims > * { /* includes headings and .anim-groups */\n\tflex: 0 0 auto;\n}\n.anim-bar {\n\tflex-direction: row;\n\talign-items: flex-start;\n}\n.anim-bar > * {\n\theight: 100%;\n}\n/* TODO: refactor bars and subbars */\n.anim-bar > *:not(:first-child) {\n\tborder-left: 1px solid rgba(0, 0, 0, 0.12);\n}\n.anims,\n.anim-group {\n\tdisplay: flex;\n\tflex-direction: column;\n\talign-items: stretch;\n}\n.anims,\n.animation-frames,\n.entities-bar {\n\toverflow-y: auto;\n\toverflow-x: hidden;\n}\n/* TODO: refactor bars and subbars */\n.animation-frames {\n\t/*transition: 0.1s ease;*/\n}\n.animation-frames:not(.visible) {\n\topacity: 0;\n\tpointer-events: none;\n\twidth: 0;\n\t/*transform: translate(-100%, 0);*/\n}\n.add-anim-fab {\n\tmargin: 0.5rem 0 !important;\n\talign-self: center;\n}\n.poses,\n.animations {\n\twidth: 100%;\n}\narticle.placeholder {\n\tpadding: 2rem;\n\ttext-align: center;\n\tbackground: rgba(128, 59, 110, 0.16);\n\tcolor: rgba(0, 0, 0, 0.5);\n\tfont-size: 1.4em;\n\tpointer-events: none;\n}\n\n.warning {\n\tposition: absolute;\n\ttop: 0;\n\tright: 0;\n\tz-index: 50;\n\tmargin: 15px;\n\tpadding: 15px;\n\tbackground: #FFF9C4;\n\tcolor: #BF360C;\n\tborder-radius: 2px;\n\ttransition: opacity 0.2s ease;\n}\n.warning:not(.show) {\n\tpointer-events: none;\n\topacity: 0;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, ".editor {\n\t-webkit-touch-callout: none;\n\t-webkit-user-select: none;\n\t-moz-user-select: none;\n\tuser-select: none;\n\tposition: absolute;\n\ttop: 0;\n\tleft: 0;\n\tright: 0;\n\tbottom: 0;\n\tdisplay: flex;\n\t/* This is to allow clicking through to the canvas which is underneath the editor.\n\tIt has to be carefully re-enabled on children with pointer-events: auto; */\n\tpointer-events: none;\n}\n.grabbable {\n\tcursor: move; /* fallback if grab cursor is unsupported */\n\tcursor: grab;\n\tcursor: -moz-grab;\n\tcursor: -webkit-grab;\n}\n/* Apply a \"closed-hand\" cursor during drag operation. */\n.grabbable:active { \n\tcursor: grabbing;\n\tcursor: -moz-grabbing;\n\tcursor: -webkit-grabbing;\n}\n/* Sidebars */\n.bar {\n\tbackground: white;\n\ttransition: opacity 0.2s ease;\n\tdisplay: flex;\n\talign-items: stretch;\n\talign-content: flex-start;\n\tflex: 0 0 auto;\n\tpointer-events: auto;\n}\n.bar:not(.visible) {\n\topacity: 0;\n\tpointer-events: none;\n}\n.sidebar {\n\tposition: absolute;\n\tz-index: 1;\n\ttop: 0;\n\theight: 100%;\n\tbox-shadow: 0 0 5px rgba(0, 0, 0, 0.4);\n\tflex-direction: column;\n}\n.sidebar:not(.right-sidebar) {\n\tleft: 0;\n}\n.sidebar.right-sidebar {\n\tright: 0;\n}\n.tools-bar:not(.visible) {\n\t/* It needs to not take up vertical space when hidden.\n\tThe opacity transition is bad with height: 0 here,\n\tso just hide the element until a better transition is developed. */\n\t/* height: 0; */\n\tdisplay: none;\n}\n.tools-bar {\n\tz-index: 2;\n\tbox-shadow: 0 0 5px rgba(0, 0, 0, 0.4);\n\tflex-direction: row;\n\talign-items: center;\n}\n.layout-horizontal {\n\tdisplay: flex;\n\tflex-direction: row;\n\tflex: 1;\n}\n.layout-vertical {\n\tdisplay: flex;\n\tflex-direction: column;\n\tflex: 1;\n}\n.bar article {\n\tpadding: 1rem;\n\tpadding-top: 0.5rem;\n\tdisplay: flex;\n\tflex-direction: column;\n}\n.tools button[aria-pressed=\"true\"] {\n\tbackground: rgba(0, 157, 255, 0.12);\n\tbox-shadow: 0 0 0 2px rgba(0, 157, 255, 0.5) inset;\n}\n.tools button img {\n\tpointer-events: none;\n}\n.tools button:disabled img {\n\topacity: 0.4;\n}\n.mdl-button--icon {\n\tdisplay: inline-flex;\n\talign-items: center;\n\tjustify-content: center;\n}\n.tool-options label {\n\tdisplay: inline-flex;\n\tmargin-left: 2rem;\n}\n.tool-options label span {\n\tmargin-right: -20px;\n}\n.bar article:hover {\n\tbackground: rgba(0, 0, 0, 0.08);\n}\n.bar article:active,\n.bar article.selected {\n\tbackground: rgba(0, 0, 0, 0.12);\n}\n.bar article canvas {\n\tbackground: rgba(50, 200, 255, 0.7);\n}\n.bar article:hover canvas,\n.bar article:active canvas,\n.bar article.selected canvas {\n\tbackground: rgba(50, 200, 255, 1);\n}\n.entity-preview {\n\tposition: relative;\n}\n.entity-preview .error {\n\tposition: absolute;\n\ttop: 0;\n\tleft: 0;\n\twidth: 100%;\n\theight: 100%;\n\tbackground: rgba(255, 0, 0, 0.5);\n\tcolor: white;\n\tfont-family: monospace;\n\ttext-align: center;\n}\n.bar h1 {\n\ttext-align: center;\n\tfont-size: 2em;\n\tfont-weight: normal;\n\tmargin: 0.1em 0;\n}\n.bar article > h1 {\n\tpointer-events: none;\n}\n.bar article .title-bar {\n\tdisplay: flex;\n\tflex-direction: row;\n}\n.bar .name {\n\tfont-size: 1.2em;\n\tfont-weight: normal;\n\tfont-family: sans-serif;\n\tmargin: 0;\n\tmargin-bottom: 0.1em;\n}\n.entities-bar .name {\n\ttext-align: center;\n}\n.bar article .mdl-textfield {\n\twidth: auto;\n\tpadding: 0;\n\tpadding-bottom: 0.3rem;\n}\nbutton,\ncanvas,\nimg,\narticle, /* representing entities, poses, animations, animation frames - things with EntityPreviews in them */\n.anims > * { /* includes headings and .anim-groups */\n\tflex: 0 0 auto;\n}\n.anim-bar {\n\tflex-direction: row;\n\talign-items: flex-start;\n}\n.anim-bar > * {\n\theight: 100%;\n}\n/* TODO: refactor bars and subbars */\n.anim-bar > *:not(:first-child) {\n\tborder-left: 1px solid rgba(0, 0, 0, 0.12);\n}\n.anims,\n.anim-group {\n\tdisplay: flex;\n\tflex-direction: column;\n\talign-items: stretch;\n}\n.anims,\n.animation-frames,\n.entities-bar {\n\toverflow-y: auto;\n\toverflow-x: hidden;\n}\n/* TODO: refactor bars and subbars */\n.animation-frames {\n\t/*transition: 0.1s ease;*/\n}\n.animation-frames:not(.visible) {\n\topacity: 0;\n\tpointer-events: none;\n\twidth: 0;\n\t/*transform: translate(-100%, 0);*/\n}\n.add-anim-fab {\n\tmargin: 0.5rem 0 !important;\n\talign-self: center;\n}\n.poses,\n.animations {\n\twidth: 100%;\n}\narticle.placeholder {\n\tpadding: 2rem;\n\ttext-align: center;\n\tbackground: rgba(128, 59, 110, 0.16);\n\tcolor: rgba(0, 0, 0, 0.5);\n\tfont-size: 1.4em;\n\tpointer-events: none;\n}\n\n.warning {\n\tposition: absolute;\n\ttop: 0;\n\tright: 0;\n\tz-index: 50;\n\tmargin: 15px;\n\tpadding: 15px;\n\tbackground: #FFF9C4;\n\tcolor: #BF360C;\n\tborder-radius: 2px;\n\ttransition: opacity 0.2s ease;\n\tpointer-events: auto;\n}\n.warning:not(.show) {\n\tpointer-events: none;\n\topacity: 0;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -262,7 +5077,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 /***/ }),
 
 /***/ 577:
-/***/ ((__unused_webpack_module, exports, __nested_webpack_require_15059__) => {
+/***/ ((__unused_webpack_module, exports, __nested_webpack_require_16676__) => {
 
 "use strict";
 /** @license React v17.0.2
@@ -276,7 +5091,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 /*
  Modernizr 3.0.0pre (Custom Build) | MIT
 */
-var aa=__nested_webpack_require_15059__(378),m=__nested_webpack_require_15059__(525),r=__nested_webpack_require_15059__(102);function y(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}if(!aa)throw Error(y(227));var ba=new Set,ca={};function da(a,b){ea(a,b);ea(a+"Capture",b)}
+var aa=__nested_webpack_require_16676__(378),m=__nested_webpack_require_16676__(525),r=__nested_webpack_require_16676__(102);function y(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}if(!aa)throw Error(y(227));var ba=new Set,ca={};function da(a,b){ea(a,b);ea(a+"Capture",b)}
 function ea(a,b){ca[a]=b;for(a=0;a<b.length;a++)ba.add(b[a])}
 var fa=!("undefined"===typeof window||"undefined"===typeof window.document||"undefined"===typeof window.document.createElement),ha=/^[:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD][:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\-.0-9\u00B7\u0300-\u036F\u203F-\u2040]*$/,ia=Object.prototype.hasOwnProperty,
 ja={},ka={};function la(a){if(ia.call(ka,a))return!0;if(ia.call(ja,a))return!1;if(ha.test(a))return ka[a]=!0;ja[a]=!0;return!1}function ma(a,b,c,d){if(null!==c&&0===c.type)return!1;switch(typeof b){case "function":case "symbol":return!0;case "boolean":if(d)return!1;if(null!==c)return!c.acceptsBooleans;a=a.toLowerCase().slice(0,5);return"data-"!==a&&"aria-"!==a;default:return!1}}
@@ -567,7 +5382,7 @@ exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!rk(c))throw Er
 /***/ }),
 
 /***/ 542:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_135853__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_137470__) => {
 
 "use strict";
 
@@ -595,22 +5410,22 @@ if (true) {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __nested_webpack_require_135853__(577);
+  module.exports = __nested_webpack_require_137470__(577);
 } else {}
 
 
 /***/ }),
 
 /***/ 908:
-/***/ (function(module, __unused_webpack_exports, __nested_webpack_require_136718__) {
+/***/ (function(module, __unused_webpack_exports, __nested_webpack_require_138335__) {
 
-/* module decorator */ module = __nested_webpack_require_136718__.nmd(module);
+/* module decorator */ module = __nested_webpack_require_138335__.nmd(module);
 // Generated by CoffeeScript 1.9.1
 (function() {
   var E, React, add, hyphenate, is_plainish_object, ref,
     slice = [].slice;
 
-  React = (ref = this.React) != null ? ref : __nested_webpack_require_136718__(378);
+  React = (ref = this.React) != null ? ref : __nested_webpack_require_138335__(378);
 
   is_plainish_object = function(o) {
     return (o != null) && typeof o === "object" && !(o instanceof Array || React.isValidElement(o));
@@ -748,7 +5563,7 @@ if (true) {
 /***/ }),
 
 /***/ 535:
-/***/ ((__unused_webpack_module, exports, __nested_webpack_require_141516__) => {
+/***/ ((__unused_webpack_module, exports, __nested_webpack_require_143133__) => {
 
 "use strict";
 /** @license React v17.0.2
@@ -759,7 +5574,7 @@ if (true) {
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-var l=__nested_webpack_require_141516__(525),n=60103,p=60106;exports.Fragment=60107;exports.StrictMode=60108;exports.Profiler=60114;var q=60109,r=60110,t=60112;exports.Suspense=60113;var u=60115,v=60116;
+var l=__nested_webpack_require_143133__(525),n=60103,p=60106;exports.Fragment=60107;exports.StrictMode=60108;exports.Profiler=60114;var q=60109,r=60110,t=60112;exports.Suspense=60113;var u=60115,v=60116;
 if("function"===typeof Symbol&&Symbol.for){var w=Symbol.for;n=w("react.element");p=w("react.portal");exports.Fragment=w("react.fragment");exports.StrictMode=w("react.strict_mode");exports.Profiler=w("react.profiler");q=w("react.provider");r=w("react.context");t=w("react.forward_ref");exports.Suspense=w("react.suspense");u=w("react.memo");v=w("react.lazy")}var x="function"===typeof Symbol&&Symbol.iterator;
 function y(a){if(null===a||"object"!==typeof a)return null;a=x&&a[x]||a["@@iterator"];return"function"===typeof a?a:null}function z(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}
 var A={isMounted:function(){return!1},enqueueForceUpdate:function(){},enqueueReplaceState:function(){},enqueueSetState:function(){}},B={};function C(a,b,c){this.props=a;this.context=b;this.refs=B;this.updater=c||A}C.prototype.isReactComponent={};C.prototype.setState=function(a,b){if("object"!==typeof a&&"function"!==typeof a&&null!=a)throw Error(z(85));this.updater.enqueueSetState(this,a,b,"setState")};C.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};
@@ -779,13 +5594,13 @@ exports.useLayoutEffect=function(a,b){return S().useLayoutEffect(a,b)};exports.u
 /***/ }),
 
 /***/ 378:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_148060__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_149677__) => {
 
 "use strict";
 
 
 if (true) {
-  module.exports = __nested_webpack_require_148060__(535);
+  module.exports = __nested_webpack_require_149677__(535);
 } else {}
 
 
@@ -820,13 +5635,13 @@ exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;
 /***/ }),
 
 /***/ 102:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_153139__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_154756__) => {
 
 "use strict";
 
 
 if (true) {
-  module.exports = __nested_webpack_require_153139__(323);
+  module.exports = __nested_webpack_require_154756__(323);
 } else {}
 
 
@@ -1008,14 +5823,14 @@ module.exports = insertStyleElement;
 /***/ }),
 
 /***/ 192:
-/***/ ((module, __unused_webpack_exports, __nested_webpack_require_157246__) => {
+/***/ ((module, __unused_webpack_exports, __nested_webpack_require_158863__) => {
 
 "use strict";
 
 
 /* istanbul ignore next  */
 function setAttributesWithoutAttributes(styleElement) {
-  var nonce =   true ? __nested_webpack_require_157246__.nc : 0;
+  var nonce =   true ? __nested_webpack_require_158863__.nc : 0;
 
   if (nonce) {
     styleElement.setAttribute("nonce", nonce);
@@ -1132,7 +5947,7 @@ module.exports = styleTagTransform;
 /******/ 	var __webpack_module_cache__ = {};
 /******/ 	
 /******/ 	// The require function
-/******/ 	function __nested_webpack_require_159660__(moduleId) {
+/******/ 	function __nested_webpack_require_161277__(moduleId) {
 /******/ 		// Check if module is in cache
 /******/ 		var cachedModule = __webpack_module_cache__[moduleId];
 /******/ 		if (cachedModule !== undefined) {
@@ -1146,7 +5961,7 @@ module.exports = styleTagTransform;
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nested_webpack_require_159660__);
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nested_webpack_require_161277__);
 /******/ 	
 /******/ 		// Flag the module as loaded
 /******/ 		module.loaded = true;
@@ -1159,11 +5974,11 @@ module.exports = styleTagTransform;
 /******/ 	/* webpack/runtime/compat get default export */
 /******/ 	(() => {
 /******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__nested_webpack_require_159660__.n = (module) => {
+/******/ 		__nested_webpack_require_161277__.n = (module) => {
 /******/ 			var getter = module && module.__esModule ?
 /******/ 				() => (module['default']) :
 /******/ 				() => (module);
-/******/ 			__nested_webpack_require_159660__.d(getter, { a: getter });
+/******/ 			__nested_webpack_require_161277__.d(getter, { a: getter });
 /******/ 			return getter;
 /******/ 		};
 /******/ 	})();
@@ -1171,9 +5986,9 @@ module.exports = styleTagTransform;
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
-/******/ 		__nested_webpack_require_159660__.d = (exports, definition) => {
+/******/ 		__nested_webpack_require_161277__.d = (exports, definition) => {
 /******/ 			for(var key in definition) {
-/******/ 				if(__nested_webpack_require_159660__.o(definition, key) && !__nested_webpack_require_159660__.o(exports, key)) {
+/******/ 				if(__nested_webpack_require_161277__.o(definition, key) && !__nested_webpack_require_161277__.o(exports, key)) {
 /******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
 /******/ 				}
 /******/ 			}
@@ -1182,13 +5997,13 @@ module.exports = styleTagTransform;
 /******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
-/******/ 		__nested_webpack_require_159660__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 		__nested_webpack_require_161277__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
-/******/ 		__nested_webpack_require_159660__.r = (exports) => {
+/******/ 		__nested_webpack_require_161277__.r = (exports) => {
 /******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
 /******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 			}
@@ -1198,7 +6013,7 @@ module.exports = styleTagTransform;
 /******/ 	
 /******/ 	/* webpack/runtime/node module decorator */
 /******/ 	(() => {
-/******/ 		__nested_webpack_require_159660__.nmd = (module) => {
+/******/ 		__nested_webpack_require_161277__.nmd = (module) => {
 /******/ 			module.paths = [];
 /******/ 			if (!module.children) module.children = [];
 /******/ 			return module;
@@ -1207,7 +6022,7 @@ module.exports = styleTagTransform;
 /******/ 	
 /******/ 	/* webpack/runtime/nonce */
 /******/ 	(() => {
-/******/ 		__nested_webpack_require_159660__.nc = undefined;
+/******/ 		__nested_webpack_require_161277__.nc = undefined;
 /******/ 	})();
 /******/ 	
 /************************************************************************/
@@ -1216,10 +6031,10 @@ var __webpack_exports__ = {};
 (() => {
 "use strict";
 // ESM COMPAT FLAG
-__nested_webpack_require_159660__.r(__webpack_exports__);
+__nested_webpack_require_161277__.r(__webpack_exports__);
 
 // EXPORTS
-__nested_webpack_require_159660__.d(__webpack_exports__, {
+__nested_webpack_require_161277__.d(__webpack_exports__, {
   "BoneStructure": () => (/* reexport */ BoneStructure_coffee),
   "Editor": () => (/* reexport */ Editor_coffee),
   "Entity": () => (/* reexport */ Entity_coffee),
@@ -1236,8 +6051,9 @@ __nested_webpack_require_159660__.d(__webpack_exports__, {
 
 // NAMESPACE OBJECT: ./helpers.coffee
 var helpers_coffee_namespaceObject = {};
-__nested_webpack_require_159660__.r(helpers_coffee_namespaceObject);
-__nested_webpack_require_159660__.d(helpers_coffee_namespaceObject, {
+__nested_webpack_require_161277__.r(helpers_coffee_namespaceObject);
+__nested_webpack_require_161277__.d(helpers_coffee_namespaceObject, {
+  "closestPointOnLineSegment": () => (closestPointOnLineSegment),
   "distance": () => (distance),
   "distanceToLineSegment": () => (distanceToLineSegment),
   "lerpPoints": () => (lerpPoints),
@@ -1282,6 +6098,26 @@ var lineSegmentsIntersect = function(x1, y1, x2, y2, x3, y3, x4, y4) {
   s = (-a_dy * (x1 - x3) + a_dx * (y1 - y3)) / (-b_dx * a_dy + a_dx * b_dy);
   t = (+b_dx * (y1 - y3) - b_dy * (x1 - x3)) / (-b_dx * a_dy + a_dx * b_dy);
   return (0 <= s && s <= 1) && (0 <= t && t <= 1);
+};
+
+var closestPointOnLineSegment = function(point, a, b) {
+  var a_to_b, a_to_p, atb2, atp_dot_atb, t;
+  // https://stackoverflow.com/a/3122532/2624876
+  a_to_p = {
+    x: point.x - a.x,
+    y: point.y - a.y
+  };
+  a_to_b = {
+    x: b.x - a.x,
+    y: b.y - a.y
+  };
+  atb2 = a_to_b.x ** 2 + a_to_b.y ** 2;
+  atp_dot_atb = a_to_p.x * a_to_b.x + a_to_p.y * a_to_b.y;
+  t = atp_dot_atb / atb2;
+  return {
+    x: a.x + a_to_b.x * t,
+    y: a.y + a_to_b.y * t
+  };
 };
 
 var lerpPoints = function(a, b, b_ness) {
@@ -1935,17 +6771,28 @@ var PolygonStructure;
   }
 
   // don't need to worry about calling onchange because can't be set at this point
+  // but it is useful for the bounding box to be updated (via clear/signalChange/_update_bbox)
+  // during construction.
   clear() {
     super.clear();
     this.id_counter = 0;
     this.last_point_name = null;
     this.first_point_name = null;
+    return this.signalChange();
+  }
+
+  signalChange() {
+    // API contract: bbox is updated before call to onchange
+    this._update_bbox();
     return typeof this.onchange === "function" ? this.onchange() : void 0;
   }
 
   toJSON() {
     var point_name, x, y;
     return {
+      // Excluding segments, bbox_min/bbox_max, id_counter, first_point_name/last_point_name,
+      // because they can all be derived from points.
+      // (This class assumes the points/segments will not be renamed.)
       points: (function() {
         var ref, results;
         ref = this.points;
@@ -1971,10 +6818,10 @@ var PolygonStructure;
       ({x, y} = ref[i]);
       this.addVertex(x, y, false);
     }
-    return typeof this.onchange === "function" ? this.onchange() : void 0;
+    return this.signalChange();
   }
 
-  addVertex(x, y, changeEvent = true) {
+  addVertex(x, y, registerChange = true) {
     var from, name;
     from = this.last_point_name;
     name = ++this.id_counter;
@@ -1996,25 +6843,47 @@ var PolygonStructure;
         b: this.points[this.first_point_name]
       };
     }
-    if (changeEvent) {
-      return typeof this.onchange === "function" ? this.onchange() : void 0;
+    if (registerChange) {
+      return this.signalChange();
     }
   }
 
+  _update_bbox() {
+    var point, point_name, ref, results;
+    this.bbox_min = {
+      x: 2e308,
+      y: 2e308
+    };
+    this.bbox_max = {
+      x: -2e308,
+      y: -2e308
+    };
+    ref = this.points;
+    results = [];
+    for (point_name in ref) {
+      point = ref[point_name];
+      this.bbox_min.x = Math.min(this.bbox_min.x, point.x);
+      this.bbox_min.y = Math.min(this.bbox_min.y, point.y);
+      this.bbox_max.x = Math.max(this.bbox_max.x, point.x);
+      results.push(this.bbox_max.y = Math.max(this.bbox_max.y, point.y));
+    }
+    return results;
+  }
+
   pointInPolygon({x, y}) {
-    var inside, intersect, ref, segment, segment_name, xi, xj, yi, yj;
+    var a_x, a_y, b_x, b_y, inside, intersect, ref, segment, segment_name;
+    if (x < this.bbox_min.x || x > this.bbox_max.x || y < this.bbox_min.y || y > this.bbox_max.y) {
+      return false;
+    }
     inside = false;
     ref = this.segments;
-    // for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-    // 	xi = vs[i][0], yi = vs[i][1]
-    // 	xj = vs[j][0], yj = vs[j][1]
     for (segment_name in ref) {
       segment = ref[segment_name];
-      xi = segment.a.x;
-      yi = segment.a.y;
-      xj = segment.b.x;
-      yj = segment.b.y;
-      intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      a_x = segment.a.x;
+      a_y = segment.a.y;
+      b_x = segment.b.x;
+      b_y = segment.b.y;
+      intersect = ((a_y > y) !== (b_y > y)) && (x < (b_x - a_x) * (y - a_y) / (b_y - a_y) + a_x);
       if (intersect) {
         inside = !inside;
       }
@@ -2037,15 +6906,16 @@ TAU = Math.PI * 2;
   constructor() {
     super();
     this.structure = new PolygonStructure_coffee();
-    this.simplex = new SimplexNoise();
+    this.simplex = typeof window.SimplexNoise === "function" ? new window.SimplexNoise() : void 0;
     this.seed = Math.random();
   }
 
   initLayout() {
-    var i, non_squished_point_y_component, point_x, point_y, radius, ref, ref1, results, theta;
+    var i, n_points, non_squished_point_y_component, point_x, point_y, radius, ref, ref1, ref2, results, theta;
     radius = 30;
+    n_points = 15;
     results = [];
-    for (theta = i = 0, ref = TAU, ref1 = TAU / 15; ref1 !== 0 && (ref1 > 0 ? i <= ref : i >= ref); theta = i += ref1) {
+    for (theta = i = ref = TAU / n_points, ref1 = TAU, ref2 = TAU / n_points; ref2 !== 0 && (ref2 > 0 ? i <= ref1 : i >= ref1); theta = i += ref2) {
       point_x = Math.sin(theta) * radius;
       point_y = Math.cos(theta) * radius;
       non_squished_point_y_component = Math.max(point_y, -radius * 0.5);
@@ -2083,7 +6953,13 @@ TAU = Math.PI * 2;
     this.structure.addVertex(this.left, this.bottom);
     results = [];
     for (x = i = ref = this.left, ref1 = this.right, ref2 = res; ref2 !== 0 && (ref2 > 0 ? i <= ref1 : i >= ref1); x = i += ref2) {
-      noise = this.simplex.noise2D(x / 2400, 0) + this.simplex.noise2D(x / 500, 10) / 5 + this.simplex.noise2D(x / 50, 30) / 100;
+      if (this.simplex) {
+        noise = this.simplex.noise2D(x / 2400, 0) + this.simplex.noise2D(x / 500, 10) / 5 + this.simplex.noise2D(x / 50, 30) / 100;
+      } else {
+        // noise = Math.random() * 2 - 1
+        // noise = Math.sin(x / 100) * 0.5 + 0.5
+        noise = 0;
+      }
       results.push(this.structure.addVertex(x, this.bottom - (noise + 1) / 2 * this.max_height));
     }
     return results;
@@ -2105,12 +6981,12 @@ TAU = Math.PI * 2;
 });
 
 // EXTERNAL MODULE: ../node_modules/react-dom/index.js
-var react_dom = __nested_webpack_require_159660__(542);
+var react_dom = __nested_webpack_require_161277__(542);
 // EXTERNAL MODULE: ../node_modules/react-script/lib/react-script.js
-var react_script = __nested_webpack_require_159660__(908);
-var react_script_default = /*#__PURE__*/__nested_webpack_require_159660__.n(react_script);
+var react_script = __nested_webpack_require_161277__(908);
+var react_script_default = /*#__PURE__*/__nested_webpack_require_161277__.n(react_script);
 // EXTERNAL MODULE: ../node_modules/react/index.js
-var react = __nested_webpack_require_159660__(378);
+var react = __nested_webpack_require_161277__(378);
 ;// CONCATENATED MODULE: ./View.coffee
 var View;
 
@@ -2166,50 +7042,83 @@ var EntityPreview;
 
 /* harmony default export */ const EntityPreview_coffee = (EntityPreview = class EntityPreview extends react.Component {
   constructor(props) {
-    var center_x, center_y, entity, entity_bbox, height, max_height, max_width, scale;
+    var center_x, center_y, entity, entity_bbox, error, height, max_height, max_width, scale;
     super();
     ({entity, max_width, max_height} = props);
-    this.entity = Entity_coffee.fromJSON(JSON.parse(JSON.stringify(entity)));
-    this.entity.facing_x = 1;
-    this.view = new View_coffee();
-    entity_bbox = this.entity.bbox();
-    center_x = entity_bbox.x + entity_bbox.width / 2 - this.entity.x;
-    center_y = entity_bbox.y + entity_bbox.height / 2 - this.entity.y;
-    height = Math.min(entity_bbox.height, max_height);
-    scale = height / entity_bbox.height;
+    this.state = {};
+    try {
+      this.entity = Entity_coffee.fromJSON(JSON.parse(JSON.stringify(entity)));
+      this.entity.facing_x = 1;
+      this.view = new View_coffee();
+      entity_bbox = this.entity.bbox();
+      center_x = entity_bbox.x + entity_bbox.width / 2 - this.entity.x;
+      center_y = entity_bbox.y + entity_bbox.height / 2 - this.entity.y;
+      height = Math.min(entity_bbox.height, max_height);
+      scale = height / entity_bbox.height;
+    } catch (error1) {
+      error = error1;
+      this.state.preview_error = error;
+    }
     this.view = new View_coffee();
     this.view.width = max_width;
-    this.view.height = height;
-    this.view.scale = scale;
+    this.view.height = isFinite(height) ? height : max_height;
+    this.view.scale = isFinite(scale) ? scale : 1;
     this.view.center_x = center_x;
     this.view.center_y = center_y;
     this.view.is_preview = true;
   }
 
   render() {
-    return react_script_default()("canvas", {
+    var error_details, preview_error;
+    // Props has priority over state for preview_error because errors during
+    // construction of an entity are more important than errors during rendering.
+    // An error during construction can easily lead to bogus errors during rendering.
+    preview_error = this.props.preview_error || this.state.preview_error;
+    // Chrome includes the error message in the stack trace, but Firefox doesn't.
+    if (preview_error != null ? preview_error.stack : void 0) {
+      if (preview_error.stack.includes(preview_error.toString())) {
+        error_details = preview_error.stack;
+      } else {
+        error_details = `${preview_error.toString()}\n${preview_error.stack}`;
+      }
+    } else if (preview_error) {
+      error_details = preview_error;
+    }
+    return react_script_default()("div.entity-preview", react_script_default()("canvas", {
       ref: (canvas) => {
         this.canvas = canvas;
       }
-    });
+    }), preview_error != null ? react_script_default()("div.error", {
+      title: error_details
+    }, preview_error.toString()) : void 0);
   }
 
   update() {
-    var center_x, center_y, ctx, entity_bbox;
-    entity_bbox = this.entity.bbox();
-    center_x = entity_bbox.x + entity_bbox.width / 2 - this.entity.x;
-    center_y = entity_bbox.y + entity_bbox.height / 2 - this.entity.y;
-    this.view.center_x = center_x;
-    this.view.center_y = center_y;
-    ctx = this.canvas.getContext("2d");
+    var center_x, center_y, ctx, entity_bbox, error;
     this.canvas.width = this.view.width;
     this.canvas.height = this.view.height;
-    ctx.save();
-    ctx.translate(this.view.width / 2, this.view.height / 2);
-    ctx.scale(this.view.scale, this.view.scale);
-    ctx.translate(-this.view.center_x, -this.view.center_y);
-    this.entity.draw(ctx, this.view);
-    return ctx.restore();
+    try {
+      entity_bbox = this.entity.bbox();
+      center_x = entity_bbox.x + entity_bbox.width / 2 - this.entity.x;
+      center_y = entity_bbox.y + entity_bbox.height / 2 - this.entity.y;
+      this.view.center_x = center_x;
+      this.view.center_y = center_y;
+      ctx = this.canvas.getContext("2d");
+      ctx.save();
+      ctx.translate(this.view.width / 2, this.view.height / 2);
+      ctx.scale(this.view.scale, this.view.scale);
+      ctx.translate(-this.view.center_x, -this.view.center_y);
+      this.entity.draw(ctx, this.view);
+      return ctx.restore();
+    } catch (error1) {
+      error = error1;
+      if (this.state.preview_error == null) {
+        // Earlier errors are generally more pertinent than later errors.
+        return this.setState({
+          preview_error: error
+        });
+      }
+    }
   }
 
 });
@@ -2230,7 +7139,7 @@ var EntitiesBar,
 
 /* harmony default export */ const EntitiesBar_coffee = (EntitiesBar = class EntitiesBar extends react.Component {
   constructor() {
-    var EntityClass, cell, cell_name, entity_class_name, preview_entity;
+    var EntityClass, cell, cell_name, entity_class_name, error, preview_entity, preview_error;
     super();
     this.update = this.update.bind(this);
     this.state = {
@@ -2243,12 +7152,20 @@ var EntitiesBar,
       cell_name = entity_class_name.replace(/[a-z][A-Z]/g, function(m) {
         return `${m[0]} ${m[1]}`;
       });
-      preview_entity = new EntityClass();
-      preview_entity.initLayout();
+      preview_error = null;
+      preview_entity = null;
+      try {
+        preview_entity = new EntityClass();
+        preview_entity.initLayout();
+      } catch (error1) {
+        error = error1;
+        preview_error = error;
+      }
       cell = {
         EntityClass,
         name: cell_name,
-        preview_entity
+        preview_entity,
+        preview_error
       };
       this.cells.push(cell);
     }
@@ -2305,6 +7222,7 @@ var EntitiesBar,
           entity: cell.preview_entity,
           max_width: cell_preview_width,
           max_height: max_cell_preview_height,
+          preview_error: cell.preview_error,
           ref: (ep) => {
             if (ep != null) {
               return this.entity_previews.push(ep);
@@ -2386,8 +7304,10 @@ var Anim;
   }
 
   render() {
-    var EntityClass, delete_item, editor, entity, name, select, selected, type_of_anims, update;
+    var EntityClass, delete_item, editor, entity, max_height, max_width, name, select, selected, type_of_anims, update;
     ({entity, EntityClass, name, type_of_anims, selected, select, delete_item, update, editor} = this.props);
+    max_width = 200;
+    max_height = 100;
     return react_script_default()("article", {
       class: {selected},
       onClick: (e) => {
@@ -2399,7 +7319,11 @@ var Anim;
       }
     // TODO: for animation-frames, instead of a textfield have a reorder handle and a duration control
     // well, a reorder handle might be nice for the other anims too
-    }, name === "Current Pose" ? react_script_default()("h1.name", name) : react_script_default()(".title-bar", react_script_default()(".mdl-textfield.mdl-js-textfield.name", {
+    }, name === "Current Pose" ? react_script_default()("h1.name", name) : react_script_default()(".title-bar", {
+      style: {
+        maxWidth: max_width
+      }
+    }, react_script_default()(".mdl-textfield.mdl-js-textfield.name", {
       ref: (mdl_textfield_el) => {
         this.mdl_textfield_el = mdl_textfield_el;
       }
@@ -2438,8 +7362,8 @@ var Anim;
       }
     }, react_script_default()("i.material-icons", "delete"))), react_script_default()(EntityPreview_coffee, {
       entity,
-      max_width: 200,
-      max_height: 100,
+      max_width,
+      max_height,
       ref: (entity_preview) => {
         this.entity_preview = entity_preview;
       }
@@ -2815,9 +7739,19 @@ var AnimBar,
 
 });
 
-;// CONCATENATED MODULE: ./components/TerrainBar.coffee
-var TerrainBar,
-  TerrainBar_coffee_boundMethodCheck = function(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new Error('Bound instance method accessed before binding'); } };
+;// CONCATENATED MODULE: ./icons/select.svg
+const select_namespaceObject = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjQuMHB4IgogICBoZWlnaHQ9IjI0LjBweCIKICAgdmlld0JveD0iMCAwIDI0LjAgMjQuMCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0iU1ZHUm9vdCIKICAgc29kaXBvZGk6ZG9jbmFtZT0ic2VsZWN0LnN2ZyIKICAgaW5rc2NhcGU6dmVyc2lvbj0iMS4yLjIgKDczMmEwMWRhNjMsIDIwMjItMTItMDksIGN1c3RvbSkiCiAgIHhtbG5zOmlua3NjYXBlPSJodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy9uYW1lc3BhY2VzL2lua3NjYXBlIgogICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHNvZGlwb2RpOm5hbWVkdmlldwogICAgIGlkPSJuYW1lZHZpZXcxODciCiAgICAgcGFnZWNvbG9yPSIjNTA1MDUwIgogICAgIGJvcmRlcmNvbG9yPSIjZmZmZmZmIgogICAgIGJvcmRlcm9wYWNpdHk9IjEiCiAgICAgaW5rc2NhcGU6c2hvd3BhZ2VzaGFkb3c9IjAiCiAgICAgaW5rc2NhcGU6cGFnZW9wYWNpdHk9IjAiCiAgICAgaW5rc2NhcGU6cGFnZWNoZWNrZXJib2FyZD0iMSIKICAgICBpbmtzY2FwZTpkZXNrY29sb3I9IiM1MDUwNTAiCiAgICAgaW5rc2NhcGU6ZG9jdW1lbnQtdW5pdHM9InB4IgogICAgIHNob3dncmlkPSJ0cnVlIgogICAgIGlua3NjYXBlOnpvb209IjIzLjI5NzQ5NiIKICAgICBpbmtzY2FwZTpjeD0iOC42NDg5OTgyIgogICAgIGlua3NjYXBlOmN5PSIxNC4xODYwNzQiCiAgICAgaW5rc2NhcGU6Y3VycmVudC1sYXllcj0ibGF5ZXIxIj4KICAgIDxpbmtzY2FwZTpncmlkCiAgICAgICB0eXBlPSJ4eWdyaWQiCiAgICAgICBpZD0iZ3JpZDMxMCIgLz4KICA8L3NvZGlwb2RpOm5hbWVkdmlldz4KICA8ZGVmcwogICAgIGlkPSJkZWZzMTgyIiAvPgogIDxnCiAgICAgaW5rc2NhcGU6bGFiZWw9IkxheWVyIDEiCiAgICAgaW5rc2NhcGU6Z3JvdXBtb2RlPSJsYXllciIKICAgICBpZD0ibGF5ZXIxIj4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZm9udC12YXJpYXRpb24tc2V0dGluZ3M6bm9ybWFsO29wYWNpdHk6MTt2ZWN0b3ItZWZmZWN0Om5vbmU7ZmlsbDpub25lO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDoxO3N0cm9rZS1saW5lY2FwOmJ1dHQ7c3Ryb2tlLWxpbmVqb2luOm1pdGVyO3N0cm9rZS1taXRlcmxpbWl0OjQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7c3Ryb2tlLW9wYWNpdHk6MTtzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjEiCiAgICAgICBkPSJtIDgsMyB2IDE2IGwgNCwtNCAyLDUgaCA0IGwgLTMsLTYgaCA1IHoiCiAgICAgICBpZD0icGF0aDI3MDI4IgogICAgICAgc29kaXBvZGk6bm9kZXR5cGVzPSJjY2NjY2NjYyIgLz4KICA8L2c+Cjwvc3ZnPgo=";
+;// CONCATENATED MODULE: ./icons/push-arrows-in-circle.svg
+const push_arrows_in_circle_namespaceObject = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjQuMHB4IgogICBoZWlnaHQ9IjI0LjBweCIKICAgdmlld0JveD0iMCAwIDI0LjAgMjQuMCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0iU1ZHUm9vdCIKICAgc29kaXBvZGk6ZG9jbmFtZT0icHVzaC5zdmciCiAgIGlua3NjYXBlOnZlcnNpb249IjEuMi4yICg3MzJhMDFkYTYzLCAyMDIyLTEyLTA5LCBjdXN0b20pIgogICB4bWxuczppbmtzY2FwZT0iaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvbmFtZXNwYWNlcy9pbmtzY2FwZSIKICAgeG1sbnM6c29kaXBvZGk9Imh0dHA6Ly9zb2RpcG9kaS5zb3VyY2Vmb3JnZS5uZXQvRFREL3NvZGlwb2RpLTAuZHRkIgogICB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8c29kaXBvZGk6bmFtZWR2aWV3CiAgICAgaWQ9Im5hbWVkdmlldzE4NyIKICAgICBwYWdlY29sb3I9IiM1MDUwNTAiCiAgICAgYm9yZGVyY29sb3I9IiNmZmZmZmYiCiAgICAgYm9yZGVyb3BhY2l0eT0iMSIKICAgICBpbmtzY2FwZTpzaG93cGFnZXNoYWRvdz0iMCIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMCIKICAgICBpbmtzY2FwZTpwYWdlY2hlY2tlcmJvYXJkPSIxIgogICAgIGlua3NjYXBlOmRlc2tjb2xvcj0iIzUwNTA1MCIKICAgICBpbmtzY2FwZTpkb2N1bWVudC11bml0cz0icHgiCiAgICAgc2hvd2dyaWQ9InRydWUiCiAgICAgaW5rc2NhcGU6em9vbT0iMjMuMjk3NDk2IgogICAgIGlua3NjYXBlOmN4PSI1LjMwMDk5ODgiCiAgICAgaW5rc2NhcGU6Y3k9IjE1Ljk0NTkxOSIKICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJsYXllcjEiPgogICAgPGlua3NjYXBlOmdyaWQKICAgICAgIHR5cGU9Inh5Z3JpZCIKICAgICAgIGlkPSJncmlkMzEwIiAvPgogIDwvc29kaXBvZGk6bmFtZWR2aWV3PgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxODIiIC8+CiAgPGcKICAgICBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSIKICAgICBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIgogICAgIGlkPSJsYXllcjEiPgogICAgPGNpcmNsZQogICAgICAgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDAwMDtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46cm91bmQ7c3RvcC1jb2xvcjojMDAwMDAwIgogICAgICAgaWQ9InBhdGgyNjgxMSIKICAgICAgIGN4PSIxMiIKICAgICAgIGN5PSIxMiIKICAgICAgIHI9IjEwIiAvPgogICAgPHBhdGgKICAgICAgIGlkPSJwYXRoMjY4MTUiCiAgICAgICBzdHlsZT0iZm9udC12YXJpYXRpb24tc2V0dGluZ3M6bm9ybWFsO29wYWNpdHk6MTt2ZWN0b3ItZWZmZWN0Om5vbmU7ZmlsbDpub25lO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDoxO3N0cm9rZS1saW5lY2FwOmJ1dHQ7c3Ryb2tlLWxpbmVqb2luOm1pdGVyO3N0cm9rZS1taXRlcmxpbWl0OjQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7c3Ryb2tlLW9wYWNpdHk6MTtzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjEiCiAgICAgICBkPSJtIDcsOSAtMywzIDMsMyBNIDE3LjIyODA0LDE1LjIxMTg5IDIwLDEyIDE2Ljc4ODEwOSw5LjIyODA0MDUgTSA0LDEyIGggMTYiIC8+CiAgICA8dXNlCiAgICAgICB4PSIwIgogICAgICAgeT0iMCIKICAgICAgIHhsaW5rOmhyZWY9IiNwYXRoMjY4MTUiCiAgICAgICBpZD0idXNlMjY4NzUiCiAgICAgICB0cmFuc2Zvcm09InJvdGF0ZSgtOTAsMTEuOTk5MDQ4LDEyLjA5MjUwOCkiIC8+CiAgPC9nPgo8L3N2Zz4K";
+;// CONCATENATED MODULE: ./icons/roughen.svg
+const roughen_namespaceObject = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjQuMHB4IgogICBoZWlnaHQ9IjI0LjBweCIKICAgdmlld0JveD0iMCAwIDI0LjAgMjQuMCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0iU1ZHUm9vdCIKICAgc29kaXBvZGk6ZG9jbmFtZT0icm91Z2hlbi5zdmciCiAgIGlua3NjYXBlOnZlcnNpb249IjEuMi4yICg3MzJhMDFkYTYzLCAyMDIyLTEyLTA5LCBjdXN0b20pIgogICB4bWxuczppbmtzY2FwZT0iaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvbmFtZXNwYWNlcy9pbmtzY2FwZSIKICAgeG1sbnM6c29kaXBvZGk9Imh0dHA6Ly9zb2RpcG9kaS5zb3VyY2Vmb3JnZS5uZXQvRFREL3NvZGlwb2RpLTAuZHRkIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxzb2RpcG9kaTpuYW1lZHZpZXcKICAgICBpZD0ibmFtZWR2aWV3MTg3IgogICAgIHBhZ2Vjb2xvcj0iIzUwNTA1MCIKICAgICBib3JkZXJjb2xvcj0iI2ZmZmZmZiIKICAgICBib3JkZXJvcGFjaXR5PSIxIgogICAgIGlua3NjYXBlOnNob3dwYWdlc2hhZG93PSIwIgogICAgIGlua3NjYXBlOnBhZ2VvcGFjaXR5PSIwIgogICAgIGlua3NjYXBlOnBhZ2VjaGVja2VyYm9hcmQ9IjEiCiAgICAgaW5rc2NhcGU6ZGVza2NvbG9yPSIjNTA1MDUwIgogICAgIGlua3NjYXBlOmRvY3VtZW50LXVuaXRzPSJweCIKICAgICBzaG93Z3JpZD0idHJ1ZSIKICAgICBpbmtzY2FwZTp6b29tPSIzMi44NDk0NyIKICAgICBpbmtzY2FwZTpjeD0iNy44NjkyMjkiCiAgICAgaW5rc2NhcGU6Y3k9IjExLjkxODAwMSIKICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJsYXllcjEiPgogICAgPGlua3NjYXBlOmdyaWQKICAgICAgIHR5cGU9Inh5Z3JpZCIKICAgICAgIGlkPSJncmlkMzEwIiAvPgogIDwvc29kaXBvZGk6bmFtZWR2aWV3PgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxODIiIC8+CiAgPGcKICAgICBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSIKICAgICBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIgogICAgIGlkPSJsYXllcjEiPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmb250LXZhcmlhdGlvbi1zZXR0aW5nczpub3JtYWw7b3BhY2l0eToxO3ZlY3Rvci1lZmZlY3Q6bm9uZTtmaWxsOm5vbmU7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiMwMDAwMDA7c3Ryb2tlLXdpZHRoOjE7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7c3Ryb2tlLW9wYWNpdHk6MTtzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjEiCiAgICAgICBkPSJNIDEsMTYgMywxNCBIIDYgTCA4LDEyIDcsNyAxMSw5IDE0LDcgaCAzIGwgMSw0IDMsMSAyLDQiCiAgICAgICBpZD0icGF0aDI4MjUiCiAgICAgICBzb2RpcG9kaTpub2RldHlwZXM9ImNjY2NjY2NjY2NjIiAvPgogIDwvZz4KPC9zdmc+Cg==";
+;// CONCATENATED MODULE: ./icons/smooth.svg
+const smooth_namespaceObject = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjQuMHB4IgogICBoZWlnaHQ9IjI0LjBweCIKICAgdmlld0JveD0iMCAwIDI0LjAgMjQuMCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0iU1ZHUm9vdCIKICAgc29kaXBvZGk6ZG9jbmFtZT0ic21vb3RoLnN2ZyIKICAgaW5rc2NhcGU6dmVyc2lvbj0iMS4yLjIgKDczMmEwMWRhNjMsIDIwMjItMTItMDksIGN1c3RvbSkiCiAgIHhtbG5zOmlua3NjYXBlPSJodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy9uYW1lc3BhY2VzL2lua3NjYXBlIgogICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHNvZGlwb2RpOm5hbWVkdmlldwogICAgIGlkPSJuYW1lZHZpZXcxODciCiAgICAgcGFnZWNvbG9yPSIjNTA1MDUwIgogICAgIGJvcmRlcmNvbG9yPSIjZmZmZmZmIgogICAgIGJvcmRlcm9wYWNpdHk9IjEiCiAgICAgaW5rc2NhcGU6c2hvd3BhZ2VzaGFkb3c9IjAiCiAgICAgaW5rc2NhcGU6cGFnZW9wYWNpdHk9IjAiCiAgICAgaW5rc2NhcGU6cGFnZWNoZWNrZXJib2FyZD0iMSIKICAgICBpbmtzY2FwZTpkZXNrY29sb3I9IiM1MDUwNTAiCiAgICAgaW5rc2NhcGU6ZG9jdW1lbnQtdW5pdHM9InB4IgogICAgIHNob3dncmlkPSJ0cnVlIgogICAgIGlua3NjYXBlOnpvb209IjIzLjI5NzQ5NiIKICAgICBpbmtzY2FwZTpjeD0iMTMuMTU1OTIiCiAgICAgaW5rc2NhcGU6Y3k9IjExLjc4MjM4MiIKICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJsYXllcjEiPgogICAgPGlua3NjYXBlOmdyaWQKICAgICAgIHR5cGU9Inh5Z3JpZCIKICAgICAgIGlkPSJncmlkMzEwIiAvPgogIDwvc29kaXBvZGk6bmFtZWR2aWV3PgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxODIiIC8+CiAgPGcKICAgICBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSIKICAgICBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIgogICAgIGlkPSJsYXllcjEiPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmb250LXZhcmlhdGlvbi1zZXR0aW5nczpub3JtYWw7b3BhY2l0eToxO3ZlY3Rvci1lZmZlY3Q6bm9uZTtmaWxsOm5vbmU7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiMwMDAwMDA7c3Ryb2tlLXdpZHRoOjE7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7c3Ryb2tlLW9wYWNpdHk6MTtzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjEiCiAgICAgICBkPSJtIDEsMTYgYyA2LDAgNSwtOSAxMSwtOSA2LDAgNSw5IDExLDkiCiAgICAgICBpZD0icGF0aDI4MjUiCiAgICAgICBzb2RpcG9kaTpub2RldHlwZXM9ImNzYyIgLz4KICA8L2c+Cjwvc3ZnPgo=";
+;// CONCATENATED MODULE: ./icons/brush.svg
+const brush_namespaceObject = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjQuMHB4IgogICBoZWlnaHQ9IjI0LjBweCIKICAgdmlld0JveD0iMCAwIDI0LjAgMjQuMCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0iU1ZHUm9vdCIKICAgc29kaXBvZGk6ZG9jbmFtZT0iYnJ1c2guc3ZnIgogICBpbmtzY2FwZTp2ZXJzaW9uPSIxLjIuMiAoNzMyYTAxZGE2MywgMjAyMi0xMi0wOSwgY3VzdG9tKSIKICAgeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiCiAgIHhtbG5zOnNvZGlwb2RpPSJodHRwOi8vc29kaXBvZGkuc291cmNlZm9yZ2UubmV0L0RURC9zb2RpcG9kaS0wLmR0ZCIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8c29kaXBvZGk6bmFtZWR2aWV3CiAgICAgaWQ9Im5hbWVkdmlldzE4NyIKICAgICBwYWdlY29sb3I9IiM1MDUwNTAiCiAgICAgYm9yZGVyY29sb3I9IiNmZmZmZmYiCiAgICAgYm9yZGVyb3BhY2l0eT0iMSIKICAgICBpbmtzY2FwZTpzaG93cGFnZXNoYWRvdz0iMCIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMCIKICAgICBpbmtzY2FwZTpwYWdlY2hlY2tlcmJvYXJkPSIxIgogICAgIGlua3NjYXBlOmRlc2tjb2xvcj0iIzUwNTA1MCIKICAgICBpbmtzY2FwZTpkb2N1bWVudC11bml0cz0icHgiCiAgICAgc2hvd2dyaWQ9InRydWUiCiAgICAgaW5rc2NhcGU6em9vbT0iMjMuMjk3NDk2IgogICAgIGlua3NjYXBlOmN4PSI4LjA0ODA3NTIiCiAgICAgaW5rc2NhcGU6Y3k9IjExLjc4MjM4MiIKICAgICBpbmtzY2FwZTpjdXJyZW50LWxheWVyPSJsYXllcjEiPgogICAgPGlua3NjYXBlOmdyaWQKICAgICAgIHR5cGU9Inh5Z3JpZCIKICAgICAgIGlkPSJncmlkMzEwIiAvPgogIDwvc29kaXBvZGk6bmFtZWR2aWV3PgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxODIiIC8+CiAgPGcKICAgICBpbmtzY2FwZTpsYWJlbD0iTGF5ZXIgMSIKICAgICBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIgogICAgIGlkPSJsYXllcjEiPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmb250LXZhcmlhdGlvbi1zZXR0aW5nczpub3JtYWw7ZGlzcGxheTpub25lO29wYWNpdHk6MTt2ZWN0b3ItZWZmZWN0Om5vbmU7ZmlsbDpub25lO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDoxO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDo0O3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDowO3N0cm9rZS1vcGFjaXR5OjE7c3RvcC1jb2xvcjojMDAwMDAwO3N0b3Atb3BhY2l0eToxIgogICAgICAgZD0ibSA0LDkgYyAwLDUgNCw4IDgsMyA0LC01IDgsLTIgOCwzIgogICAgICAgaWQ9InBhdGgyODI1IgogICAgICAgc29kaXBvZGk6bm9kZXR5cGVzPSJjc2MiCiAgICAgICBpbmtzY2FwZTpsYWJlbD0icGF0aDI4MjUiIC8+CiAgICA8cGF0aAogICAgICAgc3R5bGU9ImNvbG9yOiMwMDAwMDA7ZmlsbDpub25lO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDstaW5rc2NhcGUtc3Ryb2tlOm5vbmU7c3Ryb2tlOiMwMDAwMDAiCiAgICAgICBkPSJNIDQsNi4yNSBBIDIuNzUsMi43NSAwIDAgMCAxLjI1LDkgYyAwLDMuMjMzMzMgMS4yMDc3MDc1LDYuMzAzMDczIDQuMDE5NTMxMiw3LjcwODk4NCAxLjQwNTkxMTksMC43MDI5NTYgMy4xODIzMzU4LDAuNzg4MDI3IDQuNzQwMjM0OCwwLjIxNjc5NyAxLjU1Nzg5OCwtMC41NzEyMjkgMi45MTMyNTEsLTEuNjc3Njk3IDQuMTM2NzE4LC0zLjIwNzAzMSAwLjc3NjUzMSwtMC45NzA2NjQgMS40MjExODIsLTEuMzY0MTk5IDEuNzM4MjgyLC0xLjQ4MDQ2OSAwLjMxNzA5OSwtMC4xMTYyNyAwLjI5MDY3OSwtMC4wNzYzNCAwLjM4NDc2NSwtMC4wMjkzIEMgMTYuNDU3NzA1LDEyLjMwMzA3MSAxNy4yNSwxMy4yMzMzMzUgMTcuMjUsMTUgQSAyLjc1LDIuNzUgMCAwIDAgMjAsMTcuNzUgMi43NSwyLjc1IDAgMCAwIDIyLjc1LDE1IEMgMjIuNzUsMTEuNzY2NjcgMjEuNTQyMjkyLDguNjk2OTI3NSAxOC43MzA0NjksNy4yOTEwMTU2IDE3LjMyNDU1Nyw2LjU4ODA1OTcgMTUuNTQ4MTMzLDYuNTAyOTg5MyAxMy45OTAyMzQsNy4wNzQyMTg3IDEyLjQzMjMzNiw3LjY0NTQ0ODIgMTEuMDc2OTgzLDguNzUxOTE2MyA5Ljg1MzUxNTYsMTAuMjgxMjUgYyAtMC43NzY1MzExLDAuOTcwNjY0IC0xLjQyMTE4MTcsMS4zNjQxOTkgLTEuNzM4MjgxMiwxLjQ4MDQ2OSAtMC4zMTcwOTk2LDAuMTE2MjcgLTAuMjkwNjc5LDAuMDc2MzQgLTAuMzg0NzY1NywwLjAyOTMgQyA3LjU0MjI5NTUsMTEuNjk2OTI5IDYuNzUsMTAuNzY2NjY1IDYuNzUsOSBBIDIuNzUsMi43NSAwIDAgMCA0LDYuMjUgWiIKICAgICAgIGlkPSJwYXRoMjgyNS0zIiAvPgogIDwvZz4KPC9zdmc+Cg==";
+;// CONCATENATED MODULE: ./components/ToolsBar.coffee
+var ToolsBar,
+  ToolsBar_coffee_boundMethodCheck = function(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new Error('Bound instance method accessed before binding'); } };
 
 
 
@@ -2827,44 +7761,85 @@ var TerrainBar,
 
 
 
-/* harmony default export */ const TerrainBar_coffee = (TerrainBar = class TerrainBar extends react.Component {
+
+
+
+
+
+
+
+
+
+
+
+
+/* harmony default export */ const ToolsBar_coffee = (ToolsBar = class ToolsBar extends react.Component {
   constructor() {
+    var j, len, ref, tool;
     super();
     this.update = this.update.bind(this);
     this.state = {
       visible: false
     };
+    this.tools = [
+      {
+        name: "select",
+        icon: select_namespaceObject
+      },
+      {
+        name: "sculpt",
+        icon: push_arrows_in_circle_namespaceObject
+      },
+      {
+        name: "roughen",
+        icon: roughen_namespaceObject
+      },
+      {
+        name: "smooth",
+        icon: smooth_namespaceObject
+      },
+      {
+        name: "paint",
+        icon: brush_namespaceObject
+      }
+    ];
+    ref = this.tools;
+    for (j = 0, len = ref.length; j < len; j++) {
+      tool = ref[j];
+      tool.buttonRef = react.createRef();
+    }
   }
 
   render() {
-    var brush_size, editor, sculpt_mode, visible;
+    var brush_size, editor, tool, visible;
     ({editor} = this.props);
     ({visible} = this.state);
-    ({sculpt_mode, brush_size} = editor);
-    return react_script_default()(".bar.sidebar.terrain-bar", {
+    ({tool, brush_size} = editor);
+    return react_script_default()(".bar.tools-bar", {
       class: {visible}
-    }, react_script_default()("h1", "Terrain"), react_script_default()(".terrain-tools", react_script_default()("label.mdl-switch.mdl-js-switch.mdl-js-ripple-effect", {
-      // for: "toggle-sculpt-mode", ref: (@sculpt_mode_switch)=>
-      // E "input.mdl-switch__input#toggle-sculpt-mode",
-      ref: (sculpt_mode_switch) => {
-        this.sculpt_mode_switch = sculpt_mode_switch;
-      }
-    }, react_script_default()("input.mdl-switch__input", {
-      type: "checkbox",
-      checked: sculpt_mode,
-      // FIXME: Warning: TerrainBar is changing a uncontrolled input of type checkbox to be controlled. Input elements should not switch from uncontrolled to controlled (or vice versa). Decide between using a controlled or uncontrolled input element for the lifetime of the component.
-      // checked: false is apparently interpreted by ReactScript as leaving off the checked attribute
-      onChange: (e) => {
-        editor.sculpt_mode = e.target.checked;
-        return editor.renderDOM();
-      }
-    }), react_script_default()("span.mdl-switch__label", "Sculpt Mode")), react_script_default()("label", react_script_default()("span.mdl-checkbox__label.mdl-slider__label", "Brush Size"), react_script_default()("input.mdl-slider.mdl-js-slider", {
+    }, react_script_default()(".tools", this.tools.map(({name, icon, buttonRef}, i) => {
+      return react_script_default()("button.mdl-button.mdl-js-button.mdl-button--icon.mdl-button--colored", {
+        // E "button.mdl-button.mdl-js-button.mdl-button--colored",
+        key: i,
+        ariaPressed: name === editor.tool,
+        ref: buttonRef,
+        disabled: name === "paint" && !(editor.editing_entity instanceof Terrain_coffee),
+        onClick: (e) => {
+          editor.tool = name;
+          return editor.renderDOM();
+        },
+        title: name[0].toUpperCase() + name.slice(1)
+      // E "i.material-icons", E "i.material-symbols-outlined", icon
+      }, react_script_default()("img", {
+        src: icon
+      }));
+    })), react_script_default()(".tool-options", react_script_default()("label", react_script_default()("span", "Brush Size:"), react_script_default()("input.mdl-slider.mdl-js-slider", {
       type: "range",
       min: 0,
       max: 100,
       value: brush_size,
       tabIndex: 0,
-      disabled: !sculpt_mode,
+      disabled: tool !== "sculpt" && tool !== "roughen" && tool !== "smooth" && tool !== "paint",
       style: {
         minWidth: 200
       },
@@ -2879,18 +7854,23 @@ var TerrainBar,
   }
 
   componentDidMount() {
-    componentHandler.upgradeElement(react_dom.findDOMNode(this.sculpt_mode_switch));
-    return componentHandler.upgradeElement(react_dom.findDOMNode(this.brush_size_slider));
+    var j, len, ref, results, tool;
+    componentHandler.upgradeElement(react_dom.findDOMNode(this.brush_size_slider));
+    ref = this.tools;
+    results = [];
+    for (j = 0, len = ref.length; j < len; j++) {
+      tool = ref[j];
+      results.push(componentHandler.upgradeElement(react_dom.findDOMNode(tool.buttonRef.current)));
+    }
+    return results;
   }
 
   update(show) {
     var editing_entity, editor;
-    TerrainBar_coffee_boundMethodCheck(this, TerrainBar);
+    ToolsBar_coffee_boundMethodCheck(this, ToolsBar);
     ({editor} = this.props);
     ({editing_entity} = editor);
-    
-    // TODO: ducktype? or rather replace the whole UI with a more general toolbox
-    show = show && editing_entity instanceof Terrain_coffee;
+    show = show && editing_entity;
     return this.setState({
       visible: show
     });
@@ -2898,26 +7878,491 @@ var TerrainBar,
 
 });
 
+;// CONCATENATED MODULE: ./tools.coffee
+var line_circle_intersection, towards,
+  indexOf = [].indexOf,
+  tools_coffee_modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+
+
+
+
+
+towards = function(starting_point, ending_point, max_distance) {
+  var dist, dx, dy;
+  dx = ending_point.x - starting_point.x;
+  dy = ending_point.y - starting_point.y;
+  dist = Math.hypot(dx, dy);
+  if (dist > max_distance) {
+    return {
+      x: starting_point.x + dx / dist * max_distance,
+      y: starting_point.y + dy / dist * max_distance
+    };
+  } else {
+    return ending_point;
+  }
+};
+
+line_circle_intersection = function(x1, y1, x2, y2, cx, cy, r) {
+  var D, along_line, discriminant, dr, dx, dy, horizontal, i1_x, i1_y, i2_x, i2_y, intersections, j, len, point, sqrt_discriminant, t1, t2;
+  intersections = [];
+  // Translate line to new coordinate system with origin at center of circle.
+  x1 -= cx;
+  y1 -= cy;
+  x2 -= cx;
+  y2 -= cy;
+  dx = x2 - x1;
+  dy = y2 - y1;
+  if (dy === 0 && dx === 0) {
+    // Handle degenerate case where line is a point.
+    if (Math.hypot(x1, y1) === r) {
+      intersections.push({
+        x: x1,
+        y: y1
+      });
+    }
+  } else {
+    horizontal = dy === 0;
+    if (horizontal) {
+      // Handle horizontal line segment case by swapping x and y coordinates.
+      [x1, y1, x2, y2, dx, dy] = [y1, x1, y2, x2, dy, dx];
+    }
+    dr = Math.hypot(dx, dy);
+    D = x1 * y2 - (x2 * y1);
+    discriminant = r ** 2 * dr ** 2 - D ** 2;
+    if (discriminant < 0) {
+
+    } else {
+      // Assuming two intersection points
+      // No intersection
+      sqrt_discriminant = Math.sqrt(discriminant);
+      i1_x = (D * dy + Math.sign(dy) * dx * sqrt_discriminant) / dr ** 2;
+      i2_x = (D * dy - (Math.sign(dy) * dx * sqrt_discriminant)) / dr ** 2;
+      i1_y = (-D * dx + Math.abs(dy) * sqrt_discriminant) / dr ** 2;
+      i2_y = (-D * dx - (Math.abs(dy) * sqrt_discriminant)) / dr ** 2;
+      // Can't check dy === 0 because it was swapped with dx above.
+      // Can't check dx === 0 because that would falsely trigger for vertical lines.
+      if (horizontal) {
+        // For horizontal line segment case, swap x and y coordinates back.
+        [i1_x, i1_y, i2_x, i2_y, x1, y1, x2, y2, dx, dy] = [i1_y, i1_x, i2_y, i2_x, y1, x1, y2, x2, dy, dx];
+      }
+      intersections.push({
+        x: i1_x,
+        y: i1_y
+      }, {
+        x: i2_x,
+        y: i2_y
+      });
+    }
+  }
+// Translate intersection points back to original coordinate system
+  for (j = 0, len = intersections.length; j < len; j++) {
+    point = intersections[j];
+    point.x += cx;
+    point.y += cy;
+  }
+  // Associate intersection points with the closest line endpoints
+  along_line = (x, y) => {
+    return ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy);
+  };
+  if (intersections.length === 2) {
+    t1 = along_line(intersections[0].x, intersections[0].y);
+    t2 = along_line(intersections[1].x, intersections[1].y);
+    if (t1 > t2) {
+      intersections.reverse();
+    }
+  }
+  return intersections;
+};
+
+var run_tool = function(tool, editing_entity, mouse_in_world, mouse_world_delta_x, mouse_world_delta_y, brush_size, brush_additive) {
+  var a, angle_a, angle_b, arc_a, arc_b, average_pos, b, base, cluster_start_index, cluster_start_pos, cluster_sum_pos, cyclic_splice, dist, dist_from_cluster_start, dist_squared, dx, dy, end, end_point, get_new_points, i, index_of_shared_point_index_in_other_strand, index_of_shared_point_index_in_strand, indices_within_radius, intersects_a, intersects_b, j, joined, joined_strand, k, l, len, len1, len2, len3, local_mouse_position, long_arc, m, min_distance, new_points, new_points_list, new_points_long_arc, new_points_short_arc, original_points_list, other_point, other_strand, point, point_index, point_name, points_list, radius, ref, ref1, ref2, ref3, ref4, region, second, second_point, second_to_last, second_to_last_point, segment, segment_name, shared_signed_area, short_arc, signed_area, splice_offset, start, start_point, strand, strands, total_expected_area;
+  local_mouse_position = editing_entity.fromWorld(mouse_in_world);
+  indices_within_radius = [];
+  ref = editing_entity.structure.points;
+  for (point_name in ref) {
+    point = ref[point_name];
+    dx = point.x - local_mouse_position.x;
+    dy = point.y - local_mouse_position.y;
+    dist_squared = dx * dx + dy * dy;
+    dist = Math.sqrt(dist_squared);
+    if (dist < brush_size) {
+      switch (tool) {
+        case "sculpt":
+          point.x += mouse_world_delta_x / Math.max(1200, dist_squared) * 500;
+          point.y += mouse_world_delta_y / Math.max(1200, dist_squared) * 500;
+          break;
+        case "roughen":
+          point.x += (Math.random() - 0.5) * brush_size * 0.1;
+          point.y += (Math.random() - 0.5) * brush_size * 0.1;
+          break;
+        case "smooth":
+          ref1 = editing_entity.structure.segments;
+          for (segment_name in ref1) {
+            segment = ref1[segment_name];
+            if (segment.a === point || segment.b === point) {
+              other_point = segment.a === point ? segment.b : segment.a;
+              dx = other_point.x - point.x;
+              dy = other_point.y - point.y;
+              dist = Math.hypot(dx, dy);
+              if (dist > 0) {
+                point.x += dx / dist * brush_size * 0.1;
+                point.y += dy / dist * brush_size * 0.1;
+              }
+            }
+          }
+          break;
+        case "paint":
+          indices_within_radius.push(Object.keys(editing_entity.structure.points).indexOf(point_name));
+          // Move points very near the brush circumference towards the center of the brush
+          // to avoid artifacts in the polygon brushing algorithm.
+          region = brush_size * 0.001;
+          if (dist > brush_size * (1 - region)) {
+            point.x -= dx / dist * brush_size * region;
+            point.y -= dy / dist * brush_size * region;
+          }
+      }
+    }
+  }
+  if (tool === "paint") {
+    if (!(editing_entity.structure instanceof PolygonStructure_coffee)) {
+      throw new Error("Paint tool only works on polygon structures");
+    }
+    // Using serialization to edit the points as a simple list and automatically recompute the segments
+    points_list = editing_entity.structure.toJSON().points;
+    // for referential equality
+    original_points_list = Object.values(editing_entity.structure.points);
+    // Find strands of points that are within the brush radius,
+    // or connected to points that are within the brush radius.
+    // First initialize strands from segments that cross or are within the brush radius.
+    strands = [];
+    ref2 = editing_entity.structure.segments;
+    for (segment_name in ref2) {
+      segment = ref2[segment_name];
+      if (((ref3 = segment.a, indexOf.call(indices_within_radius, ref3) >= 0) && (ref4 = segment.b, indexOf.call(indices_within_radius, ref4) >= 0)) || distanceToLineSegment(local_mouse_position, segment.a, segment.b) < brush_size) {
+        strands.push([original_points_list.indexOf(segment.a), original_points_list.indexOf(segment.b)]);
+      }
+    }
+    while (true) {
+      // console.log("strands before joining", strands.join(" --- "))
+
+      // Then join strands that share points within the brush radius,
+      // until no more strands can be joined.
+      joined = false;
+      for (j = 0, len = strands.length; j < len; j++) {
+        strand = strands[j];
+        for (k = 0, len1 = strands.length; k < len1; k++) {
+          other_strand = strands[k];
+          if (strand === other_strand) {
+            continue;
+          }
+          for (l = 0, len2 = strand.length; l < len2; l++) {
+            point_index = strand[l];
+            if (!(indexOf.call(indices_within_radius, point_index) >= 0)) {
+              continue;
+            }
+            index_of_shared_point_index_in_other_strand = other_strand.indexOf(point_index);
+            if (index_of_shared_point_index_in_other_strand !== -1) {
+              strands.splice(strands.indexOf(strand), 1);
+              strands.splice(strands.indexOf(other_strand), 1);
+              // Exclude the duplicate point index from the joined strand
+              index_of_shared_point_index_in_strand = strand.indexOf(point_index);
+              strand.splice(index_of_shared_point_index_in_strand, 1);
+              if (index_of_shared_point_index_in_other_strand === 0) {
+                joined_strand = [...strand, ...other_strand];
+              } else {
+                joined_strand = [...other_strand, ...strand];
+              }
+              strands.push(joined_strand);
+              joined = true;
+              break;
+            }
+            if (joined) {
+              break;
+            }
+          }
+          if (joined) {
+            break;
+          }
+        }
+        if (joined) {
+          break;
+        }
+      }
+      if (!joined) {
+        break;
+      }
+    }
+    // console.log("strands after joining", strands.join(" --- "))
+
+    // Sort the strands by decreasing index so that splicing doesn't mess up the indices of later splice operations
+    strands.sort(function(a, b) {
+      return b[0] - a[0];
+    });
+    // Handle the case where the whole polygon is within the brush radius
+    // by making the strand cyclic, repeating the first index at the end.
+    // If entities ever support multiple polygons, this will need to be
+    // generalized using the segments information.
+    if (points_list.every(function(point, index) {
+      return indexOf.call(indices_within_radius, index) >= 0;
+    })) {
+      strands[0].push(strands[0][0]);
+    }
+    // Replace the strands with arcs around the center of the brush
+    new_points_list = points_list.slice();
+    splice_offset = 0;
+    for (m = 0, len3 = strands.length; m < len3; m++) {
+      strand = strands[m];
+      if (strand.length < 2) {
+        console.log("strand too short", strand.join(","));
+        continue;
+      }
+      start = strand[0];
+      end = strand[strand.length - 1];
+      if (strand.length === 2) {
+        // Edge case dealing with a single edge.
+        // We could optimize this to only compute intersections once,
+        // but for now I'm duplicating the computation so I don't have to duplicate the code.
+        second = end;
+        second_to_last = start;
+      } else {
+        second = tools_coffee_modulo(start + 1, points_list.length);
+        second_to_last = tools_coffee_modulo(end - 1, points_list.length);
+      }
+      start_point = points_list[start];
+      second_point = points_list[second];
+      end_point = points_list[end];
+      second_to_last_point = points_list[second_to_last];
+      if (start === end) {
+        // Handle case where the whole polygon is encompassed by the brush
+        angle_a = 0;
+        angle_b = 2 * Math.PI;
+        short_arc = long_arc = 2 * Math.PI;
+        start_point = a = {
+          x: local_mouse_position.x + Math.cos(angle_a) * brush_size,
+          y: local_mouse_position.y + Math.sin(angle_a) * brush_size
+        };
+        end_point = b = {
+          x: local_mouse_position.x + Math.cos(angle_b) * brush_size,
+          y: local_mouse_position.y + Math.sin(angle_b) * brush_size
+        };
+      } else {
+        // Note: end point and second point, as well as start point and second-to-last point,
+        // may be the same points, if only one segment (and no points) are within the brush radius
+        // If we take the first intersect of the first segment and the last intersect of the last segment,
+        // it should still get two distinct points on the circle in that case.
+        intersects_a = line_circle_intersection(start_point.x, start_point.y, second_point.x, second_point.y, local_mouse_position.x, local_mouse_position.y, brush_size);
+        intersects_b = line_circle_intersection(second_to_last_point.x, second_to_last_point.y, end_point.x, end_point.y, local_mouse_position.x, local_mouse_position.y, brush_size);
+        a = intersects_a[0];
+        b = intersects_b[1];
+        if (!a) {
+          console.log(`Intersection not found between segment ${start} to ${second} and the brush circle`);
+          continue;
+        }
+        if (!b) {
+          console.log(`Intersection not found between segment ${second_to_last} to ${end} and the brush circle`);
+          continue;
+        }
+        // console.log "Segment #{start} to #{second} intersects the brush circle"
+        // console.log "Segment #{second_to_last} to #{end} intersects the brush circle"
+
+        // c = closestPointOnLineSegment(local_mouse_position, start_point, end_point)
+        // a = towards(c, start_point, brush_size)
+        // b = towards(c, end_point, brush_size)
+        // a = closestPointOnLineSegment(a, start_point, end_point)
+        // b = closestPointOnLineSegment(b, start_point, end_point)
+        // Find the short and long arcs between the strand's endpoints, from the brush center.
+        angle_a = Math.atan2(a.y - local_mouse_position.y, a.x - local_mouse_position.x);
+        angle_b = Math.atan2(b.y - local_mouse_position.y, b.x - local_mouse_position.x);
+        arc_a = (angle_a - angle_b + Math.PI * 2) % (Math.PI * 2);
+        arc_b = -(Math.PI * 2 - arc_a);
+        short_arc = Math.abs(arc_a) < Math.abs(arc_b) ? arc_a : arc_b;
+        long_arc = Math.abs(arc_a) < Math.abs(arc_b) ? arc_b : arc_a;
+      }
+      // Check which arc we should use
+      // For additive brushing, we want to do whichever will lead to more area of the resultant polygon.
+      // Another way to look at it, the new points should not be inside the old polygon.
+      // Subtractive brushing is the opposite.
+      get_new_points = function(angle_diff) {
+        var angle, i, n, n_points, new_points, points_per_radian, ref5;
+        // Add new points and segments around the arc of the brush.
+        points_per_radian = 2;
+        n_points = Math.ceil(Math.abs(angle_diff) * points_per_radian);
+        n_points = Math.max(2, n_points);
+        new_points = [];
+        for (i = n = 0, ref5 = n_points; (0 <= ref5 ? n < ref5 : n > ref5); i = 0 <= ref5 ? ++n : --n) {
+          angle = angle_a - angle_diff * i / (n_points - 1);
+          point = {
+            x: local_mouse_position.x + Math.cos(angle) * brush_size,
+            y: local_mouse_position.y + Math.sin(angle) * brush_size
+          };
+          new_points.push(point);
+        }
+        return new_points;
+      };
+      new_points_short_arc = get_new_points(short_arc);
+      new_points_long_arc = get_new_points(long_arc);
+      // Hit-test solution is not totally correct
+      // n_inside_short = new_points_short_arc.filter((point) -> editing_entity.structure.pointInPolygon(point)).length
+      // n_inside_long = new_points_long_arc.filter((point) -> editing_entity.structure.pointInPolygon(point)).length
+
+      // if (n_inside_short > n_inside_long) == brush_additive
+      // 	new_points = new_points_long_arc
+      // else
+      // 	new_points = new_points_short_arc
+
+      // Analytic solution using shoelace formula
+      signed_area = function(segments) {
+        var len4, n, sum;
+        sum = 0;
+        for (n = 0, len4 = segments.length; n < len4; n++) {
+          segment = segments[n];
+          sum += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y);
+        }
+        return sum / 2;
+      };
+      shared_signed_area = signed_area(Object.values(editing_entity.structure.segments).filter(function(segment) {
+        var ref5, ref6;
+        return (ref5 = segment.a, indexOf.call(strand, ref5) < 0) && (ref6 = segment.b, indexOf.call(strand, ref6) < 0);
+      }));
+      total_expected_area = function(new_arc_points) {
+        var arc_segments, arc_signed_area;
+        arc_segments = [start_point, ...new_arc_points].map(function(point, i) {
+          var ref5;
+          return {
+            a: point,
+            b: (ref5 = new_arc_points[i + 1]) != null ? ref5 : end_point
+          };
+        });
+        arc_signed_area = signed_area(arc_segments);
+        return Math.abs(arc_signed_area + shared_signed_area);
+      };
+      if ((total_expected_area(new_points_short_arc) < total_expected_area(new_points_long_arc)) === brush_additive) {
+        new_points = new_points_long_arc;
+      } else {
+        new_points = new_points_short_arc;
+      }
+      
+      // Splice the new points into the list of points
+      cyclic_splice = function(list, start, delete_count, ...items) {
+        var delete_with_wrapping, delete_without_wrapping, insert_without_wrapping, insert_wrapped;
+        // This function preserves earlier indices even when wrapping
+        // and inserting/deleting different numbers of items, WHEN POSSIBLE,
+        // by splitting up the inserted items according to the number of items deleted.
+        // Specifically, the number of items inserted that are wrapped around to the end of the list
+        // is matched to the number of items deleted that are wrapped around to the beginning of the list.
+        // However, if the number of items deleted (that are wrapped) is greater than the number of items inserted,
+        // it is impossible to preserve earlier indices, and splice_offset will be updated instead.
+        start += splice_offset;
+        delete_without_wrapping = Math.min(delete_count, list.length - start);
+        delete_with_wrapping = delete_count - delete_without_wrapping;
+        insert_wrapped = Math.min(delete_with_wrapping, items.length);
+        insert_without_wrapping = items.length - insert_wrapped;
+        list.splice(start, delete_without_wrapping, ...items.slice(0, insert_without_wrapping));
+        if (delete_with_wrapping > 0) {
+          list.splice(0, delete_with_wrapping, ...items.slice(insert_without_wrapping));
+          splice_offset += insert_wrapped - delete_with_wrapping;
+        }
+      };
+      if (start === end) {
+        // If whole polygon is encompassed, replace whole strand
+        // Note: since this strand duplicates first as last, subtract one from the length
+        cyclic_splice(new_points_list, start, strand.length - 1, ...new_points);
+      } else {
+        // Otherwise, make sure to keep the start and end points
+        // which may lie outside the brush radius
+        // new_points_list = new_points
+        cyclic_splice(new_points_list, start + 1, strand.length - 2, ...new_points);
+      }
+    }
+    // Finally, merge points that are too close together
+    // (In continuous brushing, many points may be added in the same place if you're not moving the mouse.)
+    // Only affect points near the brush. Otherwise it would cause big git diffs in the world data,
+    // and probably general confusion, because you'd be changing points that you didn't even see,
+    // in subtle, or if buggy, unpredictable ways.
+    min_distance = 0.01;
+    cluster_start_index = 0;
+    cluster_start_pos = null; // for distance threshold for the current cluster
+    cluster_sum_pos = null; // for finding the average position
+    radius = brush_size * 1.01;
+    // TODO: handle wrapping around the end of the list
+    // Should just need to extend iteration by one, and modulo the index,
+    // since the points at the start will already be de-clustered.
+    // It wouldn't be a perfectly symmetric solution, but it should be good enough.
+    i = 0;
+    while (i < new_points_list.length) {
+      point = new_points_list[i];
+      if (cluster_start_pos == null) {
+        cluster_start_pos = point;
+      }
+      if (cluster_sum_pos == null) {
+        cluster_sum_pos = {
+          x: 0,
+          y: 0
+        };
+      }
+      dist_from_cluster_start = Math.hypot(point.x - cluster_start_pos.x, point.y - cluster_start_pos.y);
+      if (dist_from_cluster_start > min_distance || Math.hypot(point.x - local_mouse_position.x, point.y - local_mouse_position.y) > radius) {
+        // If this point is far enough from the start of the cluster, then we're done with the cluster
+        // and can average the positions
+        if (i - cluster_start_index > 1) {
+          // If there were at least two points in the cluster, then average them
+          average_pos = {
+            x: cluster_sum_pos.x / (i - cluster_start_index),
+            y: cluster_sum_pos.y / (i - cluster_start_index)
+          };
+          new_points_list.splice(cluster_start_index, i - cluster_start_index, average_pos);
+          i = cluster_start_index + 1;
+        }
+        // Start a new cluster
+        cluster_start_index = i;
+        cluster_start_pos = point;
+        cluster_sum_pos = {
+          x: point.x,
+          y: point.y
+        };
+      } else {
+        // If this point is close enough to the start of the cluster, then add it to the cluster
+        cluster_sum_pos.x += point.x;
+        cluster_sum_pos.y += point.y;
+      }
+      i++;
+    }
+    // If there's a cluster at the end, average it
+    if (i - cluster_start_index > 1) {
+      average_pos = {
+        x: cluster_sum_pos.x / (i - cluster_start_index),
+        y: cluster_sum_pos.y / (i - cluster_start_index)
+      };
+      new_points_list.splice(cluster_start_index, i - cluster_start_index, average_pos);
+    }
+    // Note: this causes a duplicate signalChange() call; we could avoid it by not calling signalChange() below for this tool
+    editing_entity.structure.fromJSON({
+      points: new_points_list
+    });
+  }
+  return typeof (base = editing_entity.structure).signalChange === "function" ? base.signalChange() : void 0;
+};
+
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js
-var injectStylesIntoStyleTag = __nested_webpack_require_159660__(892);
-var injectStylesIntoStyleTag_default = /*#__PURE__*/__nested_webpack_require_159660__.n(injectStylesIntoStyleTag);
+var injectStylesIntoStyleTag = __nested_webpack_require_161277__(892);
+var injectStylesIntoStyleTag_default = /*#__PURE__*/__nested_webpack_require_161277__.n(injectStylesIntoStyleTag);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/styleDomAPI.js
-var styleDomAPI = __nested_webpack_require_159660__(760);
-var styleDomAPI_default = /*#__PURE__*/__nested_webpack_require_159660__.n(styleDomAPI);
+var styleDomAPI = __nested_webpack_require_161277__(760);
+var styleDomAPI_default = /*#__PURE__*/__nested_webpack_require_161277__.n(styleDomAPI);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/insertBySelector.js
-var insertBySelector = __nested_webpack_require_159660__(311);
-var insertBySelector_default = /*#__PURE__*/__nested_webpack_require_159660__.n(insertBySelector);
+var insertBySelector = __nested_webpack_require_161277__(311);
+var insertBySelector_default = /*#__PURE__*/__nested_webpack_require_161277__.n(insertBySelector);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/setAttributesWithoutAttributes.js
-var setAttributesWithoutAttributes = __nested_webpack_require_159660__(192);
-var setAttributesWithoutAttributes_default = /*#__PURE__*/__nested_webpack_require_159660__.n(setAttributesWithoutAttributes);
+var setAttributesWithoutAttributes = __nested_webpack_require_161277__(192);
+var setAttributesWithoutAttributes_default = /*#__PURE__*/__nested_webpack_require_161277__.n(setAttributesWithoutAttributes);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/insertStyleElement.js
-var insertStyleElement = __nested_webpack_require_159660__(60);
-var insertStyleElement_default = /*#__PURE__*/__nested_webpack_require_159660__.n(insertStyleElement);
+var insertStyleElement = __nested_webpack_require_161277__(60);
+var insertStyleElement_default = /*#__PURE__*/__nested_webpack_require_161277__.n(insertStyleElement);
 // EXTERNAL MODULE: ../node_modules/style-loader/dist/runtime/styleTagTransform.js
-var styleTagTransform = __nested_webpack_require_159660__(865);
-var styleTagTransform_default = /*#__PURE__*/__nested_webpack_require_159660__.n(styleTagTransform);
+var styleTagTransform = __nested_webpack_require_161277__(865);
+var styleTagTransform_default = /*#__PURE__*/__nested_webpack_require_161277__.n(styleTagTransform);
 // EXTERNAL MODULE: ../node_modules/css-loader/dist/cjs.js!./styles.css
-var cjs_js_styles = __nested_webpack_require_159660__(389);
+var cjs_js_styles = __nested_webpack_require_161277__(389);
 ;// CONCATENATED MODULE: ./styles.css
 
       
@@ -3728,7 +9173,7 @@ MenuItem.useModifierSymbols =
 // End:
 
 // EXTERNAL MODULE: ../node_modules/css-loader/dist/cjs.js!./jsMenus/jsMenus.css
-var jsMenus = __nested_webpack_require_159660__(89);
+var jsMenus = __nested_webpack_require_161277__(89);
 ;// CONCATENATED MODULE: ./jsMenus/jsMenus.css
 
       
@@ -3760,7 +9205,11 @@ var jsMenus_update = injectStylesIntoStyleTag_default()(jsMenus/* default */.Z, 
 
 ;// CONCATENATED MODULE: ./Editor.coffee
 var Editor, Editor_coffee_Menu, Editor_coffee_MenuItem, Editor_coffee_TAU, Editor_coffee_fs, Editor_coffee_path,
-  indexOf = [].indexOf;
+  Editor_coffee_indexOf = [].indexOf;
+
+
+
+
 
 
 
@@ -3819,6 +9268,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     this.hovered_entities = [];
     this.selected_points = [];
     this.hovered_points = [];
+    this.hovered_segments = [];
     this.selection_box = null;
     this.editing_entity = null;
     this.editing_entity_anim_name = null;
@@ -3835,12 +9285,12 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       y: 0
     };
     this.last_click_time = null;
-    this.sculpt_mode = false;
+    this.tool = "select";
     this.brush_size = 50;
     // @sculpt_adding = no
     // @sculpt_removing = no
-    this.sculpt_additive = true;
-    this.sculpting = false;
+    this.brush_additive = true;
+    this.tool_active = false;
     this.undos = [];
     this.redos = [];
     this.clipboard = {};
@@ -3865,7 +9315,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       menu = new Editor_coffee_Menu();
       
       // if @selected_entities.length is 0
-      if (this.hovered_entities.length && (ref = this.hovered_entities[0], indexOf.call(this.selected_entities, ref) < 0)) {
+      if (this.hovered_entities.length && (ref = this.hovered_entities[0], Editor_coffee_indexOf.call(this.selected_entities, ref) < 0)) {
         this.selected_entities = (function() {
           var j, len, ref1, results;
           ref1 = this.hovered_entities;
@@ -4167,7 +9617,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       ref1 = this.editing_entity.structure.points;
       for (point_name in ref1) {
         point = ref1[point_name];
-        if (indexOf.call(this.selected_points, point) >= 0) {
+        if (Editor_coffee_indexOf.call(this.selected_points, point) >= 0) {
           selected_point_names.push(point_name);
         }
       }
@@ -4176,10 +9626,11 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
   }
 
   fromJSON(state) {
-    var entity, entity_id, j, k, len, len1, point_name, ref, ref1, results;
+    var entity, entity_id, j, k, len, len1, point_name, ref, ref1;
     this.world.fromJSON(state.world);
     this.hovered_entities = [];
     this.hovered_points = [];
+    this.hovered_segments = [];
     this.selected_entities = [];
     this.selected_points = [];
     ref = state.selected_entity_ids;
@@ -4193,12 +9644,13 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     this.editing_entity = this.world.getEntityByID(state.editing_entity_id);
     if (this.editing_entity != null) {
       ref1 = state.selected_point_names;
-      results = [];
       for (k = 0, len1 = ref1.length; k < len1; k++) {
         point_name = ref1[k];
-        results.push(this.selected_points.push(this.editing_entity.structure.points[point_name]));
+        this.selected_points.push(this.editing_entity.structure.points[point_name]);
       }
-      return results;
+      if (this.tool === "paint" && !(this.editing_entity instanceof Terrain_coffee)) {
+        return this.tool = "select";
+      }
     }
   }
 
@@ -4282,7 +9734,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       results = [];
       for (j = 0, len = ref.length; j < len; j++) {
         entity = ref[j];
-        if (ref1 = entity._class_, indexOf.call(types, ref1) >= 0) {
+        if (ref1 = entity._class_, Editor_coffee_indexOf.call(types, ref1) >= 0) {
           results.push(entity);
         }
       }
@@ -4301,14 +9753,14 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       ref = this.editing_entity.structure.segments;
       for (segment_name in ref) {
         segment = ref[segment_name];
-        if ((ref1 = segment.a, indexOf.call(this.selected_points, ref1) >= 0) || (ref2 = segment.b, indexOf.call(this.selected_points, ref2) >= 0)) {
+        if ((ref1 = segment.a, Editor_coffee_indexOf.call(this.selected_points, ref1) >= 0) || (ref2 = segment.b, Editor_coffee_indexOf.call(this.selected_points, ref2) >= 0)) {
           delete this.editing_entity.structure.segments[segment_name];
         }
       }
       ref3 = this.editing_entity.structure.points;
       for (point_name in ref3) {
         point = ref3[point_name];
-        if (indexOf.call(this.selected_points, point) >= 0) {
+        if (Editor_coffee_indexOf.call(this.selected_points, point) >= 0) {
           delete this.editing_entity.structure.points[point_name];
         }
       }
@@ -4382,7 +9834,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
         return;
       }
       return this.save();
-    } else {
+    } else if (this.selected_entities.length) {
       return this.undoable(() => {
         var index, k, len1, ref5;
         ref5 = this.selected_entities;
@@ -4509,46 +9961,38 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
   }
 
   step() {
-    var base, base1, closest_dist, closest_entity, dist, dist_squared, dx, dy, entity, entity_within_selection_box, i, j, k, l, len, len1, len2, len3, local_mouse_position, m, min_grab_dist, mouse_in_world, mouse_world_velocity_x, mouse_world_velocity_y, n, point, point_name, point_within_selection_box, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, segment, segment_name;
+    var base, base1, closest_dist, closest_entity, dist, entity, entity_within_selection_box, i, j, k, l, len, len1, len2, local_mouse_position, m, min_grab_dist, mouse_in_world, mouse_world_delta_x, mouse_world_delta_y, point, point_name, point_within_selection_box, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, segment, segment_name;
     mouse_in_world = this.view.toWorld(this.mouse);
     if (this.mouse.LMB.released) {
-      if (this.dragging_points.length || this.sculpting) {
+      if (this.dragging_points.length || this.tool_active) {
         this.dragging_points = [];
-        this.sculpting = false;
+        this.tool_active = false;
         this.savePose();
         this.save();
       }
       if (this.dragging_entities.length) {
         this.save();
-        ref = this.dragging_entities;
-        for (i = j = 0, len = ref.length; j < len; i = ++j) {
-          entity = ref[i];
-          if ((entity.vx != null) && (entity.vy != null)) {
-            entity.vx = (mouse_in_world.x + this.drag_offsets[i].x - entity.x) / 3;
-            entity.vy = (mouse_in_world.y + this.drag_offsets[i].y - entity.y) / 3;
-          }
-        }
         this.dragging_entities = [];
       }
       if (this.selection_box) {
         if (this.editing_entity) {
           this.selected_points = (function() {
-            var k, len1, ref1, results;
-            ref1 = this.hovered_points;
+            var j, len, ref, results;
+            ref = this.hovered_points;
             results = [];
-            for (k = 0, len1 = ref1.length; k < len1; k++) {
-              entity = ref1[k];
+            for (j = 0, len = ref.length; j < len; j++) {
+              entity = ref[j];
               results.push(entity);
             }
             return results;
           }).call(this);
         } else {
           this.selected_entities = (function() {
-            var k, len1, ref1, results;
-            ref1 = this.hovered_entities;
+            var j, len, ref, results;
+            ref = this.hovered_entities;
             results = [];
-            for (k = 0, len1 = ref1.length; k < len1; k++) {
-              entity = ref1[k];
+            for (j = 0, len = ref.length; j < len; j++) {
+              entity = ref[j];
               results.push(entity);
             }
             return results;
@@ -4563,7 +10007,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     min_grab_dist = 8 / this.view.scale;
     // console.log @view.scale, min_grab_dist
     point_within_selection_box = (entity, point) => {
-      var ref1, ref2, ref3, ref4, relative_max_x, relative_max_y, relative_min_x, relative_min_y, relative_x1, relative_x2, relative_y1, relative_y2;
+      var ref, ref1, ref2, ref3, relative_max_x, relative_max_y, relative_min_x, relative_min_y, relative_x1, relative_x2, relative_y1, relative_y2;
       relative_x1 = this.selection_box.x1 - entity.x;
       relative_y1 = this.selection_box.y1 - entity.y;
       relative_x2 = this.selection_box.x2 - entity.x;
@@ -4572,10 +10016,10 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       relative_max_x = Math.max(relative_x1, relative_x2);
       relative_min_y = Math.min(relative_y1, relative_y2);
       relative_max_y = Math.max(relative_y1, relative_y2);
-      return (relative_min_x <= (ref1 = point.x) && ref1 <= relative_max_x) && (relative_min_y <= (ref2 = point.y) && ref2 <= relative_max_y) && (relative_min_x <= (ref3 = point.x) && ref3 <= relative_max_x) && (relative_min_y <= (ref4 = point.y) && ref4 <= relative_max_y);
+      return (relative_min_x <= (ref = point.x) && ref <= relative_max_x) && (relative_min_y <= (ref1 = point.y) && ref1 <= relative_max_y) && (relative_min_x <= (ref2 = point.x) && ref2 <= relative_max_x) && (relative_min_y <= (ref3 = point.y) && ref3 <= relative_max_y);
     };
     entity_within_selection_box = (entity) => {
-      var ref1, ref2, ref3, ref4, ref5, relative_max_x, relative_max_y, relative_min_x, relative_min_y, relative_x1, relative_x2, relative_y1, relative_y2, segment, segment_name;
+      var ref, ref1, ref2, ref3, ref4, relative_max_x, relative_max_y, relative_min_x, relative_min_y, relative_x1, relative_x2, relative_y1, relative_y2, segment, segment_name;
       relative_x1 = this.selection_box.x1 - entity.x;
       relative_y1 = this.selection_box.y1 - entity.y;
       relative_x2 = this.selection_box.x2 - entity.x;
@@ -4587,10 +10031,10 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       if (Object.keys(entity.structure.segments).length === 0) {
         return false;
       }
-      ref1 = entity.structure.segments;
-      for (segment_name in ref1) {
-        segment = ref1[segment_name];
-        if (!((relative_min_x <= (ref2 = segment.a.x) && ref2 <= relative_max_x) && (relative_min_y <= (ref3 = segment.a.y) && ref3 <= relative_max_y) && (relative_min_x <= (ref4 = segment.b.x) && ref4 <= relative_max_x) && (relative_min_y <= (ref5 = segment.b.y) && ref5 <= relative_max_y))) {
+      ref = entity.structure.segments;
+      for (segment_name in ref) {
+        segment = ref[segment_name];
+        if (!((relative_min_x <= (ref1 = segment.a.x) && ref1 <= relative_max_x) && (relative_min_y <= (ref2 = segment.a.y) && ref2 <= relative_max_y) && (relative_min_x <= (ref3 = segment.b.x) && ref3 <= relative_max_x) && (relative_min_y <= (ref4 = segment.b.y) && ref4 <= relative_max_y))) {
           return false;
         }
       }
@@ -4603,21 +10047,21 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     this.view_drag_momentum.x *= 0.8;
     this.view_drag_momentum.y *= 0.8;
     this.dragging_points = (function() {
-      var k, len1, ref1, results;
-      ref1 = this.dragging_points;
+      var j, len, ref, results;
+      ref = this.dragging_points;
       results = [];
-      for (k = 0, len1 = ref1.length; k < len1; k++) {
-        point = ref1[k];
+      for (j = 0, len = ref.length; j < len; j++) {
+        point = ref[j];
         results.push(this.editing_entity.structure.points[point.name]);
       }
       return results;
     }).call(this);
     this.selected_points = (function() {
-      var k, len1, ref1, results;
-      ref1 = this.selected_points;
+      var j, len, ref, results;
+      ref = this.selected_points;
       results = [];
-      for (k = 0, len1 = ref1.length; k < len1; k++) {
-        point = ref1[k];
+      for (j = 0, len = ref.length; j < len; j++) {
+        point = ref[j];
         results.push(this.editing_entity.structure.points[point.name]);
       }
       return results;
@@ -4644,7 +10088,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       // TODO: reject double clicks where the first click was not on the same entity
       // TODO: reject double click and drag
       if (this.hovered_entities.length) {
-        if (ref1 = this.hovered_entities[0], indexOf.call(this.selected_entities, ref1) >= 0) {
+        if (ref = this.hovered_entities[0], Editor_coffee_indexOf.call(this.selected_entities, ref) >= 0) {
           this.editEntity(this.hovered_entities[0]);
         }
       } else {
@@ -4652,25 +10096,43 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
         // except there needs to be a visual indication of hover for the editing entity
         // (there would be with the cursor if you could drag segments)
         // unless @editing_entity? and @distanceToEntity(@editing_entity, mouse_in_world) < min_grab_dist
+        /*
+        This needs hover feedback. I implemented it mainly as a stepping stone
+        for the paint tool. (I needed to figure out how to splice in new points,
+        and this was a simple feature to implement.)
+
+        else if @hovered_segments.length
+         * Add a point to the hovered segment, near the mouse.
+        	segment = @hovered_segments[0]
+        	if @editing_entity?.structure instanceof PolygonStructure
+        		@undoable =>
+        			new_point = closestPointOnLineSegment(mouse_in_world, segment.a, segment.b)
+        			vertices = @editing_entity.structure.toJSON().points
+        			index_a = Object.values(@editing_entity.structure.points).indexOf(segment.a)
+        			index_b = Object.values(@editing_entity.structure.points).indexOf(segment.b)
+        			index = Math.min(index_a, index_b) + 1
+        			vertices.splice(index, 0, new_point)
+        			@editing_entity.structure.fromJSON({points: vertices})
+         */
         this.finishEditingEntity();
       }
     } else if (this.dragging_entities.length) {
-      ref2 = this.dragging_entities;
-      for (i = k = 0, len1 = ref2.length; k < len1; i = ++k) {
-        entity = ref2[i];
+      ref1 = this.dragging_entities;
+      for (i = j = 0, len = ref1.length; j < len; i = ++j) {
+        entity = ref1[i];
         entity.x = mouse_in_world.x + this.drag_offsets[i].x;
         entity.y = mouse_in_world.y + this.drag_offsets[i].y;
       }
     } else if (this.dragging_points.length) {
       local_mouse_position = this.editing_entity.fromWorld(mouse_in_world);
-      ref3 = this.dragging_points;
-      for (i = l = 0, len2 = ref3.length; l < len2; i = ++l) {
-        point = ref3[i];
+      ref2 = this.dragging_points;
+      for (i = k = 0, len1 = ref2.length; k < len1; i = ++k) {
+        point = ref2[i];
         point.x = local_mouse_position.x + this.drag_offsets[i].x;
         point.y = local_mouse_position.y + this.drag_offsets[i].y;
       }
-      if (typeof (base = this.editing_entity.structure).onchange === "function") {
-        base.onchange();
+      if (typeof (base = this.editing_entity.structure).signalChange === "function") {
+        base.signalChange();
       }
     } else if (this.dragging_segments.length) {
 
@@ -4680,11 +10142,11 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       this.selection_box.y2 = mouse_in_world.y;
       if (this.editing_entity) {
         this.hovered_points = (function() {
-          var ref4, results;
-          ref4 = this.editing_entity.structure.points;
+          var ref3, results;
+          ref3 = this.editing_entity.structure.points;
           results = [];
-          for (point_name in ref4) {
-            point = ref4[point_name];
+          for (point_name in ref3) {
+            point = ref3[point_name];
             if (point_within_selection_box(this.editing_entity, point)) {
               results.push(point);
             }
@@ -4692,12 +10154,15 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
           return results;
         }).call(this);
       } else {
+        // This causes adding points with double click not to work
+        // and it's not used for anything at the moment
+        // @hovered_segments = (segment for segment_name, segment of @editing_entity.structure.segments when segment.a in @hovered_points and segment.b in @hovered_points)
         this.hovered_entities = (function() {
-          var len3, m, ref4, results;
-          ref4 = this.world.entities;
+          var l, len2, ref3, results;
+          ref3 = this.world.entities;
           results = [];
-          for (m = 0, len3 = ref4.length; m < len3; m++) {
-            entity = ref4[m];
+          for (l = 0, len2 = ref3.length; l < len2; l++) {
+            entity = ref3[l];
             if (entity_within_selection_box(entity)) {
               results.push(entity);
             }
@@ -4718,53 +10183,32 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       } else {
         this.grab_start = null;
       }
-    } else if (this.sculpting) {
+    } else if (this.tool_active) {
       if (this.mouse.LMB.down) {
-        // if @sculpt_additive
-
-        // else
-
-        mouse_world_velocity_x = mouse_in_world.x - this.previous_mouse_world_x;
-        mouse_world_velocity_y = mouse_in_world.y - this.previous_mouse_world_y;
-        local_mouse_position = this.editing_entity.fromWorld(mouse_in_world);
-        ref4 = this.editing_entity.structure.points;
-        for (point_name in ref4) {
-          point = ref4[point_name];
-          dx = point.x - local_mouse_position.x;
-          dy = point.y - local_mouse_position.y;
-          dist_squared = dx * dx + dy * dy;
-          dist = Math.sqrt(dist_squared);
-          if (dist < this.brush_size) {
-            // point.x += dx/10
-            // point.y += dy/10
-            // point.x += dx/100 * mouse_world_velocity_x
-            // point.y += dy/100 * mouse_world_velocity_y
-            // point.x += mouse_world_velocity_x / Math.max(1, dist)
-            // point.y += mouse_world_velocity_y / Math.max(1, dist)
-            // point.x += mouse_world_velocity_x / 2
-            // point.y += mouse_world_velocity_y / 2
-            point.x += mouse_world_velocity_x / Math.max(1200, dist_squared) * 500;
-            point.y += mouse_world_velocity_y / Math.max(1200, dist_squared) * 500;
-          }
-        }
-        if (typeof (base1 = this.editing_entity.structure).onchange === "function") {
-          base1.onchange();
+        mouse_world_delta_x = mouse_in_world.x - this.previous_mouse_world_x;
+        mouse_world_delta_y = mouse_in_world.y - this.previous_mouse_world_y;
+        run_tool(this.tool, this.editing_entity, mouse_in_world, mouse_world_delta_x, mouse_world_delta_y, this.brush_size, this.brush_additive);
+        if (((function() {
+          try {
+            return localStorage["Skele2D disable tool continuity"];
+          } catch (error1) {}
+        })()) === "true") {
+          this.tool_active = false;
         }
       } else {
-        this.sculpting = false;
+        this.tool_active = false;
       }
     } else {
       this.hovered_entities = [];
       this.hovered_points = [];
+      this.hovered_segments = [];
       if (this.editing_entity) {
         local_mouse_position = this.editing_entity.fromWorld(mouse_in_world);
-        if (this.editing_entity instanceof Terrain_coffee && this.sculpt_mode) {
-          this.sculpt_additive = this.editing_entity.structure.pointInPolygon(local_mouse_position);
-        } else {
+        if (this.tool === "select") {
           closest_dist = 2e308;
-          ref5 = this.editing_entity.structure.points;
-          for (point_name in ref5) {
-            point = ref5[point_name];
+          ref3 = this.editing_entity.structure.points;
+          for (point_name in ref3) {
+            point = ref3[point_name];
             dist = distance(local_mouse_position, point);
             if (dist < min_grab_dist && dist < closest_dist) {
               closest_dist = dist;
@@ -4773,23 +10217,25 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
           }
           if (!this.hovered_points.length) {
             closest_dist = 2e308;
-            ref6 = this.editing_entity.structure.segments;
-            for (segment_name in ref6) {
-              segment = ref6[segment_name];
+            ref4 = this.editing_entity.structure.segments;
+            for (segment_name in ref4) {
+              segment = ref4[segment_name];
               dist = distanceToLineSegment(local_mouse_position, segment.a, segment.b);
-              if (dist < ((ref7 = segment.width) != null ? ref7 : 5) && dist < closest_dist) {
+              if (dist < ((ref5 = segment.width) != null ? ref5 : 5) && dist < closest_dist) {
                 closest_dist = dist;
                 this.hovered_segments = [segment];
               }
             }
           }
+        } else {
+          this.brush_additive = typeof (base1 = this.editing_entity.structure).pointInPolygon === "function" ? base1.pointInPolygon(local_mouse_position) : void 0;
         }
       } else {
         closest_dist = 2e308;
         closest_entity = null;
-        ref8 = this.world.entities;
-        for (m = 0, len3 = ref8.length; m < len3; m++) {
-          entity = ref8[m];
+        ref6 = this.world.entities;
+        for (l = 0, len2 = ref6.length; l < len2; l++) {
+          entity = ref6[l];
           dist = this.distanceToEntity(entity, mouse_in_world);
           if (dist < min_grab_dist && (dist < closest_dist || (!(entity instanceof Terrain_coffee) && closest_entity instanceof Terrain_coffee))) {
             closest_entity = entity;
@@ -4803,12 +10249,12 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       if (this.mouse.LMB.pressed) {
         this.dragging_points = [];
         this.dragging_segments = [];
-        if (this.editing_entity instanceof Terrain_coffee && this.sculpt_mode) {
+        if (this.editing_entity && this.tool !== "select") {
           this.undoable();
-          this.sculpting = true;
+          this.tool_active = true;
         } else {
           if (this.hovered_points.length) {
-            if (ref9 = this.hovered_points[0], indexOf.call(this.selected_points, ref9) >= 0) {
+            if (ref7 = this.hovered_points[0], Editor_coffee_indexOf.call(this.selected_points, ref7) >= 0) {
               this.grabPoints(this.selected_points, mouse_in_world);
             } else {
               this.grabPoints(this.hovered_points, mouse_in_world);
@@ -4816,7 +10262,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
           } else {
             this.selected_points = [];
             if (this.hovered_entities.length) {
-              if (ref10 = this.hovered_entities[0], indexOf.call(this.selected_entities, ref10) >= 0) {
+              if (ref8 = this.hovered_entities[0], Editor_coffee_indexOf.call(this.selected_entities, ref8) >= 0) {
                 this.grabEntities(this.selected_entities, mouse_in_world);
               } else {
                 this.grabEntities(this.hovered_entities, mouse_in_world);
@@ -4835,7 +10281,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     }
     if (this.editing_entity) {
       if (this.editing_entity.structure instanceof BoneStructure_coffee) {
-        for (var n = 0; n <= 250; n++) {
+        for (var m = 0; m <= 250; m++) {
           // TODO: and if there isn't an animation frame loaded
           this.editing_entity.structure.stepLayout();
         }
@@ -4848,7 +10294,10 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
 
   editEntity(entity) {
     this.editing_entity = entity;
-    return this.selected_entities = [entity];
+    this.selected_entities = [entity];
+    if (this.tool === "paint" && !(this.editing_entity instanceof Terrain_coffee)) {
+      return this.tool = "select";
+    }
   }
 
   finishEditingEntity() {
@@ -4857,7 +10306,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     this.selected_points = [];
     this.dragging_entities = [];
     this.dragging_points = [];
-    return this.sculpting = false;
+    return this.tool_active = false;
   }
 
   distanceToEntity(entity, from_point_in_world) {
@@ -5039,13 +10488,107 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
   }
 
   draw(ctx, view) {
-    var bbox, draw_points, draw_segments, entity, j, k, l, len, len1, len2, len3, m, mouse_in_world, point, ref, ref1, ref2, ref3;
+    var bbox, draw_points, draw_segments, entity, j, k, l, len, len1, len2, len3, m, mouse_in_world, point, ref, ref1, ref2, ref3, ref4, show_indices_enabled, show_names_enabled;
+    show_indices_enabled = ((function() {
+      try {
+        return localStorage["Skele2D show indices"];
+      } catch (error1) {}
+    })()) === "true";
+    show_names_enabled = ((function() {
+      try {
+        return localStorage["Skele2D show names"];
+      } catch (error1) {}
+    })()) === "true";
     draw_points = (entity, radius, fillStyle) => {
-      var point, point_name, ref, results;
-      ref = entity.structure.points;
+      var center, first, height, highlight_first_and_last, index, keys, last, point, point_name, ref, ref1, results, show_indices, show_names, side, width, x_padding, y_padding, y_side;
+      show_names = show_names_enabled && entity === this.editing_entity;
+      show_indices = show_indices_enabled && entity === this.editing_entity;
+      highlight_first_and_last = show_indices;
+      if (highlight_first_and_last || show_indices) {
+        keys = Object.keys(entity.structure.points);
+      }
+      if (show_names) {
+        center = {
+          x: 0,
+          y: 0
+        };
+        ref = entity.structure.points;
+        for (point_name in ref) {
+          point = ref[point_name];
+          center.x += point.x;
+          center.y += point.y;
+        }
+        center.x /= Object.keys(entity.structure.points).length;
+        center.y /= Object.keys(entity.structure.points).length;
+      }
+      ref1 = entity.structure.points;
       results = [];
-      for (point_name in ref) {
-        point = ref[point_name];
+      for (point_name in ref1) {
+        point = ref1[point_name];
+        if (highlight_first_and_last) {
+          first = point_name === keys[0];
+          last = point_name === keys[keys.length - 1];
+          if (first || last) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, radius * 2 / view.scale, 0, Editor_coffee_TAU);
+            ctx.fillStyle = first ? "lime" : "blue";
+            ctx.fill();
+          }
+        }
+        if (show_names) {
+          side = point.x > center.x ? 1 : -1;
+          y_side = point.y > center.y ? 1 : -1;
+          ctx.font = "20px sans-serif";
+          ctx.save();
+          ctx.translate(point.x, point.y);
+          ctx.scale(1 / view.scale, 1 / view.scale);
+          ctx.textAlign = side === 1 ? "left" : "right";
+          width = ctx.measureText(point_name).width;
+          height = 20;
+          x_padding = 20;
+          y_padding = 5;
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.translate(side * 60, y_side * 30);
+          ctx.lineTo(0, 0);
+          ctx.stroke();
+          ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+          ctx.fillRect(0, -(height + y_padding) / 2, side * (width + x_padding * 2), height + y_padding * 2);
+          ctx.fillStyle = "white";
+          ctx.textBaseline = "middle";
+          ctx.fillText(point_name, side * x_padding, height / 2 - y_padding);
+          ctx.restore();
+        }
+        if (show_indices) {
+          index = keys.indexOf(point_name);
+          width = ctx.measureText(index).width;
+          ctx.font = "10px sans-serif";
+          // ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
+          ctx.fillStyle = `hsla(${index * 360 / keys.length}, 100%, 50%, 0.5)`;
+          // ctx.fillRect(point.x, point.y, width + radius*2, 12)
+          // ctx.fillStyle = "red"
+          // ctx.fillText(index, point.x + radius, point.y + 10)
+          ctx.save();
+          ctx.translate(point.x, point.y);
+          ctx.scale(3 / view.scale, 3 / view.scale);
+          ctx.rotate(index * Editor_coffee_TAU / 4 / keys.length - Editor_coffee_TAU / 4 / 2);
+          x_padding = 20;
+          // ctx.fillRect(0, 0, width + x_padding*2, 12)
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(width + x_padding, 0);
+          ctx.arc(width + x_padding, 6, 6, -Editor_coffee_TAU / 4, Editor_coffee_TAU / 4);
+          ctx.lineTo(x_padding, 12);
+          // ctx.lineTo(0, 0)
+          // ctx.quadraticCurveTo(x_padding/2, 12, 0, 0)
+          ctx.bezierCurveTo(x_padding / 2, 12, x_padding / 2, 0, 0, 0);
+          ctx.fill();
+          ctx.fillStyle = "white";
+          ctx.fillText(index, x_padding, 10);
+          ctx.restore();
+        }
         ctx.beginPath();
         ctx.arc(point.x, point.y, radius / view.scale, 0, Editor_coffee_TAU);
         // ctx.lineWidth = 1 / view.scale
@@ -5076,7 +10619,6 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     if (this.editing_entity) {
       ctx.save();
       ctx.translate(this.editing_entity.x, this.editing_entity.y);
-      // unless @editing_entity instanceof Terrain and @sculpt_mode
       draw_points(this.editing_entity, 3, "rgba(255, 0, 0, 1)");
       draw_segments(this.editing_entity, 1, "rgba(255, 170, 0, 1)");
       ctx.restore();
@@ -5096,7 +10638,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     ref1 = this.hovered_entities;
     for (k = 0, len1 = ref1.length; k < len1; k++) {
       entity = ref1[k];
-      if (!(indexOf.call(this.selected_entities, entity) < 0)) {
+      if (!(Editor_coffee_indexOf.call(this.selected_entities, entity) < 0)) {
         continue;
       }
       ctx.save();
@@ -5106,7 +10648,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       ctx.restore();
     }
     if (this.editing_entity != null) {
-      if (this.editing_entity instanceof Terrain_coffee && this.sculpt_mode) {
+      if ((ref2 = this.tool) === "sculpt" || ref2 === "roughen" || ref2 === "smooth" || ref2 === "paint") {
         mouse_in_world = this.view.toWorld(this.mouse);
         ctx.beginPath();
         // ctx.arc(mouse_in_world.x, mouse_in_world.y, @brush_size / view.scale, 0, TAU)
@@ -5122,10 +10664,10 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       } else {
         ctx.save();
         ctx.translate(this.editing_entity.x, this.editing_entity.y);
-        ref2 = this.selected_points;
+        ref3 = this.selected_points;
         // draw_points(@selected_points, 2, "rgba(255, 170, 0, 0.2)")
-        for (l = 0, len2 = ref2.length; l < len2; l++) {
-          point = ref2[l];
+        for (l = 0, len2 = ref3.length; l < len2; l++) {
+          point = ref3[l];
           ctx.beginPath();
           ctx.arc(point.x, point.y, 3 / view.scale, 0, Editor_coffee_TAU);
           ctx.fillStyle = "rgba(255, 0, 0, 1)";
@@ -5137,9 +10679,9 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
         ctx.restore();
       }
     }
-    ref3 = this.selected_entities;
-    for (m = 0, len3 = ref3.length; m < len3; m++) {
-      entity = ref3[m];
+    ref4 = this.selected_entities;
+    for (m = 0, len3 = ref4.length; m < len3; m++) {
+      entity = ref4[m];
       ctx.strokeStyle = "rgba(255, 170, 0, 1)";
       bbox = entity.bbox();
       ctx.lineWidth = 1 / view.scale;
@@ -5174,7 +10716,17 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
 
   renderDOM() {
     var react_root;
-    react_root = react_script_default()(".editor", react_script_default()(EntitiesBar_coffee, {
+    // Note that pointer-events: none is used on the editor
+    // to allow clicking through to the canvas, which is outside the editor.
+    // If changing the structure here, make sure pointer-events is enabled
+    // on any elements that should be clickable.
+    // The Animation sidebar actually goes on top of the Entities sidebar
+    react_root = react_script_default()(".editor", react_script_default()(".layout-vertical", react_script_default()(".layout-horizontal", react_script_default()("div", {
+      style: {
+        position: "relative",
+        flex: 1
+      }
+    }, react_script_default()(EntitiesBar_coffee, {
       editor: this,
       ref: (entities_bar) => {
         this.entities_bar = entities_bar;
@@ -5184,12 +10736,13 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
       ref: (anim_bar) => {
         this.anim_bar = anim_bar;
       }
-    }), react_script_default()(TerrainBar_coffee, {
+    // E "div", {style: {flex: 1}}
+    }))), react_script_default()(ToolsBar_coffee, {
       editor: this,
-      ref: (terrain_bar) => {
-        this.terrain_bar = terrain_bar;
+      ref: (tools_bar) => {
+        this.tools_bar = tools_bar;
       }
-    }), react_script_default()(".warning", {
+    })), react_script_default()(".warning", {
       class: (this.show_warning ? "show" : void 0)
     }, this.warning_message));
     return react_dom.render(react_root, this.react_root_el);
@@ -5204,7 +10757,7 @@ Editor_coffee_path = typeof window.require === "function" ? window.require("path
     show = this.editing;
     this.entities_bar.update(show);
     this.anim_bar.update(show);
-    return this.terrain_bar.update(show);
+    return this.tools_bar.update(show);
   }
 
 });
@@ -5303,3789 +10856,6 @@ var Mouse;
 ;
 });
 
-/***/ }),
-
-/***/ 378:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Entity, Terrain, World, distanceToLineSegment,
-  indexOf = [].indexOf;
-
-Entity = __webpack_require__(293);
-
-Terrain = __webpack_require__(891);
-
-({distanceToLineSegment} = (__webpack_require__(432).helpers));
-
-module.exports = World = (function() {
-  class World {
-    constructor() {
-      this.entities = [];
-    }
-
-    toJSON() {
-      return {
-        formatVersion: World.formatVersion,
-        entities: this.entities
-      };
-    }
-
-    fromJSON(def) {
-      var ent_def, entity, i, j, k, len, len1, len2, point_def, point_name, ref, ref1, ref2, ref3, results;
-      // upgrade old versions of the format
-      if (!def.formatVersion) {
-        if (!(def.entities instanceof Array)) {
-          throw new Error(`Expected entities to be an array, got ${def.entities}`);
-        }
-        def.formatVersion = 1;
-        ref = def.entities;
-        // Arrow now uses prev_x/prev_y instead of of vx/vy for velocity
-        // (Velocity is now implicit in the difference between prev_x/prev_y and x/y)
-        for (i = 0, len = ref.length; i < len; i++) {
-          ent_def = ref[i];
-          if (!(ent_def._class_ === "Arrow")) {
-            continue;
-          }
-          ent_def.structure.points.nock.prev_x = ent_def.structure.points.nock.x - ent_def.structure.points.nock.vx;
-          ent_def.structure.points.nock.prev_y = ent_def.structure.points.nock.y - ent_def.structure.points.nock.vy;
-          ent_def.structure.points.tip.prev_x = ent_def.structure.points.tip.x - ent_def.structure.points.tip.vx;
-          ent_def.structure.points.tip.prev_y = ent_def.structure.points.tip.y - ent_def.structure.points.tip.vy;
-          delete ent_def.structure.points.nock.vx;
-          delete ent_def.structure.points.nock.vy;
-          delete ent_def.structure.points.tip.vx;
-          delete ent_def.structure.points.tip.vy;
-        }
-      }
-      if (def.formatVersion === 1) {
-        def.formatVersion = 2;
-        // spell-checker: disable
-        // "elbo" is now "elbow" in Player's segment names
-        // do regex replace on JSON, since it's way simpler, and handles references too
-        def.entities = JSON.parse(JSON.stringify(def.entities).replace(/\belbo\b/g, 'elbow'));
-      }
-      // spell-checker: enable
-      // Note that the animation data also requires this rename, but there's no automatic upgrade system yet
-      if (def.formatVersion === 2) {
-        def.formatVersion = 3;
-        ref1 = def.entities;
-        // Removed leaf_point_names from Tree, and added is_leaf property to points
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          ent_def = ref1[j];
-          if (!(ent_def._class_.includes("Tree"))) {
-            continue;
-          }
-          ref2 = ent_def.structure.points;
-          for (point_name in ref2) {
-            point_def = ref2[point_name];
-            point_def.is_leaf = indexOf.call(ent_def.leaf_point_names, point_name) >= 0;
-          }
-          delete ent_def.leaf_point_names;
-        }
-      }
-      if (def.formatVersion > World.formatVersion) {
-        throw new Error(`The format version ${def.formatVersion} is too new for this version of the game.`);
-      }
-      // In case the format version format changes to a string or something
-      if (def.formatVersion !== World.formatVersion) {
-        throw new Error(`Unsupported format version ${def.formatVersion}`);
-      }
-      
-      // Validate the current format a bit
-      if (!(def.entities instanceof Array)) {
-        throw new Error(`Expected entities to be an array, got ${def.entities}`);
-      }
-      
-      // Initialize the world
-      this.entities = (function() {
-        var k, len2, ref3, results;
-        ref3 = def.entities;
-        results = [];
-        for (k = 0, len2 = ref3.length; k < len2; k++) {
-          ent_def = ref3[k];
-          results.push(Entity.fromJSON(ent_def));
-        }
-        return results;
-      })();
-      ref3 = this.entities;
-      results = [];
-      for (k = 0, len2 = ref3.length; k < len2; k++) {
-        entity = ref3[k];
-        results.push(entity.resolveReferences(this));
-      }
-      return results;
-    }
-
-    getEntityByID(id) {
-      var entity, i, len, ref;
-      ref = this.entities;
-      for (i = 0, len = ref.length; i < len; i++) {
-        entity = ref[i];
-        if (entity.id === id) {
-          return entity;
-        }
-      }
-    }
-
-    getEntitiesOfType(Class) {
-      var entity, i, len, ref, results;
-      ref = this.entities;
-      results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        entity = ref[i];
-        if (entity instanceof Class) {
-          results.push(entity);
-        }
-      }
-      return results;
-    }
-
-    drawBackground(ctx, view) {
-      ctx.fillStyle = "#32C8FF";
-      return ctx.fillRect(0, 0, view.width, view.height);
-    }
-
-    draw(ctx, view) {
-      var entity, i, len, ref, results;
-      ref = this.entities;
-      // ctx.fillStyle = "#32C8FF"
-      // {x, y} = view.toWorld({x: 0, y: 0})
-      // {x: width, y: height} = view.toWorld({x: view.width, y: view.height})
-      // ctx.fillRect(x, y, width-x, height-y)
-      results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        entity = ref[i];
-        ctx.save();
-        ctx.translate(entity.x, entity.y);
-        entity.draw(ctx, view);
-        results.push(ctx.restore());
-      }
-      return results;
-    }
-
-    collision(point, {types = [Terrain], lineThickness = 5} = {}) {
-      var dist, entity, filter, i, len, local_point, ref, ref1, segment, segment_name;
-      // lineThickness doesn't apply to polygons like Terrain
-      // also it's kind of a hack, because different entities could need different lineThicknesses
-      // and different segments within an entity too
-      if (typeof types === "function") {
-        filter = types;
-      } else {
-        filter = (entity) => {
-          return types.some((type) => {
-            var ref;
-            return (entity instanceof type) && ((ref = entity.solid) != null ? ref : true);
-          });
-        };
-      }
-      ref = this.entities;
-      for (i = 0, len = ref.length; i < len; i++) {
-        entity = ref[i];
-        if (filter(entity)) {
-          if (entity.structure.pointInPolygon != null) {
-            if (entity.structure.pointInPolygon(entity.fromWorld(point))) {
-              return entity;
-            }
-          } else {
-            local_point = entity.fromWorld(point);
-            ref1 = entity.structure.segments;
-            for (segment_name in ref1) {
-              segment = ref1[segment_name];
-              dist = distanceToLineSegment(local_point, segment.a, segment.b);
-              if (dist < lineThickness) {
-                return entity;
-              }
-            }
-          }
-        }
-      }
-      return null;
-    }
-
-  };
-
-  World.formatVersion = 3;
-
-  return World;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 372:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var ArcheryTarget, Arrow, off_angle;
-
-ArcheryTarget = __webpack_require__(233);
-
-Arrow = __webpack_require__(943);
-
-// Note: It helps to disable gravity for this test for symmetry,
-// and to disable some conditions on lodging and enable visualization of the lodging constraints.
-off_angle = 0;
-
-module.exports = window.enable_arrow_test_scene = function() {
-  addEventListener("mousemove", function(e) {
-    return off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2);
-  });
-  addEventListener("mousedown", function(e) {
-    if (e.button === 1) { // middle click
-      return window.create_arrow_test_scene();
-    }
-  });
-  return window.create_arrow_test_scene();
-};
-
-// setTimeout window.create_arrow_test_scene, 1000
-module.exports = window.create_arrow_test_scene = function() {
-  var arrow, arrow_angle, arrows, j, k, ref, ref1, ref2, ref3, ref4, ref5, target, target_angle, world;
-  world = window.the_world;
-  world.entities.length = [];
-  arrows = [];
-  for (target_angle = j = ref = -Math.PI, ref1 = Math.PI, ref2 = Math.PI / 8; ref2 !== 0 && (ref2 > 0 ? j <= ref1 : j >= ref1); target_angle = j += ref2) {
-    target = new ArcheryTarget();
-    target.x = 200 * Math.cos(target_angle);
-    target.y = 200 * Math.sin(target_angle);
-    target.structure.points.a.x = -100 * Math.cos(target_angle);
-    target.structure.points.a.y = -100 * Math.sin(target_angle);
-    target.structure.points.b.x = 100 * Math.cos(target_angle);
-    target.structure.points.b.y = 100 * Math.sin(target_angle);
-    world.entities.push(target);
-
-    // Create arrows shooting at the target from various angles
-    for (arrow_angle = k = ref3 = -Math.PI, ref4 = Math.PI, ref5 = Math.PI / 16; ref5 !== 0 && (ref5 > 0 ? k <= ref4 : k >= ref4); arrow_angle = k += ref5) {
-      arrow = new Arrow();
-      arrow.x = target.x - 50 * Math.cos(arrow_angle);
-      arrow.y = target.y - 50 * Math.sin(arrow_angle);
-      arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle + off_angle);
-      arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle + off_angle);
-      arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle + off_angle);
-      arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle + off_angle);
-      arrow.setVelocity(5 * Math.cos(arrow_angle), 5 * Math.sin(arrow_angle));
-      arrows.push(arrow);
-    }
-  }
-  return world.entities.push(...arrows);
-};
-
-window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 4, angle_max = -Math.PI / 4, speed_min = 5, speed_max = 20, count = 100} = {}) {
-  var arrow, arrow_angle, arrow_speed, arrows, i, j, ref, world;
-  world = window.the_world;
-  arrows = [];
-  for (i = j = 0, ref = count; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
-    arrow = new Arrow();
-    arrow.x = x;
-    arrow.y = y;
-    arrow_angle = Math.random() * (angle_max - angle_min) + angle_min;
-    arrow_speed = Math.random() * (speed_max - speed_min) + speed_min;
-    arrow.structure.points.nock.x = -10 * Math.cos(arrow_angle);
-    arrow.structure.points.nock.y = -10 * Math.sin(arrow_angle);
-    arrow.structure.points.tip.x = 10 * Math.cos(arrow_angle);
-    arrow.structure.points.tip.y = 10 * Math.sin(arrow_angle);
-    arrow.setVelocity(arrow_speed * Math.cos(arrow_angle), arrow_speed * Math.sin(arrow_angle));
-    arrows.push(arrow);
-  }
-  return world.entities.push(...arrows);
-};
-
-
-/***/ }),
-
-/***/ 653:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Bird, SimpleActor, addEntityClass, r;
-
-SimpleActor = __webpack_require__(339);
-
-({addEntityClass} = __webpack_require__(432));
-
-r = function() {
-  return Math.random() * 2 - 1;
-};
-
-module.exports = Bird = (function() {
-  class Bird extends SimpleActor {
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "body",
-        length: 5
-      });
-      this.bbox_padding = 20;
-      this.width = 8;
-      this.height = 8;
-      this.flap = 0;
-      this.flap_timer = r() * 15;
-      this.wingspan = 10;
-      this.go_x = r() * 5;
-      this.go_y = 0;
-    }
-
-    step(world) {
-      var i, j, x, y;
-      for (i = j = 0; j <= 50; i = ++j) {
-        x = r() * 50;
-        y = r() * 70;
-        if (world.collision({
-          x: this.x + x,
-          y: this.y + y
-        })) {
-          this.go_y -= y / 30;
-          this.go_x -= x / (10 + Math.abs(this.go_y));
-        }
-      }
-      if (this.flap_timer < 0) {
-        if (this.go_y < -1) {
-          this.vy -= 5;
-          this.flap_timer = 15;
-        } else {
-          this.vy -= 1;
-          this.flap_timer = 15;
-        }
-      }
-      this.go_x *= 0.95;
-      this.go_y *= 0.7;
-      this.vx += (this.go_x - this.vx) / 2;
-      this.vy += 0.1;
-      this.x += this.vx;
-      this.y += this.vy;
-      return this.flap_timer--;
-    }
-
-    // run SimpleActor physics, which uses @move_x and @jump
-    // super(world)
-    draw(ctx) {
-      var f;
-      ctx.strokeStyle = "#000";
-      ctx.beginPath();
-      f = 2.8;
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0 + Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0 - Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
-      ctx.stroke();
-      if (this.flap_timer < 0) {
-        this.flap_timer = -1;
-      }
-      this.flap += this.flap_timer / 20;
-      return this.flap += (-this.flap - 0.1) * 0.1;
-    }
-
-  };
-
-  addEntityClass(Bird);
-
-  return Bird;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 739:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Butterfly, SimpleActor, addEntityClass, r;
-
-SimpleActor = __webpack_require__(339);
-
-({addEntityClass} = __webpack_require__(432));
-
-r = function() {
-  return Math.random() * 2 - 1;
-};
-
-module.exports = Butterfly = (function() {
-  class Butterfly extends SimpleActor {
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "body",
-        length: 5
-      });
-      this.bbox_padding = 20;
-      this.width = 4;
-      this.height = 4;
-      this.go_x = r() * 5;
-      this.go_y = r() * 5;
-      this.t = r() * 5;
-      this.flap = r() * 5;
-      this.flap_timer = r() * 15;
-      this.c1 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
-      this.c2 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
-    }
-
-    step(world) {
-      var i, j, x, y;
-      for (i = j = 0; j <= 50; i = ++j) {
-        x = r() * 50;
-        y = r() * 70;
-        if (world.collision({
-          x: this.x + x,
-          y: this.y + y
-        })) {
-          this.go_y -= y / 50;
-          this.go_x -= x / (50 + Math.abs(this.go_y));
-        }
-      }
-      if (this.flap_timer < 0) {
-        if (this.go_y < -1) {
-          this.vy -= 5;
-          this.flap_timer = 15;
-        } else {
-          this.vy -= 1;
-          this.flap_timer = 15;
-        }
-      }
-      this.go_x *= 0.9;
-      this.go_y *= 0.9;
-      this.go_x += r() / 2;
-      this.go_y += r() / 2;
-      this.vx += (this.go_x - this.vx / 2) / 3;
-      this.vy += (this.go_y - this.vy / 2) / 3;
-      this.vy += 0.01;
-      this.x += this.vx;
-      this.y += this.vy;
-      return this.flap = Math.cos(this.t += 0.5);
-    }
-
-    // run SimpleActor physics, which uses @move_x and @jump
-    // super(world)
-    draw(ctx) {
-      var f;
-      ctx.beginPath();
-      f = 2.8;
-      ctx.strokeStyle = this.c1;
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0 + Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0 - Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.strokeStyle = this.c2;
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0 + Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0 - Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
-      ctx.stroke();
-      ctx.beginPath();
-      if (this.flap_timer < 0) {
-        this.flap_timer = -1;
-      }
-      this.flap += this.flap_timer / 20;
-      return this.flap += (-this.flap - 0.1) * 0.1;
-    }
-
-  };
-
-  addEntityClass(Butterfly);
-
-  return Butterfly;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 332:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Cloud, Entity, addEntityClass;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(432));
-
-module.exports = Cloud = (function() {
-  class Cloud extends Entity {
-    constructor() {
-      super();
-      this.structure.addPoint("body");
-      this.bbox_padding = 80;
-      this.width = 45 + Math.random() * 50;
-      this.height = 35 + Math.random() * 10;
-      // @simplex = new SimplexNoise()
-      this.t = 0;
-    }
-
-    step(world) {
-      this.x++;
-      return this.t += 0.001;
-    }
-
-    // if @x > terrain.width+300
-    // 	@poof=true
-    draw(ctx) {
-      var i, j, results;
-      ctx.fillStyle = "#A9D9FA";
-      results = [];
-      for (i = j = 0; j <= 20; i = ++j) {
-        ctx.beginPath();
-        // ctx.arc(
-        // 	@simplex.noise(5+i,@t+i*3.92)*@width+@width/2,
-        // 	@simplex.noise(26+i,@t+i*2.576)*@height+@height/2,
-        // 	Math.abs(@simplex.noise(73+i*5.2,@t+i)*@width),
-        // 	# @simplex.noise(68+i,@t)*-Math.PI*2,
-        // 	# @simplex.noise(20+i,@t)*Math.PI*2,
-        // 	0,Math.PI*2,
-        // 	false
-        // )
-        ctx.arc(Math.sin(this.t + i ** 1.2) * this.width + this.width / 2, Math.sin(this.t + i - i ** 1.1) * this.height + this.height / 2, Math.abs(Math.sin(this.t + i ** 1.3)) * this.width, 0, Math.PI * 2, false);
-        results.push(ctx.fill());
-      }
-      return results;
-    }
-
-  };
-
-  addEntityClass(Cloud);
-
-  return Cloud;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 857:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Deer, Entity, SimpleActor, addEntityClass, r;
-
-SimpleActor = __webpack_require__(339);
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(432));
-
-r = function() {
-  return Math.random() * 2 - 1;
-};
-
-module.exports = Deer = (function() {
-  class Deer extends SimpleActor {
-    // Entity.initAnimation(@)
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "neck",
-        length: 5
-      });
-      this.bbox_padding = 30;
-      this.width = 27;
-      this.height = 18;
-      this.xp = 0;
-      this.t = 0;
-      this.lr = 0;
-      this.dir = 0;
-      this.dir_p = 1;
-      this.dir_pl = 1;
-      this.rideable = true;
-      this.c = "hsla(" + (Math.random() * 20) + "," + 10 + "%," + (50 + Math.random() * 20) + "%,1)";
-      this.ground_angle = 0;
-      this.ground_angle_smoothed = 0;
-    }
-
-    step(world) {
-      var ref;
-      if (this.grounded) {
-        // Note: ground_angle  and ground_angle_smoothed are used by Player while riding
-        this.ground_angle = (ref = this.find_ground_angle(world)) != null ? ref : 0;
-        this.ground_angle = Math.atan2(Math.sin(this.ground_angle), Math.cos(this.ground_angle));
-        this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 5;
-        if (Math.random() < 0.01) {
-          this.dir = r();
-        }
-      } else {
-        this.ground_angle = 0;
-        this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 10;
-        if (Math.abs(this.xp - this.x) < 1) {
-          this.t++;
-          if (this.t > 15) {
-            this.dir = r();
-            this.t = 0;
-          }
-        } else {
-          this.t = 0;
-        }
-      }
-      this.vx += this.dir / 5;
-      this.lr += Math.abs(this.vx) / 5;
-      this.xp = this.x;
-      this.move_x = this.dir * 0.2;
-      this.move_y = -1;
-      // run SimpleActor physics, which uses @move_x and @jump
-      return super.step(world);
-    }
-
-    draw(ctx) {
-      if (this.dir < -0.3) {
-        this.dir_p = -1;
-      }
-      if (this.dir > 0.3) {
-        this.dir_p = 1;
-      }
-      this.dir_pl += (this.dir_p - this.dir_pl) / 10;
-      ctx.save();
-      // ctx.translate(@x,@y+@height*3/4)
-      ctx.translate(0, this.height * 3 / 4);
-      ctx.rotate(this.ground_angle_smoothed);
-      ctx.beginPath();
-      ctx.fillStyle = this.c;
-      ctx.arc(0, -this.height / 2, this.height / 3, 0, Math.PI * 2, true);
-      ctx.fill();
-      ctx.scale(this.dir_pl, 1);
-      // ctx.rotate(@vx/-10)
-      // legs
-      ctx.strokeStyle = "#a55";
-      ctx.beginPath();
-      ctx.moveTo(-this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
-      ctx.moveTo(-this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr + Math.PI) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr + Math.PI) * 8);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr + 0.1) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
-      ctx.moveTo(this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr + Math.PI + 0.2) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr + Math.PI) * 8);
-      ctx.stroke();
-      ctx.fillStyle = this.c;
-      ctx.save(); // head
-      ctx.translate(this.width / 2, this.height * -3 / 4);
-      ctx.rotate(-0.4 + Math.cos(this.x / 50));
-      ctx.fillRect(-5, -5, 15, 8);
-      ctx.translate(12, 0);
-      ctx.rotate(0.6 - Math.cos(this.x / 50) / 2);
-      // ctx.fillRect(-5,-5,15,8)
-      ctx.beginPath();
-      ctx.moveTo(-5, -5);
-      ctx.lineTo(-5, 3);
-      ctx.lineTo(10, 1);
-      ctx.lineTo(10, -2);
-      ctx.fill();
-      ctx.restore();
-      
-      // body
-      ctx.fillRect(this.width / -2, this.height / -1, this.width, this.height * 3 / 4);
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Deer);
-
-  return Deer;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 162:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Frog, SimpleActor, addEntityClass, r;
-
-SimpleActor = __webpack_require__(339);
-
-({addEntityClass} = __webpack_require__(432));
-
-r = function() {
-  return Math.random() * 2 - 1;
-};
-
-module.exports = Frog = (function() {
-  class Frog extends SimpleActor {
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "body",
-        length: 5
-      });
-      this.bbox_padding = 20;
-      this.width = 8;
-      this.height = 8;
-      this.xp = 0;
-      this.t = 0;
-      this.lr = 0;
-      this.dir = 0;
-      this.c = "hsla(" + (150 - Math.random() * 50) + "," + (50 + Math.random() * 50) + "%," + (50 - Math.random() * 20) + "%,1)";
-    }
-
-    step(world) {
-      if (this.grounded) {
-        this.vx *= 0.1;
-        if (Math.random() > 0.1) {
-          // jump
-          this.vy = Math.random() * -5;
-          this.dir = r();
-          this.t = 0;
-        }
-      } else {
-        this.vx += this.dir *= 2;
-        if (this.xp === this.x) {
-          this.t++;
-          if (this.t > 5) {
-            this.dir = r();
-          }
-        } else {
-          this.t = 0;
-        }
-      }
-      this.xp = this.x;
-      this.move_x = this.dir * 0.2;
-      this.move_y = 0;
-      // run SimpleActor physics, which uses @move_x and @jump
-      return super.step(world);
-    }
-
-    draw(ctx) {
-      ctx.save();
-      ctx.rotate(this.vx / 5);
-      ctx.fillStyle = this.c;
-      //ctx.fillRect(@x,@y,@width,@height)
-      ctx.beginPath();
-      ctx.arc(this.width / 2, this.height / 4 - this.vy, this.height / 2, 0, Math.PI, false);
-      ctx.arc(this.width / 2, this.height, this.height / 2, Math.PI, Math.PI * 2, false);
-      ctx.fill();
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Frog);
-
-  return Frog;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 668:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Entity, GranddaddyLonglegs, TAU, addEntityClass, distance,
-  modulo = function(a, b) { return (+a % (b = +b) + b) % b; },
-  indexOf = [].indexOf;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(432));
-
-({distance} = (__webpack_require__(432).helpers));
-
-TAU = Math.PI * 2;
-
-module.exports = GranddaddyLonglegs = (function() {
-  class GranddaddyLonglegs extends Entity {
-    constructor() {
-      var foot_point_name, i, j, k, l, leg, leg_pair_n, len, len1, len2, point, point_name, previous, ref, ref1, ref2, ref3, segment_name, side;
-      super();
-      this.structure.addPoint("body");
-      this.foot_point_names = [];
-      this.legs = [];
-      for (leg_pair_n = i = 1; i <= 4; leg_pair_n = ++i) {
-        ref = ["left", "right"];
-        for (j = 0, len = ref.length; j < len; j++) {
-          side = ref[j];
-          leg = {
-            point_names_by_segment_name: {}
-          };
-          this.legs.push(leg);
-          previous = "body";
-          ref1 = ["upper", "middle", "lower"];
-          for (k = 0, len1 = ref1.length; k < len1; k++) {
-            segment_name = ref1[k];
-            point_name = segment_name === "lower" ? foot_point_name = `${side} foot ${leg_pair_n}` : (foot_point_name = void 0, `${segment_name} ${side} leg ${leg_pair_n}`);
-            previous = this.structure.addSegment({
-              from: previous,
-              to: foot_point_name,
-              name: `${segment_name} ${side} leg ${leg_pair_n}`,
-              length: 50,
-              // NOTE: opiliones (harvestmen) (granddaddy longlegses) (granddaddies-longlegs?))
-              // often have vastly more spindly legs
-              width: (function() {
-                switch (segment_name) {
-                  case "upper":
-                    return 4;
-                  case "middle":
-                    return 3;
-                  case "lower":
-                    return 2;
-                }
-              })()
-            });
-            leg.point_names_by_segment_name[segment_name] = point_name;
-            leg.foot_point_name = foot_point_name;
-            if (foot_point_name != null) {
-              this.foot_point_names.push(foot_point_name);
-            }
-          }
-        }
-      }
-      this.step_index = 0;
-      this.step_timer = 0;
-      this.next_foot_positions = {};
-      ref2 = this.foot_point_names;
-      for (l = 0, len2 = ref2.length; l < len2; l++) {
-        point_name = ref2[l];
-        this.next_foot_positions[point_name] = {
-          x: 0,
-          y: 0
-        };
-      }
-      ref3 = this.structure.points;
-      for (point_name in ref3) {
-        point = ref3[point_name];
-        point.vx = 0;
-        point.vy = 0;
-      }
-      this.bbox_padding = 20;
-    }
-
-    step(world) {
-      var collision, current_foot_point_name, current_foot_pos, dist, foot_point, force, i, j, k, l, leg, len, next_foot_pos, point_name, ref, ref1, results, segment_name;
-      if (this.toWorld(this.structure.points[this.foot_point_names[0]]).y > 400) {
-        return;
-      }
-      if (++this.step_timer >= 10) {
-        this.step_timer = 0;
-        this.step_index += 1;
-        current_foot_point_name = this.foot_point_names[modulo(this.step_index, this.foot_point_names.length)];
-        current_foot_pos = this.structure.points[current_foot_point_name];
-        next_foot_pos = {
-          x: current_foot_pos.x,
-          y: current_foot_pos.y
-        };
-        next_foot_pos.x += 50;
-        next_foot_pos.y -= 50;
-        for (var i = 0; i <= 50; i++) {
-          next_foot_pos.y += 5;
-          if (world.collision(this.toWorld(next_foot_pos))) {
-            next_foot_pos.y -= 5;
-            break;
-          }
-        }
-        this.next_foot_positions[current_foot_point_name] = next_foot_pos;
-      }
-      ref = this.legs;
-      for (j = 0, len = ref.length; j < len; j++) {
-        leg = ref[j];
-        foot_point = this.structure.points[leg.foot_point_name];
-        next_foot_pos = this.next_foot_positions[leg.foot_point_name];
-        ref1 = leg.point_names_by_segment_name;
-        for (segment_name in ref1) {
-          point_name = ref1[segment_name];
-          this.structure.points[point_name].vx += (next_foot_pos.x - foot_point.x) / 200;
-          if (indexOf.call(this.foot_point_names, point_name) < 0) {
-            this.structure.points[point_name].vy -= 0.6;
-          }
-        }
-        dist = distance(next_foot_pos, foot_point);
-        force = 2;
-        foot_point.vx += (next_foot_pos.x - foot_point.x) / dist * force;
-        foot_point.vy += (next_foot_pos.y - foot_point.y) / dist * force;
-      }
-      this.structure.points["body"].vy -= 0.2;
-      collision = (point) => {
-        return world.collision(this.toWorld(point));
-      };
-      this.structure.stepLayout({
-        gravity: 0.5,
-        collision
-      });
-      for (var k = 0; k <= 10; k++) {
-        this.structure.stepLayout();
-      }
-      results = [];
-      for (var l = 0; l <= 4; l++) {
-        results.push(this.structure.stepLayout({collision}));
-      }
-      return results;
-    }
-
-    draw(ctx) {
-      var ref, segment, segment_name;
-      ref = this.structure.segments;
-      for (segment_name in ref) {
-        segment = ref[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = segment.width;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#2c1c0a"; //"brown"
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.translate(this.structure.points.body.x, this.structure.points.body.y);
-      ctx.scale(1, 0.7);
-      ctx.arc(0, 0, 10, 0, TAU);
-      ctx.fillStyle = "#2c1c0a"; //"#C15723" #"brown"
-      return ctx.fill();
-    }
-
-  };
-
-  addEntityClass(GranddaddyLonglegs);
-
-  return GranddaddyLonglegs;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 795:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Arrow, Bow, Deer, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, distance, distanceToLineSegment, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, gamepad_mount_prev, keyboard, mouse_detect_from, mouse_detect_threshold,
-  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
-
-SimpleActor = __webpack_require__(339);
-
-Entity = __webpack_require__(293);
-
-({Pose} = __webpack_require__(432));
-
-Bow = __webpack_require__(914);
-
-Arrow = __webpack_require__(943);
-
-Deer = __webpack_require__(857);
-
-keyboard = __webpack_require__(866);
-
-({addEntityClass} = __webpack_require__(432));
-
-({distance, distanceToLineSegment} = (__webpack_require__(432).helpers));
-
-TAU = Math.PI * 2;
-
-gamepad_aiming = false;
-
-gamepad_detect_threshold = 0.5; // axis value (not a deadzone! just switching from mouse to gamepad)
-
-gamepad_deadzone = 0.1; // axis value
-
-gamepad_jump_prev = false;
-
-gamepad_mount_prev = false;
-
-mouse_detect_threshold = 30; // pixels radius (movement can occur over any number of frames)
-
-mouse_detect_from = {
-  x: 0,
-  y: 0
-};
-
-addEventListener("mousemove", function(e) {
-  if (Math.hypot(e.clientX - mouse_detect_from.x, e.clientY - mouse_detect_from.y) > mouse_detect_threshold) {
-    gamepad_aiming = false;
-    mouse_detect_from.x = e.clientX;
-    return mouse_detect_from.y = e.clientY;
-  }
-});
-
-module.exports = Player = (function() {
-  class Player extends SimpleActor {
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "neck",
-        length: 5
-      });
-      this.structure.addSegment({
-        from: "neck",
-        name: "sternum",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "sternum",
-        name: "left shoulder",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "sternum",
-        name: "right shoulder",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "left shoulder",
-        to: "left elbow",
-        name: "upper left arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right shoulder",
-        to: "right elbow",
-        name: "upper right arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "left elbow",
-        to: "left hand",
-        name: "lower left arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right elbow",
-        to: "right hand",
-        name: "lower right arm",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "sternum",
-        to: "pelvis",
-        name: "torso",
-        length: 20
-      });
-      this.structure.addSegment({
-        from: "pelvis",
-        name: "left hip",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "pelvis",
-        name: "right hip",
-        length: 2
-      });
-      this.structure.addSegment({
-        from: "left hip",
-        to: "left knee",
-        name: "upper left leg",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right hip",
-        to: "right knee",
-        name: "upper right leg",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "left knee",
-        to: "left foot",
-        name: "lower left leg",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "right knee",
-        to: "right foot",
-        name: "lower right leg",
-        length: 10
-      });
-      // for abc in "ABC"
-      // 	hair_from = "head"
-      // 	for i in [0..5]
-      // 		@structure.addSegment(
-      // 			from: "head"
-      // 			name: "hair #{abc} #{i}"
-      // 			length: 2
-      // 		)
-      // TODO: adjust proportions? https://en.wikipedia.org/wiki/Body_proportions
-      // TODO: add some constraints to hips, shoulders, and neck
-      // TODO: min/max_length for pseudo-3D purposes
-      this.bbox_padding = 10;
-      this.holding_bow = null;
-      this.holding_arrow = null;
-      this.riding = null;
-      this.bow_drawn_to = 0;
-      this.run_animation_position = 0;
-      this.subtle_idle_animation_position = 0;
-      this.other_idle_animation_position = 0;
-      this.idle_animation = null;
-      this.idle_timer = 0;
-      this.real_facing_x = this.facing_x;
-      this.hairs = (function() {
-        var j, results;
-        results = [];
-        for (var j = 0; j <= 5; j++) {
-          results.push((function() {
-            var k, results1;
-            results1 = [];
-            for (var k = 0; k <= 4; k++) {
-              results1.push({
-                x: 0,
-                y: 0,
-                vx: 0,
-                vy: 0
-              });
-            }
-            return results1;
-          })());
-        }
-        return results;
-      })();
-    }
-
-    step(world, view, mouse) {
-      var a, aim_angle, air_friction, angle, arm_span, arrow, arrow_angle, back_x, back_y, bow, bow_angle, buoyancy, center, closest_dist, closest_steed, delta_length, delta_x, delta_y, diff, dist, down, draw_back_distance, draw_bow, draw_to, entity, factor, fluid_friction, force, from_point_in_entity_space, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hair_index, hair_iterations, hair_length, head, head_angle, head_global, head_x_before_posing, head_y_before_posing, hold_offset, i, j, k, l, left, len, len1, len2, len3, len4, m, max_draw_distance, max_y_diff, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, n, neck, new_head_x, new_head_y, new_pose, o, offset_distance, other_idle_animation, p, pick_up_any, point, point_name, points, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, results, right, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, seg_length, segment, segment_name, sternum, submerged, subtle_idle_animation, up, water_friction, x, y;
-      ({sternum} = this.structure.points);
-      from_point_in_world = this.toWorld(sternum);
-      
-      // mouse controls
-      mouse_in_world = view.toWorld(mouse);
-      aim_angle = Math.atan2(mouse_in_world.y - from_point_in_world.y, mouse_in_world.x - from_point_in_world.x);
-      mouse_prime_bow = mouse.RMB.down;
-      mouse_draw_bow = mouse.LMB.down;
-      // keyboard controls
-      left = keyboard.isHeld("KeyA") || keyboard.isHeld("ArrowLeft");
-      right = keyboard.isHeld("KeyD") || keyboard.isHeld("ArrowRight");
-      up = keyboard.isHeld("KeyW") || keyboard.isHeld("ArrowUp"); // applies to swimming/climbing
-      down = keyboard.isHeld("KeyS") || keyboard.isHeld("ArrowDown");
-      this.jump = keyboard.wasJustPressed("KeyW") || keyboard.wasJustPressed("ArrowUp");
-      mount_dismount = keyboard.wasJustPressed("KeyS") || keyboard.wasJustPressed("ArrowDown");
-      // gamepad controls
-      gamepad_draw_bow = false;
-      gamepad_prime_bow = false;
-      ref1 = (ref = ((function() {
-        try {
-          return navigator.getGamepads();
-        } catch (error) {}
-      })())) != null ? ref : [];
-      for (j = 0, len = ref1.length; j < len; j++) {
-        gamepad = ref1[j];
-        if (!(gamepad)) {
-          continue;
-        }
-        left || (left = gamepad.axes[0] < -0.5);
-        right || (right = gamepad.axes[0] > 0.5);
-        up || (up = gamepad.axes[1] < -0.5);
-        down || (down = gamepad.axes[1] > 0.5);
-        this.jump || (this.jump = gamepad.buttons[0].pressed && !gamepad_jump_prev);
-        mount_dismount || (mount_dismount = gamepad.buttons[1].pressed && !gamepad_mount_prev);
-        gamepad_jump_prev = gamepad.buttons[0].pressed;
-        gamepad_mount_prev = gamepad.buttons[1].pressed;
-        gamepad_draw_bow = gamepad.buttons[7].pressed;
-        // gamepad_prime_bow = gamepad.buttons[4].pressed
-        if (Math.hypot(gamepad.axes[2], gamepad.axes[3]) > gamepad_detect_threshold) {
-          gamepad_aiming = true;
-        }
-        if (gamepad_aiming) {
-          aim_angle = Math.atan2(gamepad.axes[3], gamepad.axes[2]);
-          // Reverse aiming can feel more natural, like drawing back the bow
-          // even though it's not the control to draw the bow
-          // TODO: It should be an option.
-          aim_angle += Math.PI;
-          draw_back_distance = Math.hypot(gamepad.axes[2], gamepad.axes[3]);
-          draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone);
-          gamepad_prime_bow = draw_back_distance > 0.3;
-        }
-      }
-      // Note: You're allowed to prime and draw the bow without an arrow.
-      prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
-      draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
-      
-      // TODO: configurable controls
-      this.move_x = right - left;
-      this.move_y = down - up;
-      // run SimpleActor physics, which uses @move_x and @jump
-      super.step(world);
-      pick_up_any = (EntityClass, prop) => {
-        var dist, entity, from_point_in_entity_space, k, len1, moving_too_fast, pickup_item, ref2, ref3, ref4, segment, segment_name, vx, vy;
-        if ((ref2 = this[prop]) != null ? ref2.destroyed : void 0) {
-          this[prop] = null;
-        }
-        if (this[prop]) {
-          return;
-        }
-        ref3 = world.getEntitiesOfType(EntityClass);
-        // this is ridiculously complicated
-        for (k = 0, len1 = ref3.length; k < len1; k++) {
-          entity = ref3[k];
-          from_point_in_entity_space = entity.fromWorld(from_point_in_world);
-          moving_too_fast = false;
-          // Arrow defines getAverageVelocity
-          // Bow doesn't move, and we're not handling picking up anything else yet
-          if (entity.getAverageVelocity != null) {
-            [vx, vy] = entity.getAverageVelocity();
-            if (Math.abs(vx) + Math.abs(vy) > 2) {
-              moving_too_fast = true;
-            }
-          }
-          if (!moving_too_fast) {
-            ref4 = entity.structure.segments;
-            for (segment_name in ref4) {
-              segment = ref4[segment_name];
-              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
-              if (dist < 50) {
-                pickup_item = entity;
-              }
-            }
-          }
-        }
-        if (pickup_item) {
-          // TODO: pickup animation
-          return this[prop] = pickup_item;
-        }
-      };
-      pick_up_any(Bow, "holding_bow");
-      pick_up_any(Arrow, "holding_arrow");
-      // Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
-      if (mount_dismount) {
-        if (this.riding) {
-          this.riding = null;
-        } else {
-          closest_dist = 2e308;
-          closest_steed = null;
-          ref2 = world.getEntitiesOfType(Deer);
-          for (k = 0, len1 = ref2.length; k < len1; k++) {
-            entity = ref2[k];
-            from_point_in_entity_space = entity.fromWorld(from_point_in_world);
-            ref3 = entity.structure.segments;
-            for (segment_name in ref3) {
-              segment = ref3[segment_name];
-              dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b);
-              if (dist < closest_dist) {
-                closest_dist = dist;
-                closest_steed = entity;
-              }
-            }
-          }
-          if (closest_dist < 30) {
-            this.riding = closest_steed;
-          }
-        }
-      }
-      if (this.riding) {
-        // @riding.move_x = @move_x
-        this.riding.dir = this.move_x; // old code...
-        this.riding.jump = this.jump;
-        this.facing_x = this.riding.facing_x;
-        offset_distance = 20;
-        this.x = this.riding.x + Math.sin(this.riding.ground_angle_smoothed) * offset_distance;
-        this.y = this.riding.y - Math.cos(this.riding.ground_angle_smoothed) * offset_distance - 10;
-        this.vx = this.riding.vx;
-        this.vy = this.riding.vy;
-      }
-      prevent_idle = () => {
-        this.idle_timer = 0;
-        return this.idle_animation = null;
-      };
-      more_submerged = this.submerged && world.collision({
-        x: this.x,
-        y: this.y + this.height * 0.5
-      }, {
-        types: (entity) => {
-          return entity.constructor.name === "Water";
-        }
-      });
-      if (this.riding) {
-        new_pose = (ref4 = Player.poses[prime_bow ? "Riding Aiming" : "Riding"]) != null ? ref4 : this.structure.getPose();
-      } else if (more_submerged) {
-        if (this.move_x !== 0) {
-          this.run_animation_position += 0.1;
-          new_pose = Pose.lerpAnimationLoop(Player.animations["Swim"], this.run_animation_position);
-        } else {
-          this.run_animation_position -= 0.1 * this.move_y;
-          new_pose = Pose.lerpAnimationLoop(Player.animations["Tread Water"], this.run_animation_position);
-        }
-      } else if (this.move_x === 0) {
-        this.idle_timer += 1;
-        subtle_idle_animation = Player.animations["Idle"];
-        if (this.idle_timer > 1000) {
-          this.idle_animation = "Yawn";
-          this.idle_timer = 0;
-          this.other_idle_animation_position = 0;
-        }
-        other_idle_animation = this.idle_animation && Player.animations[this.idle_animation];
-        if (other_idle_animation) {
-          this.other_idle_animation_position += 1 / 25;
-          if (this.other_idle_animation_position > other_idle_animation.length) {
-            this.idle_animation = null;
-          }
-          new_pose = Pose.lerpAnimationLoop(other_idle_animation, this.other_idle_animation_position);
-        } else if (subtle_idle_animation) {
-          this.subtle_idle_animation_position += 1 / 25;
-          new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, this.subtle_idle_animation_position);
-        } else {
-          new_pose = (ref5 = Player.poses["Stand"]) != null ? ref5 : this.structure.getPose();
-        }
-      } else {
-        prevent_idle();
-        if (Player.animations["Run"]) {
-          this.run_animation_position += Math.abs(this.move_x) / 5 * this.facing_x * this.real_facing_x;
-          new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], this.run_animation_position);
-        } else {
-          new_pose = this.structure.getPose();
-        }
-      }
-      if (this.real_facing_x < 0) {
-        new_pose = Pose.horizontallyFlip(new_pose);
-      }
-      head_x_before_posing = this.structure.points["head"].x;
-      head_y_before_posing = this.structure.points["head"].y;
-      // rotate the pose based on the ground angle
-      // TODO: balance the character better; lean while running; keep feet out of the ground
-      // I may need to define new poses to do this well.
-      ground_angle = (ref6 = (ref7 = this.riding) != null ? ref7.ground_angle_smoothed : void 0) != null ? ref6 : this.find_ground_angle(world);
-      this.ground_angle = ground_angle;
-      if ((ground_angle != null) && isFinite(ground_angle)) {
-        // there's no helper for rotation yet
-        // and we wanna do it a little custom anyway
-        // rotating some points more than others
-        new_pose = Pose.copy(new_pose);
-        center = new_pose.points["pelvis"];
-        center = {
-          x: center.x,
-          y: center.y // copy
-        };
-        ref8 = new_pose.points;
-        for (point_name in ref8) {
-          point = ref8[point_name];
-          if (this.riding) {
-            factor = 1;
-          } else {
-            // With this constant this small, it's almost like a conditional
-            // of whether the point is below the pelvis or not.
-            // With a larger number, it would bend the knees backwards.
-            max_y_diff = 2;
-            // how much to rotate this point
-            factor = Math.max(0, Math.min(1, (point.y - center.y) / max_y_diff));
-            // It's a bit much on steep slopes, so let's reduce it.
-            // This is still enough to keep the feet from floating,
-            // although the feet go into the ground significantly.
-            factor *= 0.8;
-          }
-          // translate
-          point.x -= center.x;
-          point.y -= center.y;
-          // rotate
-          ({x, y} = point);
-          point.x = x * Math.cos(ground_angle) - y * Math.sin(ground_angle);
-          point.y = x * Math.sin(ground_angle) + y * Math.cos(ground_angle);
-          // while we've got the x and y from before the rotation handy,
-          // let's use them to apply the factor, using linear interpolation
-          point.x += (x - point.x) * (1 - factor);
-          point.y += (y - point.y) * (1 - factor);
-          // translate back
-          point.x += center.x;
-          point.y += center.y;
-        }
-      }
-      this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
-      
-      // (her dominant eye is, of course, *whichever one she would theoretically be using*)
-      // (given this)
-      primary_hand = this.structure.points["right hand"];
-      secondary_hand = this.structure.points["left hand"];
-      primary_elbow = this.structure.points["right elbow"];
-      secondary_elbow = this.structure.points["left elbow"];
-      this.real_facing_x = this.facing_x;
-      if (prime_bow) {
-        // Restore head position, in order to do linear interpolation.
-        // In this state, the head is not controlled by the pose, but by the bow aiming.
-        this.structure.points["head"].x = head_x_before_posing;
-        this.structure.points["head"].y = head_y_before_posing;
-      }
-      // TODO: transition (both ways) between primed and not
-      // also maybe relax the "primed" state when running and not drawn back
-      if (this.holding_bow) {
-        bow = this.holding_bow;
-        bow.x = this.x;
-        bow.y = this.y;
-        arm_span = this.structure.segments["upper right arm"].length + this.structure.segments["lower right arm"].length;
-        max_draw_distance = 6;
-        // max_draw_distance = arm_span / 2.5 #- bow.fistmele
-        bow.draw_distance += ((max_draw_distance * draw_bow) - bow.draw_distance) / 15;
-        draw_to = arm_span - bow.fistmele - bow.draw_distance;
-        if (draw_bow) {
-          // TODO: use better transition to allow for greater control over release velocity
-          bow.draw_distance += (5 - bow.draw_distance) / 5;
-          this.bow_drawn_to = draw_to;
-        } else {
-          if (prime_bow && this.holding_arrow && bow.draw_distance > 2 && !world.collision(this.holding_arrow.toWorld(this.holding_arrow.structure.points["tip"])) && !world.collision(this.holding_arrow.toWorld(this.holding_arrow.structure.points["nock"]))) {
-            force = bow.draw_distance * 2;
-            this.holding_arrow.setVelocity(Math.cos(aim_angle) * force + this.vx, Math.sin(aim_angle) * force + this.vy);
-            this.holding_arrow = null;
-          }
-          bow.draw_distance = 0;
-          // FIXME: this should be an ease-in transition, not ease-out
-          this.bow_drawn_to += (arm_span - bow.fistmele - this.bow_drawn_to) / 10;
-        }
-        if (prime_bow) {
-          prevent_idle();
-          bow_angle = aim_angle;
-          primary_hand.x = sternum.x + this.bow_drawn_to * Math.cos(aim_angle);
-          primary_hand.y = sternum.y + this.bow_drawn_to * Math.sin(aim_angle);
-          primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle);
-          primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle);
-          // primary_elbow.y = sternum.y - 3
-          secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle);
-          secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle);
-          secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle);
-          secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle);
-          // make head look along aim path
-          angle = modulo(aim_angle - Math.PI / 2, Math.PI * 2);
-          this.real_facing_x = angle < Math.PI ? -1 : 1;
-          ({head, neck} = this.structure.points);
-          new_head_x = neck.x + 5 * Math.cos(angle + (angle < Math.PI ? Math.PI : 0));
-          new_head_y = neck.y + 5 * Math.sin(angle + (angle < Math.PI ? Math.PI : 0));
-          head.x += (new_head_x - head.x) / 5;
-          head.y += (new_head_y - head.y) / 5;
-        } else {
-          bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x);
-        }
-        primary_hand_in_bow_space = bow.fromWorld(this.toWorld(primary_hand));
-        secondary_hand_in_bow_space = bow.fromWorld(this.toWorld(secondary_hand));
-        bow.structure.points.grip.x = secondary_hand_in_bow_space.x;
-        bow.structure.points.grip.y = secondary_hand_in_bow_space.y;
-        if (prime_bow) {
-          bow.structure.points.serving.x = sternum.x + draw_to * Math.cos(aim_angle);
-          bow.structure.points.serving.y = sternum.y + draw_to * Math.sin(aim_angle);
-        } else {
-          bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle);
-          bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle);
-        }
-      }
-      if (this.holding_arrow) {
-        arrow = this.holding_arrow;
-        arrow.lodging_constraints.length = 0; // pull it out if it's lodged in an object
-        arrow.x = this.x;
-        arrow.y = this.y;
-        primary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(primary_hand));
-        secondary_hand_in_arrow_space = arrow.fromWorld(this.toWorld(secondary_hand));
-        if (prime_bow) {
-          arrow.structure.points.nock.x = sternum.x + draw_to * Math.cos(aim_angle);
-          arrow.structure.points.nock.y = sternum.y + draw_to * Math.sin(aim_angle);
-          arrow.structure.points.tip.x = sternum.x + (draw_to + arrow.length) * Math.cos(aim_angle);
-          arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
-        } else {
-          angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x);
-          arrow_angle = angle - (TAU / 4 + 0.2) * this.real_facing_x;
-          hold_offset = -5;
-          arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle);
-          arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle);
-          arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle);
-          arrow.structure.points.tip.y = primary_hand_in_arrow_space.y + (hold_offset + arrow.length) * Math.sin(arrow_angle);
-        }
-        // Cancel implicit velocity from moving the arrow's "current positions"
-        // (This updates the "previous positions" that imply velocity.)
-        arrow.setVelocity(0, 0);
-      }
-      
-        // Hair physics
-      ({head, neck} = this.structure.points);
-      head_angle = Math.atan2(head.y - neck.y, head.x - neck.x);
-      head_global = this.toWorld(head);
-      hair_iterations = 1;
-      air_friction = 0.2;
-      water_friction = 0.2;
-      hair_length = 30;
-      results = [];
-      for (l = 0, ref9 = hair_iterations; (0 <= ref9 ? l <= ref9 : l >= ref9); 0 <= ref9 ? l++ : l--) {
-        ref10 = this.hairs;
-        for (m = 0, len2 = ref10.length; m < len2; m++) {
-          points = ref10[m];
-          for (n = 0, len3 = points.length; n < len3; n++) {
-            point = points[n];
-            point.prev_x = point.x;
-            point.prev_y = point.y;
-          }
-        }
-        ref11 = this.hairs;
-        for (hair_index = o = 0, len4 = ref11.length; o < len4; hair_index = ++o) {
-          points = ref11[hair_index];
-          a = head_angle + hair_index / this.hairs.length * Math.PI - Math.PI / 2;
-          back_x = Math.sin(head_angle) * 2 * this.real_facing_x;
-          back_y = Math.cos(head_angle) * 2 * this.real_facing_x;
-          points[0].x = head_global.x + Math.cos(a) * 3 + back_x;
-          points[0].y = head_global.y + Math.sin(a) * 3 + back_y;
-          seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length;
-          for (i = p = 1, ref12 = points.length; (1 <= ref12 ? p < ref12 : p > ref12); i = 1 <= ref12 ? ++p : --p) {
-            gravity = 0.5;
-            submerged = world.collision(points[i], {
-              types: (entity) => {
-                return entity.constructor.name === "Water";
-              }
-            });
-            buoyancy = submerged ? 0.6 : 0;
-            fluid_friction = submerged ? water_friction : air_friction;
-            points[i].vy += (gravity - buoyancy) / hair_iterations;
-            points[i].vx *= 1 - fluid_friction;
-            points[i].vy *= 1 - fluid_friction;
-            if (submerged) {
-              // points[i].vx += Math.sin(performance.now() / 1000 + i/30 + hair_index/10 + Math.sin(points[i].x/100 + points[i].y/100)) * 0.1
-              // points[i].vy += Math.cos(performance.now() / 1000 + i/30 + hair_index/10 + Math.cos(points[i].x/150 + points[i].y/200)) * 0.05
-              points[i].vx += Math.sin(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30)) * 40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05;
-              points[i].vy += Math.cos(Math.sin(performance.now() ** 1.2 / 1000 + Math.sin(points[i].y / 30)) * 40 + points[i].x + Math.sin(points[i].y / 30)) * 0.05;
-            }
-            points[i].x += points[i].vx;
-            points[i].y += points[i].vy;
-            delta_x = points[i].x - points[i - 1].x;
-            delta_y = points[i].y - points[i - 1].y;
-            delta_length = Math.hypot(delta_x, delta_y);
-            diff = (delta_length - seg_length) / delta_length;
-            if (isFinite(diff) && delta_length > seg_length) {
-              points[i].x -= delta_x * diff;
-              points[i].y -= delta_y * diff;
-            } else {
-              console.warn("diff is not finite, for hair segment distance constraint");
-            }
-          }
-        }
-        results.push((function() {
-          var len5, q, ref13, results1;
-          ref13 = this.hairs;
-          results1 = [];
-          for (q = 0, len5 = ref13.length; q < len5; q++) {
-            points = ref13[q];
-            results1.push((function() {
-              var len6, r, results2;
-              results2 = [];
-              for (r = 0, len6 = points.length; r < len6; r++) {
-                point = points[r];
-                point.vx = point.x - point.prev_x;
-                results2.push(point.vy = point.y - point.prev_y);
-              }
-              return results2;
-            })());
-          }
-          return results1;
-        }).call(this));
-      }
-      return results;
-    }
-
-    draw(ctx) {
-      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, head, head_rotation_angle, j, k, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
-      ({
-        head,
-        sternum,
-        pelvis,
-        "left knee": left_knee,
-        "right knee": right_knee,
-        "left shoulder": left_shoulder,
-        "right shoulder": right_shoulder
-      } = this.structure.points);
-      // ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
-      // or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
-      skin_color = "#6B422C";
-      hair_color = "#000000";
-      eye_color = "#000000";
-      dress_color = "#AAFFFF";
-      ref = this.hairs;
-      
-      // TODO: depth
-      // @drawStructure
-      // 	segments:
-      // 		torso: ->
-      // 	points:
-      // 		head: ->
-
-      // trailing hair
-      for (hair_index = j = 0, len = ref.length; j < len; hair_index = ++j) {
-        hair_points = ref[hair_index];
-        ctx.beginPath();
-        // ctx.moveTo(hair_points[0].x, hair_points[0].y)
-        local_point = this.fromWorld(hair_points[0]);
-        ctx.moveTo(local_point.x, local_point.y);
-        ref1 = hair_points.slice(1);
-        for (k = 0, len1 = ref1.length; k < len1; k++) {
-          point = ref1[k];
-          // ctx.lineTo(point.x, point.y)
-          local_point = this.fromWorld(point);
-          ctx.lineTo(local_point.x, local_point.y);
-        }
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.strokeStyle = hair_color;
-        // ctx.strokeStyle = "hsla(#{hair_index / @hairs.length * 360}, 100%, 50%, 0.5)"
-        ctx.stroke();
-      }
-      ref2 = this.structure.segments;
-      
-      // limbs
-      for (segment_name in ref2) {
-        segment = ref2[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = skin_color;
-        ctx.stroke();
-      }
-      
-      // dress
-      ctx.beginPath();
-      ctx.save();
-      ctx.translate(sternum.x, sternum.y);
-      torso_angle = Math.atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU / 4;
-      torso_length = distance(pelvis, sternum);
-      ctx.rotate(torso_angle);
-      left_leg_angle = Math.atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle;
-      right_leg_angle = Math.atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle;
-      left_shoulder_angle = Math.atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle;
-      right_shoulder_angle = Math.atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle;
-      shoulder_distance = distance(left_shoulder, sternum);
-      min_shoulder_cos = Math.min(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
-      max_shoulder_cos = Math.max(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle));
-      if (Math.cos(left_shoulder_angle) < Math.cos(right_shoulder_angle)) {
-        min_cos_shoulder_angle = left_shoulder_angle;
-        max_cos_shoulder_angle = right_shoulder_angle;
-      } else {
-        min_cos_shoulder_angle = right_shoulder_angle;
-        max_cos_shoulder_angle = left_shoulder_angle;
-      }
-      ctx.lineTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5);
-      ctx.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5);
-      min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
-      max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle));
-      min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
-      max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle));
-      ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length / 2);
-      ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin));
-      ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin));
-      ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length / 2);
-      ctx.fillStyle = dress_color;
-      ctx.fill();
-      ctx.restore();
-      
-      // head, including top of hair
-      ctx.save();
-      ctx.translate(head.x, head.y);
-      ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU / 4);
-      // head
-      ctx.save();
-      ctx.scale(0.9, 1);
-      ctx.beginPath();
-      ctx.arc(0, 0, 5.5, 0, TAU);
-      ctx.fillStyle = skin_color;
-      ctx.fill();
-      ctx.restore();
-      // top of hair
-      ctx.beginPath();
-      ctx.arc(0, 0, 5.5, 0, TAU / 2);
-      ctx.fillStyle = hair_color;
-      ctx.fill();
-      // eyes
-      // TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
-      ctx.arc(0, 0, 5.5 * 0.9, 0, TAU);
-      ctx.clip();
-      eye_spacing = 0.6; // radians
-      turn_limit = TAU / 8; // radians, TAU/4 = head facing completely sideways, only one eye visible
-      ctx.fillStyle = eye_color;
-      if (this.smoothed_facing_x_for_eyes == null) {
-        this.smoothed_facing_x_for_eyes = 0;
-      }
-      this.smoothed_facing_x_for_eyes += (this.real_facing_x - this.smoothed_facing_x_for_eyes) / 5;
-      ref3 = [-1, 1];
-      for (l = 0, len2 = ref3.length; l < len2; l++) {
-        eye_signature = ref3[l];
-        // 3D projection in one axis
-        head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
-        eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5 * 0.9;
-        ctx.beginPath();
-        ctx.arc(eye_x, -1, 1, 0, TAU);
-        ctx.fill();
-      }
-      // /head
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Player);
-
-  Entity.initAnimation(Player);
-
-  return Player;
-
-}).call(this);
-
-// debug draw
-// show the ground angle
-// ctx.beginPath()
-// ctx.moveTo(0, 0)
-// ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
-// ctx.strokeStyle = "red"
-// ctx.stroke()
-
-
-/***/ }),
-
-/***/ 33:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var PuffTree, TAU, Tree, addEntityClass;
-
-Tree = __webpack_require__(776);
-
-({addEntityClass} = __webpack_require__(432));
-
-TAU = Math.PI * 2;
-
-module.exports = PuffTree = (function() {
-  class PuffTree extends Tree {
-    constructor() {
-      super();
-      this.bbox_padding = 60;
-      this.trunk_width = 10 + Math.floor(Math.random() * 5);
-      this.random_seed = performance.now() + Date.now() + Math.random();
-      this.branch({
-        from: "base",
-        to: "1",
-        juice: Math.random() * 10 + 5,
-        width: this.trunk_width,
-        length: 9,
-        angle: -TAU / 2
-      });
-    }
-
-    branch({from, to, juice, angle, width, length}) {
-      var leaf_point, name;
-      name = to;
-      angle += (Math.random() * 2 - 1) * 0.7;
-      this.structure.addSegment({
-        from,
-        name,
-        length,
-        width,
-        color: "#89594A"
-      });
-      this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
-      this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
-      juice -= 0.3;
-      if (juice > 0) {
-        return this.branch({
-          from: name,
-          to: `${to}-a`,
-          juice,
-          angle,
-          width: juice,
-          length
-        });
-      } else {
-        // if Math.random() < 0.2
-        // 	@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
-        leaf_point = this.structure.points[name];
-        return this.leaf(leaf_point);
-      }
-    }
-
-    leaf(leaf) {
-      leaf.is_leaf = true;
-      return leaf;
-    }
-
-    draw(ctx) {
-      var leaf, point_name, ref, ref1, results, segment, segment_name;
-      Math.seedrandom(this.random_seed);
-      ref = this.structure.segments;
-      for (segment_name in ref) {
-        segment = ref[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = segment.width;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = segment.color;
-        ctx.stroke();
-      }
-      ref1 = this.structure.points;
-      results = [];
-      for (point_name in ref1) {
-        leaf = ref1[point_name];
-        if (leaf.is_leaf) {
-          results.push(this.drawLeaf(ctx, leaf.x, leaf.y));
-        }
-      }
-      return results;
-    }
-
-    drawLeaf(ctx, x, y) {
-      var i, j, l, r1, r2;
-      ctx.save();
-      l = Math.random() / 2;
-      ctx.fillStyle = "hsla(" + (150 - l * 50) + "," + 50 + "%," + (50 + l * 20) + "%,1)";
-      ctx.beginPath();
-      ctx.arc(x, y, 10 + Math.random() * 5, 0, Math.PI * 2, true);
-      ctx.fill();
-      for (i = j = 0; j <= 10; i = ++j) {
-        l = Math.random() / 2;
-        ctx.fillStyle = "hsla(" + (150 - l * 50) + "," + 50 + "%," + (50 + l * 20) + "%,1)";
-        ctx.beginPath();
-        r1 = Math.PI * 2 * Math.random();
-        r2 = Math.random() * 15;
-        ctx.arc(x + Math.sin(r1) * r2, y + Math.cos(r1) * r2, 5 + Math.random() * 5, 0, Math.PI * 2, true);
-        ctx.fill();
-      }
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(PuffTree);
-
-  return PuffTree;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 101:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Rabbit, SimpleActor, addEntityClass, r;
-
-SimpleActor = __webpack_require__(339);
-
-({addEntityClass} = __webpack_require__(432));
-
-r = function() {
-  return Math.random() * 2 - 1;
-};
-
-module.exports = Rabbit = (function() {
-  class Rabbit extends SimpleActor {
-    constructor() {
-      super();
-      this.structure.addPoint("head");
-      this.structure.addSegment({
-        from: "head",
-        name: "body",
-        length: 5
-      });
-      this.bbox_padding = 20;
-      this.width = 8;
-      this.height = 8;
-      this.xp = 0;
-      this.t = 0;
-      this.lr = 0;
-      this.dir = 0;
-      this.c = "#FFF";
-      this.c2 = "#DDD";
-      this.eye_color = "#000";
-    }
-
-    step(world) {
-      if (this.grounded) {
-        // @vx*=0.99
-        if (Math.random() < 0.1) {
-          this.dir = r();
-        }
-        if (Math.random() < 0.1) {
-          this.vy = -5;
-        }
-      } else {
-        if (Math.abs(this.xp - this.x) < 1) {
-          this.t++;
-          if (this.t > 15) {
-            this.dir = r();
-          }
-        } else {
-          this.t = 0;
-        }
-      }
-      this.vx += (this.dir *= 1.1) / 5;
-      this.dir = Math.max(-10, Math.min(10, this.dir));
-      this.xp = this.x;
-      this.move_x = this.dir * 0.02;
-      this.move_y = -1;
-      // run SimpleActor physics, which uses @move_x and @jump
-      return super.step(world);
-    }
-
-    draw(ctx) {
-      ctx.save(); // body center transform
-      ctx.translate(this.width / 2, this.height);
-      ctx.fillStyle = this.c2;
-      // ctx.fillRect(0,0,@width,@height)
-      ctx.beginPath();
-      ctx.arc(0, 0, this.height / 2, Math.PI * 0.9, Math.PI * 2.1, false); // body
-      ctx.fill();
-      ctx.fillStyle = this.c;
-      ctx.save(); // head transform
-      ctx.translate(this.facing_x * this.width / 3, -this.height / 3);
-      ctx.beginPath();
-      ctx.arc(0, 0, this.height / 3, Math.PI * 0.9, Math.PI * 2.1, false); // head
-      ctx.fill();
-      ctx.fillStyle = this.eye_color;
-      ctx.beginPath();
-      ctx.arc(0, 0, 1, 0, Math.PI * 2, false); // eye
-      ctx.fill();
-      ctx.fillStyle = this.c;
-      ctx.beginPath();
-      ctx.save(); // ear transform
-      ctx.translate(-this.facing_x * this.width / 9, -this.height / 6);
-      // ctx.rotate(Math.sin(performance.now()/1000))
-      ctx.rotate(-Math.min(Math.PI / 3, Math.max(-Math.PI / 3, this.vx / 3)));
-      ctx.scale(1, 3);
-      ctx.arc(0, -this.height / 9, 1, 0, Math.PI * 2, false); // ear
-      ctx.fill();
-      ctx.restore(); // end ear transform
-      ctx.restore(); // end head transform
-      ctx.fillStyle = this.c;
-      ctx.beginPath();
-      ctx.arc(-this.facing_x * this.width / 2, 0, this.height / 5, 0, Math.PI * 2, false); // tail
-      ctx.fill();
-      return ctx.restore(); // end body center transform
-    }
-
-  };
-
-  addEntityClass(Rabbit);
-
-  return Rabbit;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 521:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var SavannaTreeA, TAU, Tree, addEntityClass;
-
-Tree = __webpack_require__(776);
-
-({addEntityClass} = __webpack_require__(432));
-
-TAU = Math.PI * 2;
-
-module.exports = SavannaTreeA = (function() {
-  class SavannaTreeA extends Tree {
-    constructor() {
-      super();
-      this.branch({
-        from: "base",
-        to: "1",
-        juice: 5,
-        angle: -TAU / 2
-      });
-    }
-
-    leaf(leaf) {
-      leaf.radius = Math.random() * 15 + 15;
-      leaf.scale_x = 2;
-      leaf.scale_y = 1;
-      leaf.color = "#627318"; //"#363D1B"
-      leaf.is_leaf = true;
-      return leaf;
-    }
-
-    draw(ctx) {
-      var leaf, point_name, ref, ref1, results, segment, segment_name;
-      ref = this.structure.segments;
-      for (segment_name in ref) {
-        segment = ref[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = segment.width;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = segment.color;
-        ctx.stroke();
-      }
-      ref1 = this.structure.points;
-      results = [];
-      for (point_name in ref1) {
-        leaf = ref1[point_name];
-        if (!leaf.is_leaf) {
-          continue;
-        }
-        // ctx.beginPath()
-        // ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU)
-        ctx.save();
-        ctx.beginPath();
-        ctx.translate(leaf.x, leaf.y);
-        ctx.scale(leaf.scale_x, leaf.scale_y);
-        ctx.arc(0, 0, leaf.radius, 0, TAU);
-        ctx.fillStyle = leaf.color;
-        ctx.fill();
-        results.push(ctx.restore());
-      }
-      return results;
-    }
-
-  };
-
-  addEntityClass(SavannaTreeA);
-
-  return SavannaTreeA;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 293:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-module.exports = __webpack_require__(432).Entity;
-
-/*
-fs = require? "fs"
-path = require? "path"
- * XXX: hack for webpack
- * TODO: use ifdef conditionals or something
-fs = null if not fs.readFileSync
-path = null if not path.join
-
-module.exports = class Entity
-	constructor: ->
-		@structure = new BoneStructure
-		@x = 0
-		@y = 0
-		@id = uuid()
-
-		@bbox_padding = 2
- * TODO: depth system
- * @drawing_pieces = {}
-
-		@_class_ = @constructor.name
-
-	@initAnimation: (EntityClass)->
-		EntityClass.poses = {}
-		EntityClass.animations = {}
-		EntityClass.animation_json_path = "./animations/#{EntityClass.name}.json"
-		Entity.loadAnimations(EntityClass)
-
-	@loadAnimations: (EntityClass)->
-		animationsFromJSON = ({poses, animations})->
-			EntityClass.poses = {}
-			EntityClass.animations = {}
-			for pose_name, pose of poses
-				EntityClass.poses[pose_name] = new Pose(pose)
-			for animation_name, animation of animations
-				EntityClass.animations[animation_name] = (new Pose(pose) for pose in animation)
-
-		if fs?
-			try
-				json = fs.readFileSync(EntityClass.animation_json_path)
-			catch e
-				throw e unless e.code is "ENOENT"
-		else
-			json = localStorage["Tiamblia #{EntityClass.name} animations"]
-		if json
-			animationsFromJSON(JSON.parse(json)) if json
-		else
-			req = new XMLHttpRequest
-			req.addEventListener "load", (e)=>
-				json = req.responseText
-				animationsFromJSON(JSON.parse(json)) if json
-			req.open("GET", EntityClass.animation_json_path)
-			req.send()
-
-	@saveAnimations: (EntityClass)->
-		{poses, animations} = EntityClass
-		json = JSON.stringify({poses, animations}, null, "\t")
-		if fs?
-			try
-				fs.mkdirSync(path.dirname(EntityClass.animation_json_path))
-			catch e
-				throw e unless e.code is "EEXIST"
-			fs.writeFileSync(EntityClass.animation_json_path, json)
-		else
-			localStorage["Tiamblia #{EntityClass.name} animations"] = json
-
-	@fromJSON: (def)->
-		unless typeof def._class_ is "string"
-			console.error "Erroneous entity definition:", def
-			throw new Error "Expected entity to have a string _class_, _class_ is #{def._class_}"
-		unless entity_classes[def._class_]
-			throw new Error "Entity class '#{def._class_}' does not exist"
-		entity = new entity_classes[def._class_]
-		entity.fromJSON(def)
-		entity
-
-	fromJSON: (def)->
-		if def._class_ isnt @_class_
-			throw new Error "Tried to initialize #{@_class_} entity from JSON with _class_ #{JSON.stringify(def._class_)}"
-		for k, v of def when k isnt "_class_"
-			if @[k]?.fromJSON
-				@[k].fromJSON(v)
-			else
-				@[k] = v
-
-	resolveReferences: (world)->
-		if @_refs_
-			for k, id of @_refs_
-				@[k] = world.getEntityByID(id)
-			delete @_refs_
-
-	toJSON: ->
-		obj = {}
-		for k, v of @ when k isnt "_refs_"
-			if v instanceof Entity
-				obj._refs_ ?= {}
-				obj._refs_[k] = v.id
-			else
-				obj[k] = v
-		obj
-
-	toWorld: (point)->
-		x: point.x + @x
-		y: point.y + @y
-
-	fromWorld: (point)->
-		x: point.x - @x
-		y: point.y - @y
-
-	bbox: ->
-		min_point = {x: +Infinity, y: +Infinity}
-		max_point = {x: -Infinity, y: -Infinity}
-		for point_name, point of @structure.points
-			min_point.x = Math.min(min_point.x, point.x)
-			min_point.y = Math.min(min_point.y, point.y)
-			max_point.x = Math.max(max_point.x, point.x)
-			max_point.y = Math.max(max_point.y, point.y)
-		min_point.x = 0 unless isFinite(min_point.x)
-		min_point.y = 0 unless isFinite(min_point.y)
-		max_point.x = 0 unless isFinite(max_point.x)
-		max_point.y = 0 unless isFinite(max_point.y)
-		min_point.x -= @bbox_padding
-		min_point.y -= @bbox_padding
-		max_point.x += @bbox_padding
-		max_point.y += @bbox_padding
-		min_point_in_world = @toWorld(min_point)
-		max_point_in_world = @toWorld(max_point)
-		x: min_point_in_world.x
-		y: min_point_in_world.y
-		width: max_point_in_world.x - min_point_in_world.x
-		height: max_point_in_world.y - min_point_in_world.y
-
- * animate: ()->
- * 	@structure.setPose(Pose.lerp(various_poses))
-
-	initLayout: ->
-		EntityClass = @constructor
-		if EntityClass.poses
-			default_pose = EntityClass.poses["Default"] ? EntityClass.poses["Stand"] ? EntityClass.poses["Standing"] ? EntityClass.poses["Idle"]
-			if default_pose
-				@structure.setPose(default_pose)
-				return
-		ys = {}
-		y = 0
-		for point_name, point of @structure.points
-			side = point_name.match(/left|right/)?[0]
-			if side
-				sideless_point_name = point_name.replace(/left|right/, "")
-				if ys[sideless_point_name]
-					y = ys[sideless_point_name]
-				else
-					y += 10
-					ys[sideless_point_name] = y
-				if side is "left"
-					point.x = -5.5
-				if side is "right"
-					point.x = +5.5
-				point.x *= 0.7 if point_name.match(/lower/)
-			point.y = y
-
-		for [0..2000]
-			@structure.stepLayout(center: yes, repel: yes)
-		for [0..4000]
-			@structure.stepLayout()
-
-	step: (world)->
-	draw: (ctx)->
-
- * TODO: function to call into the depth system
- * drawStructure: (drawing_functions)->
- * 	for point_name, fn of drawing_functions.points
- * 		fn(@structure.points[point_name])
- * 	for segment_name, fn of drawing_functions.segments
- * 		fn(@structure.segments[segment_name])
- */
-
-
-/***/ }),
-
-/***/ 339:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-// Can it walk and/or run and/or jump, and not much else? It might be a SimpleActor.
-// SimpleActors have rectangular collision boxes and basic physics.
-var Entity, SimpleActor, Terrain, lineSegmentsIntersect;
-
-({Terrain} = __webpack_require__(432));
-
-({lineSegmentsIntersect} = (__webpack_require__(432).helpers));
-
-Entity = __webpack_require__(293);
-
-module.exports = SimpleActor = (function() {
-  var gravity;
-
-  class SimpleActor extends Entity {
-    constructor() {
-      super();
-      this.vx = 0;
-      this.vy = 0;
-      this.width = 10;
-      this.height = 40;
-      this.jump_height = 50;
-      this.walk_speed = 4;
-      this.run_speed = 6;
-      this.move_x = 0;
-      this.move_y = 0;
-      this.jump = false;
-      this.grounded = false;
-      this.facing_x = 0;
-    }
-
-    find_ground_angle(world) {
-      var a, angle, b, e_a, e_b, entity, i, len, ref, ref1, segment, segment_name;
-      a = {
-        x: this.x,
-        y: this.y
-      };
-      b = {
-        x: this.x,
-        y: this.y + 2 + this.height // slightly further down than collision code uses
-      };
-      ref = world.entities;
-      for (i = 0, len = ref.length; i < len; i++) {
-        entity = ref[i];
-        if (entity instanceof Terrain) {
-          if (entity.structure.pointInPolygon(entity.fromWorld(b))) {
-            // console.log "found ground"
-            // find line segment intersecting ab
-            e_a = entity.fromWorld(a);
-            e_b = entity.fromWorld(b);
-            ref1 = entity.structure.segments;
-            for (segment_name in ref1) {
-              segment = ref1[segment_name];
-              if (lineSegmentsIntersect(e_a.x, e_a.y, e_b.x, e_b.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
-                // find the angle
-                angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
-                // console.log "angle", angle
-                if (Math.cos(angle) < 0) {
-                  angle -= Math.PI;
-                  angle = (angle + Math.PI * 2) % (Math.PI * 2);
-                }
-                return angle;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // console.log "no ground found"
-    step(world) {
-      var go, more_submerged, move_x, move_y, resolution, results;
-      if (this.y > 400) {
-        return;
-      }
-      this.grounded = world.collision({
-        x: this.x,
-        y: this.y + 1 + this.height //or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
-      });
-      this.submerged = world.collision({
-        x: this.x,
-        y: this.y + this.height * 0.9
-      }, {
-        types: (entity) => {
-          return entity.constructor.name === "Water";
-        }
-      });
-      more_submerged = this.submerged && world.collision({
-        x: this.x,
-        y: this.y + this.height * 0.4
-      }, {
-        types: (entity) => {
-          return entity.constructor.name === "Water";
-        }
-      });
-      if (this.grounded) {
-        // if Math.abs(@vx) >= 1
-        // 	@vx -= Math.sign(@vx)
-        // else
-        // 	@vx = 0
-        // @vx += @move_x
-        if (this.move_x === 0) {
-          this.vx *= 0.7;
-        } else {
-          this.vx += this.move_x;
-        }
-        this.vy += Math.abs(this.vx);
-        if (this.jump) {
-          this.vy = -Math.sqrt(2 * gravity * this.jump_height);
-        }
-      } else {
-        this.vx += this.move_x * 0.7;
-      }
-      this.vx = Math.min(this.run_speed, Math.max(-this.run_speed, this.vx));
-      this.vy += gravity;
-      if (this.submerged) {
-        if (more_submerged || this.move_y > 0) {
-          this.vy += this.move_y * 0.7;
-        }
-        this.vy *= 0.8;
-        this.vx *= 0.8;
-        if (!more_submerged) {
-          this.submerged.makeWaves({
-            x: this.x,
-            y: this.y + this.height * 0.9
-          }, this.width / 2, this.vy);
-        }
-      }
-      // @vy *= 0.99
-      move_x = this.vx;
-      move_y = this.vy;
-      if (move_x !== 0) {
-        this.facing_x = Math.sign(move_x);
-      }
-      resolution = 0.5;
-      while (Math.abs(move_x) > resolution) {
-        go = Math.sign(move_x) * resolution;
-        if (world.collision({
-          x: this.x + go,
-          y: this.y + this.height
-        })) {
-          this.vx *= 0.99;
-          // TODO: clamber over tiny divots and maybe even stones and twigs
-          if (world.collision({
-            x: this.x + go,
-            y: this.y + this.height - 1
-          })) {
-            break;
-          } else {
-            this.y -= 1;
-            if (this.vy > 0) {
-              this.vy = 0;
-            }
-          }
-        }
-        move_x -= go;
-        this.x += go;
-      }
-      if (Math.abs(move_y) > resolution) {
-        this.grounded = false;
-      }
-      results = [];
-      while (Math.abs(move_y) > resolution) {
-        go = Math.sign(move_y) * resolution;
-        if (world.collision({
-          x: this.x,
-          y: this.y + go + this.height
-        })) {
-          this.vy = 0;
-          this.grounded = true;
-          break;
-        }
-        move_y -= go;
-        results.push(this.y += go);
-      }
-      return results;
-    }
-
-  };
-
-  gravity = 0.5;
-
-  return SimpleActor;
-
-}).call(this);
-
-// @jump_height = @y - view.toWorld(editor.mouse).y
-
-// if @jump
-// 	console.log world.collision({@x, y: @y + i + @height}) for i in [0..5]
-// 	console.log @vy, world.collision({@x, y: @y + @vy + @height})
-
-// console.log "RES", world.collision({@x, y: @y + resolution + @height})
-
-// @grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
-
-// if @grounded and @jump
-// 	@vy = -Math.sqrt(2 * gravity * @jump_height)
-
-
-/***/ }),
-
-/***/ 891:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-module.exports = __webpack_require__(432).Terrain;
-
-/*
-Entity = require "./Entity.coffee"
-
-module.exports = class Terrain extends Entity
-	constructor: ->
-		super()
-		@structure = new PolygonStructure
-		@simplex = new SimplexNoise
-		@seed = random()
-
-	initLayout: ->
-		radius = 30
-		for theta in [0..TAU] by TAU/15
-			point_x = Math.sin(theta) * radius
-			point_y = Math.cos(theta) * radius
-			non_squished_point_y_component = Math.max(point_y, -radius*0.5)
-			point_y = non_squished_point_y_component + (point_y - non_squished_point_y_component) * 0.4
- * point_y = non_squished_point_y_component + pow(0.9, point_y - non_squished_point_y_component)
- * point_y = non_squished_point_y_component + pow(point_y - non_squished_point_y_component, 0.9)
-			@structure.addVertex(point_x, point_y)
-
-	toJSON: ->
-		def = {}
-		def[k] = v for k, v of @ when k isnt "simplex"
-		def
-
-	generate: ->
-		@width = 5000
-		@left = -2500
-		@right = @left + @width
-		@max_height = 400
-		@bottom = 300
-		res = 20
-		@structure.clear()
-		@structure.addVertex(@right, @bottom)
-		@structure.addVertex(@left, @bottom)
-		for x in [@left..@right] by res
-			noise =
-				@simplex.noise2D(x / 2400, 0) +
-				@simplex.noise2D(x / 500, 10) / 5 +
-				@simplex.noise2D(x / 50, 30) / 100
-			@structure.addVertex(x, @bottom - (noise + 1) / 2 * @max_height)
-
-	draw: (ctx, view)->
-		ctx.beginPath()
-		for point_name, point of @structure.points
-			ctx.lineTo(point.x, point.y)
-		ctx.closePath()
-		ctx.fillStyle = "#a5f"
-		ctx.fill()
- */
-
-
-/***/ }),
-
-/***/ 776:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Entity, TAU, Tree;
-
-Entity = __webpack_require__(293);
-
-TAU = Math.PI * 2;
-
-module.exports = Tree = class Tree extends Entity {
-  constructor() {
-    super();
-    this.structure.addPoint("base");
-    this.bbox_padding = 60;
-  }
-
-  initLayout() {}
-
-  branch({from, to, juice, angle}) {
-    var leaf_point, length, name, width;
-    name = to;
-    length = Math.sqrt(juice * 1000) * (Math.random() + 1);
-    width = Math.sqrt(juice * 20) + 1;
-    this.structure.addSegment({
-      from,
-      name,
-      length,
-      width,
-      color: "#926B2E"
-    });
-    this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
-    this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
-    if (--juice > 0) {
-      // @branch({from: name, to: "#{to}-1", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-      // @branch({from: name, to: "#{to}-2", juice, angle: angle + (Math.random() - 1/2) * TAU/4})
-      this.branch({
-        from: name,
-        to: `${to}-a`,
-        juice,
-        angle: angle + Math.random() * TAU / 8
-      });
-      this.branch({
-        from: name,
-        to: `${to}-b`,
-        juice,
-        angle: angle - Math.random() * TAU / 8
-      });
-      if (Math.random() < 0.2) {
-        return this.branch({
-          from: name,
-          to: `${to}-c`,
-          juice,
-          angle
-        });
-      }
-    } else {
-      leaf_point = this.structure.points[name];
-      return this.leaf(leaf_point);
-    }
-  }
-
-  leaf(leaf) {
-    leaf.radius = Math.random() * 15 + 15;
-    leaf.scale_x = 2;
-    leaf.scale_y = 1;
-    leaf.color = "#627318"; //"#363D1B"
-    leaf.is_leaf = true;
-    return leaf;
-  }
-
-  draw(ctx) {
-    var leaf, point_name, ref, ref1, results, segment, segment_name;
-    ref = this.structure.segments;
-    for (segment_name in ref) {
-      segment = ref[segment_name];
-      ctx.beginPath();
-      ctx.moveTo(segment.a.x, segment.a.y);
-      ctx.lineTo(segment.b.x, segment.b.y);
-      ctx.lineWidth = segment.width;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = segment.color;
-      ctx.stroke();
-    }
-    ref1 = this.structure.points;
-    results = [];
-    for (point_name in ref1) {
-      leaf = ref1[point_name];
-      if (!leaf.is_leaf) {
-        continue;
-      }
-      ctx.beginPath();
-      results.push(ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU));
-    }
-    return results;
-  }
-
-};
-
-// ctx.save()
-// ctx.beginPath()
-// ctx.translate(leaf.x, leaf.y)
-// ctx.scale(leaf.scale_x, leaf.scale_y)
-// ctx.arc(0, 0, leaf.radius, 0, TAU)
-// ctx.fillStyle = leaf.color
-// ctx.fill()
-// ctx.restore()
-
-
-/***/ }),
-
-/***/ 233:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var ArcheryTarget, Entity, TAU, addEntityClass;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(432));
-
-TAU = Math.PI * 2;
-
-module.exports = ArcheryTarget = (function() {
-  class ArcheryTarget extends Entity {
-    constructor() {
-      super();
-      this.structure.addPoint("a");
-      this.structure.addSegment({
-        from: "a",
-        to: "b",
-        name: "target",
-        length: 100
-      });
-      this.bbox_padding = 20;
-    }
-
-    initLayout() {
-      return this.structure.points.b.y += 100;
-    }
-
-    draw(ctx) {
-      var a, angle, b, center, color, colors, diameter, i, j, len, radius;
-      ({a, b} = this.structure.points);
-      angle = Math.atan2(b.y - a.y, b.x - a.x);
-      diameter = Math.hypot(b.x - a.x, b.y - a.y);
-      radius = diameter / 2;
-      center = {
-        x: (a.x + b.x) / 2,
-        y: (a.y + b.y) / 2
-      };
-      ctx.save();
-      ctx.translate(center.x, center.y);
-      ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x));
-      ctx.scale(1, 1 / 3);
-      // Draw concentric circles
-      colors = ["#fff", "#000", "#0af", "#f00", "#ff0"];
-      for (i = j = 0, len = colors.length; j < len; i = ++j) {
-        color = colors[i];
-        ctx.beginPath();
-        ctx.arc(0, 0, (1 - i / colors.length) * radius, 0, TAU);
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(ArcheryTarget);
-
-  return ArcheryTarget;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 943:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Arrow, Entity, TAU, addEntityClass, closestPointOnLineSegment, debug_drawings, distanceToLineSegment, lineSegmentsIntersect,
-  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(432));
-
-({lineSegmentsIntersect, distanceToLineSegment} = (__webpack_require__(432).helpers));
-
-TAU = Math.PI * 2;
-
-closestPointOnLineSegment = function(point, a, b) {
-  var a_to_b, a_to_p, atb2, atp_dot_atb, t;
-  // https://stackoverflow.com/a/3122532/2624876
-  a_to_p = {
-    x: point.x - a.x,
-    y: point.y - a.y
-  };
-  a_to_b = {
-    x: b.x - a.x,
-    y: b.y - a.y
-  };
-  atb2 = a_to_b.x ** 2 + a_to_b.y ** 2;
-  atp_dot_atb = a_to_p.x * a_to_b.x + a_to_p.y * a_to_b.y;
-  t = atp_dot_atb / atb2;
-  return {
-    x: a.x + a_to_b.x * t,
-    y: a.y + a_to_b.y * t
-  };
-};
-
-debug_drawings = new Map(); // Arrow to function(ctx)
-
-window.debug_drawings = debug_drawings;
-
-module.exports = Arrow = (function() {
-  class Arrow extends Entity {
-    constructor() {
-      var point, point_name, ref;
-      super();
-      this.length = 20;
-      this.structure.addPoint("tip");
-      this.structure.addSegment({
-        from: "tip",
-        to: "nock",
-        name: "shaft",
-        length: this.length
-      });
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        point.prev_x = point.x;
-        point.prev_y = point.y;
-        point.ax = 0;
-        point.ay = 0;
-      }
-      this.bbox_padding = 20;
-      // When the arrow hits something, a constraint will be added between
-      // a point on the object, and a point on the arrow which may slide somewhat along the shaft.
-      this.lodging_constraints = [];
-    }
-
-    initLayout() {
-      this.structure.points.tip.x += this.length;
-      return this.structure.points.tip.prev_x = this.structure.points.tip.x;
-    }
-
-    setVelocity(vx, vy) {
-      this.structure.points.tip.prev_x = this.structure.points.tip.x - vx / Arrow.steps_per_frame;
-      this.structure.points.tip.prev_y = this.structure.points.tip.y - vy / Arrow.steps_per_frame;
-      this.structure.points.nock.prev_x = this.structure.points.nock.x - vx / Arrow.steps_per_frame;
-      return this.structure.points.nock.prev_y = this.structure.points.nock.y - vy / Arrow.steps_per_frame;
-    }
-
-    getAverageVelocity() {
-      var nock, tip, vx, vy;
-      ({tip, nock} = this.structure.points);
-      vx = (tip.x - tip.prev_x + nock.x - nock.prev_x) / 2 * Arrow.steps_per_frame;
-      vy = (tip.y - tip.prev_y + nock.y - nock.prev_y) / 2 * Arrow.steps_per_frame;
-      return [vx, vy];
-    }
-
-    step(world) {
-      var i, j, len, nock, point, ref, ref1, results, tip, too_far_under_water, vx, vy, water;
-      for (i = 0, ref = Arrow.steps_per_frame; (0 <= ref ? i <= ref : i >= ref); 0 <= ref ? i++ : i--) {
-        this.substep(world, 1 / Arrow.steps_per_frame);
-      }
-      
-        // Interact with water
-      ({tip, nock} = this.structure.points);
-      ref1 = [tip, nock];
-      results = [];
-      for (j = 0, len = ref1.length; j < len; j++) {
-        point = ref1[j];
-        water = world.collision(this.toWorld(point), {
-          types: (entity) => {
-            return entity.constructor.name === "Water";
-          }
-        });
-        too_far_under_water = water && world.collision(this.toWorld({
-          x: point.x,
-          y: point.y - 5
-        }), {
-          types: (entity) => {
-            return entity.constructor.name === "Water";
-          }
-        });
-        if (water && !too_far_under_water) {
-          vy = (point.y - point.prev_y) * Arrow.steps_per_frame;
-          vx = (point.x - point.prev_x) * Arrow.steps_per_frame;
-          // Make ripples in water
-          water.makeWaves(this.toWorld(point), 2, vy);
-          // Skip off water
-          if ((4 > vy && vy > 2) && Math.abs(vx) > 0.4) {
-            vy *= -0.3;
-            point.prev_y = point.y - vy / Arrow.steps_per_frame;
-          }
-        }
-        // Slow down in water
-        if (water) {
-          point.prev_x += (point.x - point.prev_x) * 0.1;
-          results.push(point.prev_y += (point.y - point.prev_y) * 0.1);
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    }
-
-    substep(world, delta_time) {
-      var angle, angle_diff, arrow_angle, arrow_segment_position_ratio, arrow_shaft_pos, arrow_shaft_pos_local, closest_distance, closest_point_in_hit_space, closest_point_local, closest_segment, coefficient_of_friction, coefficient_of_restitution, constraint, delta_length, delta_x, delta_y, diff, dist, drag_force_x, drag_force_y, facing_angle_of_incidence, heading_angle, heading_angle_of_incidence, held, hit, hit_entity, hit_entity_id, hit_segment, hit_segment_angle, hit_segment_name, hit_segment_pos, hit_segment_position_ratio, i, incident_speed, incident_speed_global_scale, j, k, l, len, len1, len2, len3, len4, m, new_vx, new_vy, nock, nock_relative, nock_vx, nock_vy, normal, original_pos, other_point, p1, p2, p3, p4, point, point_in_hit_space, pos_diff, ref, ref1, ref2, ref3, ref4, ref5, ref6, relative_angle, rot_matrix, rot_matrix1, rot_matrix2, rotated_vx, rotated_vy, segment, segment_name, speed, surface_angle, tip, tip_relative, vx, vy;
-      ({tip, nock} = this.structure.points);
-      ref = [tip, nock];
-      
-      // Accumulate forces as acceleration.
-      // (First, reset acceleration to zero.)
-      for (i = 0, len = ref.length; i < len; i++) {
-        point = ref[i];
-        point.ax = 0;
-        point.ay = 0;
-      }
-      // Gravity
-      tip.ay += 0.1;
-      nock.ay += 0.1;
-      // If dropped completely sideways, it should end up lying on the ground
-      // but the fletching should introduce some drag in that direction,
-      // leading to a slight rotation.
-      // However the fletching shouldn't introduce much drag in the direction of travel.
-
-      // Introduce drag on fletched side, perpendicular to the arrow shaft.
-      // First, find the angle of the arrow shaft, and the current velocity.
-      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
-      [nock_vx, nock_vy] = [nock.x - nock.prev_x, nock.y - nock.prev_y];
-      // Then, calculate the rotation matrix to rotate the velocity to the horizontal coordinate system.
-      rot_matrix1 = [[Math.cos(angle), Math.sin(angle)], [-Math.sin(angle), Math.cos(angle)]];
-      // Apply the rotation to the velocity.
-      [nock_vx, nock_vy] = [nock_vx, nock_vy].map((val, idx) => {
-        return rot_matrix1[idx][0] * nock_vx + rot_matrix1[idx][1] * nock_vy;
-      });
-      // Then, calculate drag force based on the nock's velocity.
-      // drag_force_x = -nock_vx * Math.abs(nock_vx) * 0.04 # tangent to arrow shaft
-      // drag_force_y = -nock_vy * Math.abs(nock_vy) * 0.3 # perpendicular to arrow shaft
-      drag_force_x = 0; // tangent to arrow shaft
-      drag_force_y = -nock_vy * Arrow.steps_per_frame * 0.002; // perpendicular to arrow shaft
-      // Then, calculate the rotation matrix to rotate the force back to the original coordinate system.
-      rot_matrix2 = [[Math.cos(-angle), Math.sin(-angle)], [-Math.sin(-angle), Math.cos(-angle)]];
-      // Apply the rotation to the force.
-      [drag_force_x, drag_force_y] = [drag_force_x, drag_force_y].map((val, idx) => {
-        return rot_matrix2[idx][0] * drag_force_x + rot_matrix2[idx][1] * drag_force_y;
-      });
-      // Apply the force.
-      if (isFinite(drag_force_x) && isFinite(drag_force_y)) {
-        nock.ax += drag_force_x;
-        nock.ay += drag_force_y;
-      } else {
-        console.warn("NaN in drag force calculation");
-      }
-      ref1 = [tip, nock];
-      // Perform Verlet integration.
-      for (j = 0, len1 = ref1.length; j < len1; j++) {
-        point = ref1[j];
-        original_pos = {
-          x: point.x,
-          y: point.y
-        };
-        // Ideally I would like to allow the arrow to move while lodged,
-        // and adjust the depth and angle of lodging (with some stiffness),
-        // and maybe allow it to become dislodged, but it was causing numerical instability.
-        if (!this.lodging_constraints.length) {
-          point.x += point.x - point.prev_x + point.ax * delta_time ** 2;
-          point.y += point.y - point.prev_y + point.ay * delta_time ** 2;
-        }
-        point.prev_x = original_pos.x;
-        point.prev_y = original_pos.y;
-      }
-      // Apply constraints.
-
-      // check if player is holding the arrow
-      held = world.entities.some((entity) => {
-        return entity.holding_arrow === this;
-      });
-      // Note: can't require Player here (to use instanceof check) because of circular dependency
-      hit = world.collision(this.toWorld(tip), {
-        types: (entity) => {
-          var ref2;
-          return (ref2 = entity.constructor.name) !== "Arrow" && ref2 !== "Player" && ref2 !== "Bow" && ref2 !== "Water";
-        }
-      });
-      if (hit && !this.lodging_constraints.length && !held) {
-        // collision() doesn't give us the line segment that we hit.
-        // We want to know the segment point in order to add a lodging constraint at the intersection point.
-        tip_relative = hit.fromWorld(this.toWorld(tip));
-        nock_relative = hit.fromWorld(this.toWorld(nock));
-        hit_segment = void 0;
-        surface_angle = void 0;
-        relative_angle = void 0;
-        incident_speed = void 0; // speed along the surface normal (i.e. towards the surface), ignoring motion along the surface
-        heading_angle_of_incidence = void 0;
-        facing_angle_of_incidence = void 0;
-        hit_segment_position_ratio = 0;
-        arrow_segment_position_ratio = 0; // AKA depth ratio
-        ref2 = hit.structure.segments;
-        for (segment_name in ref2) {
-          segment = ref2[segment_name];
-          if (lineSegmentsIntersect(tip_relative.x, tip_relative.y, nock_relative.x, nock_relative.y, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
-            surface_angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x);
-            arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x);
-            relative_angle = arrow_angle - surface_angle;
-            normal = surface_angle + Math.PI / 2;
-            vx = tip.x - tip.prev_x;
-            vy = tip.y - tip.prev_y;
-            heading_angle = Math.atan2(vy, vx);
-            incident_speed = Math.abs(Math.cos(normal) * vx + Math.sin(normal) * vy);
-            // incident_speed = Math.abs(Math.sin(-surface_angle) * vx + Math.cos(-surface_angle) * vy) # alternative
-            heading_angle_of_incidence = Math.abs(Math.abs(modulo(heading_angle - surface_angle, Math.PI)) - Math.PI / 2);
-            facing_angle_of_incidence = Math.abs(Math.abs(modulo(arrow_angle - surface_angle, Math.PI)) - Math.PI / 2);
-            // window.debug_max_facing_angle_of_incidence = Math.max(window.debug_max_facing_angle_of_incidence ? 0, facing_angle_of_incidence) # should be Math.PI/2 on arrow test scene
-            // window.debug_max_heading_angle_of_incidence = Math.max(window.debug_max_heading_angle_of_incidence ? 0, heading_angle_of_incidence) # should be Math.PI/2 on arrow test scene
-
-            // Arrows coming in at a grazing angle should bounce off.
-            // Arrows coming straight towards the surface but not facing forward should bounce off.
-            // Arrows going slow should bounce off.
-            // A combination of speed, angle of incidence, and arrow angle is needed.
-
-            // Arrows going fast enough towards the surface (i.e. in the axis perpendicular to the surface) should lodge.
-            // The time subdivision shouldn't affect the speed threshold.
-            incident_speed_global_scale = incident_speed * Arrow.steps_per_frame;
-            if (incident_speed_global_scale < 2) {
-              // console.log "not lodging, incident_speed_global_scale too low", incident_speed_global_scale
-              continue;
-            }
-            if (facing_angle_of_incidence > Math.PI / 4) { // 45 degrees
-              // console.log "not lodging, arrow is not facing head-on enough"
-              continue;
-            }
-            if (hit.constructor.name === "Rock") {
-              // console.log "not lodging, hit rock"
-              continue;
-            }
-            hit_segment = segment;
-            // find position ratios of the intersection point on each segment
-            p1 = segment.a;
-            p2 = segment.b;
-            p3 = tip_relative;
-            p4 = nock_relative;
-            // at segment.a = 0, at segment.b = 1
-            hit_segment_position_ratio = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
-            // at tip = 0, at nock = 1
-            arrow_segment_position_ratio = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
-            // console.log "found intersection", hit_segment_position_ratio, arrow_segment_position_ratio
-            break;
-          }
-        }
-        // I'm only allowing one lodging constraint per arrow for now.
-        // Ideally I would like to allow the arrow to pin an enemy to the ground,
-        // using multiple constraints, but this will probably require the whole game to be
-        // simulated together with something like Verlet integration, so that the
-        // enemy's limb can be constrained in a stable way.
-        // But maybe with specific targets it can be enabled to work.
-        // Also, TODO: bounce off if the angle is not perpendicular enough
-        // (i.e. angle of incidence is too high)
-        if (hit_segment && this.lodging_constraints.length === 0) {
-          constraint = {
-            hit_entity_id: hit.id,
-            hit_segment_name: Object.keys(hit.structure.segments)[Object.values(hit.structure.segments).indexOf(hit_segment)],
-            relative_angle,
-            hit_segment_position_ratio,
-            arrow_segment_position_ratio,
-            incident_speed,
-            heading_angle_of_incidence,
-            facing_angle_of_incidence
-          };
-          this.lodging_constraints.push(constraint);
-        }
-      }
-      
-      // Ideally I would like to allow the arrow to move while lodged,
-      // and adjust the depth and angle of lodging (with some stiffness),
-      // and maybe allow it to become dislodged, but it was causing numerical instability.
-      if (!this.lodging_constraints.length && !held) {
-        ref3 = [tip, nock];
-        // Collide with the ground.
-        for (k = 0, len2 = ref3.length; k < len2; k++) {
-          point = ref3[k];
-          hit = world.collision(this.toWorld(point));
-          if (hit) {
-            coefficient_of_restitution = hit.constructor.name === "Rock" ? 0.5 : 0.1;
-            coefficient_of_friction = 0.1;
-            vx = point.x - point.prev_x;
-            vy = point.y - point.prev_y;
-            speed = Math.hypot(vx, vy);
-            // if not debug_drawings.has(@)
-            // 	debug_drawings.set(@, [])
-            // debug_drawings.get(@).push({
-            // 	type: "line"
-            // 	a: {x: point.x, y: point.y}
-            // 	b: {x: point.x + vx, y: point.y + vy}
-            // 	color: "yellow"
-            // })
-            // # debug_drawings.get(@).push({
-            // # 	type: "circle"
-            // # 	center: {x: point.x, y: point.y}
-            // # 	radius: 5
-            // # 	color: "yellow"
-            // # })
-
-            // Project the point back to the surface of the polygon.
-            // This is done by finding the closest point on the polygon's edges.
-            closest_distance = 2e308;
-            closest_segment = null;
-            point_in_hit_space = hit.fromWorld(this.toWorld(point));
-            ref4 = hit.structure.segments;
-            for (segment_name in ref4) {
-              segment = ref4[segment_name];
-              dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b);
-              if (dist < closest_distance) {
-                closest_distance = dist;
-                closest_segment = segment;
-              }
-            }
-            if (closest_segment) {
-              closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b);
-              closest_point_local = this.fromWorld(hit.toWorld(closest_point_in_hit_space));
-              point.x = closest_point_local.x;
-              point.y = closest_point_local.y;
-            }
-            // debug_drawings.get(@).push({
-            // 	type: "circle"
-            // 	center: {x: point.x, y: point.y}
-            // 	radius: 5
-            // 	color: "lime"
-            // })
-
-            // bounce off the surface, reflecting the angle
-            if (speed > 0) {
-              vx = point.x - point.prev_x;
-              vy = point.y - point.prev_y;
-              // console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
-              // heading_angle = Math.atan2(vy, vx)
-              surface_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x);
-              // a = surface_angle * 2 - heading_angle
-              // a = if a >= TAU then a - TAU else if a < 0 then a + TAU else a
-              // new_vx = Math.cos(a) * speed * coefficient_of_restitution
-              // new_vy = Math.sin(a) * speed * coefficient_of_restitution
-
-              // Rotate the velocity vector to the surface normal.
-              rot_matrix1 = [[Math.cos(surface_angle), -Math.sin(surface_angle)], [Math.sin(surface_angle), Math.cos(surface_angle)]];
-              [rotated_vx, rotated_vy] = [vx, vy].map((val, idx) => {
-                return rot_matrix1[idx][0] * vx + rot_matrix1[idx][1] * vy;
-              });
-              // Reflect the velocity vector.
-              rotated_vx *= -coefficient_of_restitution;
-              rotated_vy *= 1 - coefficient_of_friction;
-              // Rotate the velocity vector back to the original direction.
-              rot_matrix2 = [[Math.cos(-surface_angle), -Math.sin(-surface_angle)], [Math.sin(-surface_angle), Math.cos(-surface_angle)]];
-              [new_vx, new_vy] = [rotated_vx, rotated_vy].map((val, idx) => {
-                return rot_matrix2[idx][0] * rotated_vx + rot_matrix2[idx][1] * rotated_vy;
-              });
-              // console.log("old vx, vy", vx, vy, "new vx, vy", new_vx, new_vy)
-              point.prev_x = point.x - new_vx;
-              point.prev_y = point.y - new_vy;
-              // At this point, the other particle's velocity has not been updated,
-              // and it will often cancel out the bounce even for a perfectly elastic collision.
-              // That's not good enough.
-              // Transfer energy along the arrow shaft,
-              // by constraining the distance between the two points.
-              // What this does is cancel the velocity of the other point,
-              // implicit in it having moved forwards in time,
-              // but only in the direction that it needs to.
-              // In contrast to the normal distance constraint, I'm not
-              // going to symmetrically move both points, but rather keep the
-              // collided point stationary so it doesn't get pushed back into the surface,
-              // and move the other point fully rather than halfway.
-              other_point = point === tip ? nock : tip;
-              delta_x = point.x - other_point.x;
-              delta_y = point.y - other_point.y;
-              delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
-              diff = (delta_length - this.length) / delta_length;
-              if (isFinite(diff)) {
-                other_point.x += delta_x * diff;
-                other_point.y += delta_y * diff;
-              } else {
-                console.warn("diff is not finite, for momentary distance constraint");
-              }
-            }
-          }
-        }
-      }
-      ref5 = this.lodging_constraints;
-      // Constrain when lodged in an object.
-      for (l = 0, len3 = ref5.length; l < len3; l++) {
-        ({hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio} = ref5[l]);
-        hit_entity = world.getEntityByID(hit_entity_id);
-        if (!hit_entity) { // no longer exists
-          this.lodging_constraints = [];
-          break;
-        }
-        hit_segment = hit_entity.structure.segments[hit_segment_name];
-        hit_segment_pos = hit_entity.toWorld({
-          x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio,
-          y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
-        });
-        arrow_shaft_pos = this.toWorld({
-          x: tip.x + (nock.x - tip.x) * arrow_segment_position_ratio,
-          y: tip.y + (nock.y - tip.y) * arrow_segment_position_ratio
-        });
-        pos_diff = {
-          x: hit_segment_pos.x - arrow_shaft_pos.x,
-          y: hit_segment_pos.y - arrow_shaft_pos.y
-        };
-        if (isNaN(pos_diff.x) || isNaN(pos_diff.y)) {
-          console.warn("pos_diff has NaN");
-          continue;
-        }
-        // TODO: for non-static objects,
-        // move the object equally in the opposite direction (each only halfway)
-        // And integrate all physics in the same loop, for Verlet integration.
-        tip.x += pos_diff.x;
-        tip.y += pos_diff.y;
-        nock.x += pos_diff.x;
-        nock.y += pos_diff.y;
-        arrow_angle = Math.atan2(tip.y - nock.y, tip.x - nock.x);
-        hit_segment_angle = Math.atan2(hit_segment.b.y - hit_segment.a.y, hit_segment.b.x - hit_segment.a.x);
-        angle_diff = (arrow_angle - hit_segment_angle) - relative_angle;
-        // Rotate the arrow.
-        arrow_shaft_pos_local = this.fromWorld(arrow_shaft_pos); // redundant calculation
-        // Rotate the arrow around the arrow shaft attachment point.
-        rot_matrix = [[Math.cos(angle_diff), Math.sin(angle_diff)], [-Math.sin(angle_diff), Math.cos(angle_diff)]];
-        ref6 = [tip, nock];
-        for (m = 0, len4 = ref6.length; m < len4; m++) {
-          point = ref6[m];
-          // Translate and rotate the arrow.
-          [point.x, point.y] = [point.x, point.y].map((val, idx) => {
-            return rot_matrix[idx][0] * (point.x - arrow_shaft_pos_local.x) + rot_matrix[idx][1] * (point.y - arrow_shaft_pos_local.y);
-          });
-          // Translate the arrow back to its original position.
-          point.x += arrow_shaft_pos_local.x;
-          point.y += arrow_shaft_pos_local.y;
-        }
-      }
-      // Constrain arrow length, moving both points symmetrically.
-      // I learned this from:
-      // http://web.archive.org/web/20080410171619/http://www.teknikus.dk/tj/gdc2001.htm
-      delta_x = tip.x - nock.x;
-      delta_y = tip.y - nock.y;
-      delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
-      diff = (delta_length - this.length) / delta_length;
-      if (isFinite(diff)) {
-        tip.x -= delta_x * 0.5 * diff;
-        tip.y -= delta_y * 0.5 * diff;
-        nock.x += delta_x * 0.5 * diff;
-        return nock.y += delta_y * 0.5 * diff;
-      } else {
-        return console.warn("diff is not finite, for distance constraint");
-      }
-    }
-
-    draw(ctx) {
-      var angle, arrow_segment_position_ratio, arrow_shaft_pos, arrow_shaft_pos_local, drawing, facing_angle_of_incidence, heading_angle_of_incidence, hit_entity, hit_entity_id, hit_segment, hit_segment_a_local, hit_segment_b_local, hit_segment_name, hit_segment_pos, hit_segment_pos_local, hit_segment_position_ratio, i, incident_speed, j, len, len1, nock, ref, ref1, ref2, ref3, relative_angle, results, tip;
-      ({tip, nock} = this.structure.points);
-      ctx.beginPath();
-      ctx.moveTo(tip.x, tip.y);
-      ctx.lineTo(nock.x, nock.y);
-      ctx.lineWidth = 1;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#74552B";
-      ctx.stroke();
-      angle = Math.atan2(tip.y - nock.y, tip.x - nock.x) + TAU / 4;
-      ctx.save();
-      ctx.translate(tip.x, tip.y);
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.moveTo(0, -2);
-      ctx.lineTo(-2, 2);
-      ctx.lineTo(0, 1);
-      ctx.lineTo(+2, 2);
-      ctx.fillStyle = "#2D1813";
-      ctx.fill();
-      ctx.restore();
-      ctx.save();
-      ctx.translate(nock.x, nock.y);
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.translate(0, -4);
-      ctx.moveTo(0, 0);
-      ctx.lineTo(-2, 2);
-      ctx.lineTo(-2, 4);
-      ctx.lineTo(0, 3);
-      ctx.lineTo(+2, 4);
-      ctx.lineTo(+2, 2);
-      ctx.fillStyle = "#B1280A";
-      ctx.fill();
-      ctx.restore();
-      if (!window.debug_mode) {
-        return;
-      }
-      if (debug_drawings.get(this)) {
-        ref = debug_drawings.get(this);
-        for (i = 0, len = ref.length; i < len; i++) {
-          drawing = ref[i];
-          if (drawing.type === "line") {
-            ctx.beginPath();
-            ctx.moveTo(drawing.a.x, drawing.a.y);
-            ctx.lineTo(drawing.b.x, drawing.b.y);
-            ctx.lineWidth = 1;
-            ctx.lineCap = "round";
-            ctx.strokeStyle = (ref1 = drawing.color) != null ? ref1 : "#FF0000";
-            ctx.stroke();
-          } else if (drawing.type === "circle") {
-            ctx.beginPath();
-            ctx.arc(drawing.center.x, drawing.center.y, drawing.radius, 0, TAU);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = (ref2 = drawing.color) != null ? ref2 : "#FF0000";
-            ctx.stroke();
-          } else {
-            console.error(`Unknown debug drawing type: ${drawing.type}`);
-          }
-        }
-      }
-      ref3 = this.lodging_constraints;
-      results = [];
-      for (j = 0, len1 = ref3.length; j < len1; j++) {
-        ({hit_entity_id, hit_segment_name, relative_angle, arrow_segment_position_ratio, hit_segment_position_ratio, incident_speed, facing_angle_of_incidence, heading_angle_of_incidence} = ref3[j]);
-        hit_entity = window.the_world.getEntityByID(hit_entity_id);
-        if (!hit_entity) { // no longer exists
-          continue;
-        }
-        hit_segment = hit_entity.structure.segments[hit_segment_name];
-        if (!hit_entity.toWorld) {
-          console.error("Need to fix serialization of references to entities (and segments) with something like resurrect.js!");
-          this.lodging_constraints.length = 0;
-          break;
-        }
-        hit_segment_a_local = this.fromWorld(hit_entity.toWorld(hit_segment.a));
-        hit_segment_b_local = this.fromWorld(hit_entity.toWorld(hit_segment.b));
-        ctx.beginPath();
-        ctx.moveTo(hit_segment_a_local.x, hit_segment_a_local.y);
-        ctx.lineTo(hit_segment_b_local.x, hit_segment_b_local.y);
-        ctx.lineWidth = 1;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#FF0000";
-        ctx.stroke();
-        hit_segment_pos = hit_entity.toWorld({
-          x: hit_segment.a.x + (hit_segment.b.x - hit_segment.a.x) * hit_segment_position_ratio,
-          y: hit_segment.a.y + (hit_segment.b.y - hit_segment.a.y) * hit_segment_position_ratio
-        });
-        arrow_shaft_pos = this.toWorld({
-          x: tip.x + (nock.x - tip.x) * arrow_segment_position_ratio,
-          y: tip.y + (nock.y - tip.y) * arrow_segment_position_ratio
-        });
-        hit_segment_pos_local = this.fromWorld(hit_segment_pos);
-        arrow_shaft_pos_local = this.fromWorld(arrow_shaft_pos); // redundant calc but whatever
-        ctx.beginPath();
-        ctx.moveTo(hit_segment_pos_local.x, hit_segment_pos_local.y);
-        ctx.lineTo(arrow_shaft_pos_local.x, arrow_shaft_pos_local.y);
-        ctx.lineWidth = 1;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#00FF00";
-        ctx.stroke();
-        // misc debug for colorizing based on a variable like
-        // incident_speed, facing_angle_of_incidence, heading_angle_of_incidence, relative_angle
-        ctx.beginPath();
-        ctx.moveTo(tip.x, tip.y);
-        ctx.lineTo(nock.x, nock.y);
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = `hsl(50, 100%, ${facing_angle_of_incidence * 20}%)`;
-        results.push(ctx.stroke());
-      }
-      return results;
-    }
-
-  };
-
-  addEntityClass(Arrow);
-
-  Arrow.steps_per_frame = 2;
-
-  return Arrow;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 914:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Bow, Entity, TAU, addEntityClass;
-
-Entity = __webpack_require__(293);
-
-({addEntityClass} = __webpack_require__(432));
-
-TAU = Math.PI * 2;
-
-module.exports = Bow = (function() {
-  class Bow extends Entity {
-    constructor() {
-      var point, point_name, ref;
-      super();
-      this.height = 30;
-      this.fistmele = 6;
-      this.draw_distance = 0;
-      this.structure.addPoint("grip");
-      this.structure.addSegment({
-        from: "grip",
-        to: "top",
-        name: "upper limb",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "grip",
-        to: "bottom",
-        name: "lower limb",
-        length: 10
-      });
-      this.structure.addSegment({
-        from: "grip",
-        name: "serving",
-        length: this.fistmele
-      });
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        point.vx = 0;
-        point.vy = 0;
-      }
-      this.bbox_padding = 20;
-    }
-
-    initLayout() {
-      this.structure.points.serving.x -= this.fistmele;
-      return this.layout();
-    }
-
-    step(world) {
-      return this.layout();
-    }
-
-    layout() {
-      var bottom, bow_angle, grip, serving, top;
-      ({top, bottom, grip, serving} = this.structure.points);
-      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
-      top.x = grip.x + this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
-      top.y = grip.y + this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
-      bottom.x = grip.x - this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
-      return bottom.y = grip.y - this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
-    }
-
-    draw(ctx) {
-      var arc_r, bottom, bow_angle, center_x, center_y, grip, serving, top;
-      ({top, bottom, grip, serving} = this.structure.points);
-      ctx.beginPath();
-      ctx.moveTo(top.x, top.y);
-      ctx.lineTo(serving.x, serving.y);
-      ctx.lineTo(bottom.x, bottom.y);
-      ctx.lineWidth = 0.5;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "white";
-      ctx.stroke();
-      ctx.beginPath();
-      center_x = (top.x + bottom.x) / 2;
-      center_y = (top.y + bottom.y) / 2;
-      bow_angle = Math.atan2(grip.y - serving.y, grip.x - serving.x) - TAU / 4;
-      ctx.save();
-      ctx.translate(grip.x, grip.y);
-      ctx.rotate(bow_angle);
-      arc_r = this.fistmele;
-      ctx.beginPath();
-      ctx.save();
-      ctx.translate(0, -arc_r);
-      ctx.save();
-      ctx.scale(this.height / 2 / arc_r + 0.1, 1);
-      ctx.arc(0, -0.5, arc_r, 0, TAU / 2);
-      ctx.restore();
-      ctx.save();
-      ctx.scale(this.height / 2 / arc_r, 0.7);
-      ctx.arc(0, 0, arc_r - 0.1, TAU / 2, 0, true);
-      ctx.restore();
-      ctx.closePath();
-      ctx.fillStyle = "#AB7939";
-      ctx.fill();
-      ctx.restore();
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Bow);
-
-  return Bow;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 91:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Rock, Terrain, addEntityClass;
-
-Terrain = __webpack_require__(891);
-
-({addEntityClass} = __webpack_require__(432));
-
-module.exports = Rock = (function() {
-  class Rock extends Terrain {
-    constructor() {
-      super();
-      this.bbox_padding = 20;
-    }
-
-    draw(ctx, view) {
-      var point, point_name, ref;
-      ctx.beginPath();
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        ctx.lineTo(point.x, point.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = "#63625F";
-      return ctx.fill();
-    }
-
-  };
-
-  addEntityClass(Rock);
-
-  return Rock;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 475:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var SavannaGrass, Terrain, addEntityClass, lineSegmentsIntersect;
-
-Terrain = __webpack_require__(891);
-
-({addEntityClass} = __webpack_require__(432));
-
-({lineSegmentsIntersect} = (__webpack_require__(432).helpers));
-
-module.exports = SavannaGrass = (function() {
-  class SavannaGrass extends Terrain {
-    constructor() {
-      super();
-      this.bbox_padding = 30;
-      this.grass_tiles = new Map();
-      this.grass_tiles.fromJSON = (map_obj) => {};
-      this.grass_tiles.toJSON = (map_obj) => {
-        return {};
-      };
-      this.structure.onchange = () => {
-        return this.grass_tiles.forEach((tile) => {
-          var blade, i, len, ref, results, shade;
-          ref = ["dark", "light"];
-          results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            shade = ref[i];
-            results.push((function() {
-              var k, len1, ref1, results1;
-              ref1 = tile[`${shade}_blades`];
-              results1 = [];
-              for (k = 0, len1 = ref1.length; k < len1; k++) {
-                blade = ref1[k];
-                results1.push(delete blade.visible);
-              }
-              return results1;
-            })());
-          }
-          return results;
-        });
-      };
-    }
-
-    draw(ctx, view) {
-      var bbox, blade, bottom, contains_any_points, dark_blades, first_tile_xi, first_tile_yi, i, j, k, l, last_tile_xi, last_tile_yi, left, len, len1, len2, len3, light_blades, m, n, o, p, point, point_name, q, random, rect_contains_any_points, rect_is_empty, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, right, shade, tile, tile_name, tile_size, tile_x, tile_xi, tile_y, tile_yi, top, view_point, x, y;
-      rect_contains_any_points = (x, y, width, height) => {
-        var contains_any_points, point, point_name, ref, ref1, ref2;
-        contains_any_points = false;
-        ref = this.structure.points;
-        for (point_name in ref) {
-          point = ref[point_name];
-          if ((x <= (ref1 = point.x) && ref1 <= x + width) && (y <= (ref2 = point.y) && ref2 <= y + height)) {
-            contains_any_points = true;
-          }
-        }
-        return contains_any_points;
-      };
-      rect_is_empty = (x, y, width, height) => {
-        var center_of_rect_is_in_polygon, center_point, ref, segment, segment_name, view_point;
-        center_point = {
-          x: this.x + x + width / 2,
-          y: this.y + y + height / 2
-        };
-        view_point = view.fromWorld(center_point);
-        center_of_rect_is_in_polygon = ctx.isPointInPath(view_point.x, view_point.y);
-        ref = this.structure.segments;
-        for (segment_name in ref) {
-          segment = ref[segment_name];
-          if (lineSegmentsIntersect(x, y, x, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y, x + width, y, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x + width, y, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y) || lineSegmentsIntersect(x, y + height, x + width, y + height, segment.a.x, segment.a.y, segment.b.x, segment.b.y)) {
-            // return center_of_rect_is_in_polygon
-            return false;
-          }
-        }
-        return !center_of_rect_is_in_polygon;
-      };
-      ctx.beginPath();
-      ref = this.structure.points;
-      for (point_name in ref) {
-        point = ref[point_name];
-        ctx.lineTo(point.x, point.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = "#C29853";
-      ctx.fill();
-      Math.seedrandom(5);
-      random = Math.random;
-      // TODO: try layers of chained triangles
-      // like https://jsfiddle.net/evarildo/ds2ajjks/
-      // and order tufts of grass based on y (along with the layers of triangles)?
-      dark_blades = [];
-      light_blades = [];
-      bbox = this.bbox();
-      tile_size = 300;
-      // first_tile_x = floor(bbox.x / tile_size) * tile_size
-      // last_tile_x = ceil((bbox.x + bbox.width) / tile_size) * tile_size
-      // first_tile_y = floor(bbox.y / tile_size) * tile_size
-      // last_tile_y = ceil((bbox.y + bbox.height) / tile_size) * tile_size
-      // first_tile_x = (bbox.x // tile_size) * tile_size
-      // last_tile_x = ((bbox.x + bbox.width) // tile_size) * tile_size
-      // first_tile_y = (bbox.y // tile_size) * tile_size
-      // last_tile_y = ((bbox.y + bbox.height) // tile_size) * tile_size
-      // first_tile_xi = bbox.x // tile_size
-      // last_tile_xi = (bbox.x + bbox.width) // tile_size
-      // first_tile_yi = bbox.y // tile_size
-      // last_tile_yi = (bbox.y + bbox.height) // tile_size
-      // first_tile_x = first_tile_x * tile_size
-      // last_tile_x = last_tile_x * tile_size
-      // first_tile_y = first_tile_y * tile_size
-      // last_tile_y = last_tile_y * tile_size
-      // for tile_x in [first_tile_x..last_tile_x] by tile_size
-      // 	tile_x -= @x
-      // 	for tile_y in [first_tile_y..last_tile_y] by tile_size
-      // 		tile_name = "(#{tile_x}, #{tile_y})"
-      // 		tile_y -= @y
-      left = bbox.x - this.x;
-      top = bbox.y - this.y;
-      right = left + bbox.width;
-      bottom = top + bbox.height;
-      first_tile_xi = Math.floor(left / tile_size);
-      last_tile_xi = Math.floor(right / tile_size);
-      first_tile_yi = Math.floor(top / tile_size);
-      last_tile_yi = Math.floor(bottom / tile_size);
-      for (tile_xi = i = ref1 = first_tile_xi, ref2 = last_tile_xi; (ref1 <= ref2 ? i <= ref2 : i >= ref2); tile_xi = ref1 <= ref2 ? ++i : --i) {
-        for (tile_yi = k = ref3 = first_tile_yi, ref4 = last_tile_yi; (ref3 <= ref4 ? k <= ref4 : k >= ref4); tile_yi = ref3 <= ref4 ? ++k : --k) {
-          tile_name = `(${tile_xi}, ${tile_yi})`;
-          // tile_x = @x + tile_xi * tile_size
-          // tile_y = @y + tile_yi * tile_size
-          // tile_x = tile_xi * tile_size - @x
-          // tile_y = tile_yi * tile_size - @y
-          tile_x = tile_xi * tile_size;
-          tile_y = tile_yi * tile_size;
-          tile = this.grass_tiles.get(tile_name);
-          contains_any_points = rect_contains_any_points(tile_x, tile_y, tile_size, tile_size);
-          if (!((!contains_any_points) && rect_is_empty(tile_x, tile_y, tile_size, tile_size))) {
-            if (tile == null) {
-              tile = {
-                dark_blades: [],
-                light_blades: []
-              };
-              for (var l = 0; l <= 350; l++) {
-                x = tile_x + random() * tile_size;
-                y = tile_y + random() * tile_size;
-                for (j = m = 0, ref5 = random() * 3 + 1; (0 <= ref5 ? m <= ref5 : m >= ref5); j = 0 <= ref5 ? ++m : --m) {
-                  shade = random() < 0.5 ? "dark" : "light";
-                  tile[`${shade}_blades`].push({x, y});
-                  x += (random() + 1) * 3;
-                }
-              }
-              this.grass_tiles.set(tile_name, tile);
-            }
-            ref6 = ["dark", "light"];
-            
-            // ctx.strokeStyle = "#f0f"
-            // ctx.strokeRect(tile_x, tile_y, tile_size, tile_size)
-            // ctx.fillStyle = "rgba(255, 0, 255, 0.1)"
-            // ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
-            // # ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
-            // # ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
-            for (n = 0, len = ref6.length; n < len; n++) {
-              shade = ref6[n];
-              ref7 = tile[`${shade}_blades`];
-              for (o = 0, len1 = ref7.length; o < len1; o++) {
-                blade = ref7[o];
-                point = this.toWorld(blade);
-                if (view.testRect(point.x, point.y - 10, 0, 10, 15)) {
-                  view_point = view.fromWorld(point);
-                  if (blade.visible != null ? blade.visible : blade.visible = ctx.isPointInPath(view_point.x, view_point.y)) {
-                    // if (not contains_any_points) or ctx.isPointInPath(view_point.x, view_point.y)
-                    (shade === "dark" ? dark_blades : light_blades).push(blade);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      ctx.beginPath();
-      for (p = 0, len2 = dark_blades.length; p < len2; p++) {
-        ({x, y} = dark_blades[p]);
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
-      }
-      ctx.strokeStyle = "#B7863E";
-      ctx.stroke();
-      ctx.beginPath();
-      for (q = 0, len3 = light_blades.length; q < len3; q++) {
-        ({x, y} = light_blades[q]);
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
-      }
-      ctx.strokeStyle = "#D6AE77";
-      return ctx.stroke();
-    }
-
-  };
-
-  addEntityClass(SavannaGrass);
-
-  return SavannaGrass;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 469:
-/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
-
-var Terrain, Water, addEntityClass;
-
-Terrain = __webpack_require__(891);
-
-({addEntityClass} = __webpack_require__(432));
-
-module.exports = Water = (function() {
-  class Water extends Terrain {
-    constructor() {
-      super();
-      this.bbox_padding = 30;
-      this.solid = false;
-      this.waves_y = []; // indexed by x starting from @min_x
-      this.waves_vy = []; // indexed by x starting from @min_x
-      this.min_x = 2e308;
-      this.max_x = -2e308;
-      this.min_y = 2e308;
-      this.max_y = -2e308;
-      this.structure.onchange = () => {
-        var double_area, i, point, point_name, ref, ref1, ref2, ref3, segment, segment_name, x;
-        this.waves_y = [];
-        this.waves_vy;
-        this.min_x = 2e308;
-        this.max_x = -2e308;
-        this.min_y = 2e308;
-        this.max_y = -2e308;
-        ref = this.structure.points;
-        for (point_name in ref) {
-          point = ref[point_name];
-          this.min_x = Math.min(this.min_x, point.x);
-          this.max_x = Math.max(this.max_x, point.x);
-          this.min_y = Math.min(this.min_y, point.y);
-          this.max_y = Math.max(this.max_y, point.y);
-        }
-        this.min_x = Math.floor(this.min_x);
-        this.max_x = Math.ceil(this.max_x);
-        this.min_y = Math.floor(this.min_y);
-        this.max_y = Math.ceil(this.max_y);
-        for (x = i = ref1 = this.min_x, ref2 = this.max_x; (ref1 <= ref2 ? i < ref2 : i > ref2); x = ref1 <= ref2 ? ++i : --i) {
-          this.waves_y[x - this.min_x] = 0;
-          this.waves_vy[x - this.min_x] = 0;
-        }
-        
-        // detect polygon vertex order
-        double_area = 0;
-        ref3 = this.structure.segments;
-        for (segment_name in ref3) {
-          segment = ref3[segment_name];
-          double_area += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y);
-        }
-        return this.ccw = double_area > 0;
-      };
-    }
-
-    makeWaves(world_pos, radius = 5, velocity_y = 5) {
-      var i, local_pos, ref, ref1, results, x;
-      local_pos = this.fromWorld(world_pos);
-      results = [];
-      for (x = i = ref = Math.round(local_pos.x - radius), ref1 = Math.round(local_pos.x + radius); (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
-        results.push(this.waves_vy[x - this.min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius));
-      }
-      return results;
-    }
-
-    step() {
-      var i, j, neighboring, ref, ref1, ref2, ref3, ref4, ref5, results, x;
-      neighboring = [];
-      for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
-        neighboring[x - this.min_x] = ((ref2 = this.waves_y[x - this.min_x - 1]) != null ? ref2 : 0) + ((ref3 = this.waves_y[x - this.min_x + 1]) != null ? ref3 : 0);
-      }
-      results = [];
-      for (x = j = ref4 = this.min_x, ref5 = this.max_x; (ref4 <= ref5 ? j < ref5 : j > ref5); x = ref4 <= ref5 ? ++j : --j) {
-        this.waves_vy[x - this.min_x] += (neighboring[x - this.min_x] - this.waves_y[x - this.min_x] * 2) * 0.4;
-        this.waves_vy[x - this.min_x] *= 0.99;
-        this.waves_vy[x - this.min_x] -= this.waves_y[x - this.min_x] * 0.2;
-        results.push(this.waves_y[x - this.min_x] += this.waves_vy[x - this.min_x]);
-      }
-      return results;
-    }
-
-    draw(ctx, view) {
-      var i, point, point_name, ref, ref1, ref2, wave_center_y, x;
-      wave_center_y = this.min_y;
-      ctx.save();
-      ctx.beginPath();
-      for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
-        ctx.lineTo(x, this.waves_y[x - this.min_x] + wave_center_y);
-      }
-      ctx.lineTo(this.max_x, this.max_y);
-      ctx.lineTo(this.min_x, this.max_y);
-      ctx.closePath();
-      // ctx.strokeStyle = if @ccw? then (if @ccw then "lime" else "yellow") else "red"
-      // ctx.stroke()
-      ctx.clip();
-      ctx.beginPath();
-      ref2 = this.structure.points;
-      for (point_name in ref2) {
-        point = ref2[point_name];
-        if (point.y < wave_center_y + 2) {
-          if ((point.x > (this.min_x + this.max_x) / 2) === this.ccw) {
-            ctx.lineTo(point.x, point.y);
-            ctx.lineTo(point.x, point.y - 50);
-          } else {
-            ctx.lineTo(point.x, point.y - 50);
-            ctx.lineTo(point.x, point.y);
-          }
-        } else {
-          ctx.lineTo(point.x, point.y);
-        }
-      }
-      ctx.closePath();
-      ctx.fillStyle = "hsla(200, 100%, 50%, 0.5)";
-      ctx.fill();
-      return ctx.restore();
-    }
-
-  };
-
-  addEntityClass(Water);
-
-  return Water;
-
-}).call(this);
-
-
-/***/ }),
-
-/***/ 866:
-/***/ ((module) => {
-
-var keyboard, keys, prev_keys;
-
-keys = {};
-
-prev_keys = {};
-
-addEventListener("keydown", function(e) {
-  return keys[e.code] = true;
-});
-
-addEventListener("keyup", function(e) {
-  return delete keys[e.code];
-});
-
-keyboard = {
-  wasJustPressed: function(code) {
-    return (keys[code] != null) && (prev_keys[code] == null);
-  },
-  isHeld: function(code) {
-    return keys[code] != null;
-  },
-  resetForNextStep: function() {
-    var k, results, v;
-    prev_keys = {};
-    results = [];
-    for (k in keys) {
-      v = keys[k];
-      results.push(prev_keys[k] = v);
-    }
-    return results;
-  }
-};
-
-module.exports = keyboard;
-
-
 /***/ })
 
 /******/ 	});
@@ -9118,28 +10888,32 @@ module.exports = keyboard;
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-var __webpack_unused_export__;
-var Editor, Mouse, Player, SavannaGrass, View, World, animate, bottom_of_world, canvas, ctx, e, editor, gamepad_start_prev, keyboard, mouse, redraw, terrain, view, view_smoothness, view_to, world;
+var Editor, Mouse, Player, SavannaGrass, View, World, _fromJSON, animate, bottom_of_world, canvas, ctx, disable_welcome_message, e, editor, gamepad_start_prev, keyboard, mouse, randomize_entities, redraw, sort_entities, terrain, view, view_smoothness, view_to, welcome, world, world_loaded;
 
 Math.seedrandom("A world");
 
-({View, Mouse, Editor} = __webpack_require__(432));
+({View, Mouse, Editor} = __webpack_require__(505));
 
 World = __webpack_require__(378);
 
 keyboard = __webpack_require__(866);
 
+sort_entities = __webpack_require__(351);
+
+randomize_entities = __webpack_require__(880);
+
 __webpack_require__(372);
 
+// require each entity to add it to the entity registry
+__webpack_require__(847);
+
 SavannaGrass = __webpack_require__(475);
+
+__webpack_require__(50);
 
 __webpack_require__(91);
 
 __webpack_require__(469);
-
-__webpack_require__(339);
-
-__webpack_require__(776);
 
 __webpack_require__(33);
 
@@ -9197,7 +10971,34 @@ view_smoothness = 7;
 
 mouse = new Mouse(canvas);
 
-editor = __webpack_unused_export__ = new Editor(world, view, view_to, canvas, mouse);
+editor = new Editor(world, view, view_to, canvas, mouse);
+
+window.the_editor = editor;
+
+welcome = document.getElementById("welcome");
+
+disable_welcome_message = ((function() {
+  try {
+    return localStorage["tiamblia.disable_welcome_message"];
+  } catch (error) {}
+})()) === "true";
+
+if (disable_welcome_message) {
+  welcome.remove();
+} else {
+  // hacky way to make it play by default instead of edit
+  // but not mess up the editor's undo state that it creates when you start playing
+  world_loaded = false;
+  _fromJSON = world.fromJSON;
+  world.fromJSON = function(json) {
+    _fromJSON.call(world, json);
+    if (editor.editing) {
+      editor.toggleEditing();
+    }
+    world.fromJSON = _fromJSON;
+    return world_loaded = true;
+  };
+}
 
 try {
   editor.load();
@@ -9244,17 +11045,36 @@ redraw = function() {
   return ctx.restore();
 };
 
+// This is useful when debugging.
+// You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
+// and then see how entities are changed while stepping through simulation code.
+// (In Chrome this doesn't work, the canvas doesn't update, as of 2023.)
 window.do_a_redraw = redraw;
 
 gamepad_start_prev = false;
 
 (animate = function() {
-  var entity, gamepad, i, j, len, len1, player, ref, ref1, ref2;
+  var entity, gamepad, i, j, k, len, len1, len2, player, ref, ref1, ref2, ref3;
   if (window.CRASHED) {
     return;
   }
   requestAnimationFrame(animate);
   Math.seedrandom(performance.now());
+  
+  // Hide welcome message after you start playing or toggle editing.
+  if (!disable_welcome_message) {
+    if (the_world.entities.some(function(entity) {
+      return entity instanceof Player && entity.jump;
+    }) || (editor.editing && world_loaded)) {
+      if (welcome && welcome.style.opacity !== "0") {
+        welcome.style.opacity = 0;
+        welcome.style.pointerEvents = "none";
+        welcome.addEventListener("transitionend", function() {
+          return welcome.remove();
+        });
+      }
+    }
+  }
   if (canvas.width !== innerWidth) {
     canvas.width = innerWidth;
   }
@@ -9282,11 +11102,28 @@ gamepad_start_prev = false;
   } else {
     canvas.classList.remove("grabbable");
   }
-  if (!editor.editing) {
+  if (editor.editing) {
+    // Not sorting while game is running for performance reasons.
+    // TODO: run only when an entity is added in the editor.
+    // (I could also use the relative sorts list to sort only the added entity,
+    // and this could be useful for gameplay code that might want to add entities.)
+    sort_entities(world);
     ref2 = world.entities;
-    // when entity isnt editor.editing_entity and entity not in editor.dragging_entities
+    // Fix hair attachment when dragging after simulating.
+    // A better fix would be to have an event that fires while dragging
+    // (or otherwise moving an entity, such as with the arrow keys, which isn't supported yet.)
     for (j = 0, len1 = ref2.length; j < len1; j++) {
       entity = ref2[j];
+      if (entity instanceof Player) {
+        entity.hair_initialized = false;
+      }
+    }
+  }
+  if (!editor.editing) {
+    ref3 = world.entities;
+    // when entity isnt editor.editing_entity and entity not in editor.dragging_entities
+    for (k = 0, len2 = ref3.length; k < len2; k++) {
+      entity = ref3[k];
       entity.step(world, view, mouse);
     }
     
@@ -9312,6 +11149,18 @@ gamepad_start_prev = false;
   mouse.resetForNextStep();
   redraw();
   editor.updateGUI();
+  
+  // So that the editor will give new random entities each time you pull one into the world
+  // (given that some entities use seedrandom, and fix the seed)
+  // Also for the below entity randomizing feature.
+  Math.seedrandom(performance.now());
+  // A little tool to randomize entities by pressing 'r'
+  if (editor.editing && keyboard.wasJustPressed("KeyR")) {
+    editor.undoable(function() {
+      return randomize_entities(editor.selected_entities);
+    });
+  }
+  // End of frame. Nothing must use wasJustPressed after this.
   return keyboard.resetForNextStep();
 })();
 
