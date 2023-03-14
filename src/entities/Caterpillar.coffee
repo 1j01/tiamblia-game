@@ -59,12 +59,11 @@ module.exports = class Caterpillar extends Entity
 			point.fx = 0
 			point.fy = 0
 		for point, point_index in points_list
-			otherwise_attached = false
+			otherwise_attached = 0
 			for other_point in points_list when other_point isnt point
 				if other_point.attachment
-					otherwise_attached = true
-					break
-			lift_feet = Math.sin(t + point_index/3) < 0 and otherwise_attached
+					otherwise_attached += 1
+			lift_feet = Math.sin(t + point_index/3) < 0 and otherwise_attached >= 2
 			if lift_feet
 				point.attachment = null
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
