@@ -108,7 +108,7 @@ module.exports = class Caterpillar extends Entity
 					point.y += point.vy
 			
 			# angular constraint pivoting on this point
-			relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/points_list.length/4 #- Math.PI/8
+			relative_angle = (Math.sin(Math.sin(t)*Math.PI/4) - 0.5) * Math.PI/points_list.length/2
 			prev_point = points_list[point_index-1]
 			next_point = points_list[point_index+1]
 			if prev_point and next_point
