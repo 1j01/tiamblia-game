@@ -106,23 +106,27 @@ module.exports = class Caterpillar extends Entity
 					# @structure.stepLayout({collision}) for [0..4]
 					point.x += point.vx
 					point.y += point.vy
-			
-			# angular constraint pivoting on this point
-			relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/5
-			prev_point = Object.values(@structure.points)[point_index-1]
-			next_point = Object.values(@structure.points)[point_index+1]
-			if prev_point and next_point
-				@accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle)
-
 			point_index += 1
-		
-		# apply forces
-		for point_name, point of @structure.points
-			point.vx += point.fx
-			point.vy += point.fy
 
-		# constrain distances
+		points_list = Object.values(@structure.points)
+
+		# constraints
 		for i in [0...4]
+			for point, point_index in points_list
+				# angular constraint pivoting on this point
+				relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/5
+				prev_point = points_list[point_index-1]
+				next_point = points_list[point_index+1]
+				if prev_point and next_point
+					@accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle)
+
+			# apply forces
+			for point_name, point of @structure.points
+				# point.vx += point.fx
+				# point.vy += point.fy
+				point.x += point.fx
+				point.y += point.fy
+		
 			for point_name, point of @structure.points
 				attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 				if attachment_entity
