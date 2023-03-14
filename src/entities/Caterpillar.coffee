@@ -66,15 +66,16 @@ module.exports = class Caterpillar extends Entity
 			# lift_feet = Math.sin(t + point_index/points_list.length*Math.PI) < 0 and otherwise_attached >= 2
 			# if point_index > 3 and point_index < points_list.length - 3
 			# 	lift_feet = true # don't let the middle of the caterpillar act as feet
-			# if lift_feet
-			# 	point.attachment = null
-			lift_feet = false
+			dist_to_previous = if point_index > 0 then Math.hypot(point.x - points_list[point_index-1].x, point.y - points_list[point_index-1].y) else 0
+			lift_feet = dist_to_previous > 10
+			if lift_feet
+				point.attachment = null
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 			if attachment_entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
-				point.x = attachment_local.x
-				point.y = attachment_local.y
+				# point.x = attachment_local.x
+				# point.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
 				for angle_offset in [TAU/3..-TAU/3] by -TAU/10
@@ -99,8 +100,8 @@ module.exports = class Caterpillar extends Entity
 						if closest_segment
 							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
 							closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
-							point.x = closest_point_local.x
-							point.y = closest_point_local.y
+							# point.x = closest_point_local.x
+							# point.y = closest_point_local.y
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 								point.attachment = {entity_id: hit.id, point: hit.fromWorld(test_point_world), ground_angle}
@@ -166,8 +167,10 @@ module.exports = class Caterpillar extends Entity
 				if attachment_entity
 					attachment_world = attachment_entity.toWorld(point.attachment.point)
 					attachment_local = @fromWorld(attachment_world)
-					point.x = attachment_local.x
-					point.y = attachment_local.y
+					# point.x = attachment_local.x
+					# point.y = attachment_local.y
+					point.x += (attachment_local.x - point.x) * 0.1
+					point.y += (attachment_local.y - point.y) * 0.1
 			for segment_name, segment of @structure.segments
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
