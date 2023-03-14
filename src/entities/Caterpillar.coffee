@@ -56,8 +56,14 @@ module.exports = class Caterpillar extends Entity
 		point_index = 0
 		for point_name, point of @structure.points
 			cycle = performance.now()/500 + point_index/3
-			if Math.cos(cycle) < 0
-				point.attachment = null # lift feet
+			otherwise_attached = false
+			for other_point_name, other_point of @structure.points when other_point_name isnt point_name
+				if other_point.attachment
+					otherwise_attached = true
+					break
+			lift_feet = Math.sin(cycle) < 0 and otherwise_attached
+			if lift_feet
+				point.attachment = null
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 			if attachment_entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
@@ -88,7 +94,8 @@ module.exports = class Caterpillar extends Entity
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
 
-					point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
+					unless lift_feet
+						point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
 				else
 					point.vy += 0.005
 					# @structure.stepLayout({gravity: 0.005, collision})
@@ -184,6 +191,7 @@ module.exports = class Caterpillar extends Entity
 			ctx.save()
 			ctx.beginPath()
 			ctx.arc(point.x, point.y, point.radius, 0, TAU)
+			# ctx.fillStyle = if point.attachment then "lime" else color
 			ctx.fillStyle = color
 			ctx.fill()
 			ctx.clip()
