@@ -46,87 +46,104 @@ module.exports = class Caterpillar extends Entity
 			segment.b.x = segment.a.x + segment.length
 
 	step: (world)->
+		points = Object.values(@structure.points)
+
 		# stop at end of the world
-		for point_name, point of @structure.points
+		for point in points
 			if point.y > 400
 				return
 		
-		# move
+		# movement pattern
 		collision = (point)=> world.collision(@toWorld(point))
-		point_index = 0
-		for point_name, point of @structure.points
-			cycle = performance.now()/500 + point_index/3
+		t = performance.now()/500
+		attachment_points = []
+		cycle_positions = []
+		detachment = []
+		for point, point_index in points
+			cycle_position = t + point_index/3
+			cycle_positions[point_index] = cycle_position
 			otherwise_attached = false
-			for other_point_name, other_point of @structure.points when other_point_name isnt point_name
+			for other_point in points when other_point isnt point
 				if other_point.attachment
 					otherwise_attached = true
 					break
-			lift_feet = Math.sin(cycle) < 0 and otherwise_attached
-			if lift_feet
+			detachment[point_index] = Math.sin(cycle_position) < 0 and otherwise_attached
+			if detachment[point_index]
 				point.attachment = null
+			
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 			if attachment_entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
-				point.x = attachment_local.x
-				point.y = attachment_local.y
-			else
-				# point.x += point.vx
-				# point.y += point.vy
-				hit = collision(point)
-				if hit
+				attachment_points[point_index] = attachment_local
+
+		# motion and collision
+		iterations = 3
+		for [0...iterations]
+			for point, point_index in points
+				attachment_local = attachment_points[point_index]
+				cycle_position = cycle_positions[point_index]
+
+				if attachment_local
+					point.x = attachment_local.x
+					point.y = attachment_local.y
 					point.vx = 0
 					point.vy = 0
-
-					# Project the point back to the surface of the ground.
-					# This is done by finding the closest point on the polygon's edges.
-					closest_distance = Infinity
-					closest_segment = null
-					point_in_hit_space = hit.fromWorld(@toWorld(point))
-					for segment_name, segment of hit.structure.segments
-						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
-						if dist < closest_distance
-							closest_distance = dist
-							closest_segment = segment
-					if closest_segment
-						closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
-						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
-						point.x = closest_point_local.x
-						point.y = closest_point_local.y
-
-					unless lift_feet
-						point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
 				else
-					point.vy += 0.05
-					# @structure.stepLayout({gravity: 0.005, collision})
-					# @structure.stepLayout() for [0..10]
-					# @structure.stepLayout({collision}) for [0..4]
-					point.x += point.vx
-					point.y += point.vy
+					# point.x += point.vx
+					# point.y += point.vy
+					hit = collision(point)
+					if hit
+						point.vx = 0
+						point.vy = 0
+
+						# Project the point back to the surface of the ground.
+						# This is done by finding the closest point on the polygon's edges.
+						closest_distance = Infinity
+						closest_segment = null
+						point_in_hit_space = hit.fromWorld(@toWorld(point))
+						for segment_name, segment of hit.structure.segments
+							dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+							if dist < closest_distance
+								closest_distance = dist
+								closest_segment = segment
+						if closest_segment
+							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+							closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+							point.x = closest_point_local.x
+							point.y = closest_point_local.y
+
+						unless detachment[point_index]
+							point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
+					else
+						point.vy += 0.05 / iterations
+						# @structure.stepLayout({gravity: 0.005, collision})
+						# @structure.stepLayout() for [0..10]
+						# @structure.stepLayout({collision}) for [0..4]
+						point.x += point.vx
+						point.y += point.vy
 			
-			# angular constraint pivoting on this point
-			relative_angle = Math.sin(cycle) * Math.PI/5
-			prev_point = Object.values(@structure.points)[point_index-1]
-			next_point = Object.values(@structure.points)[point_index+1]
-			if prev_point and next_point
-				@constrain_angle(prev_point, next_point, point, relative_angle)
+				# angular constraint pivoting on this point
+				relative_angle = Math.sin(cycle_position) * Math.PI/5
+				prev_point = Object.values(@structure.points)[point_index-1]
+				next_point = Object.values(@structure.points)[point_index+1]
+				if prev_point and next_point
+					@constrain_angle(prev_point, next_point, point, relative_angle)
 
-			point_index += 1
-		
-		# constrain distances
-		for i in [0...4]
-			for segment_name, segment of @structure.segments
-				delta_x = segment.a.x - segment.b.x
-				delta_y = segment.a.y - segment.b.y
-				delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
-				diff = (delta_length - segment.length) / delta_length
-				if isFinite(diff)
-					segment.a.x -= delta_x * 0.5 * diff
-					segment.a.y -= delta_y * 0.5 * diff
-					segment.b.x += delta_x * 0.5 * diff
-					segment.b.y += delta_y * 0.5 * diff
-				else
-					console.warn("diff is not finite, for Caterpillar distance constraint")
+			# constrain segment distances
+			for [0..2]
+				for segment_name, segment of @structure.segments
+					delta_x = segment.a.x - segment.b.x
+					delta_y = segment.a.y - segment.b.y
+					delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
+					diff = (delta_length - segment.length) / delta_length
+					if isFinite(diff)
+						segment.a.x -= delta_x * 0.5 * diff
+						segment.a.y -= delta_y * 0.5 * diff
+						segment.b.x += delta_x * 0.5 * diff
+						segment.b.y += delta_y * 0.5 * diff
+					else
+						console.warn("diff is not finite, for Caterpillar segment distance constraint")
 
 	
 	constrain_angle: (point_a, point_b, pivot, relative_angle)->
@@ -192,8 +209,8 @@ module.exports = class Caterpillar extends Entity
 			ctx.save()
 			ctx.beginPath()
 			ctx.arc(point.x, point.y, point.radius, 0, TAU)
-			# ctx.fillStyle = if point.attachment then "lime" else color
-			ctx.fillStyle = color
+			ctx.fillStyle = if point.attachment then "lime" else color
+			# ctx.fillStyle = color
 			ctx.fill()
 			ctx.clip()
 			# highlight
