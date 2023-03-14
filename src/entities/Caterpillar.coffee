@@ -16,8 +16,8 @@ module.exports = class Caterpillar extends Entity
 	addEntityClass(@)
 	constructor: ->
 		super()
-		# relying on key order, so points must not be named with simple numbers
-		# as numeric keys are sorted before other keys
+		# relying on key order, so points & segments must not be named with simple numbers,
+		# since numeric keys are sorted before other keys
 		@structure.addPoint("head")
 		previous = "head"
 		for i in [1...10]
@@ -46,6 +46,7 @@ module.exports = class Caterpillar extends Entity
 
 	step: (world)->
 		points_list = Object.values(@structure.points)
+		segments_list = Object.values(@structure.segments)
 
 		# stop at end of the world
 		for point in points_list
@@ -74,16 +75,19 @@ module.exports = class Caterpillar extends Entity
 			if attachment_entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
+				# To smooth out kinks, adjust speed based on the distance to,
+				# not an adjacent point, which would be constrained to a particular distance,
+				# but the next adjacent point, which may be bunched up with the current point.
+				crawl_speed = 1
+				if point_index >= 2
+					distance_to_second_adjacent = Math.hypot(point.x - points_list[point_index-2].x, point.y - points_list[point_index-2].y)
+					distance_if_straight = segments_list[point_index-1].length + segments_list[point_index-2].length
+					crawl_speed -= 0.5 * Math.min(1, distance_to_second_adjacent / distance_if_straight)
 				# point.x = attachment_local.x
 				# point.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
 				for angle_offset in [TAU/3..-TAU/3] by -TAU/10
-					# To keep the head at the front, and smooth out kinks,
-					# slow down points towards the tail end.
-					# This is combined with a loosening of these constraints towards the tail end
-					# so the caterpillar doesn't stretch out too much.
-					crawl_speed = 1 - (point_index / points_list.length) * 0.5
 
 					test_point_world = {
 						x: attachment_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
@@ -120,8 +124,6 @@ module.exports = class Caterpillar extends Entity
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 								attachment_hit_space = {
-									# x: closest_point_in_hit_space.x + Math.cos(ground_angle) * point.radius
-									# y: closest_point_in_hit_space.y + Math.sin(ground_angle) * point.radius
 									x: closest_point_in_hit_space.x + normal.x * point.radius
 									y: closest_point_in_hit_space.y + normal.y * point.radius
 								}
@@ -195,11 +197,9 @@ module.exports = class Caterpillar extends Entity
 				if attachment_entity
 					attachment_world = attachment_entity.toWorld(point.attachment.point)
 					attachment_local = @fromWorld(attachment_world)
-					# point.x = attachment_local.x
-					# point.y = attachment_local.y
-					lerp_factor = 0.1 * (1 - (point_index / points_list.length) * 0.9)
-					point.x += (attachment_local.x - point.x) * lerp_factor
-					point.y += (attachment_local.y - point.y) * lerp_factor
+					fixity = 0.1
+					point.x += (attachment_local.x - point.x) * fixity
+					point.y += (attachment_local.y - point.y) * fixity
 			for segment_name, segment of @structure.segments
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
