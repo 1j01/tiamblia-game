@@ -201,3 +201,14 @@ module.exports = class Caterpillar extends Entity
 			ctx.fillStyle = "rgba(255, 255, 155, 0.5)"
 			ctx.fill()
 			ctx.restore()
+			# eye
+			if point_name is "head"
+				ctx.beginPath()
+				ctx.arc(point.x, point.y, point.radius/2, 0, TAU)
+				ctx.fillStyle = "black"
+				ctx.fill()
+				# highlight
+				ctx.beginPath()
+				ctx.arc(point.x + point.radius/6, point.y - point.radius/6, point.radius/5, 0, TAU)
+				ctx.fillStyle = "white"
+				ctx.fill()
