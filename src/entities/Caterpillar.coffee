@@ -150,8 +150,9 @@ module.exports = class Caterpillar extends Entity
 		angle_diff = (angle_a - angle_b) - relative_angle
 
 		# angle_diff *= 0.9
-		distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
-		angle_diff /= Math.max(4, distance/10)
+		# distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
+		distance = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y) + Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
+		angle_diff /= Math.max(1, (distance / 5) ** 2)
 
 		old_point_a = {x: point_a.x, y: point_a.y}
 		old_point_b = {x: point_b.x, y: point_b.y}
@@ -178,10 +179,10 @@ module.exports = class Caterpillar extends Entity
 		point_b.fy += (point_b.y - old_point_b.y) * f unless point_b.attachment
 
 		# Opposite force on pivot.
-		pivot.fx -= (point_a.x - old_point_a.x) * f unless pivot.attachment
-		pivot.fy -= (point_a.y - old_point_a.y) * f unless pivot.attachment
-		pivot.fx -= (point_b.x - old_point_b.x) * f unless pivot.attachment
-		pivot.fy -= (point_b.y - old_point_b.y) * f unless pivot.attachment
+		# pivot.fx -= (point_a.x - old_point_a.x) * f unless pivot.attachment
+		# pivot.fy -= (point_a.y - old_point_a.y) * f unless pivot.attachment
+		# pivot.fx -= (point_b.x - old_point_b.x) * f unless pivot.attachment
+		# pivot.fy -= (point_b.y - old_point_b.y) * f unless pivot.attachment
 
 		# Restore old position.
 		point_a.x = old_point_a.x
