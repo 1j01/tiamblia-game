@@ -154,9 +154,9 @@ module.exports = class Caterpillar extends Entity
 		angle_diff = (angle_a - angle_b) - relative_angle
 
 		# angle_diff *= 0.9
-		# distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
-		distance_a = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y)
-		distance_b = Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
+		distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
+		# distance_a = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y)
+		# distance_b = Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
 		# angle_diff /= Math.max(1, (distance / 5) ** 2.4)
 
 		old_point_a = {x: point_a.x, y: point_a.y}
@@ -176,8 +176,14 @@ module.exports = class Caterpillar extends Entity
 			point.y += pivot.y
 
 		f = 0.5
-		f_a = f / Math.max(1, distance_a)
-		f_b = f / Math.max(1, distance_b)
+		# using individual distances can cause spinning (overall angular momentum from nothing)
+		# f_a = f / Math.max(1, Math.max(0, distance_a - 3) ** 1)
+		# f_b = f / Math.max(1, Math.max(0, distance_b - 3) ** 1)
+		# using the combined distance conserves overall angular momentum,
+		# to say nothing of the physicality of the rest of this system
+		# but it's a clear difference in zero gravity
+		f_a = f / Math.max(1, Math.max(0, distance - 6) ** 1)
+		f_b = f / Math.max(1, Math.max(0, distance - 6) ** 1)
 
 		# Turn difference in position into velocity.
 		point_a.fx += (point_a.x - old_point_a.x) * f_a unless point_a.attachment
