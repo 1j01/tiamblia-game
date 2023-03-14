@@ -29,13 +29,12 @@ module.exports = class Caterpillar extends Entity
 				width: 4
 			)
 		
-		i = 0
-		for point_name, point of @structure.points
+		points_list = Object.values(@structure.points)
+		for point, point_index in points_list
 			point.vx = 0
 			point.vy = 0
 			point.attachment = null
-			point.radius = 5 - i*0.1
-			i += 1
+			point.radius = 5 - point_index*0.1
 		
 		@structure.points.head.radius = 7
 		
@@ -46,21 +45,22 @@ module.exports = class Caterpillar extends Entity
 			segment.b.x = segment.a.x + segment.length
 
 	step: (world)->
+		points_list = Object.values(@structure.points)
+
 		# stop at end of the world
-		for point_name, point of @structure.points
+		for point in points_list
 			if point.y > 400
 				return
 		
 		# move
 		collision = (point)=> world.collision(@toWorld(point))
-		point_index = 0
 		t = performance.now()/500
-		for point_name, point of @structure.points
+		for point in points_list
 			point.fx = 0
 			point.fy = 0
-		for point_name, point of @structure.points
+		for point, point_index in points_list
 			otherwise_attached = false
-			for other_point_name, other_point of @structure.points when other_point_name isnt point_name
+			for other_point in points_list when other_point isnt point
 				if other_point.attachment
 					otherwise_attached = true
 					break
@@ -109,21 +109,19 @@ module.exports = class Caterpillar extends Entity
 			
 			# angular constraint pivoting on this point
 			relative_angle = Math.sin(Math.sin(t)*Math.PI/4) * Math.PI/5
-			prev_point = Object.values(@structure.points)[point_index-1]
-			next_point = Object.values(@structure.points)[point_index+1]
+			prev_point = points_list[point_index-1]
+			next_point = points_list[point_index+1]
 			if prev_point and next_point
 				@accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle)
-
-			point_index += 1
 		
 		# apply forces
-		for point_name, point of @structure.points
+		for point in points_list
 			point.vx += point.fx
 			point.vy += point.fy
 
 		# constrain distances
 		for i in [0...4]
-			for point_name, point of @structure.points
+			for point, point_index in points_list
 				attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 				if attachment_entity
 					attachment_world = attachment_entity.toWorld(point.attachment.point)
@@ -207,7 +205,7 @@ module.exports = class Caterpillar extends Entity
 			ctx.lineCap = "round"
 			ctx.strokeStyle = color
 			ctx.stroke()
-		# for point_name, point of @structure.points
+		# for point, point_index in points_list
 		# reverse order to draw head on top
 		keys = Object.keys(@structure.points)
 		for i in [keys.length-1..0]
