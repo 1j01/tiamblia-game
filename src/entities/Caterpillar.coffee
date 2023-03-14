@@ -133,7 +133,7 @@ module.exports = class Caterpillar extends Entity
 						point.y = closest_point_local.y
 						unless lift_feet
 							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
-							point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point)), ground_angle}
+							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
 				else
 					point.vy += 0.05
 					point.vx *= 0.99
