@@ -118,6 +118,8 @@ module.exports = class Caterpillar extends Entity
 		for point in points_list
 			point.vx += point.fx
 			point.vy += point.fy
+			point.x += point.fx
+			point.y += point.fy
 
 		# constrain distances
 		for i in [0...4]
