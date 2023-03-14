@@ -159,7 +159,7 @@ module.exports = class Caterpillar extends Entity
 							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle, normal}
 				else
-					point.vy += 0.05
+					point.vy += 0.5
 					point.vx *= 0.99
 					point.vy *= 0.99
 					# @structure.stepLayout({gravity: 0.005, collision})
