@@ -63,17 +63,48 @@ module.exports = class Caterpillar extends Entity
 			for other_point in points_list when other_point isnt point
 				if other_point.attachment
 					otherwise_attached += 1
-			lift_feet = Math.sin(t + point_index/points_list.length*Math.PI) < 0 and otherwise_attached >= 2
-			if point_index > 3 and point_index < points_list.length - 3
-				lift_feet = true # don't let the middle of the caterpillar act as feet
-			if lift_feet
-				point.attachment = null
+			# lift_feet = Math.sin(t + point_index/points_list.length*Math.PI) < 0 and otherwise_attached >= 2
+			# if point_index > 3 and point_index < points_list.length - 3
+			# 	lift_feet = true # don't let the middle of the caterpillar act as feet
+			# if lift_feet
+			# 	point.attachment = null
+			lift_feet = false
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
 			if attachment_entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
 				point.x = attachment_local.x
 				point.y = attachment_local.y
+				# Move attachment point along the ground, using ground angle.
+				# Test multiple angles in order to wrap around corners.
+				for angle_offset in [-TAU/4..TAU/3] by TAU/10
+					crawl_speed = 1
+					test_point_world = {
+						x: attachment_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
+						y: attachment_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
+					}
+
+					hit = world.collision(test_point_world)
+					if hit
+						# Project the point back to the surface of the ground.
+						# This is done by finding the closest point on the polygon's edges.
+						closest_distance = Infinity
+						closest_segment = null
+						point_in_hit_space = hit.fromWorld(test_point_world)
+						for segment_name, segment of hit.structure.segments
+							dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+							if dist < closest_distance
+								closest_distance = dist
+								closest_segment = segment
+						if closest_segment
+							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+							closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+							point.x = closest_point_local.x
+							point.y = closest_point_local.y
+							unless lift_feet
+								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
+								point.attachment = {entity_id: hit.id, point: hit.fromWorld(test_point_world), ground_angle}
+
 			else
 				# point.x += point.vx
 				# point.y += point.vy
@@ -97,9 +128,9 @@ module.exports = class Caterpillar extends Entity
 						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
-
-					unless lift_feet
-						point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point))}
+						unless lift_feet
+							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
+							point.attachment = {entity_id: hit.id, point: hit.fromWorld(@toWorld(point)), ground_angle}
 				else
 					point.vy += 0.05
 					point.vx *= 0.99
