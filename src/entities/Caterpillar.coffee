@@ -56,6 +56,9 @@ module.exports = class Caterpillar extends Entity
 		point_index = 0
 		t = performance.now()/500
 		for point_name, point of @structure.points
+			point.fx = 0
+			point.fy = 0
+		for point_name, point of @structure.points
 			otherwise_attached = false
 			for other_point_name, other_point of @structure.points when other_point_name isnt point_name
 				if other_point.attachment
@@ -109,10 +112,15 @@ module.exports = class Caterpillar extends Entity
 			prev_point = Object.values(@structure.points)[point_index-1]
 			next_point = Object.values(@structure.points)[point_index+1]
 			if prev_point and next_point
-				@constrain_angle(prev_point, next_point, point, relative_angle)
+				@accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle)
 
 			point_index += 1
 		
+		# apply forces
+		for point_name, point of @structure.points
+			point.vx += point.fx
+			point.vy += point.fy
+
 		# constrain distances
 		for i in [0...4]
 			for point_name, point of @structure.points
@@ -136,7 +144,7 @@ module.exports = class Caterpillar extends Entity
 					console.warn("diff is not finite, for Caterpillar distance constraint")
 
 	
-	constrain_angle: (point_a, point_b, pivot, relative_angle)->
+	accumulate_angular_constraint_forces: (point_a, point_b, pivot, relative_angle)->
 		angle_a = Math.atan2(point_a.y - point_b.y, point_a.x - point_b.x)
 		angle_b = Math.atan2(pivot.y - point_b.y, pivot.x - point_b.x)
 		angle_diff = (angle_a - angle_b) - relative_angle
@@ -162,16 +170,16 @@ module.exports = class Caterpillar extends Entity
 		f = 0.3
 
 		# Turn difference in position into velocity.
-		point_a.vx += (point_a.x - old_point_a.x) * f unless point_a.attachment
-		point_a.vy += (point_a.y - old_point_a.y) * f unless point_a.attachment
-		point_b.vx += (point_b.x - old_point_b.x) * f unless point_b.attachment
-		point_b.vy += (point_b.y - old_point_b.y) * f unless point_b.attachment
+		point_a.fx += (point_a.x - old_point_a.x) * f unless point_a.attachment
+		point_a.fy += (point_a.y - old_point_a.y) * f unless point_a.attachment
+		point_b.fx += (point_b.x - old_point_b.x) * f unless point_b.attachment
+		point_b.fy += (point_b.y - old_point_b.y) * f unless point_b.attachment
 
 		# Opposite force on pivot.
-		pivot.vx -= (point_a.x - old_point_a.x) * f unless pivot.attachment
-		pivot.vy -= (point_a.y - old_point_a.y) * f unless pivot.attachment
-		pivot.vx -= (point_b.x - old_point_b.x) * f unless pivot.attachment
-		pivot.vy -= (point_b.y - old_point_b.y) * f unless pivot.attachment
+		pivot.fx -= (point_a.x - old_point_a.x) * f unless pivot.attachment
+		pivot.fy -= (point_a.y - old_point_a.y) * f unless pivot.attachment
+		pivot.fx -= (point_b.x - old_point_b.x) * f unless pivot.attachment
+		pivot.fy -= (point_b.y - old_point_b.y) * f unless pivot.attachment
 
 		# Restore old position.
 		point_a.x = old_point_a.x
