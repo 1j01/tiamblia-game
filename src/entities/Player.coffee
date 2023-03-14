@@ -139,6 +139,7 @@ module.exports = class Player extends SimpleActor
 		@real_facing_x = @facing_x = 1
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
+		@hair_initialized = false
 
 	step: (world, view, mouse)->
 		{sternum} = @structure.points
@@ -460,6 +461,7 @@ module.exports = class Player extends SimpleActor
 		air_friction = 0.2
 		water_friction = 0.2
 		hair_length = 30
+
 		for [0..hair_iterations]
 			for points in @hairs
 				for point in points
@@ -474,6 +476,11 @@ module.exports = class Player extends SimpleActor
 				points[0].y = head_global.y + Math.sin(a) * 3 + back_y
 				seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length
 				for i in [1...points.length]
+					if not @hair_initialized
+						points[i].x = points[i-1].x
+						points[i].y = points[i-1].y + seg_length
+						points[i].prev_x = points[i].x
+						points[i].prev_y = points[i].y
 					gravity = 0.5
 					submerged = world?.collision(points[i], types: (entity)=>
 						entity.constructor.name is "Water"
@@ -504,6 +511,8 @@ module.exports = class Player extends SimpleActor
 				for point in points
 					point.vx = point.x - point.prev_x
 					point.vy = point.y - point.prev_y
+
+			@hair_initialized = true
 	
 	draw: (ctx, view)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
@@ -523,8 +532,10 @@ module.exports = class Player extends SimpleActor
 		# 		head: ->
 		
 		# trailing hair
-		if view.is_preview
+		if view.is_preview or not @hair_initialized
 			@simulate_hair()
+			if not view.is_preview
+				@hair_initialized = false # so it will move when you drag the entity
 		for hair_points, hair_index in @hairs
 			ctx.beginPath()
 			# ctx.moveTo(hair_points[0].x, hair_points[0].y)
