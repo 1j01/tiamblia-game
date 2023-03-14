@@ -59,40 +59,81 @@ module.exports = class Caterpillar extends Entity
 				if ground
 					point.vx = 0
 					point.vy = 0
-					point.attachment = {entity_id: ground.id, point: ground.fromWorld(@fromWorld(point))}
+					point.attachment = {entity_id: ground.id, point: ground.fromWorld(@toWorld(point))}
 				else
-					# point.vy += 0.5
-					@structure.stepLayout({gravity: 0.005, collision})
+					point.vy += 0.5
+					# @structure.stepLayout({gravity: 0.005, collision})
 					# @structure.stepLayout() for [0..10]
 					# @structure.stepLayout({collision}) for [0..4]
+					point.x += point.vx
+					point.y += point.vy
 					
 					# angular constraint pivoting on this point
-					relative_angle = Math.sin(performance.now()/1000) * Math.PI/10
+					relative_angle = Math.sin(performance.now()/500 + point_index/3) * Math.PI/10
 					prev_point = Object.values(@structure.points)[point_index-1]
 					next_point = Object.values(@structure.points)[point_index+1]
 					if prev_point and next_point
 						@constrain_angle(prev_point, next_point, point, relative_angle)
 
 			point_index += 1
+		
+		# constrain distances
+		for segment_name, segment of @structure.segments
+			delta_x = segment.a.x - segment.b.x
+			delta_y = segment.a.y - segment.b.y
+			delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
+			diff = (delta_length - segment.length) / delta_length
+			if isFinite(diff)
+				segment.a.x -= delta_x * 0.5 * diff
+				segment.a.y -= delta_y * 0.5 * diff
+				segment.b.x += delta_x * 0.5 * diff
+				segment.b.y += delta_y * 0.5 * diff
+			else
+				console.warn("diff is not finite, for Caterpillar distance constraint")
+
 	
 	constrain_angle: (point_a, point_b, pivot, relative_angle)->
 		angle_a = Math.atan2(point_a.y - point_b.y, point_a.x - point_b.x)
 		angle_b = Math.atan2(pivot.y - point_b.y, pivot.x - point_b.x)
 		angle_diff = (angle_a - angle_b) - relative_angle
 
-		angle_diff *= 0.1
+		# angle_diff *= 0.9
+
+		old_point_a = {x: point_a.x, y: point_a.y}
+		old_point_b = {x: point_b.x, y: point_b.y}
 
 		# Rotate around pivot.
 		rot_matrix = [[Math.cos(angle_diff), Math.sin(angle_diff)], [-Math.sin(angle_diff), Math.cos(angle_diff)]]
+		rot_matrix_inverse = [[Math.cos(-angle_diff), Math.sin(-angle_diff)], [-Math.sin(-angle_diff), Math.cos(-angle_diff)]]
 		for point in [point_a, point_b]
 			# Translate and rotate.
 			[point.x, point.y] = [point.x, point.y].map((value, index) =>
-				rot_matrix[index][0] * (point.x - pivot.x) +
-				rot_matrix[index][1] * (point.y - pivot.y)
+				(if point is point_a then rot_matrix else rot_matrix_inverse)[index][0] * (point.x - pivot.x) +
+				(if point is point_a then rot_matrix else rot_matrix_inverse)[index][1] * (point.y - pivot.y)
 			)
 			# Translate back.
 			point.x += pivot.x
 			point.y += pivot.y
+
+		f = 0.1
+
+		# Turn difference in position into velocity.
+		point_a.vx += (point_a.x - old_point_a.x) * f
+		point_a.vy += (point_a.y - old_point_a.y) * f
+		point_b.vx += (point_b.x - old_point_b.x) * f
+		point_b.vy += (point_b.y - old_point_b.y) * f
+
+		# Opposite force on pivot.
+		pivot.vx -= (point_a.x - old_point_a.x) * f
+		pivot.vy -= (point_a.y - old_point_a.y) * f
+		pivot.vx -= (point_b.x - old_point_b.x) * f
+		pivot.vy -= (point_b.y - old_point_b.y) * f
+
+		# Restore old position.
+		point_a.x = old_point_a.x
+		point_a.y = old_point_a.y
+		point_b.x = old_point_b.x
+		point_b.y = old_point_b.y
 
 	draw: (ctx)->
 		color = "green"
