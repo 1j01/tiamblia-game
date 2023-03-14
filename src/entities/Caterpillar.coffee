@@ -76,11 +76,18 @@ module.exports = class Caterpillar extends Entity
 				attachment_world = attachment_entity.toWorld(point.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
 				crawl_speed = 0 + 2 * (otherwise_attached > 4) # also affected by fixity parameter
+				# Reverse crawl direction if point.attachment.ground_angle points head-to-tail
+				# (or more specifically, along the head-to-second-point vector)
+				head_heading = Math.atan2(points_list[0].y - points_list[1].y, points_list[0].x - points_list[1].x)
+				if Math.cos(point.attachment.ground_angle - head_heading) < 0
+					crawl_speed *= -1
+
 				# point.x = attachment_local.x
 				# point.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
-				for angle_offset in [TAU/3..-TAU/3] by -TAU/10
+				for angle_offset in [TAU/5..-TAU/5] by -TAU/15
+				# for angle_offset in [TAU/3..-TAU/3] by -TAU/10
 					part_in_world = @toWorld(point)
 					test_point_world = {
 						x: part_in_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
