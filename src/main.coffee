@@ -106,6 +106,19 @@ window.do_a_redraw = redraw
 
 gamepad_start_prev = false
 
+sink_hole_effect = ->
+	sink_hole_width = 100
+	sink_hole_x = 0
+	for entity in world.entities
+		for point_name, point of entity.structure.points
+			x_from_center = point.x + entity.x - sink_hole_x
+			if Math.abs(x_from_center) < sink_hole_width
+				console.log "sink_hole_effect", point.x, point.y
+				point.x -= x_from_center / sink_hole_width * 2
+				point.y += 2
+		entity.structure.signalChange?()
+
+
 do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
@@ -153,6 +166,8 @@ do animate = ->
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world, view, mouse)
 		
+		sink_hole_effect()
+
 		# TODO: allow margin of offcenteredness
 		player = world.getEntitiesOfType(Player)[0]
 		if player
