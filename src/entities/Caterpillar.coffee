@@ -151,8 +151,9 @@ module.exports = class Caterpillar extends Entity
 
 		# angle_diff *= 0.9
 		# distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
-		distance = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y) + Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
-		angle_diff /= Math.max(1, (distance / 5) ** 2)
+		distance_a = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y)
+		distance_b = Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
+		# angle_diff /= Math.max(1, (distance / 5) ** 2.4)
 
 		old_point_a = {x: point_a.x, y: point_a.y}
 		old_point_b = {x: point_b.x, y: point_b.y}
@@ -170,19 +171,21 @@ module.exports = class Caterpillar extends Entity
 			point.x += pivot.x
 			point.y += pivot.y
 
-		f = 0.3
+		f = 0.5
+		f_a = f / Math.max(1, distance_a)
+		f_b = f / Math.max(1, distance_b)
 
 		# Turn difference in position into velocity.
-		point_a.fx += (point_a.x - old_point_a.x) * f unless point_a.attachment
-		point_a.fy += (point_a.y - old_point_a.y) * f unless point_a.attachment
-		point_b.fx += (point_b.x - old_point_b.x) * f unless point_b.attachment
-		point_b.fy += (point_b.y - old_point_b.y) * f unless point_b.attachment
+		point_a.fx += (point_a.x - old_point_a.x) * f_a unless point_a.attachment
+		point_a.fy += (point_a.y - old_point_a.y) * f_a unless point_a.attachment
+		point_b.fx += (point_b.x - old_point_b.x) * f_b unless point_b.attachment
+		point_b.fy += (point_b.y - old_point_b.y) * f_b unless point_b.attachment
 
 		# Opposite force on pivot.
-		# pivot.fx -= (point_a.x - old_point_a.x) * f unless pivot.attachment
-		# pivot.fy -= (point_a.y - old_point_a.y) * f unless pivot.attachment
-		# pivot.fx -= (point_b.x - old_point_b.x) * f unless pivot.attachment
-		# pivot.fy -= (point_b.y - old_point_b.y) * f unless pivot.attachment
+		pivot.fx -= (point_a.x - old_point_a.x) * f_a unless pivot.attachment
+		pivot.fy -= (point_a.y - old_point_a.y) * f_a unless pivot.attachment
+		pivot.fx -= (point_b.x - old_point_b.x) * f_b unless pivot.attachment
+		pivot.fy -= (point_b.y - old_point_b.y) * f_b unless pivot.attachment
 
 		# Restore old position.
 		point_a.x = old_point_a.x
