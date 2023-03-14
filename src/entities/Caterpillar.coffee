@@ -79,7 +79,12 @@ module.exports = class Caterpillar extends Entity
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
 				for angle_offset in [TAU/3..-TAU/3] by -TAU/10
-					crawl_speed = 1
+					# To keep the head at the front, and smooth out kinks,
+					# slow down points towards the tail end.
+					# This is combined with a loosening of these constraints towards the tail end
+					# so the caterpillar doesn't stretch out too much.
+					crawl_speed = 1 - (point_index / points_list.length) * 0.5
+
 					test_point_world = {
 						x: attachment_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
 						y: attachment_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
@@ -192,8 +197,9 @@ module.exports = class Caterpillar extends Entity
 					attachment_local = @fromWorld(attachment_world)
 					# point.x = attachment_local.x
 					# point.y = attachment_local.y
-					point.x += (attachment_local.x - point.x) * 0.1
-					point.y += (attachment_local.y - point.y) * 0.1
+					lerp_factor = 0.1 * (1 - (point_index / points_list.length) * 0.9)
+					point.x += (attachment_local.x - point.x) * lerp_factor
+					point.y += (attachment_local.y - point.y) * lerp_factor
 			for segment_name, segment of @structure.segments
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
