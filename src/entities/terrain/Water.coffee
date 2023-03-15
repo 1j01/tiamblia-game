@@ -50,8 +50,10 @@ module.exports = class Water extends Terrain
 			@bubbles.push({
 				x: local_pos.x + Math.cos(angle) * radius
 				y: local_pos.y + Math.sin(angle) * radius
-				radius: Math.random() * 5 + 2
-				life: Math.random() * 20 + 10
+				vx: Math.cos(angle) * (1 * Math.random())
+				vy: Math.sin(angle) * (1 * Math.random())
+				radius: Math.random() * 2 + 2
+				life: Math.random() * 100 + 10
 			})
 
 	step: ->
@@ -66,6 +68,9 @@ module.exports = class Water extends Terrain
 		
 		for bubble in @bubbles by -1
 			bubble.life -= 1
+			bubble.x += bubble.vx
+			bubble.y += bubble.vy
+			bubble.vy += .1 * Math.sign(bubble.y - @waves_y[Math.round(bubble.x) - @min_x] + @min_y)
 			if bubble.life <= 0
 				@bubbles.splice(@bubbles.indexOf(bubble), 1)
 
@@ -105,15 +110,15 @@ module.exports = class Water extends Terrain
 		# Draw bubbles
 		for bubble in @bubbles
 			ctx.save()
-			# ctx.translate(bubble.x, bubble.y)
-			ctx.translate(bubble.x, wave_center_y + 2)
-			# ctx.scale(1, (@waves_y[Math.round(bubble.x - @min_x)] ? 1) / 3)
+			ctx.translate(bubble.x, bubble.y)
+			# ctx.translate(bubble.x, wave_center_y + 2)
 			ctx.beginPath()
 			ctx.arc(0, 0, bubble.radius, 0, Math.PI * 2)
-			ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
-			ctx.lineWidth = 3
-			# ctx.lineWidth = (@waves_y[Math.round(bubble.x - @min_x)] ? 1) * 5
-			ctx.stroke()
+			# ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
+			# ctx.lineWidth = 1
+			# ctx.stroke()
+			ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
+			ctx.fill()
 			ctx.restore()
 
 		# Draw reflections by drawing the canvas upside down on top of itself
