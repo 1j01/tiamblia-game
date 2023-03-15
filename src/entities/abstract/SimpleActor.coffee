@@ -108,8 +108,12 @@ module.exports = class SimpleActor extends Entity
 			go = Math.sign(move_y) * resolution
 			if world.collision({@x, y: @y + go + @height})
 				if @constructor.name is "Player"
-					@landing_momentum = Math.max(@landing_momentum, @vy)
-					# console.log "landing_momentum", @landing_momentum, "vy", @vy
+					# 1 is the granularity of the stepping code here.
+					# If gravity is 0.5, vy may accumulate to 1 before moving,
+					# so we can't use gravity as the threshold.
+					if @vy > 1
+						@landing_momentum = Math.max(@landing_momentum, @vy)
+						# console.log "landing_momentum", @landing_momentum, "vy", @vy
 				@vy = 0
 				@grounded = yes
 				break
