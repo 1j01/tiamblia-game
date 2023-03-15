@@ -96,9 +96,10 @@ module.exports = class Caterpillar extends Entity
 						y: part_in_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
 					}
 					# search towards the ground, in the direction it was last found
+					leg_length = point.radius + 2 # WET
 					if point.attachment.normal
-						test_point_world.x -= point.attachment.normal.x * point.radius
-						test_point_world.y -= point.attachment.normal.y * point.radius
+						test_point_world.x -= point.attachment.normal.x * leg_length
+						test_point_world.y -= point.attachment.normal.y * leg_length
 
 					hit = world.collision(test_point_world, types: (entity)=>
 						entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
@@ -128,8 +129,8 @@ module.exports = class Caterpillar extends Entity
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 								attachment_hit_space = {
-									x: closest_point_in_hit_space.x + normal.x * point.radius
-									y: closest_point_in_hit_space.y + normal.y * point.radius
+									x: closest_point_in_hit_space.x + normal.x * leg_length
+									y: closest_point_in_hit_space.y + normal.y * leg_length
 								}
 								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle, normal}
 							break
@@ -344,7 +345,7 @@ module.exports = class Caterpillar extends Entity
 				point.smoothed_normal ?= {x: 0, y: 0}
 				point.smoothed_normal.x += ((point.attachment?.normal?.x ? 0) - point.smoothed_normal.x) * 0.1
 				point.smoothed_normal.y += ((point.attachment?.normal?.y ? 0) - point.smoothed_normal.y) * 0.1
-				leg_length = point.radius + 2
+				leg_length = point.radius + 2 # WET
 				ctx.save()
 				ctx.translate(point.x, point.y)
 				ctx.rotate(Math.sin(performance.now() / 80 + i) * 0.1)
