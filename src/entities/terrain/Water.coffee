@@ -49,10 +49,11 @@ module.exports = class Water extends Terrain
 			angle = Math.random() * Math.PI * 2
 			@bubbles.push({
 				x: local_pos.x + Math.cos(angle) * radius
-				y: local_pos.y + Math.sin(angle) * radius
+				# y: local_pos.y + Math.sin(angle) * radius
+				y: (@waves_vy[Math.round(local_pos.x) - @min_x] ? 0) + @min_y
 				vx: Math.cos(angle) * (1 * Math.random())
-				vy: Math.sin(angle) * (1 * Math.random())
-				radius: Math.random() * 2 + 2
+				vy: Math.sin(angle) * (1 * Math.random()) + Math.min(10, Math.abs(velocity_y/3))
+				radius: Math.random() * 2 #(2 + Math.min(2, Math.abs(velocity_y/3)))
 				life: Math.random() * 100 + 10
 			})
 
@@ -70,8 +71,19 @@ module.exports = class Water extends Terrain
 			bubble.life -= 1
 			bubble.x += bubble.vx
 			bubble.y += bubble.vy
-			# bubble.vy += .1 * Math.sign(bubble.y - @waves_y[Math.round(bubble.x) - @min_x] + @min_y)
-			bubble.y = @waves_y[Math.round(bubble.x) - @min_x] + @min_y
+			waves_x = Math.round(bubble.x) - @min_x
+			if @waves_y[waves_x]?
+				# bubble.vy -= ./1 * Math.sign(bubble.y - (@waves_y[waves_x] + @min_y))
+				# bubble.y = @waves_y[waves_x] + @min_y
+				# bubble.y += (@waves_y[waves_x] + @min_y - bubble.y) * 0.1
+				bubble.vy += (@waves_vy[waves_x] ? 0) * 0.1
+				bubble.vy -= 0.3
+				bubble.vy += (Math.max(bubble.y, @waves_y[waves_x] + @min_y) - bubble.y) * 0.4
+				bubble.y = Math.max(bubble.y, @waves_y[waves_x] + @min_y)
+			else
+				bubble.life -= 2
+				bubble.vx *= 0.5
+				bubble.vy *= 0.5
 			if bubble.life <= 0
 				@bubbles.splice(@bubbles.indexOf(bubble), 1)
 
