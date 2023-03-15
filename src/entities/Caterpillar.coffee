@@ -190,6 +190,26 @@ module.exports = class Caterpillar extends Entity
 			point.x += point.fx
 			point.y += point.fy
 
+		# Interact with water
+		for point in points_list
+			water = world.collision(@toWorld(point), types: (entity)=>
+				entity.constructor.name is "Water"
+			)
+			too_far_under_water = water and world.collision(@toWorld({x: point.x, y: point.y - 5}), types: (entity)=>
+				entity.constructor.name is "Water"
+			)
+			if water and not too_far_under_water
+				# Make ripples in water
+				water.makeWaves(@toWorld(point), 2, point.vy)
+				# Skip off water (as if this will ever matter)
+				if 4 > point.vy > 2 and Math.abs(point.vx) > 0.4
+					point.vy *= -0.3
+			# Slow down in water, and buoy
+			if water
+				point.vx -= point.vx * 0.1
+				point.vy -= point.vy * 0.1
+				point.vy -= 0.45
+
 		# constrain distances
 		for i in [0...4]
 			for point, point_index in points_list
