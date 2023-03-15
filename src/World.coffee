@@ -89,7 +89,7 @@ module.exports = class World
 				n_saved_states--
 				_restore.apply(this, arguments)
 			try
-				entity.draw(ctx, view)
+				entity.draw(ctx, view, @)
 			catch error
 				console.error "Error drawing entity #{entity.constructor.name} #{entity.id}:", error
 				while n_saved_states

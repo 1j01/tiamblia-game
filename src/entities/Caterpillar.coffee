@@ -319,7 +319,7 @@ module.exports = class Caterpillar extends Entity
 		point_b.x = old_point_b.x
 		point_b.y = old_point_b.y
 
-	draw: (ctx)->
+	draw: (ctx, view, world)->
 		color = "green"
 		for segment_name, segment of @structure.segments
 			ctx.beginPath()
@@ -380,3 +380,17 @@ module.exports = class Caterpillar extends Entity
 				ctx.arc(point.x + point.radius/6, point.y - point.radius/6, point.radius/5, 0, TAU)
 				ctx.fillStyle = "white"
 				ctx.fill()
+			
+			if window.debug_mode
+				# draw line from point to attachment
+				if point.attachment
+					entity = world.getEntityByID(point.attachment.entity_id)
+					attachment_local = @fromWorld(entity.toWorld(point.attachment.point))
+					ctx.beginPath()
+					ctx.moveTo(point.x, point.y)
+					ctx.lineTo(attachment_local.x, attachment_local.y)
+					ctx.lineWidth = 1
+					ctx.lineCap = "round"
+					ctx.strokeStyle = "red"
+					ctx.stroke()
+
