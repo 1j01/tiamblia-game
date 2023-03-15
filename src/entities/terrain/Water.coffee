@@ -70,7 +70,8 @@ module.exports = class Water extends Terrain
 			bubble.life -= 1
 			bubble.x += bubble.vx
 			bubble.y += bubble.vy
-			bubble.vy += .1 * Math.sign(bubble.y - @waves_y[Math.round(bubble.x) - @min_x] + @min_y)
+			# bubble.vy += .1 * Math.sign(bubble.y - @waves_y[Math.round(bubble.x) - @min_x] + @min_y)
+			bubble.y = @waves_y[Math.round(bubble.x) - @min_x] + @min_y
 			if bubble.life <= 0
 				@bubbles.splice(@bubbles.indexOf(bubble), 1)
 
