@@ -39,11 +39,13 @@ module.exports = class Water extends Terrain
 			for segment_name, segment of @structure.segments
 				double_area += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y)
 			@ccw = double_area > 0
+		@ripples = []
 	
 	makeWaves: (world_pos, radius=5, velocity_y=5)->
 		local_pos = @fromWorld(world_pos)
 		for x in [Math.round(local_pos.x - radius)...Math.round(local_pos.x + radius)]
 			@waves_vy[x - @min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius)
+		@ripples.push({x: local_pos.x, y: local_pos.y, radius: radius})
 
 	step: ->
 		neighboring = []
@@ -54,6 +56,11 @@ module.exports = class Water extends Terrain
 			@waves_vy[x - @min_x] *= 0.99
 			@waves_vy[x - @min_x] -= @waves_y[x - @min_x] * 0.2
 			@waves_y[x - @min_x] += @waves_vy[x - @min_x]
+		
+		for ripple in @ripples by -1
+			ripple.radius += 1
+			if ripple.radius > 20
+				@ripples.splice(@ripples.indexOf(ripple), 1)
 
 	draw: (ctx, view)->
 		wave_center_y = @min_y
@@ -87,6 +94,21 @@ module.exports = class Water extends Terrain
 		# For debugging, disable ctx.clip() and uncomment this to escape the other clip:
 		# ctx.restore()
 		# ctx.save()
+
+		# Draw ripples
+		for ripple in @ripples
+			ctx.save()
+			# ctx.translate(ripple.x, ripple.y)
+			ctx.translate(ripple.x, wave_center_y + 2)
+			ctx.scale(1, 1/3)
+			# ctx.scale(1, (@waves_y[Math.round(ripple.x - @min_x)] ? 1) / 3)
+			ctx.beginPath()
+			ctx.arc(0, 0, ripple.radius, 0, Math.PI * 2)
+			ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
+			ctx.lineWidth = 3
+			# ctx.lineWidth = (@waves_y[Math.round(ripple.x - @min_x)] ? 1) * 5
+			ctx.stroke()
+			ctx.restore()
 
 		# Draw reflections by drawing the canvas upside down on top of itself
 
