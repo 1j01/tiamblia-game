@@ -107,20 +107,6 @@ module.exports = class Water extends Terrain
 		# ctx.restore()
 		# ctx.save()
 
-		# Draw bubbles
-		for bubble in @bubbles
-			ctx.save()
-			ctx.translate(bubble.x, bubble.y)
-			# ctx.translate(bubble.x, wave_center_y + 2)
-			ctx.beginPath()
-			ctx.arc(0, 0, bubble.radius, 0, Math.PI * 2)
-			# ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
-			# ctx.lineWidth = 1
-			# ctx.stroke()
-			ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
-			ctx.fill()
-			ctx.restore()
-
 		# Draw reflections by drawing the canvas upside down on top of itself
 
 		# Undo the entity space transform
@@ -167,3 +153,20 @@ module.exports = class Water extends Terrain
 		# cropping it to the normal viewport size.
 
 		ctx.restore()
+
+		@draw_bubbles(ctx, view)
+	
+	draw_bubbles: (ctx, view)->
+		for bubble in @bubbles
+			ctx.save()
+			ctx.translate(bubble.x, bubble.y)
+			# ctx.translate(bubble.x, wave_center_y + 2)
+			ctx.beginPath()
+			ctx.arc(0, 0, bubble.radius, 0, Math.PI * 2)
+			# ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
+			# ctx.lineWidth = 1
+			# ctx.stroke()
+			ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
+			ctx.fill()
+			ctx.restore()
+
