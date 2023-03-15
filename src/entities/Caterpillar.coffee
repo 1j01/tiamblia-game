@@ -147,7 +147,10 @@ module.exports = class Caterpillar extends Entity
 							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
 							closest_point_world = hit.toWorld(closest_point_in_hit_space)
 							closest_point_local = @fromWorld(closest_point_world)
-							normal = {x: closest_point_world.x - test_point_world.x, y: closest_point_world.y - test_point_world.y}
+							# Note: this is the OPPOSITE of the other normal calculation,
+							# because here we're searching towards the ground, whereas
+							# in the other case, the point is inside the ground and needs to come out.
+							normal = {x: part_in_world.x - closest_point_world.x, y: part_in_world.y - closest_point_world.y}
 							normal_length = Math.hypot(normal.x, normal.y)
 							normal.x /= normal_length
 							normal.y /= normal_length
