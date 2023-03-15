@@ -39,13 +39,20 @@ module.exports = class Water extends Terrain
 			for segment_name, segment of @structure.segments
 				double_area += (segment.b.x - segment.a.x) * (segment.b.y + segment.a.y)
 			@ccw = double_area > 0
-		@ripples = []
+		@bubbles = []
 	
 	makeWaves: (world_pos, radius=5, velocity_y=5)->
 		local_pos = @fromWorld(world_pos)
 		for x in [Math.round(local_pos.x - radius)...Math.round(local_pos.x + radius)]
 			@waves_vy[x - @min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius)
-		@ripples.push({x: local_pos.x, y: local_pos.y, radius: radius})
+		for [0..Math.min(20, radius*Math.abs(velocity_y))]
+			angle = Math.random() * Math.PI * 2
+			@bubbles.push({
+				x: local_pos.x + Math.cos(angle) * radius
+				y: local_pos.y + Math.sin(angle) * radius
+				radius: Math.random() * 5 + 2
+				life: Math.random() * 20 + 10
+			})
 
 	step: ->
 		neighboring = []
@@ -57,10 +64,10 @@ module.exports = class Water extends Terrain
 			@waves_vy[x - @min_x] -= @waves_y[x - @min_x] * 0.2
 			@waves_y[x - @min_x] += @waves_vy[x - @min_x]
 		
-		for ripple in @ripples by -1
-			ripple.radius += 1
-			if ripple.radius > 20
-				@ripples.splice(@ripples.indexOf(ripple), 1)
+		for bubble in @bubbles by -1
+			bubble.life -= 1
+			if bubble.life <= 0
+				@bubbles.splice(@bubbles.indexOf(bubble), 1)
 
 	draw: (ctx, view)->
 		wave_center_y = @min_y
@@ -95,18 +102,17 @@ module.exports = class Water extends Terrain
 		# ctx.restore()
 		# ctx.save()
 
-		# Draw ripples
-		for ripple in @ripples
+		# Draw bubbles
+		for bubble in @bubbles
 			ctx.save()
-			# ctx.translate(ripple.x, ripple.y)
-			ctx.translate(ripple.x, wave_center_y + 2)
-			ctx.scale(1, 1/3)
-			# ctx.scale(1, (@waves_y[Math.round(ripple.x - @min_x)] ? 1) / 3)
+			# ctx.translate(bubble.x, bubble.y)
+			ctx.translate(bubble.x, wave_center_y + 2)
+			# ctx.scale(1, (@waves_y[Math.round(bubble.x - @min_x)] ? 1) / 3)
 			ctx.beginPath()
-			ctx.arc(0, 0, ripple.radius, 0, Math.PI * 2)
+			ctx.arc(0, 0, bubble.radius, 0, Math.PI * 2)
 			ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"
 			ctx.lineWidth = 3
-			# ctx.lineWidth = (@waves_y[Math.round(ripple.x - @min_x)] ? 1) * 5
+			# ctx.lineWidth = (@waves_y[Math.round(bubble.x - @min_x)] ? 1) * 5
 			ctx.stroke()
 			ctx.restore()
 
