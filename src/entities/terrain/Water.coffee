@@ -1,5 +1,15 @@
 Terrain = require("../abstract/Terrain.coffee")
 {addEntityClass} = require("skele2d")
+{distanceToLineSegment} = require("skele2d").helpers
+
+closestPointOnLineSegment = (point, a, b)->
+	# https://stackoverflow.com/a/3122532/2624876
+	a_to_p = {x: point.x - a.x, y: point.y - a.y}
+	a_to_b = {x: b.x - a.x, y: b.y - a.y}
+	atb2 = a_to_b.x**2 + a_to_b.y**2
+	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
+	t = atp_dot_atb / atb2
+	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
 
 module.exports = class Water extends Terrain
 	addEntityClass(@)
@@ -80,10 +90,37 @@ module.exports = class Water extends Terrain
 				bubble.vy -= 0.3
 				bubble.vy += (Math.max(bubble.y, @waves_y[waves_x] + @min_y) - bubble.y) * 0.4
 				bubble.y = Math.max(bubble.y, @waves_y[waves_x] + @min_y)
+				# Note: the below code to constrain the bubble to the polygon
+				# ALSO constrains y similarly to the above line.
+				# If I want to allow the bubbles to go above the waves,
+				# I could probably tweak the below constraint to just not constrain y
+				# when the bubble is above the polygon.
 			else
 				bubble.life -= 2
 				bubble.vx *= 0.5
 				bubble.vy *= 0.5
+			
+			# constrain to polygon, taking into account dynamic waves
+			if not @structure.pointInPolygon(bubble)
+				if not @structure.pointInPolygon({x: bubble.x, y: bubble.y + (@waves_y[waves_x] ? 0)})
+					closest_distance = Infinity
+					closest_segment = null
+					for segment_name, segment of @structure.segments
+						dist = distanceToLineSegment(bubble, segment.a, segment.b)
+						if dist < closest_distance
+							closest_distance = dist
+							closest_segment = segment
+					if closest_segment
+						closest_point = closestPointOnLineSegment(bubble, closest_segment.a, closest_segment.b)
+						bubble.x = closest_point.x
+						if bubble.y < @min_y
+							closest_point.y += (@waves_y[waves_x] ? 0)
+							closest_point.y = Math.max(closest_point.y, bubble.y)
+						bubble.y = closest_point.y
+
+			# pop bubble (unfortunately, this doesn't use pop())
+			# (haha it could if I sorted the bubbles by life)
+			# (but that would obviously be worthless, and only confuse the code)
 			if bubble.life <= 0
 				@bubbles.splice(@bubbles.indexOf(bubble), 1)
 
