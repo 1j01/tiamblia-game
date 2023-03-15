@@ -112,7 +112,7 @@ module.exports = class Caterpillar extends Entity
 						point_in_hit_space = hit.fromWorld(test_point_world)
 						for segment_name, segment of hit.structure.segments
 							dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
-							if dist < closest_distance
+							if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
 								closest_distance = dist
 								closest_segment = segment
 						if closest_segment
@@ -123,11 +123,17 @@ module.exports = class Caterpillar extends Entity
 							normal_length = Math.hypot(normal.x, normal.y)
 							normal.x /= normal_length
 							normal.y /= normal_length
+							unless isFinite(normal.x) and isFinite(normal.y)
+								console.warn("NaN in normal")
+								normal = {x: 0, y: 0}
 
 							# point.x = closest_point_local.x
 							# point.y = closest_point_local.y
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
+								if isNaN(ground_angle)
+									console.warn("ground_angle is NaN")
+									ground_angle = 0
 								attachment_hit_space = {
 									x: closest_point_in_hit_space.x + normal.x * leg_length
 									y: closest_point_in_hit_space.y + normal.y * leg_length
@@ -153,7 +159,7 @@ module.exports = class Caterpillar extends Entity
 					point_in_hit_space = hit.fromWorld(point_world)
 					for segment_name, segment of hit.structure.segments
 						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
-						if dist < closest_distance
+						if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
 							closest_distance = dist
 							closest_segment = segment
 					if closest_segment
@@ -164,11 +170,17 @@ module.exports = class Caterpillar extends Entity
 						normal_length = Math.hypot(normal.x, normal.y)
 						normal.x /= normal_length
 						normal.y /= normal_length
+						unless isFinite(normal.x) and isFinite(normal.y)
+							console.warn("NaN in normal")
+							normal = {x: 0, y: 0}
 
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
 						unless lift_feet
 							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
+							if isNaN(ground_angle)
+								console.warn("ground_angle is NaN")
+								ground_angle = 0
 							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle, normal}
 				else
 					point.vy += 0.5
