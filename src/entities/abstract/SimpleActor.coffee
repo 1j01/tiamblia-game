@@ -46,6 +46,7 @@ module.exports = class SimpleActor extends Entity
 	step: (world)->
 		return if @y > 400
 		
+		# TODO: Boolean, not for @submerged though; that I could rename @water or something
 		@grounded = world.collision({@x, y: @y + 1 + @height}) #or world.collision({@x, y: @y + @vy + @height}) or world.collision({@x, y: @y + 4 + @height})
 		@submerged = world.collision({@x, y: @y + @height * 0.9}, types: (entity)=>
 			entity.constructor.name is "Water"
