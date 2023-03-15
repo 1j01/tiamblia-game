@@ -54,7 +54,9 @@ module.exports = class Caterpillar extends Entity
 				return
 		
 		# move
-		collision = (point)=> world.collision(@toWorld(point))
+		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
+			entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
+		)
 		t = performance.now()/1000
 		for point in points_list
 			point.fx = 0
@@ -98,7 +100,9 @@ module.exports = class Caterpillar extends Entity
 						test_point_world.x -= point.attachment.normal.x * point.radius
 						test_point_world.y -= point.attachment.normal.y * point.radius
 
-					hit = world.collision(test_point_world)
+					hit = world.collision(test_point_world, types: (entity)=>
+						entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
+					)
 					if hit
 						# Project the point back to the surface of the ground.
 						# This is done by finding the closest point on the polygon's edges.
