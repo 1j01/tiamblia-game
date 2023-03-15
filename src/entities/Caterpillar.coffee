@@ -71,6 +71,7 @@ module.exports = class Caterpillar extends Entity
 			# 	lift_feet = true # don't let the middle of the caterpillar act as feet
 			dist_to_previous = if point_index > 0 then Math.hypot(point.x - points_list[point_index-1].x, point.y - points_list[point_index-1].y) else 0
 			lift_feet = dist_to_previous > 10
+			lift_feet = true if point_index is 0 # head doesn't have feet
 			if lift_feet
 				point.attachment = null
 			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
