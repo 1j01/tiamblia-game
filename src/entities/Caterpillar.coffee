@@ -440,4 +440,13 @@ module.exports = class Caterpillar extends Entity
 					ctx.lineCap = "round"
 					ctx.strokeStyle = "red"
 					ctx.stroke()
+				# draw normal
+				if point.away_from_ground
+					ctx.beginPath()
+					ctx.moveTo(point.x, point.y)
+					ctx.lineTo(point.x + point.away_from_ground.x * 10, point.y + point.away_from_ground.y * 10)
+					ctx.lineWidth = 1
+					ctx.lineCap = "round"
+					ctx.strokeStyle = "lime"
+					ctx.stroke()
 
