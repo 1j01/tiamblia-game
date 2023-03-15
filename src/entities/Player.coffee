@@ -286,6 +286,7 @@ module.exports = class Player extends SimpleActor
 				else
 					new_pose = Player.poses["Stand"] ? @structure.getPose()
 			else
+				prevent_idle()
 				new_pose = Player.poses["Jumping"] ? Player.poses["Stand"] ? @structure.getPose()
 		else
 			prevent_idle()
