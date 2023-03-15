@@ -12,6 +12,19 @@ closestPointOnLineSegment = (point, a, b)->
 	t = atp_dot_atb / atb2
 	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
 
+average = (v) ->
+	return v.reduce(((a,b) => a+b), 0)/v.length
+
+smoothOut = (array, variance) ->
+	t_average = average(array)*variance
+	ret = new Array(array.length)
+	for i in [0...array.length]
+		do ->
+			prev = if i > 0 then ret[i-1] else array[i]
+			next = if i < array.length then array[i] else array[i-1]
+			ret[i] = average([t_average, average([prev, array[i], next])])
+	return ret
+
 module.exports = class Caterpillar extends Entity
 	addEntityClass(@)
 	constructor: ->
@@ -35,6 +48,8 @@ module.exports = class Caterpillar extends Entity
 			point.vy = 0
 			point.attachment = null
 			point.radius = 5 - point_index*0.1
+			point.away_from_ground = {x: 0, y: 0}
+			point.smoothed_normal = {x: 0, y: 0}
 		
 		@structure.points.head.radius = 7
 		
@@ -53,14 +68,27 @@ module.exports = class Caterpillar extends Entity
 			if point.y + @y > 400
 				return
 		
+		# reset/init
+		for point in points_list
+			point.fx = 0
+			point.fy = 0
+			point.away_from_ground ?= {x: 0, y: 0}
+			point.smoothed_normal ?= {x: 0, y: 0}
+
+		# smooth out away_from_ground normals, making the caterpillar
+		# hopefully pick a side of a tree branch to be on
+		variance = 1
+		smoothed_normals_x = smoothOut((point.away_from_ground.x for point in points_list), variance)
+		smoothed_normals_y = smoothOut((point.away_from_ground.y for point in points_list), variance)
+		for point, point_index in points_list
+			point.away_from_ground.x = smoothed_normals_x[point_index]
+			point.away_from_ground.y = smoothed_normals_y[point_index]
+		
 		# move
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
 			entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
 		)
 		t = performance.now()/1000
-		for point in points_list
-			point.fx = 0
-			point.fy = 0
 		for point, point_index in points_list
 			otherwise_attached = 0
 			for other_point in points_list when other_point isnt point
@@ -70,7 +98,7 @@ module.exports = class Caterpillar extends Entity
 			# if point_index > 3 and point_index < points_list.length - 3
 			# 	lift_feet = true # don't let the middle of the caterpillar act as feet
 			dist_to_previous = if point_index > 0 then Math.hypot(point.x - points_list[point_index-1].x, point.y - points_list[point_index-1].y) else 0
-			lift_feet = dist_to_previous > 10
+			lift_feet = dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
 			lift_feet = true if point_index is 0 # head doesn't have feet
 			if lift_feet
 				point.attachment = null
@@ -98,9 +126,8 @@ module.exports = class Caterpillar extends Entity
 					}
 					# search towards the ground, in the direction it was last found
 					leg_length = point.radius + 2 # WET
-					if point.attachment.normal
-						test_point_world.x -= point.attachment.normal.x * leg_length
-						test_point_world.y -= point.attachment.normal.y * leg_length
+					test_point_world.x -= point.away_from_ground.x * leg_length
+					test_point_world.y -= point.away_from_ground.y * leg_length
 
 					hit = world.collision(test_point_world, types: (entity)=>
 						entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
@@ -139,7 +166,8 @@ module.exports = class Caterpillar extends Entity
 									x: closest_point_in_hit_space.x + normal.x * leg_length
 									y: closest_point_in_hit_space.y + normal.y * leg_length
 								}
-								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle, normal}
+								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
+								point.away_from_ground = normal
 							break
 				
 				if not hit and otherwise_attached >= 2
@@ -182,7 +210,8 @@ module.exports = class Caterpillar extends Entity
 							if isNaN(ground_angle)
 								console.warn("ground_angle is NaN")
 								ground_angle = 0
-							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle, normal}
+							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
+							point.away_from_ground = normal
 				else
 					point.vy += 0.5
 					point.vx *= 0.99
@@ -356,8 +385,8 @@ module.exports = class Caterpillar extends Entity
 			# legs
 			if point_name isnt "head"
 				point.smoothed_normal ?= {x: 0, y: 0}
-				point.smoothed_normal.x += ((point.attachment?.normal?.x ? 0) - point.smoothed_normal.x) * 0.1
-				point.smoothed_normal.y += ((point.attachment?.normal?.y ? 0) - point.smoothed_normal.y) * 0.1
+				point.smoothed_normal.x += ((point.away_from_ground?.x ? 0) - point.smoothed_normal.x) * 0.1
+				point.smoothed_normal.y += ((point.away_from_ground?.y ? 0) - point.smoothed_normal.y) * 0.1
 				leg_length = point.radius + 2 # WET
 				ctx.save()
 				ctx.translate(point.x, point.y)
