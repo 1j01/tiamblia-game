@@ -65,7 +65,6 @@ module.exports = class SimpleActor extends Entity
 				@vx *= 0.7
 			else
 				@vx += @move_x
-			@vy += Math.abs(@vx)
 			if @jump
 				@vy = -Math.sqrt(2 * gravity * @jump_height)
 		else
@@ -82,6 +81,11 @@ module.exports = class SimpleActor extends Entity
 		# @vy *= 0.99
 		move_x = @vx
 		move_y = @vy
+		if @grounded and not @jump
+			# follow hills downward
+			# This prevents awkward situations where you can't jump
+			# because you just left the ground (by running forwards)
+			move_y += Math.abs(@vx)
 		@facing_x = Math.sign(move_x) unless move_x is 0
 		resolution = 0.5
 		while Math.abs(move_x) > resolution
@@ -89,6 +93,8 @@ module.exports = class SimpleActor extends Entity
 			if world.collision({x: @x + go, y: @y + @height})
 				@vx *= 0.99
 				# TODO: clamber over tiny divots and maybe even stones and twigs
+				# This only handles going at a 45 degree angle,
+				# but stops on tiny 2-unit-high obstacles if it's > 45 degrees
 				if world.collision({x: @x + go, y: @y + @height - 1})
 					break
 				else
@@ -101,6 +107,9 @@ module.exports = class SimpleActor extends Entity
 		while Math.abs(move_y) > resolution
 			go = Math.sign(move_y) * resolution
 			if world.collision({@x, y: @y + go + @height})
+				if @constructor.name is "Player"
+					@landing_momentum = Math.max(@landing_momentum, @vy)
+					# console.log "landing_momentum", @landing_momentum, "vy", @vy
 				@vy = 0
 				@grounded = yes
 				break

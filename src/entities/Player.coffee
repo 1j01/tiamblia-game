@@ -137,6 +137,7 @@ module.exports = class Player extends SimpleActor
 		@idle_animation = null
 		@idle_timer = 0
 		@real_facing_x = @facing_x = 1
+		@landing_momentum = 0 # for bending knees when landing
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
 		@hair_initialized = false
@@ -342,6 +343,14 @@ module.exports = class Player extends SimpleActor
 				# translate back
 				point.x += center.x
 				point.y += center.y
+
+				# Also, squash when landing.
+				# TODO: less head bobbing action, more knee bending
+				@landing_momentum ?= 0
+				@landing_momentum *= 0.9
+				gravity = 0.5
+				squat_factor = Math.min(1, Math.max(0, @landing_momentum - gravity))
+				point.y += squat_factor * (1 - factor) * 15
 
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
