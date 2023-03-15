@@ -263,8 +263,8 @@ module.exports = class Player extends SimpleActor
 			else
 				@run_animation_position -= 0.1 * @move_y
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Tread Water"], @run_animation_position)
-		else if @move_x is 0
-			if @grounded
+		else if @grounded
+			if @move_x is 0
 				@idle_timer += 1
 				subtle_idle_animation = Player.animations["Idle"]
 				
@@ -287,14 +287,14 @@ module.exports = class Player extends SimpleActor
 					new_pose = Player.poses["Stand"] ? @structure.getPose()
 			else
 				prevent_idle()
-				new_pose = Player.poses["Jumping"] ? Player.poses["Stand"] ? @structure.getPose()
+				if Player.animations["Run"]
+					@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * @real_facing_x
+					new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
+				else
+					new_pose = @structure.getPose()
 		else
 			prevent_idle()
-			if Player.animations["Run"]
-				@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * @real_facing_x
-				new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
-			else
-				new_pose = @structure.getPose()
+			new_pose = Player.poses["Jumping"] ? Player.poses["Stand"] ? @structure.getPose()
 		
 		if @real_facing_x < 0
 			new_pose = Pose.horizontallyFlip(new_pose)
