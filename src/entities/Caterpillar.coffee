@@ -121,14 +121,23 @@ module.exports = class Caterpillar extends Entity
 			if lift_feet
 				part.attachment = null
 			attachment_entity = if part.attachment then world.getEntityByID(part.attachment.entity_id)
-			if attachment_entity
-				attachment_world = attachment_entity.toWorld(part.attachment.point)
-				attachment_local = @fromWorld(attachment_world)
+			
+			if true
+			# if attachment_entity
+			# 	attachment_world = attachment_entity.toWorld(part.attachment.point)
+			# 	attachment_local = @fromWorld(attachment_world)
+				if part.attachment
+					ground_angle = part.attachment.ground_angle
+				else
+					# idk, something.
+					# could maybe search for the nearest segment in the world?
+					ground_angle = Math.atan2(part.y - parts_list[0].y, part.x - parts_list[0].x)
+				
 				crawl_speed = 0 + 2 * (otherwise_attached > 4) # also affected by fixity parameter
-				# Reverse crawl direction if part.attachment.ground_angle points head-to-tail
+				# Reverse crawl direction if ground_angle points head-to-tail
 				# (or more specifically, along the head-to-second-part vector)
 				head_heading = Math.atan2(parts_list[0].y - parts_list[1].y, parts_list[0].x - parts_list[1].x)
-				if Math.cos(part.attachment.ground_angle - head_heading) < 0
+				if Math.cos(ground_angle - head_heading) < 0
 					crawl_speed *= -1
 
 				# part.x = attachment_local.x
@@ -139,8 +148,8 @@ module.exports = class Caterpillar extends Entity
 				# for angle_offset in [TAU/3..-TAU/3] by -TAU/10
 					part_in_world = @toWorld(part)
 					forward_vector = {
-						x: Math.cos(part.attachment.ground_angle + angle_offset) * crawl_speed
-						y: Math.sin(part.attachment.ground_angle + angle_offset) * crawl_speed
+						x: Math.cos(ground_angle + angle_offset) * crawl_speed
+						y: Math.sin(ground_angle + angle_offset) * crawl_speed
 					}
 					# search towards the ground, in the direction it was last found
 					leg_length = part.radius + 2 # WET
@@ -204,7 +213,8 @@ module.exports = class Caterpillar extends Entity
 				
 				if not hit and otherwise_attached >= 2
 					part.attachment = null
-			else
+			
+			if not part.attachment
 				# part.x += part.vx
 				# part.y += part.vy
 				hit = collision(part)
