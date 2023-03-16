@@ -161,9 +161,9 @@ module.exports = class Caterpillar extends Entity
 								if isNaN(ground_angle)
 									console.warn("ground_angle is NaN")
 									ground_angle = 0
-								normal_angle = ground_angle + TAU/4
 								candidates =
 									for side in [0, 1]
+										normal_angle = ground_angle + TAU/4
 										normal_angle += TAU/2 if side
 										normal = {
 											x: Math.cos(normal_angle)
