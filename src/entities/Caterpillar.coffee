@@ -124,6 +124,8 @@ module.exports = class Caterpillar extends Entity
 						x: part_in_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
 						y: part_in_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
 					}
+					# idk what to call this
+					reference_point_world = {x: test_point_world.x, y: test_point_world.y}
 					# search towards the ground, in the direction it was last found
 					leg_length = point.radius + 2 # WET
 					test_point_world.x -= point.away_from_ground.x * leg_length
@@ -150,7 +152,7 @@ module.exports = class Caterpillar extends Entity
 							# Note: this is the OPPOSITE of the other normal calculation,
 							# because here we're searching towards the ground, whereas
 							# in the other case, the point is inside the ground and needs to come out.
-							normal = {x: part_in_world.x - closest_point_world.x, y: part_in_world.y - closest_point_world.y}
+							normal = {x: reference_point_world.x - closest_point_world.x, y: reference_point_world.y - closest_point_world.y}
 							normal_length = Math.hypot(normal.x, normal.y)
 							normal.x /= normal_length
 							normal.y /= normal_length
