@@ -161,14 +161,14 @@ module.exports = class Caterpillar extends Entity
 						# This is done by finding the closest point on the polygon's edges.
 						closest_distance = Infinity
 						closest_segment = null
-						point_in_hit_space = hit.fromWorld(test_point_world)
+						test_point_in_hit_space = hit.fromWorld(test_point_world)
 						for segment_name, segment of hit.structure.segments
-							dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+							dist = distanceToLineSegment(test_point_in_hit_space, segment.a, segment.b)
 							if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
 								closest_distance = dist
 								closest_segment = segment
 						if closest_segment
-							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+							closest_point_in_hit_space = closestPointOnLineSegment(test_point_in_hit_space, closest_segment.a, closest_segment.b)
 							closest_point_world = hit.toWorld(closest_point_in_hit_space)
 							closest_point_local = @fromWorld(closest_point_world)
 
@@ -191,7 +191,7 @@ module.exports = class Caterpillar extends Entity
 											x: closest_point_in_hit_space.x + away_from_ground.x * leg_length
 											y: closest_point_in_hit_space.y + away_from_ground.y * leg_length
 										}
-										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - point_in_hit_space.x, attachment_hit_space.y - point_in_hit_space.y)
+										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - test_point_in_hit_space.x, attachment_hit_space.y - test_point_in_hit_space.y)
 										attachment_hit_space.away_from_ground = away_from_ground
 										attachment_hit_space
 								candidates.sort((a, b)=> b.score - a.score)
