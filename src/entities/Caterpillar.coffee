@@ -32,24 +32,37 @@ module.exports = class Caterpillar extends Entity
 		# relying on key order, so points & segments must not be named with simple numbers,
 		# since numeric keys are sorted before other keys
 		@structure.addPoint("head")
-		previous = "head"
+		previous_part = "head"
 		for i in [1...10]
-			previous = @structure.addSegment(
-				from: previous
-				to: "part_#{i}"
-				name: "part_#{i}"
+			part_name = "part_#{i}"
+			previous_part = @structure.addSegment(
+				from: previous_part
+				to: part_name
+				name: part_name
 				length: 5
 				width: 4
 			)
 		
-		parts_list = Object.values(@structure.points)
+		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
 		for part, part_index in parts_list
-			part.vx = 0
-			part.vy = 0
 			part.attachment = null
 			part.radius = 5 - part_index*0.1
 			part.away_from_ground = {x: 0, y: 0}
 			part.smoothed_normal = {x: 0, y: 0}
+
+			foot_name = "foot_#{part_index}"
+			leg_length = part.radius + 2 # WET
+			@structure.addSegment(
+				from: part.name
+				to: foot_name
+				name: foot_name
+				length: leg_length
+				width: 1
+			)
+		
+		for point_name, point of @structure.points
+			point.vx = 0
+			point.vy = 0
 		
 		@structure.points.head.radius = 7
 		
@@ -58,9 +71,14 @@ module.exports = class Caterpillar extends Entity
 	initLayout: ->
 		for segment_name, segment of @structure.segments
 			segment.b.x = segment.a.x + segment.length
+		for segment_name, segment of @structure.segments
+			if segment.b.name.match(/foot/)
+				segment.b.x = segment.a.x
+				segment.b.y = segment.a.y + segment.length
 
 	step: (world)->
-		parts_list = Object.values(@structure.points)
+		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
+		foot_list = Object.values(@structure.points).filter((part)=> part.name.match(/foot/))
 		segments_list = Object.values(@structure.segments)
 
 		# stop at end of the world
@@ -269,6 +287,13 @@ module.exports = class Caterpillar extends Entity
 				part.vy -= part.vy * 0.1
 				part.vy -= 0.45
 
+
+		# smooth normals over time
+		for part in parts_list
+			part.smoothed_normal ?= {x: 0, y: 0}
+			part.smoothed_normal.x += ((part.away_from_ground?.x ? 0) - part.smoothed_normal.x) * 0.1
+			part.smoothed_normal.y += ((part.away_from_ground?.y ? 0) - part.smoothed_normal.y) * 0.1
+
 		# constrain distances
 		for i in [0...4]
 			for part, part_index in parts_list
@@ -280,6 +305,21 @@ module.exports = class Caterpillar extends Entity
 					part.x += (attachment_local.x - part.x) * fixity
 					part.y += (attachment_local.y - part.y) * fixity
 			for segment_name, segment of @structure.segments
+				if segment.b.name.match(/foot/)
+					part = segment.a
+					foot = segment.b
+					leg_length = segment.length
+					foot_offset = { x: part.smoothed_normal.x * leg_length, y: part.smoothed_normal.y * leg_length }
+					# rotate foot offset in sinusoidal fashion
+					n = Number(part.name.match(/\d+/))
+					leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
+					sin_leg_angle = Math.sin(leg_angle)
+					cos_leg_angle = Math.cos(leg_angle)
+					[foot_offset.x, foot_offset.y] = [foot_offset.x * cos_leg_angle - foot_offset.y * sin_leg_angle, foot_offset.x * sin_leg_angle + foot_offset.y * cos_leg_angle]
+
+					foot.x = part.x - foot_offset.x
+					foot.y = part.y - foot_offset.y
+					continue
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
 				delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
@@ -388,29 +428,10 @@ module.exports = class Caterpillar extends Entity
 			ctx.lineCap = "round"
 			ctx.strokeStyle = color
 			ctx.stroke()
+		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
 		# for part, part_index in parts_list
 		# reverse order to draw head on top
-		keys = Object.keys(@structure.points)
-		for i in [keys.length-1..0]
-			part_name = keys[i]
-			part = @structure.points[part_name]
-			# legs
-			if part_name isnt "head"
-				part.smoothed_normal ?= {x: 0, y: 0}
-				part.smoothed_normal.x += ((part.away_from_ground?.x ? 0) - part.smoothed_normal.x) * 0.1
-				part.smoothed_normal.y += ((part.away_from_ground?.y ? 0) - part.smoothed_normal.y) * 0.1
-				leg_length = part.radius + 2 # WET
-				ctx.save()
-				ctx.translate(part.x, part.y)
-				ctx.rotate(Math.sin(performance.now() / 80 + i) * 0.1)
-				ctx.beginPath()
-				ctx.moveTo(0, 0)
-				ctx.lineTo(-part.smoothed_normal.x * leg_length, -part.smoothed_normal.y * leg_length)
-				ctx.lineWidth = 1
-				ctx.lineCap = "round"
-				ctx.strokeStyle = color
-				ctx.stroke()
-				ctx.restore()
+		for part, part_index in parts_list by -1
 			# body part
 			ctx.save()
 			ctx.beginPath()
@@ -429,7 +450,7 @@ module.exports = class Caterpillar extends Entity
 			ctx.fill()
 			ctx.restore()
 			# eye
-			if part_name is "head"
+			if part.name is "head"
 				ctx.beginPath()
 				ctx.arc(part.x, part.y, part.radius/2, 0, TAU)
 				ctx.fillStyle = "black"
