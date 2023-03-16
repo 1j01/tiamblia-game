@@ -162,10 +162,16 @@ module.exports = class Caterpillar extends Entity
 									console.warn("ground_angle is NaN")
 									ground_angle = 0
 								normal_angle = ground_angle + TAU/4
-								# flip normal to point away from the ground, based on which side of the line the point is on
-								# Note that in the other case, the point is inside the polygon;
-								# in this case it's GENERALLY outside the polygon.
-								side = ((closest_segment.b.x - closest_segment.a.x)*(point_in_hit_space.y - closest_segment.a.y) - (closest_segment.b.y - closest_segment.a.y)*(point_in_hit_space.x - closest_segment.a.x)) > 0
+								# flip normal to point away from the ground, based on which side of the line most points are on
+								perpendiculars = points_list.map((c_local)=>
+									c = hit.fromWorld(@toWorld(c_local))
+									{a, b} = closest_segment
+									perpendicular = ((b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x))
+									# return perpendicular * (if c_local is point then 5 else 1)
+									return perpendicular
+								)
+								side = perpendiculars.reduce(((a, b)=> a + b), 0) > 0
+
 								# flip normal if the point is actually inside the polygon (if it's actually a polygon!)
 								# side = not side if hit.structure.pointInPolygon?(point_in_hit_space)
 								normal_angle += TAU/2 if side
