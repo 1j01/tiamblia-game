@@ -126,21 +126,9 @@ module.exports = class Caterpillar extends Entity
 					}
 					# search towards the ground, in the direction it was last found
 					leg_length = point.radius + 2 # WET
-					away_from_ground =
-						if Math.hypot(point.smoothed_normal.x, point.smoothed_normal.y) > 0.2
-							point.smoothed_normal
-						else
-							point.away_from_ground
-					# copy and normalize
-					away_from_ground = {x: away_from_ground.x, y: away_from_ground.y}
-					away_from_ground = {
-						x: away_from_ground.x / Math.hypot(away_from_ground.x, away_from_ground.y)
-						y: away_from_ground.y / Math.hypot(away_from_ground.x, away_from_ground.y)
-					}
-
 					leg_vector = {
-						x: -away_from_ground.x * leg_length
-						y: -away_from_ground.y * leg_length
+						x: -point.away_from_ground.x * leg_length
+						y: -point.away_from_ground.y * leg_length
 					}
 					test_point_world = {
 						x: part_in_world.x + forward_vector.x + leg_vector.x
