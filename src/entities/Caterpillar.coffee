@@ -174,11 +174,12 @@ module.exports = class Caterpillar extends Entity
 											y: closest_point_in_hit_space.y + normal.y * leg_length
 										}
 										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - point_in_hit_space.x, attachment_hit_space.y - point_in_hit_space.y)
+										attachment_hit_space.normal = normal
 										attachment_hit_space
 								candidates.sort((a, b)=> b.score - a.score)
 								attachment_hit_space = candidates[0]
 								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
-								point.away_from_ground = normal
+								point.away_from_ground = attachment_hit_space.normal
 							break
 				
 				if not hit and otherwise_attached >= 2
