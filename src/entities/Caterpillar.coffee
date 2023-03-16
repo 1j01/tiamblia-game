@@ -357,9 +357,6 @@ module.exports = class Caterpillar extends Entity
 							part.vy -= delta_y * 0.5 * diff
 							other_part.vx += delta_x * 0.5 * diff
 							other_part.vy += delta_y * 0.5 * diff
-							if Math.random() < 0.5
-								part.attachment = null
-								other_part.attachment = null
 						else
 							console.warn("diff is not finite, for Caterpillar self-collision constraint")
 
