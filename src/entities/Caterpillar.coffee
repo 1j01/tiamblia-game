@@ -120,16 +120,20 @@ module.exports = class Caterpillar extends Entity
 				for angle_offset in [TAU/5..-TAU/5] by -TAU/15
 				# for angle_offset in [TAU/3..-TAU/3] by -TAU/10
 					part_in_world = @toWorld(point)
-					test_point_world = {
-						x: part_in_world.x + Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
-						y: part_in_world.y + Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
+					forward_vector = {
+						x: Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
+						y: Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
 					}
-					# idk what to call this
-					reference_point_world = {x: test_point_world.x, y: test_point_world.y}
 					# search towards the ground, in the direction it was last found
 					leg_length = point.radius + 2 # WET
-					test_point_world.x -= point.away_from_ground.x * leg_length
-					test_point_world.y -= point.away_from_ground.y * leg_length
+					leg_vector = {
+						x: -point.away_from_ground.x * leg_length
+						y: -point.away_from_ground.y * leg_length
+					}
+					test_point_world = {
+						x: part_in_world.x + forward_vector.x + leg_vector.x
+						y: part_in_world.y + forward_vector.y + leg_vector.y
+					}
 
 					hit = world.collision(test_point_world, types: (entity)=>
 						entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
@@ -152,6 +156,11 @@ module.exports = class Caterpillar extends Entity
 							# Note: this is the OPPOSITE of the other normal calculation,
 							# because here we're searching towards the ground, whereas
 							# in the other case, the point is inside the ground and needs to come out.
+							# idk what to call this variable
+							reference_point_world = {
+								x: part_in_world.x + forward_vector.x
+								y: part_in_world.y + forward_vector.y
+							}
 							normal = {x: reference_point_world.x - closest_point_world.x, y: reference_point_world.y - closest_point_world.y}
 							normal_length = Math.hypot(normal.x, normal.y)
 							normal.x /= normal_length
