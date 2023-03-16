@@ -428,7 +428,7 @@ module.exports = class Caterpillar extends Entity
 				ctx.fillStyle = "white"
 				ctx.fill()
 			
-			if window.debug_mode
+			if (try localStorage["tiamblia.debug_caterpillar"]) is "true"
 				# draw line from point to attachment
 				if point.attachment
 					entity = world.getEntityByID(point.attachment.entity_id)

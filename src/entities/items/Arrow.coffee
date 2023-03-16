@@ -443,7 +443,7 @@ module.exports = class Arrow extends Entity
 		ctx.fill()
 		ctx.restore()
 
-		return unless window.debug_mode
+		return unless (try localStorage["tiamblia.debug_arrow"]) is "true"
 		
 		if debug_drawings.get(@)
 			for drawing in debug_drawings.get(@)
