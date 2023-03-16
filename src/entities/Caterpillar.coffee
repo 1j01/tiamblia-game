@@ -427,7 +427,8 @@ module.exports = class Caterpillar extends Entity
 				ctx.arc(point.x + point.radius/6, point.y - point.radius/6, point.radius/5, 0, TAU)
 				ctx.fillStyle = "white"
 				ctx.fill()
-			
+		
+		for point in Object.values(@structure.points)
 			if (try localStorage["tiamblia.debug_caterpillar"]) is "true"
 				# draw line from point to attachment
 				if point.attachment
