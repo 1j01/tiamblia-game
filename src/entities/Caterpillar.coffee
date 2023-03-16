@@ -323,28 +323,28 @@ module.exports = class Caterpillar extends Entity
 							console.warn("diff is not finite, for Caterpillar self-collision constraint")
 
 	
-	accumulate_angular_constraint_forces: (point_a, point_b, pivot, relative_angle)->
-		angle_a = Math.atan2(point_a.y - point_b.y, point_a.x - point_b.x)
-		angle_b = Math.atan2(pivot.y - point_b.y, pivot.x - point_b.x)
+	accumulate_angular_constraint_forces: (a, b, pivot, relative_angle)->
+		angle_a = Math.atan2(a.y - b.y, a.x - b.x)
+		angle_b = Math.atan2(pivot.y - b.y, pivot.x - b.x)
 		angle_diff = (angle_a - angle_b) - relative_angle
 
 		# angle_diff *= 0.9
-		distance = Math.hypot(point_a.x - point_b.x, point_a.y - point_b.y)
-		# distance_a = Math.hypot(point_a.x - pivot.x, point_a.y - pivot.y)
-		# distance_b = Math.hypot(point_b.x - pivot.x, point_b.y - pivot.y)
+		distance = Math.hypot(a.x - b.x, a.y - b.y)
+		# distance_a = Math.hypot(a.x - pivot.x, a.y - pivot.y)
+		# distance_b = Math.hypot(b.x - pivot.x, b.y - pivot.y)
 		# angle_diff /= Math.max(1, (distance / 5) ** 2.4)
 
-		old_point_a = {x: point_a.x, y: point_a.y}
-		old_point_b = {x: point_b.x, y: point_b.y}
+		old_a = {x: a.x, y: a.y}
+		old_b = {x: b.x, y: b.y}
 
 		# Rotate around pivot.
 		rot_matrix = [[Math.cos(angle_diff), Math.sin(angle_diff)], [-Math.sin(angle_diff), Math.cos(angle_diff)]]
 		rot_matrix_inverse = [[Math.cos(-angle_diff), Math.sin(-angle_diff)], [-Math.sin(-angle_diff), Math.cos(-angle_diff)]]
-		for point in [point_a, point_b]
+		for point in [a, b]
 			# Translate and rotate.
 			[point.x, point.y] = [point.x, point.y].map((value, index) =>
-				(if point is point_a then rot_matrix else rot_matrix_inverse)[index][0] * (point.x - pivot.x) +
-				(if point is point_a then rot_matrix else rot_matrix_inverse)[index][1] * (point.y - pivot.y)
+				(if point is a then rot_matrix else rot_matrix_inverse)[index][0] * (point.x - pivot.x) +
+				(if point is a then rot_matrix else rot_matrix_inverse)[index][1] * (point.y - pivot.y)
 			)
 			# Translate back.
 			point.x += pivot.x
@@ -361,22 +361,22 @@ module.exports = class Caterpillar extends Entity
 		f_b = f / Math.max(1, Math.max(0, distance - 6) ** 1)
 
 		# Turn difference in position into velocity.
-		point_a.fx += (point_a.x - old_point_a.x) * f_a unless point_a.attachment
-		point_a.fy += (point_a.y - old_point_a.y) * f_a unless point_a.attachment
-		point_b.fx += (point_b.x - old_point_b.x) * f_b unless point_b.attachment
-		point_b.fy += (point_b.y - old_point_b.y) * f_b unless point_b.attachment
+		a.fx += (a.x - old_a.x) * f_a unless a.attachment
+		a.fy += (a.y - old_a.y) * f_a unless a.attachment
+		b.fx += (b.x - old_b.x) * f_b unless b.attachment
+		b.fy += (b.y - old_b.y) * f_b unless b.attachment
 
 		# Opposite force on pivot.
-		pivot.fx -= (point_a.x - old_point_a.x) * f_a unless pivot.attachment
-		pivot.fy -= (point_a.y - old_point_a.y) * f_a unless pivot.attachment
-		pivot.fx -= (point_b.x - old_point_b.x) * f_b unless pivot.attachment
-		pivot.fy -= (point_b.y - old_point_b.y) * f_b unless pivot.attachment
+		pivot.fx -= (a.x - old_a.x) * f_a unless pivot.attachment
+		pivot.fy -= (a.y - old_a.y) * f_a unless pivot.attachment
+		pivot.fx -= (b.x - old_b.x) * f_b unless pivot.attachment
+		pivot.fy -= (b.y - old_b.y) * f_b unless pivot.attachment
 
 		# Restore old position.
-		point_a.x = old_point_a.x
-		point_a.y = old_point_a.y
-		point_b.x = old_point_b.x
-		point_b.y = old_point_b.y
+		a.x = old_a.x
+		a.y = old_a.y
+		b.x = old_b.x
+		b.y = old_b.y
 
 	draw: (ctx, view, world)->
 		color = "green"
