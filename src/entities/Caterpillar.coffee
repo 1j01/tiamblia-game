@@ -48,7 +48,7 @@ module.exports = class Caterpillar extends Entity
 			part.attachment = null
 			part.radius = 5 - part_index*0.1
 			part.away_from_ground = {x: 0, y: 0}
-			part.smoothed_normal = {x: 0, y: 0}
+			part.away_from_ground_smoothed = {x: 0, y: 0}
 
 			foot_name = "foot_#{part_index}"
 			leg_length = part.radius + 2 # WET
@@ -91,16 +91,16 @@ module.exports = class Caterpillar extends Entity
 			part.fx = 0
 			part.fy = 0
 			part.away_from_ground ?= {x: 0, y: 0}
-			part.smoothed_normal ?= {x: 0, y: 0}
+			part.away_from_ground_smoothed ?= {x: 0, y: 0}
 
 		# smooth out away_from_ground normals, making the caterpillar
 		# hopefully pick a side of a tree branch to be on
 		# variance = 1
-		# smoothed_normals_x = smoothOut((part.away_from_ground.x for part in parts_list), variance)
-		# smoothed_normals_y = smoothOut((part.away_from_ground.y for part in parts_list), variance)
+		# smoothed_away_from_ground_x_values = smoothOut((part.away_from_ground.x for part in parts_list), variance)
+		# smoothed_away_from_ground_y_values = smoothOut((part.away_from_ground.y for part in parts_list), variance)
 		# for part, part_index in parts_list
-		# 	part.away_from_ground.x = smoothed_normals_x[part_index]
-		# 	part.away_from_ground.y = smoothed_normals_y[part_index]
+		# 	part.away_from_ground.x = smoothed_away_from_ground_x_values[part_index]
+		# 	part.away_from_ground.y = smoothed_away_from_ground_y_values[part_index]
 		
 		# move
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
@@ -290,9 +290,9 @@ module.exports = class Caterpillar extends Entity
 
 		# smooth normals over time
 		for part in parts_list
-			part.smoothed_normal ?= {x: 0, y: 0}
-			part.smoothed_normal.x += ((part.away_from_ground?.x ? 0) - part.smoothed_normal.x) * 0.1
-			part.smoothed_normal.y += ((part.away_from_ground?.y ? 0) - part.smoothed_normal.y) * 0.1
+			part.away_from_ground_smoothed ?= {x: 0, y: 0}
+			part.away_from_ground_smoothed.x += ((part.away_from_ground?.x ? 0) - part.away_from_ground_smoothed.x) * 0.1
+			part.away_from_ground_smoothed.y += ((part.away_from_ground?.y ? 0) - part.away_from_ground_smoothed.y) * 0.1
 
 		# constrain distances
 		for i in [0...4]
@@ -309,7 +309,7 @@ module.exports = class Caterpillar extends Entity
 					part = segment.a
 					foot = segment.b
 					leg_length = segment.length
-					foot_offset = { x: part.smoothed_normal.x * leg_length, y: part.smoothed_normal.y * leg_length }
+					foot_offset = { x: part.away_from_ground_smoothed.x * leg_length, y: part.away_from_ground_smoothed.y * leg_length }
 					# rotate foot offset in sinusoidal fashion
 					n = Number(part.name.match(/\d+/))
 					leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
