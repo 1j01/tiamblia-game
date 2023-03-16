@@ -47,8 +47,8 @@ module.exports = class Caterpillar extends Entity
 		for part, part_index in parts_list
 			part.attachment = null
 			part.radius = 5 - part_index*0.1
-			part.away_from_ground = {x: 0, y: 0}
-			part.away_from_ground_smoothed = {x: 0, y: 0}
+			part.towards_ground = {x: 0, y: 0}
+			part.towards_ground_smoothed = {x: 0, y: 0}
 
 			foot_name = "foot_#{part_index}"
 			leg_length = part.radius + 2 # WET
@@ -90,17 +90,17 @@ module.exports = class Caterpillar extends Entity
 		for part in parts_list
 			part.fx = 0
 			part.fy = 0
-			part.away_from_ground ?= {x: 0, y: 0}
-			part.away_from_ground_smoothed ?= {x: 0, y: 0}
+			part.towards_ground ?= {x: 0, y: 0}
+			part.towards_ground_smoothed ?= {x: 0, y: 0}
 
-		# smooth out away_from_ground normals, making the caterpillar
+		# smooth out towards_ground normals, making the caterpillar
 		# hopefully pick a side of a tree branch to be on
 		# variance = 1
-		# smoothed_away_from_ground_x_values = smoothOut((part.away_from_ground.x for part in parts_list), variance)
-		# smoothed_away_from_ground_y_values = smoothOut((part.away_from_ground.y for part in parts_list), variance)
+		# smoothed_towards_ground_x_values = smoothOut((part.towards_ground.x for part in parts_list), variance)
+		# smoothed_towards_ground_y_values = smoothOut((part.towards_ground.y for part in parts_list), variance)
 		# for part, part_index in parts_list
-		# 	part.away_from_ground.x = smoothed_away_from_ground_x_values[part_index]
-		# 	part.away_from_ground.y = smoothed_away_from_ground_y_values[part_index]
+		# 	part.towards_ground.x = smoothed_towards_ground_x_values[part_index]
+		# 	part.towards_ground.y = smoothed_towards_ground_y_values[part_index]
 		
 		# move
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
@@ -145,8 +145,8 @@ module.exports = class Caterpillar extends Entity
 					# search towards the ground, in the direction it was last found
 					leg_length = part.radius + 2 # WET
 					leg_vector = {
-						x: -part.away_from_ground.x * leg_length
-						y: -part.away_from_ground.y * leg_length
+						x: part.towards_ground.x * leg_length
+						y: part.towards_ground.y * leg_length
 					}
 					test_point_world = {
 						x: part_in_world.x + forward_vector.x + leg_vector.x
@@ -181,25 +181,25 @@ module.exports = class Caterpillar extends Entity
 									ground_angle = 0
 								candidates =
 									for side in [0, 1]
-										away_from_ground_angle = ground_angle + TAU/4
-										away_from_ground_angle += TAU/2 if side
-										away_from_ground = {
-											x: Math.cos(away_from_ground_angle)
-											y: Math.sin(away_from_ground_angle)
+										towards_ground_angle = ground_angle + TAU/4
+										towards_ground_angle += TAU/2 if side
+										towards_ground = {
+											x: Math.cos(towards_ground_angle)
+											y: Math.sin(towards_ground_angle)
 										}
 										attachment_hit_space = {
-											x: closest_point_in_hit_space.x + away_from_ground.x * leg_length
-											y: closest_point_in_hit_space.y + away_from_ground.y * leg_length
+											x: closest_point_in_hit_space.x - towards_ground.x * leg_length
+											y: closest_point_in_hit_space.y - towards_ground.y * leg_length
 										}
 										{
 											score: Math.hypot(attachment_hit_space.x - test_point_in_hit_space.x, attachment_hit_space.y - test_point_in_hit_space.y)
-											away_from_ground
+											towards_ground
 											attachment_hit_space
 										}
 								candidates.sort((a, b)=> b.score - a.score)
-								{attachment_hit_space, away_from_ground} = candidates[0]
+								{attachment_hit_space, towards_ground} = candidates[0]
 								part.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
-								part.away_from_ground = away_from_ground
+								part.towards_ground = towards_ground
 							break
 				
 				if not hit and otherwise_attached >= 2
@@ -227,13 +227,13 @@ module.exports = class Caterpillar extends Entity
 						closest_point_in_hit_space = closestPointOnLineSegment(part_in_hit_space, closest_segment.a, closest_segment.b)
 						closest_point_world = hit.toWorld(closest_point_in_hit_space)
 						closest_point_local = @fromWorld(closest_point_world)
-						away_from_ground = {x: closest_point_world.x - part_world.x, y: closest_point_world.y - part_world.y}
-						away_from_ground_length = Math.hypot(away_from_ground.x, away_from_ground.y)
-						away_from_ground.x /= away_from_ground_length
-						away_from_ground.y /= away_from_ground_length
-						unless isFinite(away_from_ground.x) and isFinite(away_from_ground.y)
-							console.warn("NaN in away_from_ground")
-							away_from_ground = {x: 0, y: 0}
+						towards_ground = {x: part_world.x - closest_point_world.x, y: part_world.y - closest_point_world.y}
+						towards_ground_length = Math.hypot(towards_ground.x, towards_ground.y)
+						towards_ground.x /= towards_ground_length
+						towards_ground.y /= towards_ground_length
+						unless isFinite(towards_ground.x) and isFinite(towards_ground.y)
+							console.warn("NaN in towards_ground")
+							towards_ground = {x: 0, y: 0}
 
 						part.x = closest_point_local.x
 						part.y = closest_point_local.y
@@ -243,7 +243,7 @@ module.exports = class Caterpillar extends Entity
 								console.warn("ground_angle is NaN")
 								ground_angle = 0
 							part.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
-							part.away_from_ground = away_from_ground
+							part.towards_ground = towards_ground
 				else
 					part.vy += 0.5
 					part.vx *= 0.99
@@ -292,9 +292,9 @@ module.exports = class Caterpillar extends Entity
 
 		# smooth normals over time
 		for part in parts_list
-			part.away_from_ground_smoothed ?= {x: 0, y: 0}
-			part.away_from_ground_smoothed.x += ((part.away_from_ground?.x ? 0) - part.away_from_ground_smoothed.x) * 0.1
-			part.away_from_ground_smoothed.y += ((part.away_from_ground?.y ? 0) - part.away_from_ground_smoothed.y) * 0.1
+			part.towards_ground_smoothed ?= {x: 0, y: 0}
+			part.towards_ground_smoothed.x += ((part.towards_ground?.x ? 0) - part.towards_ground_smoothed.x) * 0.1
+			part.towards_ground_smoothed.y += ((part.towards_ground?.y ? 0) - part.towards_ground_smoothed.y) * 0.1
 
 		# constrain distances
 		for i in [0...4]
@@ -311,7 +311,7 @@ module.exports = class Caterpillar extends Entity
 					part = segment.a
 					foot = segment.b
 					leg_length = segment.length
-					foot_offset = { x: part.away_from_ground_smoothed.x * leg_length, y: part.away_from_ground_smoothed.y * leg_length }
+					foot_offset = { x: part.towards_ground_smoothed.x * leg_length, y: part.towards_ground_smoothed.y * leg_length }
 					# rotate foot offset in sinusoidal fashion
 					n = Number(part.name.match(/\d+/))
 					leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
@@ -319,8 +319,8 @@ module.exports = class Caterpillar extends Entity
 					cos_leg_angle = Math.cos(leg_angle)
 					[foot_offset.x, foot_offset.y] = [foot_offset.x * cos_leg_angle - foot_offset.y * sin_leg_angle, foot_offset.x * sin_leg_angle + foot_offset.y * cos_leg_angle]
 
-					foot.x = part.x - foot_offset.x
-					foot.y = part.y - foot_offset.y
+					foot.x = part.x + foot_offset.x
+					foot.y = part.y + foot_offset.y
 					continue
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
@@ -477,10 +477,10 @@ module.exports = class Caterpillar extends Entity
 					ctx.strokeStyle = "red"
 					ctx.stroke()
 				# draw normal
-				if part.away_from_ground
+				if part.towards_ground
 					ctx.beginPath()
 					ctx.moveTo(part.x, part.y)
-					ctx.lineTo(part.x + part.away_from_ground.x * 10, part.y + part.away_from_ground.y * 10)
+					ctx.lineTo(part.x - part.towards_ground.x * 10, part.y - part.towards_ground.y * 10)
 					ctx.lineWidth = 1
 					ctx.lineCap = "round"
 					ctx.strokeStyle = "lime"
