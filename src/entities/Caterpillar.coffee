@@ -181,23 +181,23 @@ module.exports = class Caterpillar extends Entity
 									ground_angle = 0
 								candidates =
 									for side in [0, 1]
-										normal_angle = ground_angle + TAU/4
-										normal_angle += TAU/2 if side
-										normal = {
-											x: Math.cos(normal_angle)
-											y: Math.sin(normal_angle)
+										away_from_ground_angle = ground_angle + TAU/4
+										away_from_ground_angle += TAU/2 if side
+										away_from_ground = {
+											x: Math.cos(away_from_ground_angle)
+											y: Math.sin(away_from_ground_angle)
 										}
 										attachment_hit_space = {
-											x: closest_point_in_hit_space.x + normal.x * leg_length
-											y: closest_point_in_hit_space.y + normal.y * leg_length
+											x: closest_point_in_hit_space.x + away_from_ground.x * leg_length
+											y: closest_point_in_hit_space.y + away_from_ground.y * leg_length
 										}
 										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - point_in_hit_space.x, attachment_hit_space.y - point_in_hit_space.y)
-										attachment_hit_space.normal = normal
+										attachment_hit_space.away_from_ground = away_from_ground
 										attachment_hit_space
 								candidates.sort((a, b)=> b.score - a.score)
 								attachment_hit_space = candidates[0]
 								part.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
-								part.away_from_ground = attachment_hit_space.normal
+								part.away_from_ground = attachment_hit_space.away_from_ground
 							break
 				
 				if not hit and otherwise_attached >= 2
@@ -225,13 +225,13 @@ module.exports = class Caterpillar extends Entity
 						closest_point_in_hit_space = closestPointOnLineSegment(part_in_hit_space, closest_segment.a, closest_segment.b)
 						closest_point_world = hit.toWorld(closest_point_in_hit_space)
 						closest_point_local = @fromWorld(closest_point_world)
-						normal = {x: closest_point_world.x - part_world.x, y: closest_point_world.y - part_world.y}
-						normal_length = Math.hypot(normal.x, normal.y)
-						normal.x /= normal_length
-						normal.y /= normal_length
-						unless isFinite(normal.x) and isFinite(normal.y)
-							console.warn("NaN in normal")
-							normal = {x: 0, y: 0}
+						away_from_ground = {x: closest_point_world.x - part_world.x, y: closest_point_world.y - part_world.y}
+						away_from_ground_length = Math.hypot(away_from_ground.x, away_from_ground.y)
+						away_from_ground.x /= away_from_ground_length
+						away_from_ground.y /= away_from_ground_length
+						unless isFinite(away_from_ground.x) and isFinite(away_from_ground.y)
+							console.warn("NaN in away_from_ground")
+							away_from_ground = {x: 0, y: 0}
 
 						part.x = closest_point_local.x
 						part.y = closest_point_local.y
@@ -241,7 +241,7 @@ module.exports = class Caterpillar extends Entity
 								console.warn("ground_angle is NaN")
 								ground_angle = 0
 							part.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
-							part.away_from_ground = normal
+							part.away_from_ground = away_from_ground
 				else
 					part.vy += 0.5
 					part.vx *= 0.99
