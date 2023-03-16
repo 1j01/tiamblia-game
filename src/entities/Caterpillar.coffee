@@ -173,13 +173,7 @@ module.exports = class Caterpillar extends Entity
 											x: closest_point_in_hit_space.x + normal.x * leg_length
 											y: closest_point_in_hit_space.y + normal.y * leg_length
 										}
-
-										# closest 3 points get to vote on which side to use
-										for voter in [-1, 0, 1]
-											voter_in_hit_space = hit.fromWorld(@toWorld(voter))
-											vote = Math.hypot(attachment_hit_space.x - voter_in_hit_space.x, attachment_hit_space.y - voter_in_hit_space.y)
-											attachment_hit_space.score += vote
-
+										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - point_in_hit_space.x, attachment_hit_space.y - point_in_hit_space.y)
 										attachment_hit_space.normal = normal
 										attachment_hit_space
 								candidates.sort((a, b)=> b.score - a.score)
