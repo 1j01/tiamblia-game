@@ -153,21 +153,6 @@ module.exports = class Caterpillar extends Entity
 							closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
 							closest_point_world = hit.toWorld(closest_point_in_hit_space)
 							closest_point_local = @fromWorld(closest_point_world)
-							# Note: this is the OPPOSITE of the other normal calculation,
-							# because here we're searching towards the ground, whereas
-							# in the other case, the point is inside the ground and needs to come out.
-							# idk what to call this variable
-							reference_point_world = {
-								x: part_in_world.x + forward_vector.x
-								y: part_in_world.y + forward_vector.y
-							}
-							normal = {x: reference_point_world.x - closest_point_world.x, y: reference_point_world.y - closest_point_world.y}
-							normal_length = Math.hypot(normal.x, normal.y)
-							normal.x /= normal_length
-							normal.y /= normal_length
-							unless isFinite(normal.x) and isFinite(normal.y)
-								console.warn("NaN in normal")
-								normal = {x: 0, y: 0}
 
 							# point.x = closest_point_local.x
 							# point.y = closest_point_local.y
@@ -176,6 +161,19 @@ module.exports = class Caterpillar extends Entity
 								if isNaN(ground_angle)
 									console.warn("ground_angle is NaN")
 									ground_angle = 0
+								normal_angle = ground_angle + TAU/4
+								# flip normal to point away from the ground, based on which side of the line the point is on
+								# Note that in the other case, the point is inside the polygon;
+								# in this case it's GENERALLY outside the polygon.
+								side = ((closest_segment.b.x - closest_segment.a.x)*(point_in_hit_space.y - closest_segment.a.y) - (closest_segment.b.y - closest_segment.a.y)*(point_in_hit_space.x - closest_segment.a.x)) > 0
+								# flip normal if the point is actually inside the polygon (if it's actually a polygon!)
+								# side = not side if hit.structure.pointInPolygon?(point_in_hit_space)
+								normal_angle += TAU/2 if side
+								normal = {
+									x: Math.cos(normal_angle)
+									y: Math.sin(normal_angle)
+								}
+
 								attachment_hit_space = {
 									x: closest_point_in_hit_space.x + normal.x * leg_length
 									y: closest_point_in_hit_space.y + normal.y * leg_length
