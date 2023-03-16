@@ -345,11 +345,10 @@ module.exports = class Caterpillar extends Entity
 					delta_x = part.x - other_part.x
 					delta_y = part.y - other_part.y
 					delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
-					target_min_length = part.radius - other_part.radius
+					target_min_length = part.radius + other_part.radius
 					if delta_length < target_min_length
 						diff = (delta_length - target_min_length) / delta_length
 						if isFinite(diff)
-							diff *= 50
 							part.x -= delta_x * 0.5 * diff
 							part.y -= delta_y * 0.5 * diff
 							other_part.x += delta_x * 0.5 * diff
