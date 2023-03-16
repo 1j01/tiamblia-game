@@ -77,12 +77,12 @@ module.exports = class Caterpillar extends Entity
 
 		# smooth out away_from_ground normals, making the caterpillar
 		# hopefully pick a side of a tree branch to be on
-		variance = 1
-		smoothed_normals_x = smoothOut((point.away_from_ground.x for point in points_list), variance)
-		smoothed_normals_y = smoothOut((point.away_from_ground.y for point in points_list), variance)
-		for point, point_index in points_list
-			point.away_from_ground.x = smoothed_normals_x[point_index]
-			point.away_from_ground.y = smoothed_normals_y[point_index]
+		# variance = 1
+		# smoothed_normals_x = smoothOut((point.away_from_ground.x for point in points_list), variance)
+		# smoothed_normals_y = smoothOut((point.away_from_ground.y for point in points_list), variance)
+		# for point, point_index in points_list
+		# 	point.away_from_ground.x = smoothed_normals_x[point_index]
+		# 	point.away_from_ground.y = smoothed_normals_y[point_index]
 		
 		# move
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
