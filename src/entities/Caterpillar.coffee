@@ -480,7 +480,7 @@ module.exports = class Caterpillar extends Entity
 				if part.towards_ground
 					ctx.beginPath()
 					ctx.moveTo(part.x, part.y)
-					ctx.lineTo(part.x - part.towards_ground.x * 10, part.y - part.towards_ground.y * 10)
+					ctx.lineTo(part.x + part.towards_ground.x * 10, part.y + part.towards_ground.y * 10)
 					ctx.lineWidth = 1
 					ctx.lineCap = "round"
 					ctx.strokeStyle = "lime"
