@@ -42,14 +42,14 @@ module.exports = class Caterpillar extends Entity
 				width: 4
 			)
 		
-		points_list = Object.values(@structure.points)
-		for point, point_index in points_list
-			point.vx = 0
-			point.vy = 0
-			point.attachment = null
-			point.radius = 5 - point_index*0.1
-			point.away_from_ground = {x: 0, y: 0}
-			point.smoothed_normal = {x: 0, y: 0}
+		parts_list = Object.values(@structure.points)
+		for part, part_index in parts_list
+			part.vx = 0
+			part.vy = 0
+			part.attachment = null
+			part.radius = 5 - part_index*0.1
+			part.away_from_ground = {x: 0, y: 0}
+			part.smoothed_normal = {x: 0, y: 0}
 		
 		@structure.points.head.radius = 7
 		
@@ -60,75 +60,75 @@ module.exports = class Caterpillar extends Entity
 			segment.b.x = segment.a.x + segment.length
 
 	step: (world)->
-		points_list = Object.values(@structure.points)
+		parts_list = Object.values(@structure.points)
 		segments_list = Object.values(@structure.segments)
 
 		# stop at end of the world
-		for point in points_list
-			if point.y + @y > 400
+		for part in parts_list
+			if part.y + @y > 400
 				return
 		
 		# reset/init
-		for point in points_list
-			point.fx = 0
-			point.fy = 0
-			point.away_from_ground ?= {x: 0, y: 0}
-			point.smoothed_normal ?= {x: 0, y: 0}
+		for part in parts_list
+			part.fx = 0
+			part.fy = 0
+			part.away_from_ground ?= {x: 0, y: 0}
+			part.smoothed_normal ?= {x: 0, y: 0}
 
 		# smooth out away_from_ground normals, making the caterpillar
 		# hopefully pick a side of a tree branch to be on
 		# variance = 1
-		# smoothed_normals_x = smoothOut((point.away_from_ground.x for point in points_list), variance)
-		# smoothed_normals_y = smoothOut((point.away_from_ground.y for point in points_list), variance)
-		# for point, point_index in points_list
-		# 	point.away_from_ground.x = smoothed_normals_x[point_index]
-		# 	point.away_from_ground.y = smoothed_normals_y[point_index]
+		# smoothed_normals_x = smoothOut((part.away_from_ground.x for part in parts_list), variance)
+		# smoothed_normals_y = smoothOut((part.away_from_ground.y for part in parts_list), variance)
+		# for part, part_index in parts_list
+		# 	part.away_from_ground.x = smoothed_normals_x[part_index]
+		# 	part.away_from_ground.y = smoothed_normals_y[part_index]
 		
 		# move
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
 			entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
 		)
 		t = performance.now()/1000
-		for point, point_index in points_list
+		for part, part_index in parts_list
 			otherwise_attached = 0
-			for other_point in points_list when other_point isnt point
-				if other_point.attachment
+			for other_part in parts_list when other_part isnt part
+				if other_part.attachment
 					otherwise_attached += 1
-			# lift_feet = Math.sin(t + point_index/points_list.length*Math.PI) < 0 and otherwise_attached >= 2
-			# if point_index > 3 and point_index < points_list.length - 3
+			# lift_feet = Math.sin(t + part_index/parts_list.length*Math.PI) < 0 and otherwise_attached >= 2
+			# if part_index > 3 and part_index < parts_list.length - 3
 			# 	lift_feet = true # don't let the middle of the caterpillar act as feet
-			dist_to_previous = if point_index > 0 then Math.hypot(point.x - points_list[point_index-1].x, point.y - points_list[point_index-1].y) else 0
+			dist_to_previous = if part_index > 0 then Math.hypot(part.x - parts_list[part_index-1].x, part.y - parts_list[part_index-1].y) else 0
 			lift_feet = dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
-			lift_feet = true if point_index is 0 # head doesn't have feet
+			lift_feet = true if part_index is 0 # head doesn't have feet
 			if lift_feet
-				point.attachment = null
-			attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
+				part.attachment = null
+			attachment_entity = if part.attachment then world.getEntityByID(part.attachment.entity_id)
 			if attachment_entity
-				attachment_world = attachment_entity.toWorld(point.attachment.point)
+				attachment_world = attachment_entity.toWorld(part.attachment.point)
 				attachment_local = @fromWorld(attachment_world)
 				crawl_speed = 0 + 2 * (otherwise_attached > 4) # also affected by fixity parameter
-				# Reverse crawl direction if point.attachment.ground_angle points head-to-tail
-				# (or more specifically, along the head-to-second-point vector)
-				head_heading = Math.atan2(points_list[0].y - points_list[1].y, points_list[0].x - points_list[1].x)
-				if Math.cos(point.attachment.ground_angle - head_heading) < 0
+				# Reverse crawl direction if part.attachment.ground_angle points head-to-tail
+				# (or more specifically, along the head-to-second-part vector)
+				head_heading = Math.atan2(parts_list[0].y - parts_list[1].y, parts_list[0].x - parts_list[1].x)
+				if Math.cos(part.attachment.ground_angle - head_heading) < 0
 					crawl_speed *= -1
 
-				# point.x = attachment_local.x
-				# point.y = attachment_local.y
+				# part.x = attachment_local.x
+				# part.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
 				for angle_offset in [TAU/5..-TAU/5] by -TAU/15
 				# for angle_offset in [TAU/3..-TAU/3] by -TAU/10
-					part_in_world = @toWorld(point)
+					part_in_world = @toWorld(part)
 					forward_vector = {
-						x: Math.cos(point.attachment.ground_angle + angle_offset) * crawl_speed
-						y: Math.sin(point.attachment.ground_angle + angle_offset) * crawl_speed
+						x: Math.cos(part.attachment.ground_angle + angle_offset) * crawl_speed
+						y: Math.sin(part.attachment.ground_angle + angle_offset) * crawl_speed
 					}
 					# search towards the ground, in the direction it was last found
-					leg_length = point.radius + 2 # WET
+					leg_length = part.radius + 2 # WET
 					leg_vector = {
-						x: -point.away_from_ground.x * leg_length
-						y: -point.away_from_ground.y * leg_length
+						x: -part.away_from_ground.x * leg_length
+						y: -part.away_from_ground.y * leg_length
 					}
 					test_point_world = {
 						x: part_in_world.x + forward_vector.x + leg_vector.x
@@ -139,7 +139,7 @@ module.exports = class Caterpillar extends Entity
 						entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
 					)
 					if hit
-						# Project the point back to the surface of the ground.
+						# Project the part's position back to the surface of the ground.
 						# This is done by finding the closest point on the polygon's edges.
 						closest_distance = Infinity
 						closest_segment = null
@@ -154,8 +154,8 @@ module.exports = class Caterpillar extends Entity
 							closest_point_world = hit.toWorld(closest_point_in_hit_space)
 							closest_point_local = @fromWorld(closest_point_world)
 
-							# point.x = closest_point_local.x
-							# point.y = closest_point_local.y
+							# part.x = closest_point_local.x
+							# part.y = closest_point_local.y
 							unless lift_feet
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 								if isNaN(ground_angle)
@@ -178,36 +178,36 @@ module.exports = class Caterpillar extends Entity
 										attachment_hit_space
 								candidates.sort((a, b)=> b.score - a.score)
 								attachment_hit_space = candidates[0]
-								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
-								point.away_from_ground = attachment_hit_space.normal
+								part.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
+								part.away_from_ground = attachment_hit_space.normal
 							break
 				
 				if not hit and otherwise_attached >= 2
-					point.attachment = null
+					part.attachment = null
 			else
-				# point.x += point.vx
-				# point.y += point.vy
-				hit = collision(point)
+				# part.x += part.vx
+				# part.y += part.vy
+				hit = collision(part)
 				if hit
-					point.vx = 0
-					point.vy = 0
+					part.vx = 0
+					part.vy = 0
 
-					# Project the point back to the surface of the ground.
+					# Project the part's position back to the surface of the ground.
 					# This is done by finding the closest point on the polygon's edges.
 					closest_distance = Infinity
 					closest_segment = null
-					point_world = @toWorld(point)
-					point_in_hit_space = hit.fromWorld(point_world)
+					part_world = @toWorld(part)
+					part_in_hit_space = hit.fromWorld(part_world)
 					for segment_name, segment of hit.structure.segments
-						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+						dist = distanceToLineSegment(part_in_hit_space, segment.a, segment.b)
 						if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
 							closest_distance = dist
 							closest_segment = segment
 					if closest_segment
-						closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+						closest_point_in_hit_space = closestPointOnLineSegment(part_in_hit_space, closest_segment.a, closest_segment.b)
 						closest_point_world = hit.toWorld(closest_point_in_hit_space)
 						closest_point_local = @fromWorld(closest_point_world)
-						normal = {x: closest_point_world.x - point_world.x, y: closest_point_world.y - point_world.y}
+						normal = {x: closest_point_world.x - part_world.x, y: closest_point_world.y - part_world.y}
 						normal_length = Math.hypot(normal.x, normal.y)
 						normal.x /= normal_length
 						normal.y /= normal_length
@@ -215,70 +215,70 @@ module.exports = class Caterpillar extends Entity
 							console.warn("NaN in normal")
 							normal = {x: 0, y: 0}
 
-						point.x = closest_point_local.x
-						point.y = closest_point_local.y
+						part.x = closest_point_local.x
+						part.y = closest_point_local.y
 						unless lift_feet
 							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 							if isNaN(ground_angle)
 								console.warn("ground_angle is NaN")
 								ground_angle = 0
-							point.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
-							point.away_from_ground = normal
+							part.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
+							part.away_from_ground = normal
 				else
-					point.vy += 0.5
-					point.vx *= 0.99
-					point.vy *= 0.99
+					part.vy += 0.5
+					part.vx *= 0.99
+					part.vy *= 0.99
 					# @structure.stepLayout({gravity: 0.005, collision})
 					# @structure.stepLayout() for [0..10]
 					# @structure.stepLayout({collision}) for [0..4]
-					point.x += point.vx
-					point.y += point.vy
+					part.x += part.vx
+					part.y += part.vy
 			
-			# angular constraint pivoting on this point
-			relative_angle = (Math.sin(Math.sin(t)*Math.PI/4) - 0.5) * Math.PI/points_list.length/2
-			point.relative_angle = relative_angle
-			prev_point = points_list[point_index-1]
-			next_point = points_list[point_index+1]
-			if prev_point and next_point
-				@accumulate_angular_constraint_forces(prev_point, next_point, point, relative_angle)
+			# angular constraint pivoting on this part
+			relative_angle = (Math.sin(Math.sin(t)*Math.PI/4) - 0.5) * Math.PI/parts_list.length/2
+			part.relative_angle = relative_angle
+			prev_part = parts_list[part_index-1]
+			next_part = parts_list[part_index+1]
+			if prev_part and next_part
+				@accumulate_angular_constraint_forces(prev_part, next_part, part, relative_angle)
 		
 		# apply forces
-		for point in points_list
-			point.vx += point.fx
-			point.vy += point.fy
-			point.x += point.fx
-			point.y += point.fy
+		for part in parts_list
+			part.vx += part.fx
+			part.vy += part.fy
+			part.x += part.fx
+			part.y += part.fy
 
 		# Interact with water
-		for point in points_list
-			water = world.collision(@toWorld(point), types: (entity)=>
+		for part in parts_list
+			water = world.collision(@toWorld(part), types: (entity)=>
 				entity.constructor.name is "Water"
 			)
-			too_far_under_water = water and world.collision(@toWorld({x: point.x, y: point.y - point.radius}), types: (entity)=>
+			too_far_under_water = water and world.collision(@toWorld({x: part.x, y: part.y - part.radius}), types: (entity)=>
 				entity.constructor.name is "Water"
 			)
 			if water and not too_far_under_water
 				# Make ripples in water
-				water.makeWaves(@toWorld(point), point.radius, point.vy/2)
+				water.makeWaves(@toWorld(part), part.radius, part.vy/2)
 				# Skip off water (as if this will ever matter)
-				if 4 > point.vy > 2 and Math.abs(point.vx) > 0.4
-					point.vy *= -0.3
+				if 4 > part.vy > 2 and Math.abs(part.vx) > 0.4
+					part.vy *= -0.3
 			# Slow down in water, and buoy
 			if water
-				point.vx -= point.vx * 0.1
-				point.vy -= point.vy * 0.1
-				point.vy -= 0.45
+				part.vx -= part.vx * 0.1
+				part.vy -= part.vy * 0.1
+				part.vy -= 0.45
 
 		# constrain distances
 		for i in [0...4]
-			for point, point_index in points_list
-				attachment_entity = if point.attachment then world.getEntityByID(point.attachment.entity_id)
+			for part, part_index in parts_list
+				attachment_entity = if part.attachment then world.getEntityByID(part.attachment.entity_id)
 				if attachment_entity
-					attachment_world = attachment_entity.toWorld(point.attachment.point)
+					attachment_world = attachment_entity.toWorld(part.attachment.point)
 					attachment_local = @fromWorld(attachment_world)
 					fixity = 0.1 # also affects crawling speed
-					point.x += (attachment_local.x - point.x) * fixity
-					point.y += (attachment_local.y - point.y) * fixity
+					part.x += (attachment_local.x - part.x) * fixity
+					part.y += (attachment_local.y - part.y) * fixity
 			for segment_name, segment of @structure.segments
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
@@ -296,29 +296,29 @@ module.exports = class Caterpillar extends Entity
 				else
 					console.warn("diff is not finite, for Caterpillar distance constraint")
 			# self-collision
-			for point, point_index in points_list
-				for other_point, other_point_index in points_list #when point_index isnt other_point_index
-					if Math.abs(point_index - other_point_index) < 3
+			for part, part_index in parts_list
+				for other_part, other_part_index in parts_list #when part_index isnt other_part_index
+					if Math.abs(part_index - other_part_index) < 3
 						continue
-					delta_x = point.x - other_point.x
-					delta_y = point.y - other_point.y
+					delta_x = part.x - other_part.x
+					delta_y = part.y - other_part.y
 					delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
-					target_min_length = point.radius - other_point.radius
+					target_min_length = part.radius - other_part.radius
 					if delta_length < target_min_length
 						diff = (delta_length - target_min_length) / delta_length
 						if isFinite(diff)
 							diff *= 50
-							point.x -= delta_x * 0.5 * diff
-							point.y -= delta_y * 0.5 * diff
-							other_point.x += delta_x * 0.5 * diff
-							other_point.y += delta_y * 0.5 * diff
-							point.vx -= delta_x * 0.5 * diff
-							point.vy -= delta_y * 0.5 * diff
-							other_point.vx += delta_x * 0.5 * diff
-							other_point.vy += delta_y * 0.5 * diff
+							part.x -= delta_x * 0.5 * diff
+							part.y -= delta_y * 0.5 * diff
+							other_part.x += delta_x * 0.5 * diff
+							other_part.y += delta_y * 0.5 * diff
+							part.vx -= delta_x * 0.5 * diff
+							part.vy -= delta_y * 0.5 * diff
+							other_part.vx += delta_x * 0.5 * diff
+							other_part.vy += delta_y * 0.5 * diff
 							if Math.random() < 0.5
-								point.attachment = null
-								other_point.attachment = null
+								part.attachment = null
+								other_part.attachment = null
 						else
 							console.warn("diff is not finite, for Caterpillar self-collision constraint")
 
@@ -388,24 +388,24 @@ module.exports = class Caterpillar extends Entity
 			ctx.lineCap = "round"
 			ctx.strokeStyle = color
 			ctx.stroke()
-		# for point, point_index in points_list
+		# for part, part_index in parts_list
 		# reverse order to draw head on top
 		keys = Object.keys(@structure.points)
 		for i in [keys.length-1..0]
-			point_name = keys[i]
-			point = @structure.points[point_name]
+			part_name = keys[i]
+			part = @structure.points[part_name]
 			# legs
-			if point_name isnt "head"
-				point.smoothed_normal ?= {x: 0, y: 0}
-				point.smoothed_normal.x += ((point.away_from_ground?.x ? 0) - point.smoothed_normal.x) * 0.1
-				point.smoothed_normal.y += ((point.away_from_ground?.y ? 0) - point.smoothed_normal.y) * 0.1
-				leg_length = point.radius + 2 # WET
+			if part_name isnt "head"
+				part.smoothed_normal ?= {x: 0, y: 0}
+				part.smoothed_normal.x += ((part.away_from_ground?.x ? 0) - part.smoothed_normal.x) * 0.1
+				part.smoothed_normal.y += ((part.away_from_ground?.y ? 0) - part.smoothed_normal.y) * 0.1
+				leg_length = part.radius + 2 # WET
 				ctx.save()
-				ctx.translate(point.x, point.y)
+				ctx.translate(part.x, part.y)
 				ctx.rotate(Math.sin(performance.now() / 80 + i) * 0.1)
 				ctx.beginPath()
 				ctx.moveTo(0, 0)
-				ctx.lineTo(-point.smoothed_normal.x * leg_length, -point.smoothed_normal.y * leg_length)
+				ctx.lineTo(-part.smoothed_normal.x * leg_length, -part.smoothed_normal.y * leg_length)
 				ctx.lineWidth = 1
 				ctx.lineCap = "round"
 				ctx.strokeStyle = color
@@ -414,50 +414,50 @@ module.exports = class Caterpillar extends Entity
 			# body part
 			ctx.save()
 			ctx.beginPath()
-			ctx.arc(point.x, point.y, point.radius, 0, TAU)
-			# ctx.fillStyle = if point.attachment then "lime" else color
-			# ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, 0.5)"
-			# ctx.fillStyle = "hsla(#{(point.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if point.attachment then 1 else 0.3})"
+			ctx.arc(part.x, part.y, part.radius, 0, TAU)
+			# ctx.fillStyle = if part.attachment then "lime" else color
+			# ctx.fillStyle = "hsla(#{(part.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, 0.5)"
+			# ctx.fillStyle = "hsla(#{(part.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if part.attachment then 1 else 0.3})"
 			ctx.fillStyle = color
 			ctx.fill()
 			ctx.clip()
 			# highlight
 			ctx.beginPath()
-			ctx.arc(point.x + point.radius/3, point.y - point.radius/3, point.radius/2, 0, TAU)
+			ctx.arc(part.x + part.radius/3, part.y - part.radius/3, part.radius/2, 0, TAU)
 			# ctx.fillStyle = "rgba(255, 255, 155, 0.5)"
 			ctx.fillStyle = "rgba(255, 255, 255, 0.5)"
 			ctx.fill()
 			ctx.restore()
 			# eye
-			if point_name is "head"
+			if part_name is "head"
 				ctx.beginPath()
-				ctx.arc(point.x, point.y, point.radius/2, 0, TAU)
+				ctx.arc(part.x, part.y, part.radius/2, 0, TAU)
 				ctx.fillStyle = "black"
 				ctx.fill()
 				# highlight
 				ctx.beginPath()
-				ctx.arc(point.x + point.radius/6, point.y - point.radius/6, point.radius/5, 0, TAU)
+				ctx.arc(part.x + part.radius/6, part.y - part.radius/6, part.radius/5, 0, TAU)
 				ctx.fillStyle = "white"
 				ctx.fill()
 		
-		for point in Object.values(@structure.points)
+		for part in Object.values(@structure.points)
 			if (try localStorage["tiamblia.debug_caterpillar"]) is "true"
-				# draw line from point to attachment
-				if point.attachment
-					entity = world.getEntityByID(point.attachment.entity_id)
-					attachment_local = @fromWorld(entity.toWorld(point.attachment.point))
+				# draw line from part to attachment
+				if part.attachment
+					entity = world.getEntityByID(part.attachment.entity_id)
+					attachment_local = @fromWorld(entity.toWorld(part.attachment.point))
 					ctx.beginPath()
-					ctx.moveTo(point.x, point.y)
+					ctx.moveTo(part.x, part.y)
 					ctx.lineTo(attachment_local.x, attachment_local.y)
 					ctx.lineWidth = 1
 					ctx.lineCap = "round"
 					ctx.strokeStyle = "red"
 					ctx.stroke()
 				# draw normal
-				if point.away_from_ground
+				if part.away_from_ground
 					ctx.beginPath()
-					ctx.moveTo(point.x, point.y)
-					ctx.lineTo(point.x + point.away_from_ground.x * 10, point.y + point.away_from_ground.y * 10)
+					ctx.moveTo(part.x, part.y)
+					ctx.lineTo(part.x + part.away_from_ground.x * 10, part.y + part.away_from_ground.y * 10)
 					ctx.lineWidth = 1
 					ctx.lineCap = "round"
 					ctx.strokeStyle = "lime"
