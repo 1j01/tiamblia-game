@@ -191,13 +191,15 @@ module.exports = class Caterpillar extends Entity
 											x: closest_point_in_hit_space.x + away_from_ground.x * leg_length
 											y: closest_point_in_hit_space.y + away_from_ground.y * leg_length
 										}
-										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - test_point_in_hit_space.x, attachment_hit_space.y - test_point_in_hit_space.y)
-										attachment_hit_space.away_from_ground = away_from_ground
-										attachment_hit_space
+										{
+											score: Math.hypot(attachment_hit_space.x - test_point_in_hit_space.x, attachment_hit_space.y - test_point_in_hit_space.y)
+											away_from_ground
+											attachment_hit_space
+										}
 								candidates.sort((a, b)=> b.score - a.score)
-								attachment_hit_space = candidates[0]
+								{attachment_hit_space, away_from_ground} = candidates[0]
 								part.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
-								part.away_from_ground = attachment_hit_space.away_from_ground
+								part.away_from_ground = away_from_ground
 							break
 				
 				if not hit and otherwise_attached >= 2
