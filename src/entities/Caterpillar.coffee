@@ -32,11 +32,11 @@ module.exports = class Caterpillar extends Entity
 		# relying on key order, so points & segments must not be named with simple numbers,
 		# since numeric keys are sorted before other keys
 		@structure.addPoint("head")
-		previous_part = "head"
+		previous_part_name = "head"
 		for i in [1...10]
 			part_name = "part_#{i}"
-			previous_part = @structure.addSegment(
-				from: previous_part
+			previous_part_name = @structure.addSegment(
+				from: previous_part_name
 				to: part_name
 				name: part_name
 				length: 5
