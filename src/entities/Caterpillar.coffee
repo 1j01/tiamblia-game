@@ -162,28 +162,21 @@ module.exports = class Caterpillar extends Entity
 									console.warn("ground_angle is NaN")
 									ground_angle = 0
 								normal_angle = ground_angle + TAU/4
-								# flip normal to point away from the ground, based on which side of the line most points are on
-								perpendiculars = points_list.map((c_local)=>
-									c = hit.fromWorld(@toWorld(c_local))
-									{a, b} = closest_segment
-									perpendicular = ((b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x))
-									# return perpendicular * (if c_local is point then 5 else 1)
-									return perpendicular
-								)
-								side = perpendiculars.reduce(((a, b)=> a + b), 0) > 0
-
-								# flip normal if the point is actually inside the polygon (if it's actually a polygon!)
-								# side = not side if hit.structure.pointInPolygon?(point_in_hit_space)
-								normal_angle += TAU/2 if side
-								normal = {
-									x: Math.cos(normal_angle)
-									y: Math.sin(normal_angle)
-								}
-
-								attachment_hit_space = {
-									x: closest_point_in_hit_space.x + normal.x * leg_length
-									y: closest_point_in_hit_space.y + normal.y * leg_length
-								}
+								candidates =
+									for side in [0, 1]
+										normal_angle += TAU/2 if side
+										normal = {
+											x: Math.cos(normal_angle)
+											y: Math.sin(normal_angle)
+										}
+										attachment_hit_space = {
+											x: closest_point_in_hit_space.x + normal.x * leg_length
+											y: closest_point_in_hit_space.y + normal.y * leg_length
+										}
+										attachment_hit_space.score = Math.hypot(attachment_hit_space.x - point_in_hit_space.x, attachment_hit_space.y - point_in_hit_space.y)
+										attachment_hit_space
+								candidates.sort((a, b)=> b.score - a.score)
+								attachment_hit_space = candidates[0]
 								point.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
 								point.away_from_ground = normal
 							break
