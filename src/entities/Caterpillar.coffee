@@ -128,7 +128,10 @@ module.exports = class Caterpillar extends Entity
 				crawl_speed = 0 + 2 * (otherwise_attached > 4) # also affected by fixity parameter
 				# Reverse crawl direction if part.attachment.ground_angle points head-to-tail
 				# (or more specifically, along the head-to-second-part vector)
-				head_heading = Math.atan2(parts_list[0].y - parts_list[1].y, parts_list[0].x - parts_list[1].x)
+				# head_heading = Math.atan2(parts_list[0].y - parts_list[1].y, parts_list[0].x - parts_list[1].x)
+				# for now at least, use second and third parts because head is unsupported physically
+				# (TODO: lift head up)
+				head_heading = Math.atan2(parts_list[1].y - parts_list[2].y, parts_list[1].x - parts_list[2].x)
 				if Math.cos(part.attachment.ground_angle - head_heading) < 0
 					crawl_speed *= -1
 
