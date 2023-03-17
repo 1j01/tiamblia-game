@@ -134,13 +134,14 @@ module.exports = class Caterpillar extends Entity
 					ground_angle = Math.atan2(part.y - parts_list[0].y, part.x - parts_list[0].x)
 				
 				crawl_speed = 0 + 2 * (otherwise_attached > 4) # also affected by fixity parameter
-				# Reverse crawl direction if ground_angle points head-to-tail
-				# (or more specifically, along the head-to-second-part vector)
-				# head_heading = Math.atan2(parts_list[0].y - parts_list[1].y, parts_list[0].x - parts_list[1].x)
-				# for now at least, use second and third parts because head is unsupported physically
-				# (TODO: lift head up)
-				head_heading = Math.atan2(parts_list[1].y - parts_list[2].y, parts_list[1].x - parts_list[2].x)
-				if Math.cos(ground_angle - head_heading) < 0
+				# Reverse crawl direction if ground_angle points head-to-tail*
+				# according to this local segment's orientation.
+				# *or possibly the opposite. I'm not gonna fact check this.
+				if parts_list[part_index+1]
+					heading = Math.atan2(parts_list[part_index].y - parts_list[part_index+1].y, parts_list[part_index].x - parts_list[part_index+1].x)
+				else
+					heading = Math.atan2(parts_list[part_index-1].y - parts_list[part_index].y, parts_list[part_index-1].x - parts_list[part_index].x)
+				if Math.cos(ground_angle - heading) < 0
 					crawl_speed *= -1
 
 				# part.x = attachment_local.x
