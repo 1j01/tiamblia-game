@@ -144,8 +144,13 @@ module.exports = class Caterpillar extends Entity
 				# part.y = attachment_local.y
 				# Move attachment point along the ground, using ground angle.
 				# Test multiple angles in order to wrap around corners.
-				for angle_offset in [TAU/5..-TAU/5] by -TAU/15
-				# for angle_offset in [TAU/3..-TAU/3] by -TAU/10
+				angle_offsets = [0]
+				n_angle_offsets_per_dir = 5
+				max_angle_offset = TAU/3
+				for i in [1..n_angle_offsets_per_dir]
+					angle_offsets.push(max_angle_offset * i/n_angle_offsets_per_dir)
+					angle_offsets.push(-max_angle_offset * i/n_angle_offsets_per_dir)
+				for angle_offset in angle_offsets
 					part_in_world = @toWorld(part)
 					forward_vector = {
 						x: Math.cos(ground_angle + angle_offset) * crawl_speed
