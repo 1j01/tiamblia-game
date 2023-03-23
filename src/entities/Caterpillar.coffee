@@ -339,7 +339,7 @@ module.exports = class Caterpillar extends Entity
 					foot_offset = { x: part.towards_ground_smoothed.x * leg_length, y: part.towards_ground_smoothed.y * leg_length }
 					# rotate foot offset in sinusoidal fashion
 					n = Number(part.name.match(/\d+/))
-					leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
+					leg_angle = Math.sin(t * 12.5 + n) * 0.1
 					sin_leg_angle = Math.sin(leg_angle)
 					cos_leg_angle = Math.cos(leg_angle)
 					[foot_offset.x, foot_offset.y] = [foot_offset.x * cos_leg_angle - foot_offset.y * sin_leg_angle, foot_offset.x * sin_leg_angle + foot_offset.y * cos_leg_angle]
