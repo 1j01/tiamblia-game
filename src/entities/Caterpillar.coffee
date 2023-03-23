@@ -78,9 +78,8 @@ module.exports = class Caterpillar extends Entity
 				segment.b.y = segment.a.y + segment.length
 
 	step: (world)->
-		all_points_list = Object.values(@structure.points)
-		parts_list = all_points_list.filter((part)=> part.name.match(/head|part/))
-		# feet_list = all_points_list.filter((part)=> part.name.match(/foot/))
+		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
+		# feet_list = Object.values(@structure.points).filter((part)=> part.name.match(/foot/))
 		# for handling deleting points
 		feet_list = parts_list.map((part)=> @structure.points["foot_#{part.name.split("_").pop()}"])
 		segments_list = Object.values(@structure.segments)
@@ -91,10 +90,9 @@ module.exports = class Caterpillar extends Entity
 				return
 		
 		# reset/init
-		for part in all_points_list
+		for part in parts_list
 			part.fx = 0
 			part.fy = 0
-		for part in parts_list
 			part.towards_ground ?= {x: 0, y: 0}
 			part.towards_ground_smoothed ?= {x: 0, y: 0}
 
@@ -108,9 +106,9 @@ module.exports = class Caterpillar extends Entity
 		# 	part.towards_ground.y = smoothed_towards_ground_y_values[part_index]
 		
 		# move
-		for part in all_points_list
+		for part in [...parts_list, ...feet_list] when part?
 			unless part.attachment
-				# part.vy += 0.5
+				part.vy += 0.5
 				part.vx *= 0.99
 				part.vy *= 0.99
 				# @structure.stepLayout({gravity: 0.005, collision})
@@ -288,15 +286,9 @@ module.exports = class Caterpillar extends Entity
 			next_part = parts_list[part_index+1]
 			if prev_part and next_part
 				@accumulate_angular_constraint_forces(prev_part, next_part, part, relative_angle)
-			
-			# rotate legs in sinusoidal fashion
-			n = Number(part.name.match(/\d+/))
-			leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
-			if prev_part
-				@accumulate_angular_constraint_forces(prev_part, part, foot, leg_angle)
 		
 		# apply forces
-		for part in all_points_list
+		for part in [...parts_list, ...feet_list] when part?.fx and part?.fy
 			part.vx += part.fx
 			part.vy += part.fy
 			part.x += part.fx
@@ -340,6 +332,33 @@ module.exports = class Caterpillar extends Entity
 					foot.x += (attachment_local.x - foot.x) * fixity
 					foot.y += (attachment_local.y - foot.y) * fixity
 			for segment_name, segment of @structure.segments
+				if segment.b.name.match(/foot/)
+					part = segment.a
+					foot = segment.b
+					leg_length = segment.length
+					foot_offset = { x: part.towards_ground_smoothed.x * leg_length, y: part.towards_ground_smoothed.y * leg_length }
+					# rotate foot offset in sinusoidal fashion
+					n = Number(part.name.match(/\d+/))
+					leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
+					sin_leg_angle = Math.sin(leg_angle)
+					cos_leg_angle = Math.cos(leg_angle)
+					[foot_offset.x, foot_offset.y] = [foot_offset.x * cos_leg_angle - foot_offset.y * sin_leg_angle, foot_offset.x * sin_leg_angle + foot_offset.y * cos_leg_angle]
+
+					# foot.x = part.x + foot_offset.x
+					# foot.y = part.y + foot_offset.y
+					diff_x = foot.x - (part.x + foot_offset.x)
+					diff_y = foot.y - (part.y + foot_offset.y)
+					diff_length = Math.sqrt(diff_x * diff_x + diff_y * diff_y)
+					if diff_length > 0.1
+						foot.x -= diff_x * 0.1
+						foot.y -= diff_y * 0.1
+						foot.vx -= diff_x * 0.1
+						foot.vy -= diff_y * 0.1
+						part.x += diff_x * 0.1
+						part.y += diff_y * 0.1
+						part.vx += diff_x * 0.1
+						part.vy += diff_y * 0.1
+					continue
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
 				delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
