@@ -127,11 +127,17 @@ module.exports = class Caterpillar extends Entity
 			for other_foot in feet_list when other_foot isnt foot
 				if other_foot?.attachment
 					otherwise_attached += 1
+			
+			# TODO: DRY
+			n = Number(part.name.match(/\d+/))
+			# leg_angle = Math.sin(t * 12.5 + n) * 0.1
+			lift_foot = Math.cos(t * 12.5 + n) < 0 and otherwise_attached >= 2
+			
 			# lift_foot = Math.sin(t + part_index/parts_list.length*Math.PI) < 0 and otherwise_attached >= 2
 			# if part_index > 3 and part_index < parts_list.length - 3
 			# 	lift_foot = true # don't let the middle of the caterpillar act as feet
 			dist_to_previous = if part_index > 0 then Math.hypot(part.x - parts_list[part_index-1].x, part.y - parts_list[part_index-1].y) else 0
-			lift_foot = dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
+			lift_foot = true if dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
 			lift_foot = true if part_index is 0 # head part doesn't have a leg
 			if lift_foot
 				foot?.attachment = null
@@ -182,8 +188,8 @@ module.exports = class Caterpillar extends Entity
 					# 	y: part.towards_ground.y * leg_length
 					# }
 					test_point_world = {
-						x: foot_in_world.x + forward_vector.x #+ leg_vector.x
-						y: foot_in_world.y + forward_vector.y #+ leg_vector.y
+						x: foot_in_world.x #+ forward_vector.x #+ leg_vector.x
+						y: foot_in_world.y #+ forward_vector.y #+ leg_vector.y
 					}
 
 					hit = world.collision(test_point_world, types: (entity)=>
