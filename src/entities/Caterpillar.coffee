@@ -106,6 +106,17 @@ module.exports = class Caterpillar extends Entity
 		# 	part.towards_ground.y = smoothed_towards_ground_y_values[part_index]
 		
 		# move
+		for part in [...parts_list, ...feet_list] when part?
+			unless part.attachment
+				part.vy += 0.5
+				part.vx *= 0.99
+				part.vy *= 0.99
+				# @structure.stepLayout({gravity: 0.005, collision})
+				# @structure.stepLayout() for [0..10]
+				# @structure.stepLayout({collision}) for [0..4]
+				part.x += part.vx
+				part.y += part.vy
+
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
 			entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
 		)
@@ -159,20 +170,20 @@ module.exports = class Caterpillar extends Entity
 					angle_offsets.push(max_angle_offset * i/n_angle_offsets_per_dir)
 					angle_offsets.push(-max_angle_offset * i/n_angle_offsets_per_dir)
 				for angle_offset in angle_offsets
-					part_in_world = @toWorld(part)
+					foot_in_world = @toWorld(foot)
 					forward_vector = {
 						x: Math.cos(ground_angle + angle_offset) * crawl_speed
 						y: Math.sin(ground_angle + angle_offset) * crawl_speed
 					}
 					# search towards the ground, in the direction it was last found
-					leg_length = part.radius + 2 # WET
-					leg_vector = {
-						x: part.towards_ground.x * leg_length
-						y: part.towards_ground.y * leg_length
-					}
+					# leg_length = part.radius + 2 # WET
+					# leg_vector = {
+					# 	x: part.towards_ground.x * leg_length
+					# 	y: part.towards_ground.y * leg_length
+					# }
 					test_point_world = {
-						x: part_in_world.x + forward_vector.x + leg_vector.x
-						y: part_in_world.y + forward_vector.y + leg_vector.y
+						x: foot_in_world.x + forward_vector.x #+ leg_vector.x
+						y: foot_in_world.y + forward_vector.y #+ leg_vector.y
 					}
 
 					hit = world.collision(test_point_world, types: (entity)=>
@@ -210,8 +221,8 @@ module.exports = class Caterpillar extends Entity
 											y: Math.sin(towards_ground_angle)
 										}
 										attachment_hit_space = {
-											x: closest_point_in_hit_space.x - towards_ground.x * leg_length
-											y: closest_point_in_hit_space.y - towards_ground.y * leg_length
+											x: closest_point_in_hit_space.x #- towards_ground.x * leg_length
+											y: closest_point_in_hit_space.y #- towards_ground.y * leg_length
 										}
 										{
 											score: Math.hypot(attachment_hit_space.x - test_point_in_hit_space.x, attachment_hit_space.y - test_point_in_hit_space.y)
@@ -227,7 +238,7 @@ module.exports = class Caterpillar extends Entity
 				if not hit and otherwise_attached >= 2
 					foot.attachment = null
 			
-			if not foot?.attachment
+			if true#not foot?.attachment
 				# part.x += part.vx
 				# part.y += part.vy
 				hit = collision(part)
@@ -267,15 +278,6 @@ module.exports = class Caterpillar extends Entity
 								ground_angle = 0
 							foot?.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
 							part.towards_ground = towards_ground
-				else
-					part.vy += 0.5
-					part.vx *= 0.99
-					part.vy *= 0.99
-					# @structure.stepLayout({gravity: 0.005, collision})
-					# @structure.stepLayout() for [0..10]
-					# @structure.stepLayout({collision}) for [0..4]
-					part.x += part.vx
-					part.y += part.vy
 			
 			# angular constraint pivoting on this part
 			relative_angle = (Math.sin(Math.sin(t)*Math.PI/4) - 0.5) * Math.PI/parts_list.length/2
@@ -286,7 +288,7 @@ module.exports = class Caterpillar extends Entity
 				@accumulate_angular_constraint_forces(prev_part, next_part, part, relative_angle)
 		
 		# apply forces
-		for part in parts_list
+		for part in [...parts_list, ...feet_list] when part?.fx and part?.fy
 			part.vx += part.fx
 			part.vy += part.fy
 			part.x += part.fx
