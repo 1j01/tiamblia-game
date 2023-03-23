@@ -113,13 +113,13 @@ module.exports = class Caterpillar extends Entity
 			for other_part in parts_list when other_part isnt part
 				if other_part.attachment
 					otherwise_attached += 1
-			# lift_feet = Math.sin(t + part_index/parts_list.length*Math.PI) < 0 and otherwise_attached >= 2
+			# lift_foot = Math.sin(t + part_index/parts_list.length*Math.PI) < 0 and otherwise_attached >= 2
 			# if part_index > 3 and part_index < parts_list.length - 3
-			# 	lift_feet = true # don't let the middle of the caterpillar act as feet
+			# 	lift_foot = true # don't let the middle of the caterpillar act as feet
 			dist_to_previous = if part_index > 0 then Math.hypot(part.x - parts_list[part_index-1].x, part.y - parts_list[part_index-1].y) else 0
-			lift_feet = dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
-			lift_feet = true if part_index is 0 # head doesn't have feet
-			if lift_feet
+			lift_foot = dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
+			lift_foot = true if part_index is 0 # head doesn't have feet
+			if lift_foot
 				part.attachment = null
 			attachment_entity = if part.attachment then world.getEntityByID(part.attachment.entity_id)
 			if attachment_entity
@@ -180,7 +180,7 @@ module.exports = class Caterpillar extends Entity
 
 							# part.x = closest_point_local.x
 							# part.y = closest_point_local.y
-							unless lift_feet
+							unless lift_foot
 								ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 								if isNaN(ground_angle)
 									console.warn("ground_angle is NaN")
@@ -243,7 +243,7 @@ module.exports = class Caterpillar extends Entity
 
 						part.x = closest_point_local.x
 						part.y = closest_point_local.y
-						unless lift_feet
+						unless lift_foot
 							ground_angle = Math.atan2(closest_segment.b.y - closest_segment.a.y, closest_segment.b.x - closest_segment.a.x)
 							if isNaN(ground_angle)
 								console.warn("ground_angle is NaN")
