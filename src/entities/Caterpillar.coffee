@@ -276,7 +276,7 @@ module.exports = class Caterpillar extends Entity
 							if isNaN(ground_angle)
 								console.warn("ground_angle is NaN")
 								ground_angle = 0
-							foot?.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
+							# foot?.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
 							part.towards_ground = towards_ground
 			
 			# angular constraint pivoting on this part
