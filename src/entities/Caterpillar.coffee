@@ -49,16 +49,17 @@ module.exports = class Caterpillar extends Entity
 			part.towards_ground = {x: 0, y: 0}
 			part.towards_ground_smoothed = {x: 0, y: 0}
 
-			foot_name = "foot_#{part_index}"
-			leg_length = part.radius + 2 # WET
-			@structure.addSegment(
-				from: part.name
-				to: foot_name
-				name: foot_name
-				length: leg_length
-				width: 1
-			)
-			@structure.points[foot_name].attachment = null
+			if part_index isnt 0
+				foot_name = "foot_#{part_index}"
+				leg_length = part.radius + 2 # WET
+				@structure.addSegment(
+					from: part.name
+					to: foot_name
+					name: foot_name
+					length: leg_length
+					width: 1
+				)
+				@structure.points[foot_name].attachment = null
 		
 		for point_name, point of @structure.points
 			point.vx = 0
