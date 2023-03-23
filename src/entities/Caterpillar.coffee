@@ -45,7 +45,6 @@ module.exports = class Caterpillar extends Entity
 		
 		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
 		for part, part_index in parts_list
-			part.attachment = null
 			part.radius = 5 - part_index*0.1
 			part.towards_ground = {x: 0, y: 0}
 			part.towards_ground_smoothed = {x: 0, y: 0}
@@ -59,6 +58,7 @@ module.exports = class Caterpillar extends Entity
 				length: leg_length
 				width: 1
 			)
+			@structure.points[foot_name].attachment = null
 		
 		for point_name, point of @structure.points
 			point.vx = 0
@@ -78,7 +78,9 @@ module.exports = class Caterpillar extends Entity
 
 	step: (world)->
 		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
-		foot_list = Object.values(@structure.points).filter((part)=> part.name.match(/foot/))
+		# feet_list = Object.values(@structure.points).filter((part)=> part.name.match(/foot/))
+		# for handling deleting points
+		feet_list = parts_list.map((part)=> @structure.points["foot_#{part.name.split("_").pop()}"])
 		segments_list = Object.values(@structure.segments)
 
 		# stop at end of the world
@@ -108,9 +110,10 @@ module.exports = class Caterpillar extends Entity
 		)
 		t = performance.now()/1000
 		for part, part_index in parts_list
+			foot = feet_list[part_index]
 			otherwise_attached = 0
-			for other_part in parts_list when other_part isnt part
-				if other_part.attachment
+			for other_foot in feet_list when other_foot isnt foot
+				if other_foot?.attachment
 					otherwise_attached += 1
 			# lift_foot = Math.sin(t + part_index/parts_list.length*Math.PI) < 0 and otherwise_attached >= 2
 			# if part_index > 3 and part_index < parts_list.length - 3
@@ -119,15 +122,15 @@ module.exports = class Caterpillar extends Entity
 			lift_foot = dist_to_previous > 10 # in case it's stretching out a lot, release some constraints
 			lift_foot = true if part_index is 0 # head part doesn't have a leg
 			if lift_foot
-				part.attachment = null
-			attachment_entity = if part.attachment then world.getEntityByID(part.attachment.entity_id)
+				foot?.attachment = null
+			attachment_entity = if foot?.attachment then world.getEntityByID(foot.attachment.entity_id)
 			
-			if true
+			if foot
 			# if attachment_entity
-			# 	attachment_world = attachment_entity.toWorld(part.attachment.point)
+			# 	attachment_world = attachment_entity.toWorld(foot.attachment.point)
 			# 	attachment_local = @fromWorld(attachment_world)
-				if part.attachment
-					ground_angle = part.attachment.ground_angle
+				if foot.attachment
+					ground_angle = foot.attachment.ground_angle
 				else
 					# idk, something.
 					# could maybe search for the nearest segment in the world?
@@ -216,14 +219,14 @@ module.exports = class Caterpillar extends Entity
 										}
 								candidates.sort((a, b)=> b.score - a.score)
 								{attachment_hit_space, towards_ground} = candidates[0]
-								part.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
+								foot.attachment = {entity_id: hit.id, point: attachment_hit_space, ground_angle}
 								part.towards_ground = towards_ground
 							break
 				
 				if not hit and otherwise_attached >= 2
-					part.attachment = null
+					foot.attachment = null
 			
-			if not part.attachment
+			if not foot?.attachment
 				# part.x += part.vx
 				# part.y += part.vy
 				hit = collision(part)
@@ -261,7 +264,7 @@ module.exports = class Caterpillar extends Entity
 							if isNaN(ground_angle)
 								console.warn("ground_angle is NaN")
 								ground_angle = 0
-							part.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
+							foot?.attachment = {entity_id: hit.id, point: closest_point_in_hit_space, ground_angle}
 							part.towards_ground = towards_ground
 				else
 					part.vy += 0.5
@@ -317,30 +320,30 @@ module.exports = class Caterpillar extends Entity
 
 		# constrain distances
 		for i in [0...4]
-			for part, part_index in parts_list
-				attachment_entity = if part.attachment then world.getEntityByID(part.attachment.entity_id)
+			for foot, foot_index in feet_list when foot?.attachment
+				attachment_entity = world.getEntityByID(foot.attachment.entity_id)
 				if attachment_entity
-					attachment_world = attachment_entity.toWorld(part.attachment.point)
+					attachment_world = attachment_entity.toWorld(foot.attachment.point)
 					attachment_local = @fromWorld(attachment_world)
 					fixity = 0.1 # also affects crawling speed
-					part.x += (attachment_local.x - part.x) * fixity
-					part.y += (attachment_local.y - part.y) * fixity
+					foot.x += (attachment_local.x - foot.x) * fixity
+					foot.y += (attachment_local.y - foot.y) * fixity
 			for segment_name, segment of @structure.segments
-				if segment.b.name.match(/foot/)
-					part = segment.a
-					foot = segment.b
-					leg_length = segment.length
-					foot_offset = { x: part.towards_ground_smoothed.x * leg_length, y: part.towards_ground_smoothed.y * leg_length }
-					# rotate foot offset in sinusoidal fashion
-					n = Number(part.name.match(/\d+/))
-					leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
-					sin_leg_angle = Math.sin(leg_angle)
-					cos_leg_angle = Math.cos(leg_angle)
-					[foot_offset.x, foot_offset.y] = [foot_offset.x * cos_leg_angle - foot_offset.y * sin_leg_angle, foot_offset.x * sin_leg_angle + foot_offset.y * cos_leg_angle]
+				# if segment.b.name.match(/foot/)
+				# 	part = segment.a
+				# 	foot = segment.b
+				# 	leg_length = segment.length
+				# 	foot_offset = { x: part.towards_ground_smoothed.x * leg_length, y: part.towards_ground_smoothed.y * leg_length }
+				# 	# rotate foot offset in sinusoidal fashion
+				# 	n = Number(part.name.match(/\d+/))
+				# 	leg_angle = Math.sin(performance.now() / 80 + n) * 0.1
+				# 	sin_leg_angle = Math.sin(leg_angle)
+				# 	cos_leg_angle = Math.cos(leg_angle)
+				# 	[foot_offset.x, foot_offset.y] = [foot_offset.x * cos_leg_angle - foot_offset.y * sin_leg_angle, foot_offset.x * sin_leg_angle + foot_offset.y * cos_leg_angle]
 
-					foot.x = part.x + foot_offset.x
-					foot.y = part.y + foot_offset.y
-					continue
+				# 	foot.x = part.x + foot_offset.x
+				# 	foot.y = part.y + foot_offset.y
+				# 	continue
 				delta_x = segment.a.x - segment.b.x
 				delta_y = segment.a.y - segment.b.y
 				delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y)
@@ -453,9 +456,10 @@ module.exports = class Caterpillar extends Entity
 			ctx.save()
 			ctx.beginPath()
 			ctx.arc(part.x, part.y, part.radius, 0, TAU)
-			# ctx.fillStyle = if part.attachment then "lime" else color
+			# foot = feet_list[part_index]
+			# ctx.fillStyle = if foot.attachment then "lime" else color
 			# ctx.fillStyle = "hsla(#{(part.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, 0.5)"
-			# ctx.fillStyle = "hsla(#{(part.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if part.attachment then 1 else 0.3})"
+			# ctx.fillStyle = "hsla(#{(part.relative_angle ? 0) * 10 * 180 / Math.PI}, 100%, 50%, #{if foot.attachment then 1 else 0.3})"
 			ctx.fillStyle = color
 			ctx.fill()
 			ctx.clip()
@@ -478,12 +482,18 @@ module.exports = class Caterpillar extends Entity
 				ctx.fillStyle = "white"
 				ctx.fill()
 		
-		for part in Object.values(@structure.points)
+		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
+		# feet_list = Object.values(@structure.points).filter((part)=> part.name.match(/foot/))
+		# for handling deleting points
+		feet_list = parts_list.map((part)=> @structure.points["foot_#{part.name.split("_").pop()}"])
+
+		for part, part_index in parts_list
 			if (try localStorage["tiamblia.debug_caterpillar"]) is "true"
-				# draw line from part to attachment
-				if part.attachment
-					entity = world.getEntityByID(part.attachment.entity_id)
-					attachment_local = @fromWorld(entity.toWorld(part.attachment.point))
+				# draw line from foot to attachment target
+				foot = feet_list[part_index]
+				if foot?.attachment
+					entity = world.getEntityByID(foot.attachment.entity_id)
+					attachment_local = @fromWorld(entity.toWorld(foot.attachment.point))
 					ctx.beginPath()
 					ctx.moveTo(part.x, part.y)
 					ctx.lineTo(attachment_local.x, attachment_local.y)
