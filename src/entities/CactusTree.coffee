@@ -13,7 +13,7 @@ module.exports = class CactusTree extends Tree
 		@random_index = 0
 		@random_values = []
 
-		@branch(from: "base", to: "1", juice: Math.random()*5+3, width: @trunk_width, length: 15, angle: -TAU/2, splits: 0)
+		@branch(from: "base", to: "1", juice: Math.random()*10+3, width: @trunk_width, length: 15, angle: -TAU/2, splits: 0)
 
 	random: ->
 		@random_index++
@@ -26,18 +26,25 @@ module.exports = class CactusTree extends Tree
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
 		juice -= 1
+		if splits > 0
+			width *= 0.97
+		else if juice > 5
+			# Cacti trunks can actually get thicker going up
+			# until it reaches the branching point
+			width *= 1.1
 		if juice > 0
 			dir = {x: Math.cos(angle), y: Math.sin(angle)}
 			# TODO: refactor angle calculations
 			# so that this uses y; it's unintuitive right now
 			dir.x -= 3
 			angle = Math.atan2(dir.y, dir.x)
-			will_split = Math.random() < 0.5 and splits is 0
+			will_split = Math.random() < 0.5 and splits is 0 and juice > 3
 			if will_split
-				juice /= 3
-				@branch({from: name, to: "#{to}-b", juice, angle: angle + TAU/5, width, length, splits: splits + 1})
-				@branch({from: name, to: "#{to}-c", juice, angle: angle - TAU/5, width, length, splits: splits + 1})
-				juice *= 3
+				branch_juice = juice / 3
+				branch_width = width * 0.7
+				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length, splits: splits + 1})
+				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length, splits: splits + 1})
+				width *= 0.8
 			@branch({from: name, to: "#{to}-a", juice, angle, width, length, splits: splits + will_split})
 		else
 			leaf_point = @structure.points[name]
