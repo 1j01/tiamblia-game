@@ -59,17 +59,27 @@ module.exports = class CactusTree extends Tree
 			length = Math.hypot(dir.x, dir.y)
 			dir.x /= length
 			dir.y /= length
-			for i in [-1..1] by 0.4
+			perp = {x: -dir.y, y: dir.x}
+			i_to = 0.8
+			i_from = -i_to
+			lines = 4
+			for i in [i_from..i_to] by (i_to-i_from)/lines
 				ctx.save()
 				o = (segment.width/2 - ctx.lineWidth/2)*i
 				lengthen = segment.width/2 * Math.sqrt(1 - i*i) - ctx.lineWidth/2
+				bulge = segment.width*0.1
 				# lengthen = Math.sin(performance.now()/1000+i)*segment.width/2
 				ctx.translate(Math.cos(angle)*o, Math.sin(angle)*o)
 				ctx.beginPath()
 				# ctx.moveTo(segment.a.x, segment.a.y)
 				# ctx.lineTo(segment.b.x, segment.b.y)
 				ctx.moveTo(segment.a.x - dir.x*lengthen, segment.a.y - dir.y*lengthen)
-				ctx.lineTo(segment.b.x + dir.x*lengthen, segment.b.y + dir.y*lengthen)
+				# ctx.lineTo(segment.b.x + dir.x*lengthen, segment.b.y + dir.y*lengthen)
+				ctx.bezierCurveTo(
+					segment.a.x + perp.x*bulge*i, segment.a.y + perp.y*bulge*i,
+					segment.b.x + perp.x*bulge*i, segment.b.y + perp.y*bulge*i,
+					segment.b.x + dir.x*lengthen, segment.b.y + dir.y*lengthen
+				)
 				ctx.stroke()
 				ctx.restore()
 		

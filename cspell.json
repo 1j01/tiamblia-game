@@ -59,6 +59,7 @@
 	"words": [
 		"anims",
 		"bbox",
+		"bezier",
 		"callout",
 		"checkmark",
 		"contextmenu",
@@ -100,6 +101,7 @@
 		"overridable",
 		"pagedown",
 		"pageup",
+		"perp",
 		"pmenu",
 		"popdown",
 		"rgba",
