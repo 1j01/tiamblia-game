@@ -28,6 +28,8 @@ module.exports = class CactusTree extends Tree
 		juice -= 1
 		if splits > 0
 			width *= 0.97
+		else if juice < 3
+			width *= 0.9
 		else if juice > 5
 			# Cacti trunks can actually get thicker going up
 			# until it reaches the branching point
