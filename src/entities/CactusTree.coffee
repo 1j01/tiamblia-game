@@ -121,7 +121,7 @@ module.exports = class CactusTree extends Tree
 				j_from = 0
 				j_to = 1
 				spikes = 5
-				for j in [j_from..j_to] by (j_to-j_from)/spikes
+				for j in [j_from...j_to] by (j_to-j_from)/spikes
 					ctx.save()
 					ctx.translate(
 						segment.a.x + dir.x*shift + (segment.b.x - segment.a.x)*j,
