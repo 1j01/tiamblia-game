@@ -57,10 +57,9 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.translate(@width/2,@height)
 		
 		# for cute hopping, rotate based on the angle of movement
-		if @vx > 0
-			ctx.rotate(Math.atan2(@vy,@vx)/2)
-		else if @vx < 0
-			ctx.rotate((Math.atan2(@vy,-@vx))/2)
+		if @vx isnt 0
+			angle = Math.atan2(@vy,Math.abs(@vx))
+			ctx.rotate(angle / 2)
 
 		ctx.fillStyle=@c2
 		# ctx.fillRect(0,0,@width,@height)
