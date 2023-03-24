@@ -87,19 +87,53 @@ module.exports = class CactusTree extends Tree
 				o = (segment.width/2 - ctx.lineWidth/2)*i
 				lengthen = segment.width/2 * Math.sqrt(1 - i*i) - ctx.lineWidth/2
 				bulge = segment.width*0.1
-				# lengthen = Math.sin(performance.now()/1000+i)*segment.width/2
 				ctx.translate(Math.cos(angle)*o, Math.sin(angle)*o)
 				ctx.beginPath()
-				# ctx.moveTo(segment.a.x, segment.a.y)
-				# ctx.lineTo(segment.b.x, segment.b.y)
 				ctx.moveTo(segment.a.x - dir.x*lengthen, segment.a.y - dir.y*lengthen)
-				# ctx.lineTo(segment.b.x + dir.x*lengthen, segment.b.y + dir.y*lengthen)
 				ctx.bezierCurveTo(
 					segment.a.x + perp.x*bulge*i, segment.a.y + perp.y*bulge*i,
 					segment.b.x + perp.x*bulge*i, segment.b.y + perp.y*bulge*i,
 					segment.b.x + dir.x*lengthen, segment.b.y + dir.y*lengthen
 				)
 				ctx.stroke()
+				ctx.restore()
+		
+		# Spikes
+		for segment_name, segment of @structure.segments
+			angle = Math.atan2(segment.b.y-segment.a.y, segment.b.x-segment.a.x) + TAU/4
+			dir = {x: segment.b.x-segment.a.x, y: segment.b.y-segment.a.y}
+			length = Math.hypot(dir.x, dir.y)
+			dir.x /= length
+			dir.y /= length
+			perp = {x: -dir.y, y: dir.x}
+			i_to = 0.8
+			i_from = -i_to
+			lines = 4
+			for i in [i_from..i_to] by (i_to-i_from)/lines
+				ctx.lineWidth = segment.width*0.05
+				ctx.lineCap = "round"
+				ctx.strokeStyle = "rgba(255,255,255)"
+				ctx.save()
+				o = (segment.width/2 - ctx.lineWidth/2)*i
+				shift = segment.width/2 * Math.sqrt(1 - i*i) - ctx.lineWidth/2
+				bulge = segment.width*0.1
+				ctx.translate(Math.cos(angle)*o, Math.sin(angle)*o)
+				j_from = 0
+				j_to = 1
+				spikes = 5
+				for j in [j_from..j_to] by (j_to-j_from)/spikes
+					ctx.save()
+					ctx.translate(
+						segment.a.x + dir.x*shift + (segment.b.x - segment.a.x)*j,
+						segment.a.y + dir.y*shift + (segment.b.y - segment.a.y)*j
+					)
+					ctx.rotate(angle + TAU/10*i)
+					ctx.beginPath()
+					ctx.moveTo(0,0)
+					ctx.lineTo(0,segment.width*0.1)
+					ctx.stroke()
+					ctx.restore()
+
 				ctx.restore()
 		
 		for point_name, leaf of @structure.points when leaf.is_leaf
