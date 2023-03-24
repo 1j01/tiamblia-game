@@ -6579,7 +6579,7 @@ module.exports = CactusTree = (function() {
         width: this.trunk_width,
         length: 15,
         angle: -TAU / 2,
-        splits: 0
+        offshoots: 0
       });
     }
 
@@ -6589,8 +6589,8 @@ module.exports = CactusTree = (function() {
       return (base = this.random_values)[name1 = this.random_index] != null ? base[name1] : base[name1] = Math.random();
     }
 
-    branch({from, to, juice, angle, width, length, splits}) {
-      var branch_juice, branch_width, dir, leaf_point, name, will_split;
+    branch({from, to, juice, angle, width, length, offshoots}) {
+      var branch_angle, branch_juice, branch_length, branch_width, dir, i, k, l, leaf_point, max_branches, name, offshoot_name, offshoot_names, offshoots_here, ref, ref1, side, starting_side;
       name = to;
       // angle+=(Math.random()*2-1)*0.7
       this.structure.addSegment({
@@ -6603,7 +6603,7 @@ module.exports = CactusTree = (function() {
       this.structure.points[name].x = this.structure.points[from].x + Math.sin(angle) * length;
       this.structure.points[name].y = this.structure.points[from].y + Math.cos(angle) * length;
       juice -= 1;
-      if (splits > 0) {
+      if (offshoots > 0) {
         width *= 0.97;
       } else if (juice < 3) {
         width *= 0.9;
@@ -6621,28 +6621,37 @@ module.exports = CactusTree = (function() {
         // so that this uses y; it's unintuitive right now
         dir.x -= 3;
         angle = Math.atan2(dir.y, dir.x);
-        will_split = Math.random() < 0.5 && splits === 0 && juice > 3;
-        if (will_split) {
-          branch_juice = juice / 3;
-          branch_width = width * 0.7;
-          this.branch({
-            from: name,
-            to: `${to}-b`,
-            juice: branch_juice,
-            angle: angle + TAU / 5,
-            width: branch_width,
-            length,
-            splits: splits + 1
-          });
-          this.branch({
-            from: name,
-            to: `${to}-c`,
-            juice: branch_juice,
-            angle: angle - TAU / 5,
-            width: branch_width,
-            length,
-            splits: splits + 1
-          });
+        max_branches = 5;
+        offshoots_here = 0;
+        if (Math.random() < 0.5 && offshoots < max_branches && juice > 3) {
+          offshoots_here = 2;
+          if (Math.random() < 0.1 || offshoots + offshoots_here > max_branches) {
+            offshoots_here = 1;
+          }
+        }
+        offshoot_names = ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k"];
+        starting_side = Math.random() < 0.5 ? 1 : -1;
+        if (offshoots_here) {
+          for (i = k = 0, ref = offshoots_here; (0 <= ref ? k < ref : k > ref); i = 0 <= ref ? ++k : --k) {
+            offshoot_name = offshoot_names[i];
+            branch_juice = juice / 3;
+            branch_width = width * 0.7;
+            branch_length = length;
+            for (l = 0, ref1 = offshoots; (0 <= ref1 ? l < ref1 : l > ref1); 0 <= ref1 ? l++ : l--) {
+              branch_length *= 0.9;
+            }
+            side = starting_side * (i % 2 ? 1 : -1);
+            branch_angle = angle + TAU / 5 * side;
+            this.branch({
+              from: name,
+              to: `${to}-${offshoot_name}`,
+              juice: branch_juice,
+              angle: branch_angle,
+              width: branch_width,
+              length: branch_length,
+              offshoots: offshoots + offshoots_here
+            });
+          }
           width *= 0.8;
         }
         this.branch({
@@ -6652,10 +6661,11 @@ module.exports = CactusTree = (function() {
           angle,
           width,
           length,
-          splits: splits + will_split
+          offshoots: offshoots + offshoots_here
         });
       } else {
         leaf_point = this.structure.points[name];
+        leaf_point.radius = width / 2;
         this.leaf(leaf_point);
       }
     }
@@ -6666,7 +6676,7 @@ module.exports = CactusTree = (function() {
     }
 
     draw(ctx) {
-      var angle, bulge, dir, i, i_from, i_to, j, leaf, length, lengthen, lines, o, perp, point_name, ref, ref1, ref2, ref3, ref4, segment, segment_name;
+      var angle, bulge, dir, i, i_from, i_to, j, j_from, j_to, k, l, leaf, length, lengthen, lines, m, o, ox, oy, perp, point_name, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, segment, segment_name, shift, spikes;
       this.random_index = 0;
       ref = this.structure.segments;
       for (segment_name in ref) {
@@ -6681,7 +6691,7 @@ module.exports = CactusTree = (function() {
         // Highlights
         ctx.lineWidth = segment.width * 0.1;
         ctx.lineCap = "round";
-        ctx.strokeStyle = "rgba(255,255,155,0.5)";
+        ctx.strokeStyle = "rgba(255,255,100,0.5)";
         angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) + TAU / 4;
         dir = {
           x: segment.b.x - segment.a.x,
@@ -6697,33 +6707,122 @@ module.exports = CactusTree = (function() {
         i_to = 0.8;
         i_from = -i_to;
         lines = 4;
-        for (i = j = ref1 = i_from, ref2 = i_to, ref3 = (i_to - i_from) / lines; ref3 !== 0 && (ref3 > 0 ? j <= ref2 : j >= ref2); i = j += ref3) {
+        for (i = k = ref1 = i_from, ref2 = i_to, ref3 = (i_to - i_from) / lines; ref3 !== 0 && (ref3 > 0 ? k <= ref2 : k >= ref2); i = k += ref3) {
           ctx.save();
           o = (segment.width / 2 - ctx.lineWidth / 2) * i;
           lengthen = segment.width / 2 * Math.sqrt(1 - i * i) - ctx.lineWidth / 2;
           bulge = segment.width * 0.1;
-          // lengthen = Math.sin(performance.now()/1000+i)*segment.width/2
           ctx.translate(Math.cos(angle) * o, Math.sin(angle) * o);
           ctx.beginPath();
-          // ctx.moveTo(segment.a.x, segment.a.y)
-          // ctx.lineTo(segment.b.x, segment.b.y)
           ctx.moveTo(segment.a.x - dir.x * lengthen, segment.a.y - dir.y * lengthen);
-          // ctx.lineTo(segment.b.x + dir.x*lengthen, segment.b.y + dir.y*lengthen)
           ctx.bezierCurveTo(segment.a.x + perp.x * bulge * i, segment.a.y + perp.y * bulge * i, segment.b.x + perp.x * bulge * i, segment.b.y + perp.y * bulge * i, segment.b.x + dir.x * lengthen, segment.b.y + dir.y * lengthen);
           ctx.stroke();
           ctx.restore();
         }
+        // Shadow
+        ctx.lineWidth = segment.width / 2;
+        ctx.lineCap = "round";
+        // ctx.strokeStyle = "rgba(0,0,0,0.2)"
+        // ctx.globalCompositeOperation = "darker"
+        ctx.strokeStyle = "rgba(0,120,0,0.5)";
+        ctx.beginPath();
+        ox = -segment.width / 4;
+        oy = segment.width / 6;
+        ctx.moveTo(segment.a.x + ox, segment.a.y + oy);
+        ctx.lineTo(segment.b.x + ox, segment.b.y + oy);
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
+        // Main Highlight
+        ctx.lineWidth = segment.width / 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "rgba(255,255,100,0.2)";
+        ctx.beginPath();
+        ox = segment.width / 4;
+        oy = -segment.width / 6;
+        ctx.moveTo(segment.a.x + ox, segment.a.y + oy);
+        ctx.lineTo(segment.b.x + ox, segment.b.y + oy);
+        ctx.stroke();
       }
-      ref4 = this.structure.points;
-      for (point_name in ref4) {
-        leaf = ref4[point_name];
+      ref4 = this.structure.segments;
+      
+      // Spikes
+      for (segment_name in ref4) {
+        segment = ref4[segment_name];
+        // disable spikes for performance
+        // and because they're not quite right
+        break;
+        angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) + TAU / 4;
+        dir = {
+          x: segment.b.x - segment.a.x,
+          y: segment.b.y - segment.a.y
+        };
+        length = Math.hypot(dir.x, dir.y);
+        dir.x /= length;
+        dir.y /= length;
+        perp = {
+          x: -dir.y,
+          y: dir.x
+        };
+        i_to = 0.8;
+        i_from = -i_to;
+        lines = 4;
+        for (i = l = ref5 = i_from, ref6 = i_to, ref7 = (i_to - i_from) / lines; ref7 !== 0 && (ref7 > 0 ? l <= ref6 : l >= ref6); i = l += ref7) {
+          ctx.lineWidth = segment.width * 0.05;
+          ctx.lineCap = "round";
+          ctx.strokeStyle = "rgba(255,255,255)";
+          ctx.save();
+          o = (segment.width / 2 - ctx.lineWidth / 2) * i;
+          shift = segment.width / 2 * Math.sqrt(1 - i * i) - ctx.lineWidth / 2;
+          bulge = segment.width * 0.1;
+          ctx.translate(Math.cos(angle) * o, Math.sin(angle) * o);
+          j_from = 0;
+          j_to = 1;
+          spikes = 5;
+          for (j = m = ref8 = j_from, ref9 = j_to, ref10 = (j_to - j_from) / spikes; ref10 !== 0 && (ref10 > 0 ? m < ref9 : m > ref9); j = m += ref10) {
+            ctx.save();
+            ctx.translate(segment.a.x + dir.x * shift + (segment.b.x - segment.a.x) * j, segment.a.y + dir.y * shift + (segment.b.y - segment.a.y) * j);
+            ctx.rotate(angle + TAU / 10 * i);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, segment.width * 0.1);
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+      }
+      ref11 = this.structure.points;
+      for (point_name in ref11) {
+        leaf = ref11[point_name];
         if (leaf.is_leaf) {
-          this.drawLeaf(ctx, leaf.x, leaf.y);
+          this.drawLeaf(ctx, leaf);
         }
       }
     }
 
-    drawLeaf(ctx, x, y) {}
+    drawLeaf(ctx, {x, y, radius = 5}) {
+      var k, ref;
+// draw flowers
+      for (k = 0, ref = 2 + this.random() * 3; (0 <= ref ? k <= ref : k >= ref); 0 <= ref ? k++ : k--) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(this.random() * TAU / 2 + TAU / 2);
+        ctx.beginPath();
+        ctx.translate(this.random() * radius, 0);
+        ctx.moveTo(0, 0);
+        ctx.translate(this.random() * radius, 0);
+        ctx.lineTo(0, 0);
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = "salmon";
+        ctx.stroke();
+        ctx.scale(0.5 + this.random() * 0.5, 1);
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, TAU, true);
+        ctx.fillStyle = "pink";
+        ctx.fill();
+        ctx.restore();
+      }
+    }
 
   };
 
@@ -6732,11 +6831,6 @@ module.exports = CactusTree = (function() {
   return CactusTree;
 
 }).call(this);
-
-// ctx.beginPath()
-// ctx.arc(x,y,2,0,TAU,true)
-// ctx.fillStyle = "pink"
-// ctx.fill()
 
 
 /***/ }),
