@@ -19,7 +19,7 @@ module.exports = class CactusTree extends Tree
 		@random_index++
 		return @random_values[@random_index] ?= Math.random()
 
-	branch: ({from, to, juice, angle, width, length, splits})->
+	branch: ({from, to, juice, angle, width, length, splits, just_branched})->
 		name = to
 		# angle+=(Math.random()*2-1)*0.7
 		@structure.addSegment({from, name, length, width, color: "green"})
@@ -44,8 +44,8 @@ module.exports = class CactusTree extends Tree
 			if will_split
 				branch_juice = juice / 3
 				branch_width = width * 0.7
-				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length, splits: splits + 1})
-				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length, splits: splits + 1})
+				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length, splits: splits + 1, just_branched: true})
+				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length, splits: splits + 1, just_branched: true})
 				width *= 0.8
 			@branch({from: name, to: "#{to}-a", juice, angle, width, length, splits: splits + will_split})
 		else
@@ -75,7 +75,7 @@ module.exports = class CactusTree extends Tree
 				to_angle = angle
 
 			# Draw bezier
-			cp_inset = 0.2 * segment.length
+			cp_inset = 0.5 * segment.length
 			cp1 = {x: segment.a.x + Math.cos(from_angle) * cp_inset, y: segment.a.y + Math.sin(from_angle) * cp_inset}
 			cp2 = {x: segment.b.x + Math.cos(to_angle) * cp_inset, y: segment.b.y + Math.sin(to_angle) * cp_inset}
 			ctx.beginPath()
@@ -84,7 +84,7 @@ module.exports = class CactusTree extends Tree
 			ctx.lineWidth = segment.width
 			ctx.lineCap = "round"
 			# ctx.strokeStyle = segment.color
-			ctx.strokeStyle = "hsl(#{~~(@random()*360)}, 50%, 50%)"
+			ctx.strokeStyle = "hsl(#{~~(@random()*36)+100}, #{~~(@random()*50)+20}%, #{~~(@random()*50)+20}%)"
 			ctx.stroke()
 
 			continue
