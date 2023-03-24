@@ -51,6 +51,18 @@ module.exports = class Rabbit extends SimpleActor
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
+
+		@stepLayout()
+
+	initLayout: ->
+		@stepLayout()
+
+	stepLayout: ->
+		# Align skeleton to the body
+		@structure.points.head.x = @width/2 + @facing_x * @width/2
+		@structure.points.head.y = @height * 0.5
+		@structure.points.body.x = @width/2 - @facing_x * @width/2
+		@structure.points.body.y = @height
 	
 	draw: (ctx)->
 		ctx.save() # body center transform
