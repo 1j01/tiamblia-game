@@ -182,6 +182,15 @@ module.exports = class Arrow extends Entity
 					# window.debug_max_facing_angle_of_incidence = Math.max(window.debug_max_facing_angle_of_incidence ? 0, facing_angle_of_incidence) # should be Math.PI/2 on arrow test scene
 					# window.debug_max_heading_angle_of_incidence = Math.max(window.debug_max_heading_angle_of_incidence ? 0, heading_angle_of_incidence) # should be Math.PI/2 on arrow test scene
 
+					# This could be more nuanced, but I'm trying to make it easier to hit animals.
+					# It's not satisfying when an arrow flies past your mark, and this is a 2D game so it's confusing
+					# when it looks like you missed in the z-axis.
+					ignore_angle_of_incidence = hit.constructor.name in ["Rabbit", "Deer", "GranddaddyLonglegs"]
+					if ignore_angle_of_incidence
+						incident_speed = Math.hypot(vx, vy)
+						heading_angle_of_incidence = 0
+						facing_angle_of_incidence = 0
+
 					# Arrows coming in at a grazing angle should bounce off.
 					# Arrows coming straight towards the surface but not facing forward should bounce off.
 					# Arrows going slow should bounce off.
