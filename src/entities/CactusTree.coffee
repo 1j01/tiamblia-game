@@ -61,13 +61,41 @@ module.exports = class CactusTree extends Tree
 		@random_index = 0
 		
 		for segment_name, segment of @structure.segments
+			prev_segment = null
+			break for prev_segment_name, prev_segment of @structure.segments when prev_segment.b is segment.a
+			next_segment = null
+			break for next_segment_name, next_segment of @structure.segments when next_segment.a is segment.b
+			from_angle = Math.atan2(prev_segment.b.y-prev_segment.a.y, prev_segment.b.x-prev_segment.a.x)
+			to_angle = Math.atan2(next_segment.b.y-next_segment.a.y, next_segment.b.x-next_segment.a.x)
+			angle = Math.atan2(segment.b.y-segment.a.y, segment.b.x-segment.a.x)
+
+			if isNaN(from_angle)
+				from_angle = angle
+			if isNaN(to_angle)
+				to_angle = angle
+
+			# Draw bezier
+			cp_inset = 0.2 * segment.length
+			cp1 = {x: segment.a.x + Math.cos(from_angle) * cp_inset, y: segment.a.y + Math.sin(from_angle) * cp_inset}
+			cp2 = {x: segment.b.x + Math.cos(to_angle) * cp_inset, y: segment.b.y + Math.sin(to_angle) * cp_inset}
 			ctx.beginPath()
 			ctx.moveTo(segment.a.x, segment.a.y)
-			ctx.lineTo(segment.b.x, segment.b.y)
+			ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, segment.b.x, segment.b.y)
 			ctx.lineWidth = segment.width
 			ctx.lineCap = "round"
-			ctx.strokeStyle = segment.color
+			# ctx.strokeStyle = segment.color
+			ctx.strokeStyle = "hsl(#{~~(@random()*360)}, 50%, 50%)"
 			ctx.stroke()
+
+			continue
+
+			# ctx.beginPath()
+			# ctx.moveTo(segment.a.x, segment.a.y)
+			# ctx.lineTo(segment.b.x, segment.b.y)
+			# ctx.lineWidth = segment.width
+			# ctx.lineCap = "round"
+			# ctx.strokeStyle = segment.color
+			# ctx.stroke()
 			# Highlights
 			ctx.lineWidth = segment.width*0.1
 			ctx.lineCap = "round"
