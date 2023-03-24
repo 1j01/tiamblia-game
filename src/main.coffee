@@ -184,7 +184,8 @@ do animate = ->
 
 	# A little tool to randomize entities by pressing 'r'
 	if editor.editing and keyboard.wasJustPressed("KeyR")
-		editor.undoable -> randomize_entities(editor.selected_entities)
+		if editor.selected_entities.length
+			editor.undoable -> randomize_entities(editor.selected_entities)
 
 	# End of frame. Nothing must use wasJustPressed after this.
 	keyboard.resetForNextStep()
