@@ -103,6 +103,32 @@ module.exports = class Caterpillar extends Entity
 		# 	part.towards_ground.x = smoothed_towards_ground_x_values[part_index]
 		# 	part.towards_ground.y = smoothed_towards_ground_y_values[part_index]
 		
+		# Actually, a better way to do this might be to flip normals only if both adjacent normals are pointing away from a given normal.
+		# This way, it's like the body parts vote on which way to go.
+		for part, part_index in parts_list
+			prev_part = parts_list[part_index - 1]
+			next_part = parts_list[part_index + 1]
+			if prev_part and next_part
+				# To determine if a vector is pointing away from another vector, we can use the dot product.
+				# If the dot product is negative, the vectors are pointing in opposite directions.
+				# dot_product = (a,b) -> a.x*b.x + a.y*b.y
+				# if dot_product(part.towards_ground, prev_part.towards_ground) < 0 and dot_product(part.towards_ground, next_part.towards_ground) < 0
+				# 	# Mirror the normal
+				# 	# part.towards_ground.x *= -1
+				# 	# part.towards_ground.y *= -1
+				# 	# or... maybe average the adjacent normals?
+				# 	# part.towards_ground.x = (prev_part.towards_ground.x + next_part.towards_ground.x)/2
+				# 	# part.towards_ground.y = (prev_part.towards_ground.y + next_part.towards_ground.y)/2
+				# 	# maybe lerp?
+				# 	factor = 0.1
+				# 	part.towards_ground.x += ((prev_part.towards_ground.x + next_part.towards_ground.x)/2 - part.towards_ground.x) * factor
+				# 	part.towards_ground.y += ((prev_part.towards_ground.y + next_part.towards_ground.y)/2 - part.towards_ground.y) * factor
+				# maybe lerp regardless?
+				factor = 0.1
+				part.towards_ground.x += ((prev_part.towards_ground.x + next_part.towards_ground.x)/2 - part.towards_ground.x) * factor
+				part.towards_ground.y += ((prev_part.towards_ground.y + next_part.towards_ground.y)/2 - part.towards_ground.y) * factor
+	
+		
 		# move
 		collision = (point)=> world.collision(@toWorld(point), types: (entity)=>
 			entity.constructor.name not in ["Arrow", "Bow", "Water", "Caterpillar"]
