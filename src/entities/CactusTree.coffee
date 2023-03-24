@@ -40,12 +40,14 @@ module.exports = class CactusTree extends Tree
 			# so that this uses y; it's unintuitive right now
 			dir.x -= 3
 			angle = Math.atan2(dir.y, dir.x)
-			will_split = Math.random() < 0.5 and splits is 0 and juice > 3
+			will_split = Math.random() < 0.5 and splits < 2 and juice > 3
 			if will_split
 				branch_juice = juice / 3
 				branch_width = width * 0.7
-				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length, splits: splits + 1})
-				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length, splits: splits + 1})
+				branch_length = length
+				branch_length *= 0.8 for [0...splits]
+				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length: branch_length, splits: splits + 1})
+				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length: branch_length, splits: splits + 1})
 				width *= 0.8
 			@branch({from: name, to: "#{to}-a", juice, angle, width, length, splits: splits + will_split})
 		else
