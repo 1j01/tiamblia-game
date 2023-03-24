@@ -13,7 +13,7 @@ module.exports = class CactusTree extends Tree
 		@random_index = 0
 		@random_values = []
 
-		@branch(from: "base", to: "1", juice: Math.random()*2+3, width: @trunk_width, length: 20, angle: -TAU/2, splits: 0)
+		@branch(from: "base", to: "1", juice: Math.random()*5+3, width: @trunk_width, length: 15, angle: -TAU/2, splits: 0)
 
 	random: ->
 		@random_index++
@@ -27,14 +27,17 @@ module.exports = class CactusTree extends Tree
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
 		juice -= 1
 		if juice > 0
-			# dir = {x: Math.cos(angle), y: Math.sin(angle)}
-			# dir.y -= 0.2
-			# angle = Math.atan2(dir.y, dir.x)
+			dir = {x: Math.cos(angle), y: Math.sin(angle)}
+			# TODO: refactor angle calculations
+			# so that this uses y; it's unintuitive right now
+			dir.x -= 3
+			angle = Math.atan2(dir.y, dir.x)
 			will_split = Math.random() < 0.5 and splits is 0
-			@branch({from: name, to: "#{to}-a", juice, angle: TAU/2, width, length, splits: splits + will_split})
+			@branch({from: name, to: "#{to}-a", juice, angle, width, length, splits: splits + will_split})
 			if will_split
-				@branch({from: name, to: "#{to}-b", juice, angle: angle + TAU/4, width, length, splits: splits + 1})
-				@branch({from: name, to: "#{to}-c", juice, angle: angle - TAU/4, width, length, splits: splits + 1})
+				juice /= 3
+				@branch({from: name, to: "#{to}-b", juice, angle: angle + TAU/5, width, length, splits: splits + 1})
+				@branch({from: name, to: "#{to}-c", juice, angle: angle - TAU/5, width, length, splits: splits + 1})
 		else
 			leaf_point = @structure.points[name]
 			@leaf(leaf_point)
