@@ -50,6 +50,7 @@ module.exports = class CactusTree extends Tree
 			@branch({from: name, to: "#{to}-a", juice, angle, width, length, splits: splits + will_split})
 		else
 			leaf_point = @structure.points[name]
+			leaf_point.radius = width/2
 			@leaf(leaf_point)
 		return
 	
@@ -102,11 +103,19 @@ module.exports = class CactusTree extends Tree
 				ctx.restore()
 		
 		for point_name, leaf of @structure.points when leaf.is_leaf
-			@drawLeaf(ctx,leaf.x,leaf.y)
+			@drawLeaf(ctx, leaf)
 		return
 
-	drawLeaf: (ctx,x,y)->
-		# ctx.beginPath()
-		# ctx.arc(x,y,2,0,TAU,true)
-		# ctx.fillStyle = "pink"
-		# ctx.fill()
+	drawLeaf: (ctx, {x, y, radius=5})->
+		# draw flowers
+		for [0..2+@random()*3]
+			ctx.save()
+			ctx.translate(x,y)
+			ctx.rotate(@random()*TAU)
+			ctx.translate(@random()*radius, 0)
+			ctx.scale(0.5+@random()*0.5,0.5+@random()*0.5)
+			ctx.beginPath()
+			ctx.arc(0,0,2,0,TAU,true)
+			ctx.fillStyle = "pink"
+			ctx.fill()
+			ctx.restore()
