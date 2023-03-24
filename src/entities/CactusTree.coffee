@@ -40,16 +40,26 @@ module.exports = class CactusTree extends Tree
 			# so that this uses y; it's unintuitive right now
 			dir.x -= 3
 			angle = Math.atan2(dir.y, dir.x)
-			will_split = Math.random() < 0.5 and offshoots < 4 and juice > 3
-			if will_split
-				branch_juice = juice / 3
-				branch_width = width * 0.7
-				branch_length = length
-				branch_length *= 0.9 for [0...offshoots]
-				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length: branch_length, offshoots: offshoots + 2})
-				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length: branch_length, offshoots: offshoots + 2})
+			max_branches = 5
+			offshoots_here = 0
+			if Math.random() < 0.5 and offshoots < max_branches and juice > 3
+				offshoots_here = 2
+				if Math.random() < 0.1 or offshoots + offshoots_here > max_branches
+					offshoots_here = 1
+			offshoot_names = ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
+			starting_side = if Math.random() < 0.5 then 1 else -1
+			if offshoots_here
+				for i in [0...offshoots_here]
+					offshoot_name = offshoot_names[i]
+					branch_juice = juice / 3
+					branch_width = width * 0.7
+					branch_length = length
+					branch_length *= 0.9 for [0...offshoots]
+					side = starting_side * (if i % 2 then 1 else -1)
+					branch_angle = angle + TAU/5 * side
+					@branch({from: name, to: "#{to}-#{offshoot_name}", juice: branch_juice, angle: branch_angle, width: branch_width, length: branch_length, offshoots: offshoots + offshoots_here})
 				width *= 0.8
-			@branch({from: name, to: "#{to}-a", juice, angle, width, length, offshoots: offshoots + 2 * will_split})
+			@branch({from: name, to: "#{to}-a", juice, angle, width, length, offshoots: offshoots + offshoots_here})
 		else
 			leaf_point = @structure.points[name]
 			leaf_point.radius = width/2
