@@ -96,7 +96,7 @@ module.exports = class CactusTree extends Tree
 		return
 
 	drawLeaf: (ctx,x,y)->
-		ctx.beginPath()
-		ctx.arc(x,y,2,0,TAU,true)
-		ctx.fillStyle = "pink"
-		ctx.fill()
+		# ctx.beginPath()
+		# ctx.arc(x,y,2,0,TAU,true)
+		# ctx.fillStyle = "pink"
+		# ctx.fill()
