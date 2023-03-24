@@ -101,7 +101,12 @@ module.exports = class Deer extends SimpleActor
 		ctx.lineTo(10,1)
 		ctx.lineTo(10,-2)
 		ctx.fill()
-		ctx.restore()
+		# eye
+		ctx.fillStyle="#000"
+		ctx.beginPath()
+		ctx.arc(0,0,1,0,Math.PI*2,true)
+		ctx.fill()
+		ctx.restore() # /head
 		
 		# body
 		ctx.fillRect(@width/-2,@height/-1,@width,@height*3/4)
