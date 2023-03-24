@@ -31,7 +31,7 @@ module.exports = class Rabbit extends SimpleActor
 				@dir = r()
 			if Math.random() < 0.1
 				@vy = -5
-			else if @dir isnt 0
+			else if Math.abs(@vx) > 1
 				@vy = -3
 		else
 			if Math.abs(@xp-@x) < 1
@@ -41,9 +41,9 @@ module.exports = class Rabbit extends SimpleActor
 			else
 				@t=0
 		
-		@vx += (@dir *= 1.1)/5
+		@vx += (@dir *= 1.1)/15
 		@dir = Math.max(-10,Math.min(10,@dir))
-		if Math.abs(@dir) < 0.1
+		if Math.abs(@vx) < 0.1
 			@dir = 0
 		@xp=@x
 
