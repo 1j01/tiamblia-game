@@ -74,7 +74,7 @@ module.exports = class CactusTree extends Tree
 			# Highlights
 			ctx.lineWidth = segment.width*0.1
 			ctx.lineCap = "round"
-			ctx.strokeStyle = "rgba(255,255,155,0.5)"
+			ctx.strokeStyle = "rgba(255,255,100,0.5)"
 			angle = Math.atan2(segment.b.y-segment.a.y, segment.b.x-segment.a.x) + TAU/4
 			dir = {x: segment.b.x-segment.a.x, y: segment.b.y-segment.a.y}
 			length = Math.hypot(dir.x, dir.y)
@@ -102,17 +102,20 @@ module.exports = class CactusTree extends Tree
 			# Shadow
 			ctx.lineWidth = segment.width/2
 			ctx.lineCap = "round"
-			ctx.strokeStyle = "rgba(0,0,0,0.2)"
+			# ctx.strokeStyle = "rgba(0,0,0,0.2)"
+			# ctx.globalCompositeOperation = "darker"
+			ctx.strokeStyle = "rgba(0,120,0,0.5)"
 			ctx.beginPath()
 			ox = -segment.width/4
 			oy = segment.width/6
 			ctx.moveTo(segment.a.x + ox, segment.a.y + oy)
 			ctx.lineTo(segment.b.x + ox, segment.b.y + oy)
 			ctx.stroke()
+			ctx.globalCompositeOperation = "source-over"
 			# Main Highlight
 			ctx.lineWidth = segment.width/2
 			ctx.lineCap = "round"
-			ctx.strokeStyle = "rgba(255,255,255,0.2)"
+			ctx.strokeStyle = "rgba(255,255,100,0.2)"
 			ctx.beginPath()
 			ox = segment.width/4
 			oy = -segment.width/6
