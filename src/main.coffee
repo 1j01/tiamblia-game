@@ -9,7 +9,7 @@ randomize_entities = require "./randomize-entities.coffee"
 require "./arrow-test.coffee"
 
 # require each entity to add it to the entity registry
-require "./entities/CactusTree.coffee"
+CactusTree = require "./entities/CactusTree.coffee"
 require "./entities/Caterpillar.coffee"
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/LushGrass.coffee"
@@ -111,7 +111,17 @@ do animate = ->
 	return if window.CRASHED
 	requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
-	
+
+	# Add cacti, for dev purposes.
+	if (try localStorage["tiamblia.dev_cacti"]) is "true"
+		if world.entities.filter((entity) -> entity instanceof CactusTree).length < 10
+			cactus = new CactusTree
+			cactus.x = Math.random() * 1000
+			cactus.y = bottom_of_world
+			while world.collision(cactus)
+				cactus.y -= 3
+			world.entities.push(cactus)
+
 	# Hide welcome message after you start playing or toggle editing.
 	unless disable_welcome_message
 		if the_world.entities.some((entity) -> entity instanceof Player and entity.jump) or (editor.editing and world_loaded)
@@ -186,6 +196,8 @@ do animate = ->
 	if editor.editing and keyboard.wasJustPressed("KeyR")
 		if editor.selected_entities.length
 			editor.undoable -> randomize_entities(editor.selected_entities)
+		else if (try localStorage["tiamblia.dev_cacti"]) is "true"
+			editor.undoable -> world.entities = world.entities.filter((entity) -> entity not instanceof CactusTree)
 
 	# End of frame. Nothing must use wasJustPressed after this.
 	keyboard.resetForNextStep()
