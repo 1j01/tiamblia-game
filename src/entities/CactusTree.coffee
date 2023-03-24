@@ -7,7 +7,7 @@ module.exports = class CactusTree extends Tree
 	constructor: ->
 		super()
 
-		@bbox_padding = 60
+		@bbox_padding = 30
 
 		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_index = 0
