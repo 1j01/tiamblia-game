@@ -111,9 +111,16 @@ module.exports = class CactusTree extends Tree
 		for [0..2+@random()*3]
 			ctx.save()
 			ctx.translate(x,y)
-			ctx.rotate(@random()*TAU)
+			ctx.rotate(@random()*TAU/2+TAU/2)
+			ctx.beginPath()
 			ctx.translate(@random()*radius, 0)
-			ctx.scale(0.5+@random()*0.5,0.5+@random()*0.5)
+			ctx.moveTo(0,0)
+			ctx.translate(@random()*radius, 0)
+			ctx.lineTo(0,0)
+			ctx.lineWidth = 0.5
+			ctx.strokeStyle = "salmon"
+			ctx.stroke()
+			ctx.scale(0.5+@random()*0.5,1)
 			ctx.beginPath()
 			ctx.arc(0,0,2,0,TAU,true)
 			ctx.fillStyle = "pink"
