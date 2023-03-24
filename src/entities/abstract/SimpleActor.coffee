@@ -81,7 +81,8 @@ module.exports = class SimpleActor extends Entity
 		# @vy *= 0.99
 		move_x = @vx
 		move_y = @vy
-		if @grounded and not @jump
+		# checking @vy and not just not @jump because Rabbit currently uses @vy to jump
+		if @grounded and @vy >= 0
 			# follow hills downward
 			# This prevents awkward situations where you can't jump
 			# because you just left the ground (by running forwards)

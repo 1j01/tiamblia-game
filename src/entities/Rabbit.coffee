@@ -31,6 +31,8 @@ module.exports = class Rabbit extends SimpleActor
 				@dir = r()
 			if Math.random() < 0.1
 				@vy = -5
+			else if @dir isnt 0
+				@vy = -3
 		else
 			if Math.abs(@xp-@x) < 1
 				@t++
@@ -41,6 +43,8 @@ module.exports = class Rabbit extends SimpleActor
 		
 		@vx += (@dir *= 1.1)/5
 		@dir = Math.max(-10,Math.min(10,@dir))
+		if Math.abs(@dir) < 0.1
+			@dir = 0
 		@xp=@x
 
 		@move_x = @dir*0.02
@@ -51,6 +55,13 @@ module.exports = class Rabbit extends SimpleActor
 	draw: (ctx)->
 		ctx.save() # body center transform
 		ctx.translate(@width/2,@height)
+		
+		# for cute hopping, rotate based on the angle of movement
+		if @vx > 0
+			ctx.rotate(Math.atan2(@vy,@vx)/2)
+		else if @vx < 0
+			ctx.rotate((Math.atan2(@vy,-@vx))/2)
+
 		ctx.fillStyle=@c2
 		# ctx.fillRect(0,0,@width,@height)
 		ctx.beginPath()
