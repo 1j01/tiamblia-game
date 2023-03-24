@@ -23,8 +23,12 @@ module.exports = class Rabbit extends SimpleActor
 		@c = "#FFF"
 		@c2 = "#DDD"
 		@eye_color = "#000"
+		@alive = true
 
 	step: (world)->
+		if not @alive
+			return
+		
 		if @grounded
 			# @vx*=0.99
 			if Math.random() < 0.1

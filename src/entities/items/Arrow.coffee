@@ -234,6 +234,9 @@ module.exports = class Arrow extends Entity
 					facing_angle_of_incidence
 				}
 				@lodging_constraints.push(constraint)
+				# Damage the target.
+				if "alive" of hit
+					hit.alive = false
 		
 		# Ideally I would like to allow the arrow to move while lodged,
 		# and adjust the depth and angle of lodging (with some stiffness),
