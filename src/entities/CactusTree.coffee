@@ -45,7 +45,7 @@ module.exports = class CactusTree extends Tree
 				branch_juice = juice / 3
 				branch_width = width * 0.7
 				branch_length = length
-				branch_length *= Math.sqrt(0.8) for [0...offshoots]
+				branch_length *= 0.9 for [0...offshoots]
 				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length: branch_length, offshoots: offshoots + 2})
 				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length: branch_length, offshoots: offshoots + 2})
 				width *= 0.8
