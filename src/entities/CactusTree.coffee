@@ -13,20 +13,20 @@ module.exports = class CactusTree extends Tree
 		@random_index = 0
 		@random_values = []
 
-		@branch(from: "base", to: "1", juice: Math.random()*10+3, width: @trunk_width, length: 15, angle: -TAU/2, splits: 0)
+		@branch(from: "base", to: "1", juice: Math.random()*10+3, width: @trunk_width, length: 15, angle: -TAU/2, offshoots: 0)
 
 	random: ->
 		@random_index++
 		return @random_values[@random_index] ?= Math.random()
 
-	branch: ({from, to, juice, angle, width, length, splits})->
+	branch: ({from, to, juice, angle, width, length, offshoots})->
 		name = to
 		# angle+=(Math.random()*2-1)*0.7
 		@structure.addSegment({from, name, length, width, color: "green"})
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
 		juice -= 1
-		if splits > 0
+		if offshoots > 0
 			width *= 0.97
 		else if juice < 3
 			width *= 0.9
@@ -40,16 +40,16 @@ module.exports = class CactusTree extends Tree
 			# so that this uses y; it's unintuitive right now
 			dir.x -= 3
 			angle = Math.atan2(dir.y, dir.x)
-			will_split = Math.random() < 0.5 and splits < 2 and juice > 3
+			will_split = Math.random() < 0.5 and offshoots < 4 and juice > 3
 			if will_split
 				branch_juice = juice / 3
 				branch_width = width * 0.7
 				branch_length = length
-				branch_length *= 0.8 for [0...splits]
-				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length: branch_length, splits: splits + 1})
-				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length: branch_length, splits: splits + 1})
+				branch_length *= Math.sqrt(0.8) for [0...offshoots]
+				@branch({from: name, to: "#{to}-b", juice: branch_juice, angle: angle + TAU/5, width: branch_width, length: branch_length, offshoots: offshoots + 2})
+				@branch({from: name, to: "#{to}-c", juice: branch_juice, angle: angle - TAU/5, width: branch_width, length: branch_length, offshoots: offshoots + 2})
 				width *= 0.8
-			@branch({from: name, to: "#{to}-a", juice, angle, width, length, splits: splits + will_split})
+			@branch({from: name, to: "#{to}-a", juice, angle, width, length, offshoots: offshoots + 2 * will_split})
 		else
 			leaf_point = @structure.points[name]
 			leaf_point.radius = width/2
