@@ -97,6 +97,28 @@ module.exports = class CactusTree extends Tree
 				)
 				ctx.stroke()
 				ctx.restore()
+			# Shadow
+			ctx.lineWidth = segment.width/2
+			ctx.lineCap = "round"
+			ctx.strokeStyle = "rgba(0,0,0,0.2)"
+			ctx.beginPath()
+			ox = -segment.width/4
+			oy = segment.width/6
+			ctx.moveTo(segment.a.x + ox, segment.a.y + oy)
+			ctx.lineTo(segment.b.x + ox, segment.b.y + oy)
+			ctx.stroke()
+			# Main Highlight
+			ctx.lineWidth = segment.width/2
+			ctx.lineCap = "round"
+			ctx.strokeStyle = "rgba(255,255,255,0.2)"
+			ctx.beginPath()
+			ox = segment.width/4
+			oy = -segment.width/6
+			ctx.moveTo(segment.a.x + ox, segment.a.y + oy)
+			ctx.lineTo(segment.b.x + ox, segment.b.y + oy)
+			ctx.stroke()
+
+
 		
 		# Spikes
 		for segment_name, segment of @structure.segments
