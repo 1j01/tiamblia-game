@@ -187,3 +187,4 @@ module.exports = class CactusTree extends Tree
 			ctx.fillStyle = "pink"
 			ctx.fill()
 			ctx.restore()
+		return
