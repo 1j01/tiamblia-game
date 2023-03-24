@@ -61,7 +61,7 @@ module.exports = class CactusTree extends Tree
 			# Highlights
 			ctx.lineWidth = segment.width*0.1
 			ctx.lineCap = "round"
-			ctx.strokeStyle = "rgba(255,255,255,0.5)"
+			ctx.strokeStyle = "rgba(255,255,155,0.5)"
 			angle = Math.atan2(segment.b.y-segment.a.y, segment.b.x-segment.a.x) + TAU/4
 			dir = {x: segment.b.x-segment.a.x, y: segment.b.y-segment.a.y}
 			length = Math.hypot(dir.x, dir.y)
