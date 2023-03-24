@@ -100,6 +100,9 @@ module.exports = class CactusTree extends Tree
 		
 		# Spikes
 		for segment_name, segment of @structure.segments
+			# disable spikes for performance
+			# and because they're not quite right
+			break
 			angle = Math.atan2(segment.b.y-segment.a.y, segment.b.x-segment.a.x) + TAU/4
 			dir = {x: segment.b.x-segment.a.x, y: segment.b.y-segment.a.y}
 			length = Math.hypot(dir.x, dir.y)
