@@ -722,16 +722,25 @@ module.exports = class Player extends SimpleActor
 			max_cos_shoulder_angle = left_shoulder_angle
 		ctx.lineTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5)
 		ctx.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5)
-		min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
-		max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
-		min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
-		max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
-		ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length/2)
-		ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin))
-		# ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
+		# min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
+		# max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
+		# min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
+		# max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
+		left_leg_cos = Math.cos(left_leg_angle)
+		right_leg_cos = Math.cos(right_leg_angle)
+		left_leg_sin = Math.sin(left_leg_angle)
+		right_leg_sin = Math.sin(right_leg_angle)
+		left_leg_is_leftmost = left_leg_cos < right_leg_cos
+		lefter_cos = if left_leg_is_leftmost then left_leg_cos else right_leg_cos
+		righter_cos = if left_leg_is_leftmost then right_leg_cos else left_leg_cos
+		lefter_sin = if left_leg_is_leftmost then left_leg_sin else right_leg_sin
+		righter_sin = if left_leg_is_leftmost then right_leg_sin else left_leg_sin
+		ctx.lineTo(+4 + Math.max(0, 1 * righter_cos), torso_length/2)
+		ctx.lineTo(+4 + Math.max(0, 9 * righter_cos), torso_length + Math.max(5, 7 * righter_sin))
+		# ctx.lineTo(-4 + Math.min(0, 9 * lefter_cos), torso_length + Math.max(5, 7 * lefter_sin))
 		# curve for bottom of dress
-		ctx.quadraticCurveTo(0, torso_length + 10, -4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
-		ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length/2)
+		ctx.quadraticCurveTo(0, torso_length + 10, -4 + Math.min(0, 9 * lefter_cos), torso_length + Math.max(5, 7 * lefter_sin))
+		ctx.lineTo(-4 + Math.min(0, 1 * lefter_cos), torso_length/2)
 		ctx.fillStyle = dress_color
 		ctx.fill()
 		ctx.restore()
