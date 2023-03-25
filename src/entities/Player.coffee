@@ -736,10 +736,10 @@ module.exports = class Player extends SimpleActor
 		lefter_sin = if left_leg_is_leftmost then left_leg_sin else right_leg_sin
 		righter_sin = if left_leg_is_leftmost then right_leg_sin else left_leg_sin
 		ctx.lineTo(+4 + Math.max(0, 1 * righter_cos), torso_length/2)
-		ctx.lineTo(+4 + Math.max(0, 9 * righter_cos), torso_length + Math.max(5, 7 * righter_sin))
-		# ctx.lineTo(-4 + Math.min(0, 9 * lefter_cos), torso_length + Math.max(5, 7 * lefter_sin))
+		ctx.lineTo(+4 + Math.max(0, 9 * righter_cos), torso_length + 7 * righter_sin)
+		# ctx.lineTo(-4 + Math.min(0, 9 * lefter_cos), torso_length + 7 * lefter_sin)
 		# curve for bottom of dress
-		ctx.quadraticCurveTo(0, torso_length + 10, -4 + Math.min(0, 9 * lefter_cos), torso_length + Math.max(5, 7 * lefter_sin))
+		ctx.quadraticCurveTo(0, torso_length + 10, -4 + Math.min(0, 9 * lefter_cos), torso_length + 7 * lefter_sin)
 		ctx.lineTo(-4 + Math.min(0, 1 * lefter_cos), torso_length/2)
 		ctx.fillStyle = dress_color
 		ctx.fill()
