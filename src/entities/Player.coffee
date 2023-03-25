@@ -254,7 +254,8 @@ module.exports = class Player extends SimpleActor
 			# with the arm extended downwards, but another item above the shoulder, within reach,
 			# the item within reach is further from the hand than the one out of reach,
 			# but it's closer to the shoulder.
-			# It would probably be better if it never reaches for something it can't reach.
+			# Later logic can decide to not actually reach towards anything out of reach,
+			# or to reach towards a nearby item as long as you're moving towards it.
 			near_hand = closest_entity_to_world_point(hand_world, EntityClass, was_he_slow)
 			near_shoulder = closest_entity_to_world_point(shoulder_world, EntityClass, was_he_slow)
 
@@ -428,34 +429,38 @@ module.exports = class Player extends SimpleActor
 			# bring the hand as close as possible to the item
 			# (the general pose lerp will handle animating it as movement)
 			distance_from_shoulder = Math.max(1, distance_from_shoulder) # avoid divide by zero
-			reach_distance = Math.min(arm_span, distance_from_shoulder)
-			reach_point_world = {
-				x: pose_shoulder_world.x + reach_distance * dx/distance_from_shoulder
-				y: pose_shoulder_world.y + reach_distance * dy/distance_from_shoulder
-			}
-			reach_point_local = @fromWorld(reach_point_world)
-			hand_x = reach_point_local.x
-			hand_y = reach_point_local.y
-			# basic inverse kinematics for the elbow
-			# Place the elbow at the midpoint between the hand and the shoulder
-			elbow_x = (hand_x + pose_shoulder.x) / 2
-			elbow_y = (hand_y + pose_shoulder.y) / 2
-			# Then offset it to keep the segments the right length
-			arm_angle = Math.atan2(hand_y - pose_shoulder.y, hand_x - pose_shoulder.x)
-			arm_extension = Math.hypot(hand_x - pose_shoulder.x, hand_y - pose_shoulder.y)
-			offset_angle = arm_angle + Math.PI / 2
-			offset_distance = Math.abs(arm_span - arm_extension)
-			if Math.sin(offset_angle) < 0
-				offset_angle += Math.PI
-			elbow_x += Math.cos(offset_angle) * offset_distance
-			elbow_y += Math.sin(offset_angle) * offset_distance
-			# Update the pose
-			pose_hand = new_pose.points[if @reaching_with_secondary_hand then "left hand" else "right hand"]
-			pose_elbow = new_pose.points[if @reaching_with_secondary_hand then "left elbow" else "right elbow"]
-			pose_hand.x = hand_x
-			pose_hand.y = hand_y
-			pose_elbow.x = elbow_x
-			pose_elbow.y = elbow_y
+			
+			# if the item is too far away, don't just reach as far as possible
+			if distance_from_shoulder < arm_span
+
+				reach_distance = Math.min(arm_span, distance_from_shoulder)
+				reach_point_world = {
+					x: pose_shoulder_world.x + reach_distance * dx/distance_from_shoulder
+					y: pose_shoulder_world.y + reach_distance * dy/distance_from_shoulder
+				}
+				reach_point_local = @fromWorld(reach_point_world)
+				hand_x = reach_point_local.x
+				hand_y = reach_point_local.y
+				# basic inverse kinematics for the elbow
+				# Place the elbow at the midpoint between the hand and the shoulder
+				elbow_x = (hand_x + pose_shoulder.x) / 2
+				elbow_y = (hand_y + pose_shoulder.y) / 2
+				# Then offset it to keep the segments the right length
+				arm_angle = Math.atan2(hand_y - pose_shoulder.y, hand_x - pose_shoulder.x)
+				arm_extension = Math.hypot(hand_x - pose_shoulder.x, hand_y - pose_shoulder.y)
+				offset_angle = arm_angle + Math.PI / 2
+				offset_distance = Math.abs(arm_span - arm_extension)
+				if Math.sin(offset_angle) < 0
+					offset_angle += Math.PI
+				elbow_x += Math.cos(offset_angle) * offset_distance
+				elbow_y += Math.sin(offset_angle) * offset_distance
+				# Update the pose
+				pose_hand = new_pose.points[if @reaching_with_secondary_hand then "left hand" else "right hand"]
+				pose_elbow = new_pose.points[if @reaching_with_secondary_hand then "left elbow" else "right elbow"]
+				pose_hand.x = hand_x
+				pose_hand.y = hand_y
+				pose_elbow.x = elbow_x
+				pose_elbow.y = elbow_y
 
 		# This does a lot of the grunt work of smoothing things out
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
