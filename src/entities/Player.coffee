@@ -201,6 +201,8 @@ module.exports = class Player extends SimpleActor
 		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
 		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
 		
+		crouch = down and not @riding
+
 		# TODO: configurable controls
 		@move_x = right - left
 		@move_y = down - up
@@ -315,26 +317,31 @@ module.exports = class Player extends SimpleActor
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Tread Water"], @run_animation_position)
 		else if @grounded
 			if @move_x is 0
-				@idle_timer += 1
-				subtle_idle_animation = Player.animations["Idle"]
-				
-				if @idle_timer > 1000
-					@idle_animation = "Yawn"
-					@idle_timer = 0
-					@other_idle_animation_position = 0
-				
-				other_idle_animation = @idle_animation and Player.animations[@idle_animation]
-				
-				if other_idle_animation
-					@other_idle_animation_position += 1 / 25
-					if @other_idle_animation_position > other_idle_animation.length
-						@idle_animation = null
-					new_pose = Pose.lerpAnimationLoop(other_idle_animation, @other_idle_animation_position)
-				else if subtle_idle_animation
-					@subtle_idle_animation_position += 1 / 25
-					new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, @subtle_idle_animation_position)
+				if crouch
+					new_pose = Player.poses["Crouch"]
+					# There's no idle animation for crouching
+					prevent_idle()
 				else
-					new_pose = Player.poses["Stand"] ? @structure.getPose()
+					@idle_timer += 1
+					subtle_idle_animation = Player.animations["Idle"]
+					
+					if @idle_timer > 1000
+						@idle_animation = "Yawn"
+						@idle_timer = 0
+						@other_idle_animation_position = 0
+					
+					other_idle_animation = @idle_animation and Player.animations[@idle_animation]
+					
+					if other_idle_animation
+						@other_idle_animation_position += 1 / 25
+						if @other_idle_animation_position > other_idle_animation.length
+							@idle_animation = null
+						new_pose = Pose.lerpAnimationLoop(other_idle_animation, @other_idle_animation_position)
+					else if subtle_idle_animation
+						@subtle_idle_animation_position += 1 / 25
+						new_pose = Pose.lerpAnimationLoop(subtle_idle_animation, @subtle_idle_animation_position)
+					else
+						new_pose = Player.poses["Stand"] ? @structure.getPose()
 			else
 				prevent_idle()
 				if Player.animations["Run"]
