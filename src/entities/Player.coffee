@@ -223,6 +223,7 @@ module.exports = class Player extends SimpleActor
 						closest_segment = segment
 			return {closest_entity, closest_dist, closest_segment}
 
+		pick_up_distance_threshold = 10
 		pick_up_any = (EntityClass, prop, use_secondary_hand=false)=>
 			# Skele2D editor sets entity.destroyed if you delete an entity
 			@[prop] = null if @[prop]?.destroyed
@@ -269,7 +270,7 @@ module.exports = class Player extends SimpleActor
 				@reaching_for_segment = nearest.closest_segment
 				@reaching_with_secondary_hand = use_secondary_hand
 				# If the hand is close enough to an item, pick it up
-				if near_hand.closest_dist < 10
+				if near_hand.closest_dist < pick_up_distance_threshold
 					@[prop] = near_hand.closest_entity
 		
 		@reaching_for_entity = null
@@ -442,7 +443,7 @@ module.exports = class Player extends SimpleActor
 		
 			# if the item is too far away, don't just reach as far as possible
 			# UNLESS we're approaching the item
-			within_reach = distance_from_shoulder < arm_span
+			within_reach = distance_from_shoulder < arm_span + pick_up_distance_threshold * 0.9
 			# Note that the gravity force accumulates below the threshold for movement
 			# so we need a threshold at least as high as that, or it will alternate.
 			moving = Math.abs(@vx) > 1 or Math.abs(@vy) > 1
