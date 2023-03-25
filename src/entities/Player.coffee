@@ -433,16 +433,15 @@ module.exports = class Player extends SimpleActor
 			dy_soon = c_world_soon.y - pose_shoulder_world_soon.y
 			distance_from_shoulder_soon = Math.hypot(dx_soon, dy_soon)
 		
-			# bring the hand as close as possible to the item
-			# (the general pose lerp will handle animating it as movement)
-			distance_from_shoulder = Math.max(1, distance_from_shoulder) # avoid divide by zero
-			
 			# if the item is too far away, don't just reach as far as possible
 			# UNLESS we're approaching the item
 			within_reach = distance_from_shoulder < arm_span
 			moving_towards_item = distance_from_shoulder - distance_from_shoulder_soon > 0.1
 			if within_reach or moving_towards_item
+				# bring the hand as close as possible to the item
+				# (the general pose lerp will handle animating it as movement)
 
+				distance_from_shoulder = Math.max(1, distance_from_shoulder) # avoid divide by zero
 				reach_distance = Math.min(arm_span, distance_from_shoulder)
 				reach_point_world = {
 					x: pose_shoulder_world.x + reach_distance * dx/distance_from_shoulder
