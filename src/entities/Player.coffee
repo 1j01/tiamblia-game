@@ -418,14 +418,18 @@ module.exports = class Player extends SimpleActor
 			hand_y = reach_point_local.y
 			# basic inverse kinematics for the elbow
 			# Place the elbow at the midpoint between the hand and the sternum
-			elbow_x = (hand_x + reach_point_local.x) / 2
-			elbow_y = (hand_y + reach_point_local.y) / 2
+			# TODO: maybe use the shoulder instead of the sternum
+			elbow_x = (hand_x + sternum.x) / 2
+			elbow_y = (hand_y + sternum.y) / 2
 			# Then offset it to keep the segments the right length
 			hand_sternum_angle = Math.atan2(hand_y - sternum.y, hand_x - sternum.x)
 			hand_sternum_distance = Math.hypot(hand_x - sternum.x, hand_y - sternum.y)
-			offset_distance = arm_span / 2 - hand_sternum_distance
-			elbow_x += Math.cos(hand_sternum_angle) * offset_distance
-			elbow_y += Math.sin(hand_sternum_angle) * offset_distance
+			offset_angle = hand_sternum_angle + Math.PI / 2
+			offset_distance = arm_span - hand_sternum_distance
+			if Math.sin(offset_angle) < 0
+				offset_angle += Math.PI
+			elbow_x += Math.cos(offset_angle) * offset_distance
+			elbow_y += Math.sin(offset_angle) * offset_distance
 			# Update the pose
 			pose_hand = new_pose.points[if @reaching_with_secondary_hand then "left hand" else "right hand"]
 			pose_elbow = new_pose.points[if @reaching_with_secondary_hand then "left elbow" else "right elbow"]
