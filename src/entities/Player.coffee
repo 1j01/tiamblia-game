@@ -418,20 +418,30 @@ module.exports = class Player extends SimpleActor
 			pose_shoulder = if @reaching_with_secondary_hand then pose_secondary_shoulder else pose_primary_shoulder
 			hand_world = @toWorld(hand)
 			pose_shoulder_world = @toWorld(pose_shoulder)
+			hand_world_soon = {x: hand_world.x + @vx, y: hand_world.y + @vy}
+			pose_shoulder_world_soon = {x: pose_shoulder_world.x + @vx, y: pose_shoulder_world.y + @vy}
 			a_world = @reaching_for_entity.toWorld(@reaching_for_segment.a)
 			b_world = @reaching_for_entity.toWorld(@reaching_for_segment.b)
 			c_world = closestPointOnLineSegment(hand_world, a_world, b_world)
+			c_world_soon = closestPointOnLineSegment(hand_world_soon, a_world, b_world)
 			# assuming the arms are the same length haha
 			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
 			dx = c_world.x - pose_shoulder_world.x
 			dy = c_world.y - pose_shoulder_world.y
 			distance_from_shoulder = Math.hypot(dx, dy)
+			dx_soon = c_world_soon.x - pose_shoulder_world_soon.x
+			dy_soon = c_world_soon.y - pose_shoulder_world_soon.y
+			distance_from_shoulder_soon = Math.hypot(dx_soon, dy_soon)
+		
 			# bring the hand as close as possible to the item
 			# (the general pose lerp will handle animating it as movement)
 			distance_from_shoulder = Math.max(1, distance_from_shoulder) # avoid divide by zero
 			
 			# if the item is too far away, don't just reach as far as possible
-			if distance_from_shoulder < arm_span
+			# UNLESS we're approaching the item
+			within_reach = distance_from_shoulder < arm_span
+			moving_towards_item = distance_from_shoulder - distance_from_shoulder_soon > 0.1
+			if within_reach or moving_towards_item
 
 				reach_distance = Math.min(arm_span, distance_from_shoulder)
 				reach_point_world = {
