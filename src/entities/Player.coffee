@@ -9,6 +9,18 @@ keyboard = require "../keyboard.coffee"
 {distance, distanceToLineSegment} = require("skele2d").helpers
 TAU = Math.PI * 2
 
+# Actually treat it as a segment, not an infinite line
+# unlike copies of this function in other files
+closestPointOnLineSegment = (point, a, b)->
+	# https://stackoverflow.com/a/3122532/2624876
+	a_to_p = {x: point.x - a.x, y: point.y - a.y}
+	a_to_b = {x: b.x - a.x, y: b.y - a.y}
+	atb2 = a_to_b.x**2 + a_to_b.y**2
+	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
+	t = atp_dot_atb / atb2
+	t = Math.max(0, Math.min(1, t))
+	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
+
 gamepad_aiming = false
 gamepad_detect_threshold = 0.5 # axis value (not a deadzone! just switching from mouse to gamepad)
 gamepad_deadzone = 0.1 # axis value
@@ -198,6 +210,7 @@ module.exports = class Player extends SimpleActor
 		closest_entity_to_world_point = (point_in_world_space, EntityClass, filter)=>
 			closest_dist = Infinity
 			closest_entity = null
+			closest_segment = null
 			for entity in world.getEntitiesOfType(EntityClass) when filter?(entity) or not filter
 				point_in_entity_space = entity.fromWorld(point_in_world_space)
 				for segment_name, segment of entity.structure.segments
@@ -205,9 +218,10 @@ module.exports = class Player extends SimpleActor
 					if dist < closest_dist
 						closest_dist = dist
 						closest_entity = entity
-			return {closest_entity, closest_dist}
+						closest_segment = segment
+			return {closest_entity, closest_dist, closest_segment}
 
-		pick_up_any = (EntityClass, prop)=>
+		pick_up_any = (EntityClass, prop, use_secondary_hand=false)=>
 			# Skele2D editor sets entity.destroyed if you delete an entity
 			@[prop] = null if @[prop]?.destroyed
 			# Only allow picking up one of each entity type, for now
@@ -225,10 +239,25 @@ module.exports = class Player extends SimpleActor
 				return not moving_too_fast
 			)
 			if search_result.closest_dist < 50
-				@[prop] = search_result.closest_entity
+				# Animates the hand reaching for the entity
+				@reaching_for = search_result.closest_entity
+				@reaching_for_segment = search_result.closest_segment
+				@reaching_with_secondary_hand = use_secondary_hand
+				# Check if the hand is close enough to the entity
+				primary_hand = @structure.points["right hand"]
+				secondary_hand = @structure.points["left hand"]
+				hand = if use_secondary_hand then secondary_hand else primary_hand
+				hand_search_result = closest_entity_to_world_point(@toWorld(hand), EntityClass, (entity)->
+					return entity is search_result.closest_entity
+				)
+				if hand_search_result.closest_dist < 10
+					@[prop] = search_result.closest_entity
 		
-		pick_up_any Bow, "holding_bow"
-		pick_up_any Arrow, "holding_arrow"
+		@reaching_for = null
+		@reaching_for_segment = null
+		@reaching_with_secondary_hand = false
+		pick_up_any Bow, "holding_bow", true
+		pick_up_any Arrow, "holding_arrow", false
 		# Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
 		
 		if mount_dismount
@@ -303,6 +332,9 @@ module.exports = class Player extends SimpleActor
 		if @real_facing_x < 0
 			new_pose = Pose.horizontallyFlip(new_pose)
 		
+		# Avoid mutating the pose
+		new_pose = Pose.copy(new_pose)
+
 		head_x_before_posing = @structure.points["head"].x
 		head_y_before_posing = @structure.points["head"].y
 
@@ -315,7 +347,6 @@ module.exports = class Player extends SimpleActor
 			# there's no helper for rotation yet
 			# and we wanna do it a little custom anyway
 			# rotating some points more than others
-			new_pose = Pose.copy(new_pose)
 			center = new_pose.points["pelvis"]
 			center = {x: center.x, y: center.y} # copy
 			for point_name, point of new_pose.points
@@ -355,14 +386,56 @@ module.exports = class Player extends SimpleActor
 				squat_factor = Math.min(1, Math.max(0, @landing_momentum - gravity))
 				point.y += squat_factor * (1 - factor) * 15
 
-		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
-		
 		# (her dominant eye is, of course, *whichever one she would theoretically be using*)
 		# (given this)
 		primary_hand = @structure.points["right hand"]
 		secondary_hand = @structure.points["left hand"]
 		primary_elbow = @structure.points["right elbow"]
 		secondary_elbow = @structure.points["left elbow"]
+
+		# Make hand reach for items
+		if @reaching_for
+			hand = if @reaching_with_secondary_hand then secondary_hand else primary_hand
+			a_world = @reaching_for.toWorld(@reaching_for_segment.a)
+			b_world = @reaching_for.toWorld(@reaching_for_segment.b)
+			c_world = closestPointOnLineSegment(@toWorld(hand), a_world, b_world)
+			# assuming the arms are the same length haha
+			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
+			# from_point_in_world is the sternum; it's used for a lot of things, so we already have it
+			dx = c_world.x - from_point_in_world.x
+			dy = c_world.y - from_point_in_world.y
+			distance_from_sternum = Math.hypot(dx, dy)
+			# bring the hand as close as possible to the item
+			# (the general pose lerp will handle animating it as movement)
+			distance_from_sternum = Math.max(1, distance_from_sternum) # avoid divide by zero
+			reach_distance = Math.min(arm_span, distance_from_sternum)
+			reach_point_world = {
+				x: from_point_in_world.x + reach_distance * dx/distance_from_sternum
+				y: from_point_in_world.y + reach_distance * dy/distance_from_sternum
+			}
+			reach_point_local = @fromWorld(reach_point_world)
+			hand_x = reach_point_local.x
+			hand_y = reach_point_local.y
+			# basic inverse kinematics for the elbow
+			# Place the elbow at the midpoint between the hand and the sternum
+			elbow_x = (hand_x + reach_point_local.x) / 2
+			elbow_y = (hand_y + reach_point_local.y) / 2
+			# Then offset it to keep the segments the right length
+			hand_sternum_angle = Math.atan2(hand_y - sternum.y, hand_x - sternum.x)
+			hand_sternum_distance = Math.hypot(hand_x - sternum.x, hand_y - sternum.y)
+			offset_distance = arm_span / 2 - hand_sternum_distance
+			elbow_x += Math.cos(hand_sternum_angle) * offset_distance
+			elbow_y += Math.sin(hand_sternum_angle) * offset_distance
+			# Update the pose
+			pose_hand = new_pose.points[if @reaching_with_secondary_hand then "left hand" else "right hand"]
+			pose_elbow = new_pose.points[if @reaching_with_secondary_hand then "left elbow" else "right elbow"]
+			pose_hand.x = hand_x
+			pose_hand.y = hand_y
+			pose_elbow.x = elbow_x
+			pose_elbow.y = elbow_y
+
+		# This does a lot of the grunt work of smoothing things out
+		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
 		@real_facing_x = @facing_x
 
