@@ -399,22 +399,23 @@ module.exports = class Player extends SimpleActor
 			pose_primary_shoulder = new_pose.points["right shoulder"]
 			pose_secondary_shoulder = new_pose.points["left shoulder"]
 			pose_shoulder = if @reaching_with_secondary_hand then pose_secondary_shoulder else pose_primary_shoulder
+			hand_world = @toWorld(hand)
+			pose_shoulder_world = @toWorld(pose_shoulder)
 			a_world = @reaching_for.toWorld(@reaching_for_segment.a)
 			b_world = @reaching_for.toWorld(@reaching_for_segment.b)
-			c_world = closestPointOnLineSegment(@toWorld(hand), a_world, b_world)
+			c_world = closestPointOnLineSegment(hand_world, a_world, b_world)
 			# assuming the arms are the same length haha
 			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
-			# from_point_in_world is the sternum; it's used for a lot of things, so we already have it
-			dx = c_world.x - from_point_in_world.x
-			dy = c_world.y - from_point_in_world.y
-			distance_from_sternum = Math.hypot(dx, dy)
+			dx = c_world.x - pose_shoulder_world.x
+			dy = c_world.y - pose_shoulder_world.y
+			distance_from_shoulder = Math.hypot(dx, dy)
 			# bring the hand as close as possible to the item
 			# (the general pose lerp will handle animating it as movement)
-			distance_from_sternum = Math.max(1, distance_from_sternum) # avoid divide by zero
-			reach_distance = Math.min(arm_span, distance_from_sternum)
+			distance_from_shoulder = Math.max(1, distance_from_shoulder) # avoid divide by zero
+			reach_distance = Math.min(arm_span, distance_from_shoulder)
 			reach_point_world = {
-				x: from_point_in_world.x + reach_distance * dx/distance_from_sternum
-				y: from_point_in_world.y + reach_distance * dy/distance_from_sternum
+				x: pose_shoulder_world.x + reach_distance * dx/distance_from_shoulder
+				y: pose_shoulder_world.y + reach_distance * dy/distance_from_shoulder
 			}
 			reach_point_local = @fromWorld(reach_point_world)
 			hand_x = reach_point_local.x
