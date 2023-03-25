@@ -436,7 +436,11 @@ module.exports = class Player extends SimpleActor
 			# if the item is too far away, don't just reach as far as possible
 			# UNLESS we're approaching the item
 			within_reach = distance_from_shoulder < arm_span
-			moving_towards_item = distance_from_shoulder - distance_from_shoulder_soon > 0.1
+			# Note that the gravity force accumulates below the threshold for movement
+			# so we need a threshold at least as high as that, or it will alternate.
+			moving = Math.abs(@vx) > 1 or Math.abs(@vy) > 1
+			moving_towards_item = moving and distance_from_shoulder - distance_from_shoulder_soon > 0.1
+			
 			if within_reach or moving_towards_item
 				# bring the hand as close as possible to the item
 				# (the general pose lerp will handle animating it as movement)
