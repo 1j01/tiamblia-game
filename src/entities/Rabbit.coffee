@@ -24,6 +24,7 @@ module.exports = class Rabbit extends SimpleActor
 		@c2 = "#DDD"
 		@eye_color = "#000"
 		@alive = true
+		@smoothed_facing_x = @facing_x = 1
 
 	step: (world)->
 		if not @alive
@@ -56,6 +57,8 @@ module.exports = class Rabbit extends SimpleActor
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
 
+		@smoothed_facing_x += (@facing_x - @smoothed_facing_x) / 5
+
 		@stepLayout()
 
 	initLayout: ->
@@ -87,7 +90,7 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fill()
 		ctx.fillStyle=@c
 		ctx.save() # head transform
-		ctx.translate(@facing_x*@width/3,-@height/3)
+		ctx.translate(@smoothed_facing_x*@width/3,-@height/3)
 		ctx.beginPath()
 		ctx.arc(0,0,@height/3,Math.PI*0.9,Math.PI*2.1,false) # head
 		ctx.fill()
@@ -98,7 +101,7 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fillStyle=@c
 		ctx.beginPath()
 		ctx.save() # ear transform
-		ctx.translate(-@facing_x*@width/9,-@height/6)
+		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
 		# ctx.rotate(Math.sin(performance.now()/1000))
 		ctx.rotate(-Math.min(Math.PI/3, Math.max(-Math.PI/3, @vx/3)))
 		ctx.scale(1, 3)
@@ -108,6 +111,6 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.restore() # end head transform
 		ctx.fillStyle=@c
 		ctx.beginPath()
-		ctx.arc(-@facing_x*@width/2,0,@height/5,0,Math.PI*2,false) # tail
+		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,Math.PI*2,false) # tail
 		ctx.fill()
 		ctx.restore() # end body center transform
