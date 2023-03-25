@@ -396,6 +396,9 @@ module.exports = class Player extends SimpleActor
 		# Make hand reach for items
 		if @reaching_for
 			hand = if @reaching_with_secondary_hand then secondary_hand else primary_hand
+			pose_primary_shoulder = new_pose.points["right shoulder"]
+			pose_secondary_shoulder = new_pose.points["left shoulder"]
+			pose_shoulder = if @reaching_with_secondary_hand then pose_secondary_shoulder else pose_primary_shoulder
 			a_world = @reaching_for.toWorld(@reaching_for_segment.a)
 			b_world = @reaching_for.toWorld(@reaching_for_segment.b)
 			c_world = closestPointOnLineSegment(@toWorld(hand), a_world, b_world)
@@ -417,15 +420,14 @@ module.exports = class Player extends SimpleActor
 			hand_x = reach_point_local.x
 			hand_y = reach_point_local.y
 			# basic inverse kinematics for the elbow
-			# Place the elbow at the midpoint between the hand and the sternum
-			# TODO: maybe use the shoulder instead of the sternum
-			elbow_x = (hand_x + sternum.x) / 2
-			elbow_y = (hand_y + sternum.y) / 2
+			# Place the elbow at the midpoint between the hand and the shoulder
+			elbow_x = (hand_x + pose_shoulder.x) / 2
+			elbow_y = (hand_y + pose_shoulder.y) / 2
 			# Then offset it to keep the segments the right length
-			hand_sternum_angle = Math.atan2(hand_y - sternum.y, hand_x - sternum.x)
-			hand_sternum_distance = Math.hypot(hand_x - sternum.x, hand_y - sternum.y)
-			offset_angle = hand_sternum_angle + Math.PI / 2
-			offset_distance = Math.abs(arm_span - hand_sternum_distance)
+			arm_angle = Math.atan2(hand_y - pose_shoulder.y, hand_x - pose_shoulder.x)
+			arm_extension = Math.hypot(hand_x - pose_shoulder.x, hand_y - pose_shoulder.y)
+			offset_angle = arm_angle + Math.PI / 2
+			offset_distance = Math.abs(arm_span - arm_extension)
 			if Math.sin(offset_angle) < 0
 				offset_angle += Math.PI
 			elbow_x += Math.cos(offset_angle) * offset_distance
