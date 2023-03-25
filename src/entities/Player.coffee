@@ -228,7 +228,7 @@ module.exports = class Player extends SimpleActor
 			# TODO: hold multiple arrows
 			return if @[prop]
 
-			search_result = closest_entity_to_world_point(from_point_in_world, EntityClass, (entity)->
+			was_he_slow = (entity)->
 				moving_too_fast = no
 				# Arrow defines getAverageVelocity
 				# Bow doesn't move, and we're not handling picking up anything else yet
@@ -237,21 +237,37 @@ module.exports = class Player extends SimpleActor
 					if Math.abs(vx) + Math.abs(vy) > 2
 						moving_too_fast = yes
 				return not moving_too_fast
-			)
-			if search_result.closest_dist < 50
+
+			primary_hand = @structure.points["right hand"]
+			secondary_hand = @structure.points["left hand"]
+			primary_shoulder = @structure.points["right shoulder"]
+			secondary_shoulder = @structure.points["left shoulder"]
+			hand = if use_secondary_hand then secondary_hand else primary_hand
+			shoulder = if use_secondary_hand then secondary_shoulder else primary_shoulder
+			hand_world = @toWorld(hand)
+			shoulder_world = @toWorld(shoulder)
+
+			# Checking from both these locations ensures
+			# it won't try to reach towards something it can't reach
+			# when it could reach something else.
+			# For example, if there's an item just out of reach below the hand
+			# with the arm extended downwards, but another item above the shoulder, within reach,
+			# the item within reach is further from the hand than the one out of reach,
+			# but it's closer to the shoulder.
+			# It would probably be better if it never reaches for something it can't reach.
+			near_hand = closest_entity_to_world_point(hand_world, EntityClass, was_he_slow)
+			near_shoulder = closest_entity_to_world_point(shoulder_world, EntityClass, was_he_slow)
+
+			nearest = if near_hand.closest_dist < near_shoulder.closest_dist then near_hand else near_shoulder
+
+			if nearest.closest_dist < 50
 				# Animates the hand reaching for the entity
-				@reaching_for = search_result.closest_entity
-				@reaching_for_segment = search_result.closest_segment
+				@reaching_for = nearest.closest_entity
+				@reaching_for_segment = nearest.closest_segment
 				@reaching_with_secondary_hand = use_secondary_hand
-				# Check if the hand is close enough to the entity
-				primary_hand = @structure.points["right hand"]
-				secondary_hand = @structure.points["left hand"]
-				hand = if use_secondary_hand then secondary_hand else primary_hand
-				hand_search_result = closest_entity_to_world_point(@toWorld(hand), EntityClass, (entity)->
-					return entity is search_result.closest_entity
-				)
-				if hand_search_result.closest_dist < 10
-					@[prop] = search_result.closest_entity
+				# If the hand is close enough to an item, pick it up
+				if near_hand.closest_dist < 10
+					@[prop] = near_hand.closest_entity
 		
 		@reaching_for = null
 		@reaching_for_segment = null
