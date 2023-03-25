@@ -425,7 +425,7 @@ module.exports = class Player extends SimpleActor
 			hand_sternum_angle = Math.atan2(hand_y - sternum.y, hand_x - sternum.x)
 			hand_sternum_distance = Math.hypot(hand_x - sternum.x, hand_y - sternum.y)
 			offset_angle = hand_sternum_angle + Math.PI / 2
-			offset_distance = arm_span - hand_sternum_distance
+			offset_distance = Math.abs(arm_span - hand_sternum_distance)
 			if Math.sin(offset_angle) < 0
 				offset_angle += Math.PI
 			elbow_x += Math.cos(offset_angle) * offset_distance
