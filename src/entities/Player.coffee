@@ -262,14 +262,14 @@ module.exports = class Player extends SimpleActor
 
 			if nearest.closest_dist < 50
 				# Animates the hand reaching for the entity
-				@reaching_for = nearest.closest_entity
+				@reaching_for_entity = nearest.closest_entity
 				@reaching_for_segment = nearest.closest_segment
 				@reaching_with_secondary_hand = use_secondary_hand
 				# If the hand is close enough to an item, pick it up
 				if near_hand.closest_dist < 10
 					@[prop] = near_hand.closest_entity
 		
-		@reaching_for = null
+		@reaching_for_entity = null
 		@reaching_for_segment = null
 		@reaching_with_secondary_hand = false
 		pick_up_any Bow, "holding_bow", true
@@ -410,15 +410,15 @@ module.exports = class Player extends SimpleActor
 		secondary_elbow = @structure.points["left elbow"]
 
 		# Make hand reach for items
-		if @reaching_for
+		if @reaching_for_entity
 			hand = if @reaching_with_secondary_hand then secondary_hand else primary_hand
 			pose_primary_shoulder = new_pose.points["right shoulder"]
 			pose_secondary_shoulder = new_pose.points["left shoulder"]
 			pose_shoulder = if @reaching_with_secondary_hand then pose_secondary_shoulder else pose_primary_shoulder
 			hand_world = @toWorld(hand)
 			pose_shoulder_world = @toWorld(pose_shoulder)
-			a_world = @reaching_for.toWorld(@reaching_for_segment.a)
-			b_world = @reaching_for.toWorld(@reaching_for_segment.b)
+			a_world = @reaching_for_entity.toWorld(@reaching_for_segment.a)
+			b_world = @reaching_for_entity.toWorld(@reaching_for_segment.b)
 			c_world = closestPointOnLineSegment(hand_world, a_world, b_world)
 			# assuming the arms are the same length haha
 			arm_span = @structure.segments["upper right arm"].length + @structure.segments["lower right arm"].length
