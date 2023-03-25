@@ -195,12 +195,26 @@ module.exports = class Player extends SimpleActor
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
 		
+		closest_entity_to_world_point = (point_in_world_space, EntityClass, filter)=>
+			closest_dist = Infinity
+			closest_entity = null
+			for entity in world.getEntitiesOfType(EntityClass) when filter?(entity) or not filter
+				point_in_entity_space = entity.fromWorld(point_in_world_space)
+				for segment_name, segment of entity.structure.segments
+					dist = distanceToLineSegment(point_in_entity_space, segment.a, segment.b)
+					if dist < closest_dist
+						closest_dist = dist
+						closest_entity = entity
+			return {closest_entity, closest_dist}
+
 		pick_up_any = (EntityClass, prop)=>
+			# Skele2D editor sets entity.destroyed if you delete an entity
 			@[prop] = null if @[prop]?.destroyed
+			# Only allow picking up one of each entity type, for now
+			# TODO: hold multiple arrows
 			return if @[prop]
-			# this is ridiculously complicated
-			for entity in world.getEntitiesOfType(EntityClass)
-				from_point_in_entity_space = entity.fromWorld(from_point_in_world)
+
+			search_result = closest_entity_to_world_point(from_point_in_world, EntityClass, (entity)->
 				moving_too_fast = no
 				# Arrow defines getAverageVelocity
 				# Bow doesn't move, and we're not handling picking up anything else yet
@@ -208,13 +222,10 @@ module.exports = class Player extends SimpleActor
 					[vx, vy] = entity.getAverageVelocity()
 					if Math.abs(vx) + Math.abs(vy) > 2
 						moving_too_fast = yes
-				unless moving_too_fast
-					for segment_name, segment of entity.structure.segments
-						dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
-						if dist < 50
-							pickup_item = entity
-			# TODO: pickup animation
-			@[prop] = pickup_item if pickup_item
+				return not moving_too_fast
+			)
+			if search_result.closest_dist < 50
+				@[prop] = search_result.closest_entity
 		
 		pick_up_any Bow, "holding_bow"
 		pick_up_any Arrow, "holding_arrow"
@@ -224,17 +235,9 @@ module.exports = class Player extends SimpleActor
 			if @riding
 				@riding = null
 			else
-				closest_dist = Infinity
-				closest_steed = null
-				for entity in world.getEntitiesOfType(Deer)
-					from_point_in_entity_space = entity.fromWorld(from_point_in_world)
-					for segment_name, segment of entity.structure.segments
-						dist = distanceToLineSegment(from_point_in_entity_space, segment.a, segment.b)
-						if dist < closest_dist
-							closest_dist = dist
-							closest_steed = entity
-				if closest_dist < 30
-					@riding = closest_steed
+				search_result = closest_entity_to_world_point(from_point_in_world, Deer)
+				if search_result.closest_dist < 30
+					@riding = search_result.closest_entity
 
 		if @riding
 			# @riding.move_x = @move_x
