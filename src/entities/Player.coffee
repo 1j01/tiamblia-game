@@ -728,7 +728,9 @@ module.exports = class Player extends SimpleActor
 		max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
 		ctx.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length/2)
 		ctx.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin))
-		ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
+		# ctx.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
+		# curve for bottom of dress
+		ctx.quadraticCurveTo(0, torso_length + 10, -4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
 		ctx.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length/2)
 		ctx.fillStyle = dress_color
 		ctx.fill()
