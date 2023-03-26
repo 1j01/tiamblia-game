@@ -138,7 +138,7 @@ module.exports = class Player extends SimpleActor
 		@bbox_padding = 10
 		
 		@holding_bow = null
-		@holding_arrow = null
+		@holding_arrows = []
 		@riding = null
 		
 		@bow_drawn_to = 0
@@ -224,14 +224,19 @@ module.exports = class Player extends SimpleActor
 			return {closest_entity, closest_dist, closest_segment}
 
 		pick_up_distance_threshold = 10
-		pick_up_any = (EntityClass, prop, use_secondary_hand=false)=>
+		pick_up_any = (EntityClass, prop, use_secondary_hand=false, hold_many=false)=>
 			# Skele2D editor sets entity.destroyed if you delete an entity
-			@[prop] = null if @[prop]?.destroyed
-			# Only allow picking up one of each entity type, for now
-			# TODO: hold multiple arrows
-			return if @[prop]
+			if hold_many
+				@[prop] = @[prop].filter((entity)-> not entity.destroyed)
+			else
+				@[prop] = null if @[prop]?.destroyed
+			
+			return if @[prop] and not hold_many
 
-			was_he_slow = (entity)->
+			entity_filter = (entity)=>
+				if hold_many and @[prop].includes(entity)
+					return false
+
 				moving_too_fast = no
 				# Arrow defines getAverageVelocity
 				# Bow doesn't move, and we're not handling picking up anything else yet
@@ -259,8 +264,8 @@ module.exports = class Player extends SimpleActor
 			# but it's closer to the shoulder.
 			# Later logic can decide to not actually reach towards anything out of reach,
 			# or to reach towards a nearby item as long as you're moving towards it.
-			near_hand = closest_entity_to_world_point(hand_world, EntityClass, was_he_slow)
-			near_shoulder = closest_entity_to_world_point(shoulder_world, EntityClass, was_he_slow)
+			near_hand = closest_entity_to_world_point(hand_world, EntityClass, entity_filter)
+			near_shoulder = closest_entity_to_world_point(shoulder_world, EntityClass, entity_filter)
 
 			nearest = if near_hand.closest_dist < near_shoulder.closest_dist then near_hand else near_shoulder
 
@@ -271,14 +276,17 @@ module.exports = class Player extends SimpleActor
 				@reaching_with_secondary_hand = use_secondary_hand
 				# If the hand is close enough to an item, pick it up
 				if near_hand.closest_dist < pick_up_distance_threshold
-					@[prop] = near_hand.closest_entity
+					if hold_many
+						@[prop].push(near_hand.closest_entity)
+					else
+						@[prop] = near_hand.closest_entity
 		
 		@reaching_for_entity = null
 		@reaching_for_segment = null
 		@reaching_with_secondary_hand = false
-		pick_up_any Bow, "holding_bow", true
-		pick_up_any Arrow, "holding_arrow", false
-		# Note: Arrow checks for "holding_arrow" property to prevent solving for collisions while held
+		pick_up_any Bow, "holding_bow", true, false
+		pick_up_any Arrow, "holding_arrows", false, true
+		# Note: Arrow checks "holding_arrows" property to prevent solving for collisions while held
 		
 		if mount_dismount
 			if @riding
@@ -513,17 +521,19 @@ module.exports = class Player extends SimpleActor
 				bow.draw_distance += (5 - bow.draw_distance) / 5
 				@bow_drawn_to = draw_to
 			else
-				if prime_bow and @holding_arrow and bow.draw_distance > 2 and not world.collision(
-					@holding_arrow.toWorld(@holding_arrow.structure.points["tip"])
+				arrow = @holding_arrows[0]
+				if prime_bow and arrow and bow.draw_distance > 2 and not world.collision(
+					arrow.toWorld(arrow.structure.points["tip"])
 				) and not world.collision(
-					@holding_arrow.toWorld(@holding_arrow.structure.points["nock"])
+					arrow.toWorld(arrow.structure.points["nock"])
 				)
 					force = bow.draw_distance * 2
-					@holding_arrow.setVelocity(
+					arrow.setVelocity(
 						Math.cos(aim_angle) * force + @vx
 						Math.sin(aim_angle) * force + @vy
 					)
-					@holding_arrow = null
+					index = @holding_arrows.indexOf(arrow)
+					@holding_arrows.splice(index, 1) if index >= 0
 				bow.draw_distance = 0
 				# FIXME: this should be an ease-in transition, not ease-out
 				@bow_drawn_to += (arm_span - bow.fistmele - @bow_drawn_to) / 10
@@ -548,6 +558,8 @@ module.exports = class Player extends SimpleActor
 				new_head_y = neck.y + 5 * Math.sin(angle + if angle < Math.PI then Math.PI else 0)
 				head.x += (new_head_x - head.x) / 5
 				head.y += (new_head_y - head.y) / 5
+				# drop extra arrows
+				@holding_arrows.length = 1 if @holding_arrows.length > 1
 			else
 				bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x)
 			
@@ -562,11 +574,12 @@ module.exports = class Player extends SimpleActor
 				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle)
 				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle)
 		
-		if @holding_arrow
-			arrow = @holding_arrow
+		for arrow, arrow_index in @holding_arrows
 			arrow.lodging_constraints.length = 0 # pull it out if it's lodged in an object
 			arrow.x = @x
 			arrow.y = @y
+			# um, this coordinate transform is pointless because of the above,
+			# but whatever, it shows intent, right?
 			primary_hand_in_arrow_space = arrow.fromWorld(@toWorld(primary_hand))
 			secondary_hand_in_arrow_space = arrow.fromWorld(@toWorld(secondary_hand))
 			if prime_bow
@@ -578,6 +591,8 @@ module.exports = class Player extends SimpleActor
 				angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
 				arrow_angle = angle - (TAU/4 + 0.2) * @real_facing_x
 				hold_offset = -5
+				arrow_angle += ((arrow_index % 2) - 1/2) * arrow_index * 0.1
+				hold_offset += Math.sin(arrow_index ** 1.2) * Math.pow(arrow_index, 0.9) * 0.3
 				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle)
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
 				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle)

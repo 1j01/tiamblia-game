@@ -147,7 +147,7 @@ module.exports = class Arrow extends Entity
 		# Apply constraints.
 
 		# check if player is holding the arrow
-		held = world.entities.some((entity) => entity.holding_arrow is @)
+		held = world.entities.some((entity) => entity.holding_arrows?.includes(@))
 
 		# Note: can't require Player here (to use instanceof check) because of circular dependency
 		hit = world.collision(@toWorld(tip), types: (entity)=>
