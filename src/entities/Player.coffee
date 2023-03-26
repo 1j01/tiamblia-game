@@ -599,12 +599,17 @@ module.exports = class Player extends SimpleActor
 				hold_offset = -5
 				# hold a bit more centered when there's more arrows
 				hold_offset -= Math.min(@holding_arrows.length - 1, 3)
-				# fan out the arrows
-				arrow_angle += ((arrow_index % 2) - 1/2) * arrow_index * 0.1
+				# fan out the arrows, squeezing them together subtly more when moving
+				fan_angle = ((arrow_index % 2) - 1/2) * arrow_index * 0.2
+				if @holding_arrows.length > 3
+					fan_angle *= Math.pow(0.95, @holding_arrows.length)
+				if Math.abs(@vx) > 2
+					fan_angle *= 0.7
+				arrow_angle += fan_angle
 				# pseudo-randomly stagger the arrows
 				hold_offset += Math.sin(arrow_index ** 1.2) * Math.pow(arrow_index, 0.9) * 0.3
 				# jostle the arrows while moving
-				arrow_angle += Math.sin(@x / 10 + arrow_index * 0.1) * Math.cos(@y / 10 + arrow_index * 0.5) * 0.1
+				arrow_angle += Math.sin(@x / 10 + arrow_index * 0.1) * Math.cos(@y / 10 + arrow_index * 0.5) * 0.01 * @vx
 
 				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle)
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
