@@ -224,6 +224,8 @@ module.exports = class Player extends SimpleActor
 			return {closest_entity, closest_dist, closest_segment}
 
 		pick_up_distance_threshold = 10
+		@pick_up_timer ?= 0
+		@pick_up_timer -= 1
 		pick_up_any = (EntityClass, prop, use_secondary_hand=false, hold_many=false)=>
 			# Skele2D editor sets entity.destroyed if you delete an entity
 			if hold_many
@@ -231,6 +233,8 @@ module.exports = class Player extends SimpleActor
 			else
 				@[prop] = null if @[prop]?.destroyed
 			
+			return if @pick_up_timer > 0
+
 			return if @[prop] and not hold_many
 
 			entity_filter = (entity)=>
@@ -280,6 +284,7 @@ module.exports = class Player extends SimpleActor
 						@[prop].push(near_hand.closest_entity)
 					else
 						@[prop] = near_hand.closest_entity
+					@pick_up_timer = 10
 		
 		@reaching_for_entity = null
 		@reaching_for_segment = null
