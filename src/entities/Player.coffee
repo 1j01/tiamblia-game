@@ -600,9 +600,9 @@ module.exports = class Player extends SimpleActor
 				# hold a bit more centered when there's more arrows
 				hold_offset -= Math.min(@holding_arrows.length - 1, 3)
 				# fan out the arrows, squeezing them together subtly more when moving
-				fan_angle = ((arrow_index % 2) - 1/2) * arrow_index * 0.2
+				fan_angle = ((arrow_index % 2) - 1/2) * arrow_index * 0.4
 				if @holding_arrows.length > 3
-					fan_angle *= Math.pow(0.95, @holding_arrows.length)
+					fan_angle *= Math.pow(0.9, @holding_arrows.length)
 				if Math.abs(@vx) > 2
 					fan_angle *= 0.7
 				arrow_angle += fan_angle
