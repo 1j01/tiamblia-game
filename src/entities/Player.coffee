@@ -595,9 +595,17 @@ module.exports = class Player extends SimpleActor
 			else
 				angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
 				arrow_angle = angle - (TAU/4 + 0.2) * @real_facing_x
+				# near fletching, good for one arrow
 				hold_offset = -5
+				# hold a bit more centered when there's more arrows
+				hold_offset -= Math.min(@holding_arrows.length - 1, 3)
+				# fan out the arrows
 				arrow_angle += ((arrow_index % 2) - 1/2) * arrow_index * 0.1
+				# pseudo-randomly stagger the arrows
 				hold_offset += Math.sin(arrow_index ** 1.2) * Math.pow(arrow_index, 0.9) * 0.3
+				# jostle the arrows while moving
+				arrow_angle += Math.sin(@x / 10 + arrow_index * 0.1) * Math.cos(@y / 10 + arrow_index * 0.5) * 0.1
+
 				arrow.structure.points.nock.x = primary_hand_in_arrow_space.x + hold_offset * Math.cos(arrow_angle)
 				arrow.structure.points.nock.y = primary_hand_in_arrow_space.y + hold_offset * Math.sin(arrow_angle)
 				arrow.structure.points.tip.x = primary_hand_in_arrow_space.x + (hold_offset + arrow.length) * Math.cos(arrow_angle)
