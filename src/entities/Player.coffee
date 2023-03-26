@@ -365,7 +365,7 @@ module.exports = class Player extends SimpleActor
 		if @real_facing_x < 0
 			new_pose = Pose.horizontallyFlip(new_pose)
 		
-		# Avoid mutating the pose
+		# Avoid mutating the pose/animation data
 		new_pose = Pose.copy(new_pose)
 
 		head_x_before_posing = @structure.points["head"].x
