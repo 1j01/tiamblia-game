@@ -561,8 +561,28 @@ module.exports = class Player extends SimpleActor
 				{head, neck} = @structure.points
 				new_head_x = neck.x + 5 * Math.cos(angle + if angle < Math.PI then Math.PI else 0)
 				new_head_y = neck.y + 5 * Math.sin(angle + if angle < Math.PI then Math.PI else 0)
-				head.x += (new_head_x - head.x) / 5
-				head.y += (new_head_y - head.y) / 5
+				# This is a little hairy.
+				# lerp_factor = 1 - 0.3 # 0.3 is the lerp factor used for the rest of the pose
+				# We want to use a slower lerp when the head is flipping from one side to the other
+				# at the threshold when you aim upwards.
+				# We need to move the head quickly when the body/neck moves vertically,
+				# such as when crouching, or when starting priming the bow while riding a horse.
+				# Otherwise the neck will stretch or look weird.
+				# However, just changing the lerp factor temporarily still lets the
+				# neck stretch, temporarily, during the transition. @FIXME
+				@facing_turn_timer ?= 0
+				transition_duration = 50
+				if @prev_real_facing_x != @real_facing_x
+					@facing_turn_timer = transition_duration
+				@facing_turn_timer -= 1
+				lerp_factor = 1 #- 0.3
+				if @facing_turn_timer > 0
+					target_lerp_factor = 0.001
+					# lerp the lerp factor so there's not a sudden jump at the end of the timer
+					meta_lerp_factor = @facing_turn_timer / transition_duration
+					lerp_factor += (target_lerp_factor - lerp_factor) * meta_lerp_factor
+				head.x += (new_head_x - head.x) * lerp_factor
+				head.y += (new_head_y - head.y) * lerp_factor
 				# drop extra arrows
 				@holding_arrows.length = 1 if @holding_arrows.length > 1
 			else
@@ -622,6 +642,8 @@ module.exports = class Player extends SimpleActor
 		
 		# Hair physics
 		@simulate_hair(world)
+
+		@prev_real_facing_x = @real_facing_x
 	
 	simulate_hair: (world)->
 		{head, neck} = @structure.points
