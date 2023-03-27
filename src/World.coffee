@@ -8,7 +8,7 @@ module.exports = class World
 		@entities = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 3
+	@formatVersion: 4
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -62,6 +62,30 @@ module.exports = class World
 				for point_name, point_def of ent_def.structure.points
 					point_def.is_leaf = point_name in ent_def.leaf_point_names
 				delete ent_def.leaf_point_names
+		if def.formatVersion is 3
+			def.formatVersion = 4
+			# Caterpillar's structure has changed. Delete the old one and let it be recreated.
+			# This may cause the caterpillar to be in a different position than it was before,
+			# but I don't care enough to do a detailed upgrade.
+			# You know what? I'll center it on the old position, in case the points
+			# strayed far away from the entity's position.
+			for ent_def in def.entities when ent_def._class_ is "Caterpillar"
+				average_x = 0
+				average_y = 0
+				for point_name, point_def of ent_def.structure.points
+					average_x += point_def.x
+					average_y += point_def.y
+				average_x /= Object.keys(ent_def.structure.points).length
+				average_y /= Object.keys(ent_def.structure.points).length
+				ent_def.x += average_x
+				ent_def.y += average_y
+				delete ent_def.structure
+			# Player's holding_arrow is now holding_arrows, and is an array
+			for ent_def in def.entities when ent_def._class_ is "Player"
+				ent_def.holding_arrows = []
+				if ent_def.holding_arrow
+					ent_def.holding_arrows.push ent_def.holding_arrow
+				delete ent_def.holding_arrow
 
 		# Note: it's a good idea to bump the version number when adding new features
 		# that won't be supported by older versions, even without upgrade code,
