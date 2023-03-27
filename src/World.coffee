@@ -15,16 +15,13 @@ module.exports = class World
 		entities: @entities
 
 	fromJSON: (def)->
-		# There's not much utility in checking the format name here since
-		# it was only added after version 3 (with some version 3 files having it.)
-		# As long as we support earlier versions, we can't rely on it being present.
-		# If you're copying this code for a new format, you can uncomment this:
-
-		# if def.format isnt World.format
-		# 	if def.format
-		# 		throw new Error "Expected format to be \"#{World.format}\", got #{def.format}"
-		# 	else
-		# 		throw new Error "Missing format field. Expected property \"format\" to be \"#{World.format}\"."
+		if def.format isnt World.format
+			if def.format
+				throw new Error "Expected format to be \"#{World.format}\", got #{def.format}"
+			else
+				# As long as we support versions 3 or earlier, we can't rely on the format name being present.
+				# If you're copying this code for a new format, you can uncomment this.
+				# throw new Error "Missing format name. Expected property \"format\" to be \"#{World.format}\"."
 
 		# upgrade old versions of the format
 		if not def.formatVersion
