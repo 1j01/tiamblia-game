@@ -7,12 +7,25 @@ module.exports = class World
 	constructor: ->
 		@entities = []
 	
+	@format: "Tiamblia World"
 	@formatVersion: 3
 	toJSON: ->
+		format: World.format
 		formatVersion: World.formatVersion
 		entities: @entities
 
 	fromJSON: (def)->
+		# There's not much utility in checking the format name here since
+		# it was only added after version 3 (with some version 3 files having it.)
+		# As long as we support earlier versions, we can't rely on it being present.
+		# If you're copying this code for a new format, you can uncomment this:
+
+		# if def.format isnt World.format
+		# 	if def.format
+		# 		throw new Error "Expected format to be \"#{World.format}\", got #{def.format}"
+		# 	else
+		# 		throw new Error "Missing format field. Expected property \"format\" to be \"#{World.format}\"."
+
 		# upgrade old versions of the format
 		if not def.formatVersion
 			if def.entities not instanceof Array
