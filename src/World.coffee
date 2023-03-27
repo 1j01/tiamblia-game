@@ -64,9 +64,12 @@ module.exports = class World
 		if def.formatVersion isnt World.formatVersion
 			throw new Error "Unsupported format version #{def.formatVersion}"
 		
-		# Validate the current format a bit
+		# Validate the current version of the format
 		if def.entities not instanceof Array
 			throw new Error "Expected entities to be an array, got #{def.entities}"
+		for ent_def, i in def.entities
+			if typeof ent_def._class_ isnt "string"
+				throw new Error "Expected entities[#{i}]._class_ to be a string, got #{ent_def._class_}"
 		
 		# Initialize the world
 		@entities = (Entity.fromJSON(ent_def) for ent_def in def.entities)
