@@ -80,6 +80,21 @@ module.exports = class World
 				ent_def.x += average_x
 				ent_def.y += average_y
 				delete ent_def.structure
+				# normal -> away_from_ground -> towards_ground, flipping vector in latter case
+				# for point_name, point_def of ent_def.structure.points
+				# 	if point_def.normal
+				# 		point_def.away_from_ground = point_def.normal
+				# 		delete point_def.normal
+				# 	if point_def.smoothed_normal
+				# 		point_def.away_from_ground_smoothed = point_def.smoothed_normal
+				# 		delete point_def.smoothed_normal
+				# 	if point_def.away_from_ground
+				# 		point_def.towards_ground = {x: -point_def.away_from_ground.x, y: -point_def.away_from_ground.y}
+				# 		delete point_def.away_from_ground
+				# 	if point_def.away_from_ground_smoothed
+				# 		point_def.towards_ground_smoothed = {x: -point_def.away_from_ground_smoothed.x, y: -point_def.away_from_ground_smoothed.y}
+				# 		delete point_def.away_from_ground_smoothed
+			
 			# Player's holding_arrow is now holding_arrows, and is an array
 			for ent_def in def.entities when ent_def._class_ is "Player"
 				ent_def.holding_arrows = []
