@@ -23,7 +23,15 @@ module.exports = class World
 				# If you're copying this code for a new format, you can uncomment this.
 				# throw new Error "Missing format name. Expected property \"format\" to be \"#{World.format}\"."
 
-		# upgrade old versions of the format
+		# If you want to drop support for old versions of the format, you can handle it like so:
+		# minimum_supported_version = 3
+		# if not def.formatVersion
+		# 	throw new Error "This format is too old; it's missing a format version number. Expected property \"formatVersion\" to be an integer."
+		# if def.formatVersion < minimum_supported_version
+		# 	throw new Error "The format version #{def.formatVersion} is too old for this version of the game.
+		# 	There is no automatic upgrade path for versions older than #{minimum_supported_version}."
+
+		# Upgrade old versions of the format
 		if not def.formatVersion
 			if def.entities not instanceof Array
 				throw new Error "Expected entities to be an array, got #{def.entities}"
@@ -55,9 +63,20 @@ module.exports = class World
 					point_def.is_leaf = point_name in ent_def.leaf_point_names
 				delete ent_def.leaf_point_names
 
+		# Note: it's a good idea to bump the version number when adding new features
+		# that won't be supported by older versions, even without upgrade code,
+		# but this is more important for applications, or games with level sharing.
+		# For Tiamblia, the format is only authored by the game developer (me),
+		# and people coming to see the demo and messing around with the editor,
+		# who should be using the latest version of the game anyway,
+		# so it's not as important, and I'm not bothering, basically as a policy.
+		# The worst it can do is cause some confusion when stepping back in git history.
+
+		# Handle format versions newer than supported
+		# This could offer a choice to the user to try to load the world anyway, but that's not implemented.
 		if def.formatVersion > World.formatVersion
 			throw new Error "The format version #{def.formatVersion} is too new for this version of the game."
-		# In case the format version format changes to a string or something
+		# Just in case the format version format changes to a string like X.Y.Z or something
 		if def.formatVersion isnt World.formatVersion
 			throw new Error "Unsupported format version #{def.formatVersion}"
 		
