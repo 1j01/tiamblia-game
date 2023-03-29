@@ -18,6 +18,7 @@ module.exports = class GeneticPlant extends Tree
 			leaf_size_min: Math.random()*20+2
 			leaf_size_range: Math.random()*20
 			leaf_aspect: Math.random()*0.5+0.5
+			leaf_bottom_aspect: Math.random()*0.5+1
 			leaf_pointedness: Math.random()
 			leaf_anti_pointedness: Math.random()*2-1
 			leaf_rotation_range: Math.random()*TAU
@@ -102,13 +103,14 @@ module.exports = class GeneticPlant extends Tree
 		ctx.beginPath()
 		ctx.scale(size, size)
 		w = @dna.leaf_aspect
+		wb = w * @dna.leaf_bottom_aspect
 		h = 1
 		p = @dna.leaf_pointedness
 		ap = @dna.leaf_anti_pointedness
 		ctx.translate(0, -h)
 		ctx.moveTo(0, 0)
 		ctx.bezierCurveTo(w,p, w,h-ap, 0,h)
-		ctx.bezierCurveTo(-w,h-ap, -w,p, 0,0)
+		ctx.bezierCurveTo(-wb,h-ap, -wb,p, 0,0)
 		
 		ctx.closePath()
 		ctx.fillStyle = @dna.leaf_color
