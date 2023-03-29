@@ -35,7 +35,10 @@ module.exports = class GeneticPlant extends Tree
 
 	fromJSON: (def) ->
 		super(def)
-		@init()
+		# in main.coffee I have a dev helper that creates clones with the same DNA
+		# using Entity.fromJSON with just the class name and dna property
+		if def.dna and not def.structure
+			@init()
 
 	random: ->
 		@random_index++
