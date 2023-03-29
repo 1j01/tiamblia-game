@@ -601,6 +601,12 @@ module.exports = class Player extends SimpleActor
 				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle)
 				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle)
 		
+		# Serialization is broken; ad-hoc resolve references
+		for arrow, arrow_index in @holding_arrows
+			arrow_ent = world.getEntityByID(arrow.id)
+			@holding_arrows[arrow_index] = arrow_ent
+		@holding_arrows = @holding_arrows.filter((arrow) -> arrow)
+
 		for arrow, arrow_index in @holding_arrows
 			arrow.lodging_constraints.length = 0 # pull it out if it's lodged in an object
 			arrow.x = @x
