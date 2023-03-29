@@ -60,7 +60,7 @@ module.exports = class GeneticPlant extends Tree
 			juice: Math.random()*10+5
 			width: @dna.trunk_width_min + Math.random() * @dna.trunk_width_range
 			length: @dna.trunk_length_min + Math.random() * @dna.trunk_length_range
-			angle: -TAU/2
+			angle: -TAU/4
 		})
 
 	fromJSON: (def) ->
@@ -79,14 +79,12 @@ module.exports = class GeneticPlant extends Tree
 		angle += (Math.random()*2-1)*@dna.angle_change_max
 
 		dir = {x: Math.cos(angle), y: Math.sin(angle)}
-		# TODO: refactor angle calculations
-		# so that this uses y; it's unintuitive right now
-		dir.x -= @dna.angle_tend_upward
+		dir.y -= @dna.angle_tend_upward
 		angle = Math.atan2(dir.y, dir.x)
 		
 		@structure.addSegment({from, name, length, width, color: @dna.branch_color})
-		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
-		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
+		@structure.points[name].x = @structure.points[from].x + Math.cos(angle) * length
+		@structure.points[name].y = @structure.points[from].y + Math.sin(angle) * length
 		branch_width_change_factor = @dna.branch_width_change_factor_max - Math.random() * @dna.branch_width_change_factor_range
 		branch_length_change_factor = @dna.branch_length_change_factor_max - Math.random() * @dna.branch_length_change_factor_range
 		# Note this will have an averaging effect since the target is randomized each time

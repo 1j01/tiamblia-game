@@ -18,7 +18,7 @@ module.exports = class PuffTree extends Tree
 			juice: Math.random()*10+5
 			width: 10+Math.floor(Math.random()*5)
 			length: 9
-			angle: -TAU/2
+			angle: -TAU/4
 		})
 
 	random: ->
@@ -27,10 +27,10 @@ module.exports = class PuffTree extends Tree
 
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
-		angle+=(Math.random()*2-1)*0.7
+		angle += (Math.random()*2-1)*0.7
 		@structure.addSegment({from, name, length, width, color: "#89594A"})
-		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
-		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
+		@structure.points[name].x = @structure.points[from].x + Math.cos(angle) * length
+		@structure.points[name].y = @structure.points[from].y + Math.sin(angle) * length
 		juice -= 0.3
 		if juice > 0
 			@branch({from: name, to: "#{to}-a", juice, angle, width: juice, length})

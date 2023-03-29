@@ -18,7 +18,7 @@ module.exports = class CactusTree extends Tree
 			juice: Math.random()*10+3
 			width: 10+Math.floor(Math.random()*5)
 			length: 15
-			angle: -TAU/2
+			angle: -TAU/4
 			offshoots: 0
 		})
 
@@ -30,8 +30,8 @@ module.exports = class CactusTree extends Tree
 		name = to
 		# angle+=(Math.random()*2-1)*0.7
 		@structure.addSegment({from, name, length, width, color: "green"})
-		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
-		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
+		@structure.points[name].x = @structure.points[from].x + Math.cos(angle) * length
+		@structure.points[name].y = @structure.points[from].y + Math.sin(angle) * length
 		juice -= 1
 		if offshoots > 0
 			width *= 0.97
@@ -43,9 +43,7 @@ module.exports = class CactusTree extends Tree
 			width *= 1.1
 		if juice > 0
 			dir = {x: Math.cos(angle), y: Math.sin(angle)}
-			# TODO: refactor angle calculations
-			# so that this uses y; it's unintuitive right now
-			dir.x -= 3
+			dir.y -= 3
 			angle = Math.atan2(dir.y, dir.x)
 			max_branches = 5
 			offshoots_here = 0
