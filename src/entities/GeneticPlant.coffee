@@ -31,8 +31,12 @@ module.exports = class GeneticPlant extends Tree
 
 			trunk_width_min: Math.random()*15+2
 			trunk_width_range: Math.random()*10
-			branch_length_min: Math.random()*10+1
-			branch_length_range: Math.random()*10
+			trunk_length_min: Math.random()*20+1
+			trunk_length_range: Math.random()*20
+			branch_width_factor_max: 1-Math.random()*0.1
+			branch_width_factor_range: Math.random()*0.2
+			branch_length_factor_max: 1-Math.random()*0.2
+			branch_length_factor_range: Math.random()*0.2
 			random_angle: Math.random()*1.5
 		}
 
@@ -47,7 +51,7 @@ module.exports = class GeneticPlant extends Tree
 			to: "1"
 			juice: Math.random()*10+5
 			width: @dna.trunk_width_min + Math.random() * @dna.trunk_width_range
-			length: @dna.branch_length_min + Math.random() * @dna.branch_length_range
+			length: @dna.trunk_length_min + Math.random() * @dna.trunk_length_range
 			angle: -TAU/2
 		})
 
@@ -65,15 +69,18 @@ module.exports = class GeneticPlant extends Tree
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
 		angle += (Math.random()*2-1)*@dna.random_angle
-		length = @dna.branch_length_min + Math.random() * @dna.branch_length_range
 		@structure.addSegment({from, name, length, width, color: @dna.branch_color})
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
+		branch_width_factor = @dna.branch_width_factor_max - Math.random() * @dna.branch_width_factor_range
+		branch_length_factor = @dna.branch_length_factor_max - Math.random() * @dna.branch_length_factor_range
+		width *= branch_width_factor
+		length *= branch_length_factor
 		juice -= 0.3
 		if juice > 0
-			@branch({from: name, to: "#{to}-a", juice, angle, width: juice, length})
+			@branch({from: name, to: "#{to}-a", juice, angle, width, length})
 			if Math.random() < 0.1 - juice / 200
-				@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
+				@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width, length})
 		else
 			leaf_point = @structure.points[name]
 			leaf_point.segment_name = name
