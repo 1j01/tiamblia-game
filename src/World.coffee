@@ -121,6 +121,7 @@ module.exports = class World
 	getEntityByID: (id)->
 		for entity in @entities
 			return entity if entity.id is id
+		return null
 	
 	getEntitiesOfType: (Class)->
 		return (entity for entity in @entities when entity instanceof Class)
