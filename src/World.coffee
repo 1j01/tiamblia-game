@@ -110,6 +110,38 @@ module.exports = class World
 		for ent_def, i in def.entities
 			if typeof ent_def._class_ isnt "string"
 				throw new Error "Expected entities[#{i}]._class_ to be a string, got #{ent_def._class_}"
+			if typeof ent_def.id isnt "string"
+				throw new Error "Expected entities[#{i}].id to be a string, got #{ent_def.id}"
+			if typeof ent_def.x isnt "number"
+				throw new Error "Expected entities[#{i}].x to be a number, got #{ent_def.x}"
+			if typeof ent_def.y isnt "number"
+				throw new Error "Expected entities[#{i}].y to be a number, got #{ent_def.y}"
+			if typeof ent_def.structure isnt "object"
+				throw new Error "Expected entities[#{i}].structure to be an object, got #{ent_def.structure}"
+			# Ensure there are no entity references not at the top level of an entity
+			# (resolveReferences only handles top-level references as a special case)
+			dot_or_bracket = (key)=>
+				if key.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
+					return ".#{key}"
+				else if key.match(/^[0-9]+$/)
+					return "[#{key}]"
+				else
+					return "[#{JSON.stringify(key)}]"
+			search_object = (obj, path_to_obj, get_more_context)=>
+				# console.debug "search_object(", obj, ",", JSON.stringify(path_to_obj), ")"
+				if typeof obj is "object" and obj isnt null
+					for key, value of obj	
+						path_to_value = "#{path_to_obj}#{dot_or_bracket(key)}"
+						# console.debug "search_object: #{path_to_value} = #{JSON.stringify(value)}"
+						if key is "_class_"
+							# throw new Error "Entity references must be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)} #{get_more_context()[0]} #{JSON.stringify(get_more_context()[1])}"
+							# Player class has a workaround for this for holding_arrows, so don't throw an error.
+							console.warn "Entity references should only be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)}", ...get_more_context()
+						if typeof value is "object" and value isnt null
+							search_object(value, path_to_value, get_more_context)
+				return
+			for top_key, top_value of ent_def
+				search_object(top_value, "entities[#{i}]#{dot_or_bracket(top_key)}", -> ["where entities[#{i}] is #{ent_def._class_}", ent_def])
 		
 		# Initialize the world
 		@entities = (Entity.fromJSON(ent_def) for ent_def in def.entities)
