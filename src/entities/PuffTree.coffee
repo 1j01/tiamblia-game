@@ -66,15 +66,15 @@ module.exports = class PuffTree extends Tree
 		l=@random()/2
 		ctx.fillStyle="hsl(#{~~(150-l*50)},#{~~(50)}%,#{~~(50+l*20)}%)"
 		ctx.beginPath()
-		ctx.arc(x,y,10+@random()*5,0,Math.PI*2,true)
+		ctx.arc(x,y,10+@random()*5,0,TAU,true)
 		ctx.fill()
 		for i in [0..10]
 			l=@random()/2
 			ctx.fillStyle="hsl(#{~~(150-l*50)},#{~~(50)}%,#{~~(50+l*20)}%)"
 			ctx.beginPath()
-			r1=Math.PI*2*@random()
+			r1=TAU*@random()
 			r2=@random()*15
-			ctx.arc(x+Math.sin(r1)*r2,y+Math.cos(r1)*r2,5+@random()*5,0,Math.PI*2,true)
+			ctx.arc(x+Math.sin(r1)*r2,y+Math.cos(r1)*r2,5+@random()*5,0,TAU,true)
 			ctx.fill()
 		ctx.restore()
 		return

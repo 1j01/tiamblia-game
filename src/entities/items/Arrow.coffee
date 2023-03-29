@@ -171,16 +171,16 @@ module.exports = class Arrow extends Entity
 					surface_angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x)
 					arrow_angle = Math.atan2(tip_relative.y - nock_relative.y, tip_relative.x - nock_relative.x)
 					relative_angle = arrow_angle - surface_angle
-					normal = surface_angle + Math.PI / 2
+					normal = surface_angle + TAU/4
 					vx = tip.x - tip.prev_x
 					vy = tip.y - tip.prev_y
 					heading_angle = Math.atan2(vy, vx)
 					incident_speed = Math.abs(Math.cos(normal) * vx + Math.sin(normal) * vy)
 					# incident_speed = Math.abs(Math.sin(-surface_angle) * vx + Math.cos(-surface_angle) * vy) # alternative
-					heading_angle_of_incidence = Math.abs(Math.abs((heading_angle - surface_angle) %% (Math.PI)) - Math.PI/2)
-					facing_angle_of_incidence = Math.abs(Math.abs((arrow_angle - surface_angle) %% (Math.PI)) - Math.PI/2)
-					# window.debug_max_facing_angle_of_incidence = Math.max(window.debug_max_facing_angle_of_incidence ? 0, facing_angle_of_incidence) # should be Math.PI/2 on arrow test scene
-					# window.debug_max_heading_angle_of_incidence = Math.max(window.debug_max_heading_angle_of_incidence ? 0, heading_angle_of_incidence) # should be Math.PI/2 on arrow test scene
+					heading_angle_of_incidence = Math.abs(Math.abs((heading_angle - surface_angle) %% (Math.PI)) - TAU/4)
+					facing_angle_of_incidence = Math.abs(Math.abs((arrow_angle - surface_angle) %% (Math.PI)) - TAU/4)
+					# window.debug_max_facing_angle_of_incidence = Math.max(window.debug_max_facing_angle_of_incidence ? 0, facing_angle_of_incidence) # should be TAU/4 on arrow test scene
+					# window.debug_max_heading_angle_of_incidence = Math.max(window.debug_max_heading_angle_of_incidence ? 0, heading_angle_of_incidence) # should be TAU/4 on arrow test scene
 
 					# This could be more nuanced, but I'm trying to make it easier to hit animals.
 					# It's not satisfying when an arrow flies past your mark, and this is a 2D game so it's confusing

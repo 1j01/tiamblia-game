@@ -192,7 +192,7 @@ module.exports = class Player extends SimpleActor
 				# Reverse aiming can feel more natural, like drawing back the bow
 				# even though it's not the control to draw the bow
 				# TODO: It should be an option.
-				aim_angle += Math.PI
+				aim_angle += TAU/2
 				draw_back_distance = Math.hypot(gamepad.axes[2], gamepad.axes[3])
 				draw_back_distance = Math.max(0, draw_back_distance - gamepad_deadzone)
 				gamepad_prime_bow = draw_back_distance > 0.3
@@ -484,10 +484,10 @@ module.exports = class Player extends SimpleActor
 				# Then offset it to keep the segments the right length
 				arm_angle = Math.atan2(hand_y - pose_shoulder.y, hand_x - pose_shoulder.x)
 				arm_extension = Math.hypot(hand_x - pose_shoulder.x, hand_y - pose_shoulder.y)
-				offset_angle = arm_angle + Math.PI / 2
+				offset_angle = arm_angle + TAU/4
 				offset_distance = Math.abs(arm_span - arm_extension)
 				if Math.sin(offset_angle) < 0
-					offset_angle += Math.PI
+					offset_angle += TAU/2
 				elbow_x += Math.cos(offset_angle) * offset_distance
 				elbow_y += Math.sin(offset_angle) * offset_distance
 				# Update the pose
@@ -558,11 +558,11 @@ module.exports = class Player extends SimpleActor
 				secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle)
 				secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle)
 				# make head look along aim path
-				angle = (aim_angle - Math.PI / 2) %% (Math.PI * 2)
-				@real_facing_x = if angle < Math.PI then -1 else 1
+				angle = (aim_angle - TAU/4) %% TAU
+				@real_facing_x = if angle < TAU/2 then -1 else 1
 				{head, neck} = @structure.points
-				new_head_x = neck.x + 5 * Math.cos(angle + if angle < Math.PI then Math.PI else 0)
-				new_head_y = neck.y + 5 * Math.sin(angle + if angle < Math.PI then Math.PI else 0)
+				new_head_x = neck.x + 5 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
+				new_head_y = neck.y + 5 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
 				# This is a little hairy.
 				# lerp_factor = 1 - 0.3 # 0.3 is the lerp factor used for the rest of the pose
 				# We want to use a slower lerp when the head is flipping from one side to the other
@@ -664,7 +664,7 @@ module.exports = class Player extends SimpleActor
 					point.prev_y = point.y
 
 			for points, hair_index in @hairs
-				a = head_angle + hair_index / @hairs.length * Math.PI - Math.PI/2
+				a = head_angle + hair_index / @hairs.length * TAU/2 - TAU/4
 				back_x = Math.sin(head_angle) * 2 * @real_facing_x
 				back_y = Math.cos(head_angle) * 2 * @real_facing_x
 				points[0].x = head_global.x + Math.cos(a) * 3 + back_x
