@@ -15,6 +15,7 @@ module.exports = class GeneticPlant extends Tree
 		@dna = {
 			branch_color: "hsl(#{Math.floor(Math.pow(Math.random(), 2)*360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
 			leaf_color: "hsl(#{(Math.floor(Math.pow(Math.random(), 2)*360+200)%360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
+			
 			leaf_size_min: Math.random()*20+2
 			leaf_size_range: Math.random()*20
 			leaf_aspect: Math.random()*0.5+0.5
@@ -22,6 +23,12 @@ module.exports = class GeneticPlant extends Tree
 			leaf_pointedness: Math.random()
 			leaf_anti_pointedness: Math.random()*2-1
 			leaf_rotation_range: Math.random()*TAU
+
+			leaf_bunch_min: Math.random()*5+1
+			leaf_bunch_range: Math.random()*5
+			leaf_bunch_spread_min: Math.random()*15+1
+			leaf_bunch_spread_range: Math.random()*15
+
 			trunk_width_min: Math.random()*15+2
 			trunk_width_range: Math.random()*10
 			branch_length_min: Math.random()*10+1
@@ -96,24 +103,32 @@ module.exports = class GeneticPlant extends Tree
 	drawLeaf: (ctx, leaf)->
 		segment = @structure.segments[leaf.segment_name]
 		angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) + TAU/4
-		size = @dna.leaf_size_min + @random() * @dna.leaf_size_range
+		num_leaves = @dna.leaf_bunch_min + @random() * @dna.leaf_bunch_range
+		spread = @dna.leaf_bunch_spread_min + @random() * @dna.leaf_bunch_spread_range
 		ctx.save()
 		ctx.translate(leaf.x, leaf.y)
-		ctx.rotate(angle + @random()*@dna.leaf_rotation_range)
-		ctx.beginPath()
-		ctx.scale(size, size)
-		w = @dna.leaf_aspect
-		wb = w * @dna.leaf_bottom_aspect
-		h = 1
-		p = @dna.leaf_pointedness
-		ap = @dna.leaf_anti_pointedness
-		ctx.translate(0, -h)
-		ctx.moveTo(0, 0)
-		ctx.bezierCurveTo(w,p, w,h-ap, 0,h)
-		ctx.bezierCurveTo(-wb,h-ap, -wb,p, 0,0)
-		
-		ctx.closePath()
-		ctx.fillStyle = @dna.leaf_color
-		ctx.fill()
+		ctx.rotate(angle)
+		for [0..num_leaves]
+			size = @dna.leaf_size_min + @random() * @dna.leaf_size_range
+			offset = @random() * spread
+			ctx.translate(0, offset)
+			ctx.save()
+			ctx.rotate(@random()*@dna.leaf_rotation_range)
+			ctx.beginPath()
+			ctx.scale(size, size)
+			w = @dna.leaf_aspect
+			wb = w * @dna.leaf_bottom_aspect
+			h = 1
+			p = @dna.leaf_pointedness
+			ap = @dna.leaf_anti_pointedness
+			ctx.translate(0, -h)
+			ctx.moveTo(0, 0)
+			ctx.bezierCurveTo(w,p, w,h-ap, 0,h)
+			ctx.bezierCurveTo(-wb,h-ap, -wb,p, 0,0)
+			
+			ctx.closePath()
+			ctx.fillStyle = @dna.leaf_color
+			ctx.fill()
+			ctx.restore()
 		ctx.restore()
 		return
