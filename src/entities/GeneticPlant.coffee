@@ -24,8 +24,18 @@ module.exports = class GeneticPlant extends Tree
 			random_angle: Math.random()*1.5
 		}
 
+		@init()
+
+	init: ->
+		delete @structure.points[k] for k of @structure.points
+		delete @structure.segments[k] for k of @structure.segments
+		@structure.addPoint("base") # Tree does this but we have to redo it because we deleted the points
 		@trunk_width = @dna.trunk_width_min + Math.random() * @dna.trunk_width_range
 		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: @dna.branch_length_min + Math.random() * @dna.branch_length_range, angle: -TAU/2)
+
+	fromJSON: (def) ->
+		super(def)
+		@init()
 
 	random: ->
 		@random_index++

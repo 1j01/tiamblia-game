@@ -125,6 +125,15 @@ do animate = ->
 			while world.collision(ent)
 				ent.y -= 3
 			world.entities.push(ent)
+			if ent.dna
+				# show examples of the same species beside it
+				for i in [0...3]
+					clone = Entity.fromJSON({_class_: class_name, dna: JSON.parse(JSON.stringify(ent.dna))})
+					clone.x = ent.x + 100 * (i + 1)
+					clone.y = bottom_of_world
+					while world.collision(clone)
+						clone.y -= 3
+					world.entities.push(clone)
 
 	# Hide welcome message after you start playing or toggle editing.
 	unless disable_welcome_message
