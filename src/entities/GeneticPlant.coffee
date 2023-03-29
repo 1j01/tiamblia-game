@@ -4,7 +4,7 @@ TAU = Math.PI * 2
 
 module.exports = class GeneticPlant extends Tree
 	addEntityClass(@)
-	constructor: ->
+	constructor: (ent_def)->
 		super()
 
 		@bbox_padding = 60
@@ -12,6 +12,20 @@ module.exports = class GeneticPlant extends Tree
 		@random_index = 0
 		@random_values = []
 
+		dot_or_bracket = (key)=>
+			if key.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
+				return ".#{key}"
+			else
+				return "[#{JSON.stringify(key)}]"
+		merge_unless_type_differs = (target, source, path) ->
+			for key, source_value of source
+				if typeof source_value is "object" and typeof target[key] is "object"
+					merge_unless_type_differs(target[key], source_value, path + dot_or_bracket(key))
+				else if typeof source_value is typeof target[key]
+					target[key] = source_value
+				else
+					console.warn "Type mismatch at #{path + dot_or_bracket(key)}: #{typeof target[key]} vs #{typeof value}"
+		
 		@dna = {
 			branch_color: "hsl(#{Math.floor(Math.pow(Math.random(), 2)*360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
 			leaf_color: "hsl(#{(Math.floor(Math.pow(Math.random(), 2)*360+200)%360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
@@ -47,6 +61,8 @@ module.exports = class GeneticPlant extends Tree
 			branching_angle_min: Math.random()*TAU/4
 			branching_angle_range: Math.random()*TAU/4
 		}
+
+		merge_unless_type_differs(@dna, ent_def.dna, "ent_def.dna") if ent_def?.dna
 
 		@init()
 
