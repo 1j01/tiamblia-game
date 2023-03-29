@@ -2,6 +2,7 @@ SimpleActor = require "./abstract/SimpleActor.coffee"
 Entity = require "./abstract/Entity.coffee"
 {addEntityClass} = require "skele2d"
 
+TAU = Math.PI * 2
 r = -> Math.random()*2-1
 
 module.exports = class Deer extends SimpleActor
@@ -67,7 +68,7 @@ module.exports = class Deer extends SimpleActor
 		
 		ctx.beginPath()
 		ctx.fillStyle=@c
-		ctx.arc(0,-@height/2,@height/3,0,Math.PI*2,true)
+		ctx.arc(0,-@height/2,@height/3,0,TAU,true)
 		ctx.fill()
 		
 		ctx.scale(@dir_pl,1)
@@ -78,13 +79,13 @@ module.exports = class Deer extends SimpleActor
 		ctx.moveTo(-@width/2,-@height/2)
 		ctx.lineTo(Math.cos(@lr)*10-@width/2,@height/2+Math.sin(@lr)*8)
 		ctx.moveTo(-@width/2,-@height/2)
-		ctx.lineTo(Math.cos(@lr+Math.PI)*10-@width/2,@height/2+Math.sin(@lr+Math.PI)*8)
+		ctx.lineTo(Math.cos(@lr+TAU/2)*10-@width/2,@height/2+Math.sin(@lr+TAU/2)*8)
 		ctx.stroke()
 		ctx.beginPath()
 		ctx.moveTo(@width/2,-@height/2)
 		ctx.lineTo(Math.cos(@lr+0.1)*10+@width/2,@height/2+Math.sin(@lr)*8)
 		ctx.moveTo(@width/2,-@height/2)
-		ctx.lineTo(Math.cos(@lr+Math.PI+0.2)*10+@width/2,@height/2+Math.sin(@lr+Math.PI)*8)
+		ctx.lineTo(Math.cos(@lr+TAU/2+0.2)*10+@width/2,@height/2+Math.sin(@lr+TAU/2)*8)
 		ctx.stroke()
 		
 		ctx.fillStyle=@c
@@ -104,7 +105,7 @@ module.exports = class Deer extends SimpleActor
 		# eye
 		ctx.fillStyle="#000"
 		ctx.beginPath()
-		ctx.arc(0,0,1,0,Math.PI*2,true)
+		ctx.arc(0,0,1,0,TAU,true)
 		ctx.fill()
 		ctx.restore() # /head
 		

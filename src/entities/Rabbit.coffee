@@ -1,6 +1,7 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 {addEntityClass} = require "skele2d"
 
+TAU = Math.PI * 2
 r = -> Math.random()*2-1
 
 module.exports = class Rabbit extends SimpleActor
@@ -86,31 +87,31 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fillStyle=@c2
 		# ctx.fillRect(0,0,@width,@height)
 		ctx.beginPath()
-		ctx.arc(0,0,@height/2,Math.PI*0.9,Math.PI*2.1,false) # body
+		ctx.arc(0,0,@height/2,TAU*0.45,TAU*1.05,false) # body
 		ctx.fill()
 		ctx.fillStyle=@c
 		ctx.save() # head transform
 		ctx.translate(@smoothed_facing_x*@width/3,-@height/3)
 		ctx.beginPath()
-		ctx.arc(0,0,@height/3,Math.PI*0.9,Math.PI*2.1,false) # head
+		ctx.arc(0,0,@height/3,TAU*0.45,TAU*1.05,false) # head
 		ctx.fill()
 		ctx.fillStyle=@eye_color
 		ctx.beginPath()
-		ctx.arc(0,0,1,0,Math.PI*2,false) # eye
+		ctx.arc(0,0,1,0,TAU,false) # eye
 		ctx.fill()
 		ctx.fillStyle=@c
 		ctx.beginPath()
 		ctx.save() # ear transform
 		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
 		# ctx.rotate(Math.sin(performance.now()/1000))
-		ctx.rotate(-Math.min(Math.PI/3, Math.max(-Math.PI/3, @vx/3)))
+		ctx.rotate(-Math.min(TAU/6, Math.max(-TAU/6, @vx/3)))
 		ctx.scale(1, 3)
-		ctx.arc(0,-@height/9,1,0,Math.PI*2,false) # ear
+		ctx.arc(0,-@height/9,1,0,TAU,false) # ear
 		ctx.fill()
 		ctx.restore() # end ear transform
 		ctx.restore() # end head transform
 		ctx.fillStyle=@c
 		ctx.beginPath()
-		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,Math.PI*2,false) # tail
+		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,TAU,false) # tail
 		ctx.fill()
 		ctx.restore() # end body center transform

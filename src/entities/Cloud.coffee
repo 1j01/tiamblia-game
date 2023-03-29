@@ -1,5 +1,6 @@
 Entity = require("./abstract/Entity.coffee")
 {addEntityClass} = require("skele2d")
+TAU = Math.PI * 2
 
 module.exports = class Cloud extends Entity
 	addEntityClass(@)
@@ -33,9 +34,9 @@ module.exports = class Cloud extends Entity
 				@simplex.noise2D(5+i,@t+i*3.92)*@width+@width/2,
 				@simplex.noise2D(26+i,@t+i*2.576)*@height+@height/2,
 				Math.abs(@simplex.noise2D(73+i*5.2,@t+i)*@width),
-				# @simplex.noise2D(68+i,@t)*-Math.PI*2,
-				# @simplex.noise2D(20+i,@t)*Math.PI*2,
-				0,Math.PI*2,
+				# @simplex.noise2D(68+i,@t)*-TAU,
+				# @simplex.noise2D(20+i,@t)*TAU,
+				0,TAU,
 				false
 			)
 			ctx.fill()

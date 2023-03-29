@@ -115,17 +115,20 @@ module.exports = class World
 		@entities = (Entity.fromJSON(ent_def) for ent_def in def.entities)
 		for entity in @entities
 			entity.resolveReferences(@)
+		
+		return
 	
 	getEntityByID: (id)->
 		for entity in @entities
 			return entity if entity.id is id
 	
 	getEntitiesOfType: (Class)->
-		entity for entity in @entities when entity instanceof Class
+		return (entity for entity in @entities when entity instanceof Class)
 	
 	drawBackground: (ctx, view)->
 		ctx.fillStyle = "#32C8FF"
 		ctx.fillRect(0, 0, view.width, view.height)
+		return
 	
 	draw: (ctx, view)->
 		# ctx.fillStyle = "#32C8FF"
@@ -141,9 +144,11 @@ module.exports = class World
 			ctx.save = ->
 				n_saved_states++
 				_save.apply(this, arguments)
+				return
 			ctx.restore = ->
 				n_saved_states--
 				_restore.apply(this, arguments)
+				return
 			try
 				entity.draw(ctx, view, @)
 			catch error
@@ -153,6 +158,7 @@ module.exports = class World
 			ctx.save = _save
 			ctx.restore = _restore
 			ctx.restore()
+		return
 	
 	collision: (point, {types=[Terrain], lineThickness=5}={})->
 		# lineThickness doesn't apply to polygons like Terrain
@@ -174,4 +180,4 @@ module.exports = class World
 					dist = distanceToLineSegment(local_point, segment.a, segment.b)
 					if dist < lineThickness
 						return entity
-		null
+		return null

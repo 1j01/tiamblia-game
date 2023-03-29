@@ -1,6 +1,7 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 {addEntityClass} = require "skele2d"
 
+TAU = Math.PI * 2
 r = -> Math.random()*2-1
 
 module.exports = class Frog extends SimpleActor
@@ -52,7 +53,7 @@ module.exports = class Frog extends SimpleActor
 		ctx.fillStyle=@c
 		#ctx.fillRect(@x,@y,@width,@height)
 		ctx.beginPath()
-		ctx.arc(@width/2,@height/4-@vy,@height/2,0,Math.PI,false)
-		ctx.arc(@width/2,@height,@height/2,Math.PI,Math.PI*2,false)
+		ctx.arc(@width/2,@height/4-@vy,@height/2,0,TAU/2,false)
+		ctx.arc(@width/2,@height,@height/2,TAU/2,TAU,false)
 		ctx.fill()
 		ctx.restore()
