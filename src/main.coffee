@@ -1,7 +1,7 @@
 
 Math.seedrandom("A world")
 
-{View, Mouse, Editor} = require "skele2d"
+{View, Mouse, Editor, Entity} = require "skele2d"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -112,15 +112,18 @@ do animate = ->
 	requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
 
-	# Add cacti, for dev purposes.
-	if (try localStorage["tiamblia.dev_cacti"]) is "true"
-		if world.entities.filter((entity) -> entity instanceof CactusTree).length < 10
-			cactus = new CactusTree
-			cactus.x = Math.random() * 1000
-			cactus.y = bottom_of_world
-			while world.collision(cactus)
-				cactus.y -= 3
-			world.entities.push(cactus)
+	# Spawn entities for dev purposes, especially for flora.
+	# This helps to see the space of randomization.
+	class_names = ((try localStorage["tiamblia.auto_spawn"]?.split(",")) or "")
+	for class_name in class_names
+		min_instances = 10
+		if world.entities.filter((entity) -> entity.constructor.name is class_name).length < min_instances
+			ent = Entity.fromJSON({_class_: class_name})
+			ent.x = Math.random() * 1000
+			ent.y = bottom_of_world
+			while world.collision(ent)
+				ent.y -= 3
+			world.entities.push(ent)
 
 	# Hide welcome message after you start playing or toggle editing.
 	unless disable_welcome_message
@@ -196,8 +199,11 @@ do animate = ->
 	if editor.editing and keyboard.wasJustPressed("KeyR")
 		if editor.selected_entities.length
 			editor.undoable -> randomize_entities(editor.selected_entities)
-		else if (try localStorage["tiamblia.dev_cacti"]) is "true"
-			editor.undoable -> world.entities = world.entities.filter((entity) -> entity not instanceof CactusTree)
+		else
+			class_names = ((try localStorage["tiamblia.auto_spawn"]) or "").split(",")
+			new_entities = world.entities.filter((entity) -> entity.constructor.name not in class_names)
+			if new_entities.length isnt world.entities.length
+				editor.undoable -> world.entities = new_entities
 
 	# End of frame. Nothing must use wasJustPressed after this.
 	keyboard.resetForNextStep()
