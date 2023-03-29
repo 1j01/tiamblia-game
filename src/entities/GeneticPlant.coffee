@@ -2,6 +2,14 @@ Tree = require "./abstract/Tree.coffee"
 {addEntityClass} = require "skele2d"
 TAU = Math.PI * 2
 
+# Standard Normal variate using Box-Muller transform.
+gaussianRandom = (mean=0, standardDeviation=1, random=Math.random)=>
+	u = 1 - random() # Converting [0,1) to (0,1)
+	v = random()
+	z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(TAU * v)
+	# Transform to the desired mean and standard deviation:
+	return z * standardDeviation + mean
+
 module.exports = class GeneticPlant extends Tree
 	addEntityClass(@)
 	constructor: ->
@@ -13,8 +21,18 @@ module.exports = class GeneticPlant extends Tree
 		@random_values = []
 
 		@dna = {
-			branch_color: "hsl(#{Math.floor(Math.pow(Math.random(), 2)*360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
-			leaf_color: "hsl(#{(Math.floor(Math.pow(Math.random(), 2)*360+200)%360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
+			branch_color_hue_avg: gaussianRandom(20, 40)
+			branch_color_hue_range: if Math.random() < 0.7 then 0 else gaussianRandom(5, 20)
+			branch_color_saturation_avg: Math.random()*50+50
+			branch_color_saturation_range: if Math.random() < 0.7 then 0 else Math.random()*50
+			branch_color_lightness_avg: gaussianRandom(50, 15)
+			branch_color_lightness_range: if Math.random() < 0.7 then 0 else Math.random()*50
+			leaf_color_hue_avg: gaussianRandom(120, 40)
+			leaf_color_hue_range: if Math.random() < 0.5 then 0 else gaussianRandom(5, 30)
+			leaf_color_saturation_avg: Math.random()*50+50
+			leaf_color_saturation_range: if Math.random() < 0.5 then 0 else Math.random()*50
+			leaf_color_lightness_avg: gaussianRandom(50, 15)
+			leaf_color_lightness_range: if Math.random() < 0.5 then 0 else Math.random()*50
 			
 			leaf_size_min: Math.random()*20+2
 			leaf_size_range: Math.random()*20
@@ -71,8 +89,12 @@ module.exports = class GeneticPlant extends Tree
 			@init()
 
 	random: ->
+		# Cached random values for determinism at runtime, not needed during initialization
 		@random_index++
 		return @random_values[@random_index] ?= Math.random()
+	
+	gaussianRandom: (mean=0, standardDeviation=1)=>
+		return gaussianRandom(mean, standardDeviation, => @random())
 
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
@@ -82,7 +104,12 @@ module.exports = class GeneticPlant extends Tree
 		dir.y -= @dna.angle_tend_upward
 		angle = Math.atan2(dir.y, dir.x)
 		
-		@structure.addSegment({from, name, length, width, color: @dna.branch_color})
+		hue = (@dna.branch_color_hue_avg + (@random() - 0.5) * @dna.branch_color_hue_range) %% 360
+		saturation = Math.min(100, Math.max(0, @dna.branch_color_saturation_avg + (@random() - 0.5) * @dna.branch_color_saturation_range))
+		lightness = Math.min(100, Math.max(0, @dna.branch_color_lightness_avg + (@random() - 0.5) * @dna.branch_color_lightness_range))
+		color = "hsl(#{hue}, #{saturation}%, #{lightness}%)"
+
+		@structure.addSegment({from, name, length, width, color})
 		@structure.points[name].x = @structure.points[from].x + Math.cos(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.sin(angle) * length
 		branch_width_change_factor = @dna.branch_width_change_factor_max - Math.random() * @dna.branch_width_change_factor_range
@@ -154,7 +181,10 @@ module.exports = class GeneticPlant extends Tree
 			ctx.bezierCurveTo(-wb,h-ap, -wb,p, 0,0)
 			
 			ctx.closePath()
-			ctx.fillStyle = @dna.leaf_color
+			hue = (@dna.leaf_color_hue_avg + (@random() - 0.5) * @dna.leaf_color_hue_range) %% 360
+			saturation = Math.min(100, Math.max(0, @dna.leaf_color_saturation_avg + (@random() - 0.5) * @dna.leaf_color_saturation_range))
+			lightness = Math.min(100, Math.max(0, @dna.leaf_color_lightness_avg + (@random() - 0.5) * @dna.leaf_color_lightness_range))
+			ctx.fillStyle = "hsl(#{hue}, #{saturation}%, #{lightness}%)"
 			ctx.fill()
 			ctx.restore()
 		ctx.restore()
