@@ -42,6 +42,7 @@ module.exports = class GeneticPlant extends Tree
 			branch_length_change_factor_max: 1-Math.random()*0.2
 			branch_length_change_factor_range: Math.random()*0.2
 			random_angle: Math.random()*1.5
+			tend_upward: Math.random()*2
 		}
 
 		@init()
@@ -73,6 +74,13 @@ module.exports = class GeneticPlant extends Tree
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
 		angle += (Math.random()*2-1)*@dna.random_angle
+
+		dir = {x: Math.cos(angle), y: Math.sin(angle)}
+		# TODO: refactor angle calculations
+		# so that this uses y; it's unintuitive right now
+		dir.x -= @dna.tend_upward
+		angle = Math.atan2(dir.y, dir.x)
+		
 		@structure.addSegment({from, name, length, width, color: @dna.branch_color})
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
