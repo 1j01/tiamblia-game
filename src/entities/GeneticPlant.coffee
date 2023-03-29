@@ -9,11 +9,23 @@ module.exports = class GeneticPlant extends Tree
 
 		@bbox_padding = 60
 
-		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_index = 0
 		@random_values = []
 
-		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
+		@dna = {
+			branch_color: "hsl(#{Math.floor(Math.pow(Math.random(), 2)*360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
+			leaf_color: "hsl(#{(Math.floor(Math.pow(Math.random(), 2)*360+200)%360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
+			leaf_size: Math.random()*10+5
+			leaf_shape_params: (Math.random()*2-1 for [0...4])
+			trunk_width_min: Math.random()*15+2
+			trunk_width_range: Math.random()*10
+			branch_length_min: Math.random()*10+1
+			branch_length_range: Math.random()*10
+			random_angle: Math.random()*1.5
+		}
+
+		@trunk_width = @dna.trunk_width_min + Math.random() * @dna.trunk_width_range
+		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: @dna.branch_length_min + Math.random() * @dna.branch_length_range, angle: -TAU/2)
 
 	random: ->
 		@random_index++
@@ -21,8 +33,9 @@ module.exports = class GeneticPlant extends Tree
 
 	branch: ({from, to, juice, angle, width, length})->
 		name = to
-		angle+=(Math.random()*2-1)*0.7
-		@structure.addSegment({from, name, length, width, color: "#89594A"})
+		angle += (Math.random()*2-1)*@dna.random_angle
+		length = @dna.branch_length_min + Math.random() * @dna.branch_length_range
+		@structure.addSegment({from, name, length, width, color: @dna.branch_color})
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
 		juice -= 0.3
@@ -58,19 +71,14 @@ module.exports = class GeneticPlant extends Tree
 	drawLeaf: (ctx,x,y)->
 		ctx.save()
 		l=@random()/2
-		ctx.fillStyle="hsl(#{~~(150-l*50)},#{~~(50)}%,#{~~(50+l*20)}%)"
+		ctx.translate(x,y)
+		ctx.rotate(@random()*TAU)
+		ctx.scale(l,l)
 		ctx.beginPath()
-		ctx.arc(x,y,10+@random()*5,0,Math.PI*2,true)
+		# ctx.moveTo(0,0)
+		# ctx.bezierCurveTo(@dna.leaf_shape_params[0],@dna.leaf_shape_params[1],@dna.leaf_shape_params[2],@dna.leaf_shape_params[3],0,1)
+		ctx.arc(0,0,@dna.leaf_size,0,TAU)
+		ctx.fillStyle = @dna.leaf_color
 		ctx.fill()
-		for i in [0..10]
-			l=@random()/2
-			ctx.fillStyle="hsl(#{~~(150-l*50)},#{~~(50)}%,#{~~(50+l*20)}%)"
-			ctx.beginPath()
-			r1=Math.PI*2*@random()
-			r2=@random()*15
-			ctx.arc(x+Math.sin(r1)*r2,y+Math.cos(r1)*r2,5+@random()*5,0,Math.PI*2,true)
-			ctx.fill()
 		ctx.restore()
 		return
-	
-	
