@@ -15,8 +15,11 @@ module.exports = class GeneticPlant extends Tree
 		@dna = {
 			branch_color: "hsl(#{Math.floor(Math.pow(Math.random(), 2)*360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
 			leaf_color: "hsl(#{(Math.floor(Math.pow(Math.random(), 2)*360+200)%360)}, #{Math.floor(Math.random()*50+50)}%, #{Math.floor(Math.random()*50+50)}%)"
-			leaf_size: Math.random()*10+5
-			leaf_shape_params: (Math.random()*2-1 for [0...4])
+			leaf_size_min: Math.random()*20+2
+			leaf_size_range: Math.random()*20
+			leaf_aspect: Math.random()*0.5+0.5
+			leaf_pointedness: Math.random()
+			leaf_anti_pointedness: Math.random()*2-1
 			trunk_width_min: Math.random()*15+2
 			trunk_width_range: Math.random()*10
 			branch_length_min: Math.random()*10+1
@@ -89,14 +92,20 @@ module.exports = class GeneticPlant extends Tree
 
 	drawLeaf: (ctx,x,y)->
 		ctx.save()
-		l=@random()/2
+		size = @dna.leaf_size_min + @random() * @dna.leaf_size_range
 		ctx.translate(x,y)
 		ctx.rotate(@random()*TAU)
-		ctx.scale(l,l)
 		ctx.beginPath()
-		# ctx.moveTo(0,0)
-		# ctx.bezierCurveTo(@dna.leaf_shape_params[0],@dna.leaf_shape_params[1],@dna.leaf_shape_params[2],@dna.leaf_shape_params[3],0,1)
-		ctx.arc(0,0,@dna.leaf_size,0,TAU)
+		ctx.scale(size, size)
+		ctx.moveTo(0, 0)
+		w = @dna.leaf_aspect
+		h = 1
+		p = @dna.leaf_pointedness
+		ap = @dna.leaf_anti_pointedness
+		ctx.bezierCurveTo(w,p, w,h-ap, 0,h)
+		ctx.bezierCurveTo(-w,h-ap, -w,p, 0,0)
+		
+		ctx.closePath()
 		ctx.fillStyle = @dna.leaf_color
 		ctx.fill()
 		ctx.restore()
