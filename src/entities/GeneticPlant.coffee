@@ -64,12 +64,6 @@ module.exports = class GeneticPlant extends Tree
 
 		merge_unless_type_differs(@dna, ent_def.dna, "ent_def.dna") if ent_def?.dna
 
-		@init()
-
-	init: ->
-		delete @structure.points[k] for k of @structure.points
-		delete @structure.segments[k] for k of @structure.segments
-		@structure.addPoint("base") # Tree does this but we have to redo it because we deleted the points
 		@branch({
 			from: "base"
 			to: "1"
@@ -78,13 +72,6 @@ module.exports = class GeneticPlant extends Tree
 			length: @dna.trunk_length_min + Math.random() * @dna.trunk_length_range
 			angle: -TAU/4
 		})
-
-	fromJSON: (def) ->
-		super(def)
-		# in main.coffee I have a dev helper that creates clones with the same DNA
-		# using Entity.fromJSON with just the class name and dna property
-		if def.dna and not def.structure
-			@init()
 
 	random: ->
 		@random_index++
