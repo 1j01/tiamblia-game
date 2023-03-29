@@ -20,6 +20,7 @@ module.exports = class GeneticPlant extends Tree
 			leaf_aspect: Math.random()*0.5+0.5
 			leaf_pointedness: Math.random()
 			leaf_anti_pointedness: Math.random()*2-1
+			leaf_rotation_range: Math.random()*TAU
 			trunk_width_min: Math.random()*15+2
 			trunk_width_range: Math.random()*10
 			branch_length_min: Math.random()*10+1
@@ -67,6 +68,7 @@ module.exports = class GeneticPlant extends Tree
 				@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width: juice, length})
 		else
 			leaf_point = @structure.points[name]
+			leaf_point.segment_name = name
 			@leaf(leaf_point)
 		return
 	
@@ -87,21 +89,24 @@ module.exports = class GeneticPlant extends Tree
 			ctx.stroke()
 		
 		for point_name, leaf of @structure.points when leaf.is_leaf
-			@drawLeaf(ctx,leaf.x,leaf.y)
+			@drawLeaf(ctx, leaf)
 		return
 
-	drawLeaf: (ctx,x,y)->
-		ctx.save()
+	drawLeaf: (ctx, leaf)->
+		segment = @structure.segments[leaf.segment_name]
+		angle = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) + TAU/4
 		size = @dna.leaf_size_min + @random() * @dna.leaf_size_range
-		ctx.translate(x,y)
-		ctx.rotate(@random()*TAU)
+		ctx.save()
+		ctx.translate(leaf.x, leaf.y)
+		ctx.rotate(angle + @random()*@dna.leaf_rotation_range)
 		ctx.beginPath()
 		ctx.scale(size, size)
-		ctx.moveTo(0, 0)
 		w = @dna.leaf_aspect
 		h = 1
 		p = @dna.leaf_pointedness
 		ap = @dna.leaf_anti_pointedness
+		ctx.translate(0, -h)
+		ctx.moveTo(0, 0)
 		ctx.bezierCurveTo(w,p, w,h-ap, 0,h)
 		ctx.bezierCurveTo(-w,h-ap, -w,p, 0,0)
 		
