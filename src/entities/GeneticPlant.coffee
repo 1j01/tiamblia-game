@@ -18,7 +18,7 @@ module.exports = class GeneticPlant extends Tree
 			
 			leaf_size_min: Math.random()*20+2
 			leaf_size_range: Math.random()*20
-			leaf_aspect: Math.random()*0.5+0.5
+			leaf_aspect: Math.random()*2+0.1
 			leaf_bottom_aspect: Math.random()*0.5+1
 			leaf_pointedness: Math.random()
 			leaf_anti_pointedness: Math.random()*2-1
