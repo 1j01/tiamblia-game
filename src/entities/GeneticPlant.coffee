@@ -33,10 +33,14 @@ module.exports = class GeneticPlant extends Tree
 			trunk_width_range: Math.random()*10
 			trunk_length_min: Math.random()*20+1
 			trunk_length_range: Math.random()*20
-			branch_width_factor_max: 1-Math.random()*0.1
-			branch_width_factor_range: Math.random()*0.2
-			branch_length_factor_max: 1-Math.random()*0.2
-			branch_length_factor_range: Math.random()*0.2
+			branch_width_target_min: Math.random()*10+1
+			branch_width_target_range: Math.random()*3
+			branch_length_target_min: Math.random()*10+1
+			branch_length_target_range: Math.random()*3
+			branch_width_change_factor_max: 1-Math.random()*0.1
+			branch_width_change_factor_range: Math.random()*0.2
+			branch_length_change_factor_max: 1-Math.random()*0.2
+			branch_length_change_factor_range: Math.random()*0.2
 			random_angle: Math.random()*1.5
 		}
 
@@ -72,10 +76,15 @@ module.exports = class GeneticPlant extends Tree
 		@structure.addSegment({from, name, length, width, color: @dna.branch_color})
 		@structure.points[name].x = @structure.points[from].x + Math.sin(angle) * length
 		@structure.points[name].y = @structure.points[from].y + Math.cos(angle) * length
-		branch_width_factor = @dna.branch_width_factor_max - Math.random() * @dna.branch_width_factor_range
-		branch_length_factor = @dna.branch_length_factor_max - Math.random() * @dna.branch_length_factor_range
-		width *= branch_width_factor
-		length *= branch_length_factor
+		branch_width_change_factor = @dna.branch_width_change_factor_max - Math.random() * @dna.branch_width_change_factor_range
+		branch_length_change_factor = @dna.branch_length_change_factor_max - Math.random() * @dna.branch_length_change_factor_range
+		# Note this will have an averaging effect since the target is randomized each time
+		# It will tend towards the middle of the range, as opposed to if the specific target was chosen at the start
+		# It will also wobble (random walk) around the range.
+		width_target = @dna.branch_width_target_min + Math.random() * @dna.branch_width_target_range
+		length_target = @dna.branch_length_target_min + Math.random() * @dna.branch_length_target_range
+		width += (width_target - width) * branch_width_change_factor
+		length += (length_target - length) * branch_length_change_factor
 		juice -= 0.3
 		if juice > 0
 			@branch({from: name, to: "#{to}-a", juice, angle, width, length})
