@@ -9,11 +9,17 @@ module.exports = class PuffTree extends Tree
 
 		@bbox_padding = 60
 
-		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_index = 0
 		@random_values = []
 
-		@branch(from: "base", to: "1", juice: Math.random()*10+5, width: @trunk_width, length: 9, angle: -TAU/2)
+		@branch({
+			from: "base"
+			to: "1"
+			juice: Math.random()*10+5
+			width: 10+Math.floor(Math.random()*5)
+			length: 9
+			angle: -TAU/2
+		})
 
 	random: ->
 		@random_index++

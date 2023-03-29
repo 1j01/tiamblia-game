@@ -9,11 +9,18 @@ module.exports = class CactusTree extends Tree
 
 		@bbox_padding = 30
 
-		@trunk_width = 10+Math.floor(Math.random()*5)
 		@random_index = 0
 		@random_values = []
 
-		@branch(from: "base", to: "1", juice: Math.random()*10+3, width: @trunk_width, length: 15, angle: -TAU/2, offshoots: 0)
+		@branch({
+			from: "base"
+			to: "1"
+			juice: Math.random()*10+3
+			width: 10+Math.floor(Math.random()*5)
+			length: 15
+			angle: -TAU/2
+			offshoots: 0
+		})
 
 	random: ->
 		@random_index++
