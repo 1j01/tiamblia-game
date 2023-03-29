@@ -43,6 +43,8 @@ module.exports = class GeneticPlant extends Tree
 			branch_length_change_factor_range: Math.random()*0.2
 			random_angle: Math.random()*1.5
 			tend_upward: Math.random()*2
+			branching_angle_min: Math.random()*TAU/4
+			branching_angle_range: Math.random()*TAU/4
 		}
 
 		@init()
@@ -97,7 +99,9 @@ module.exports = class GeneticPlant extends Tree
 		if juice > 0
 			@branch({from: name, to: "#{to}-a", juice, angle, width, length})
 			if Math.random() < 0.1 - juice / 200
-				@branch({from: name, to: "#{to}-b", juice, angle: angle + (Math.random() - 1/2) * TAU/4, width, length})
+				side = if Math.random() < 0.5 then -1 else 1
+				branch_angle = angle + side * (@dna.branching_angle_min + Math.random() * @dna.branching_angle_range)
+				@branch({from: name, to: "#{to}-b", juice, angle: branch_angle, width, length})
 		else
 			leaf_point = @structure.points[name]
 			leaf_point.segment_name = name
