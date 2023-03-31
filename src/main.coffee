@@ -113,7 +113,7 @@ gamepad_start_prev = false
 stats = new Stats
 stats.showPanel(0)
 
-# UI to toggle localStorage flags, accessible with '~'/'`' key
+# UI for development features, accessible with '~'/'`' key
 gui = new GUI()
 gui.hide()
 option_names_to_keys = {
@@ -257,7 +257,7 @@ do animate = ->
 	# Also for the below entity randomizing feature.
 	Math.seedrandom(performance.now())
 
-	# A little tool to randomize entities by pressing 'r'
+	# A little tool to randomize entities by pressing 'R'
 	if editor.editing and keyboard.wasJustPressed("KeyR")
 		if editor.selected_entities.length
 			editor.undoable -> randomize_entities(editor.selected_entities)
@@ -267,7 +267,7 @@ do animate = ->
 			if new_entities.length isnt world.entities.length
 				editor.undoable -> world.entities = new_entities
 
-	# UI to toggle localStorage flags, accessible with '~'/'`' key
+	# Toggle development UI with backtick/tilde (`/~)
 	if keyboard.wasJustPressed("Backquote")
 		gui.show(gui._hidden)
 
