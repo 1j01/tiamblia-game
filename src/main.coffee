@@ -127,7 +127,8 @@ do animate = ->
 
 	# Spawn entities for dev purposes, especially for flora.
 	# This helps to see the space of randomization.
-	class_names = ((try localStorage["tiamblia.auto_spawn"]?.split(",")) or "")
+	class_names = (try localStorage["tiamblia.auto_spawn"]) ? ""
+	class_names = if class_names.length > 0 then class_names.split(",") else []
 	for class_name in class_names
 		min_instances = 10
 		if world.entities.filter((entity) -> entity.constructor.name is class_name).length < min_instances
