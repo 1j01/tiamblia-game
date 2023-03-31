@@ -236,7 +236,10 @@ module.exports = class World
 			polygons = [old_points_flat]
 			for bucket_x in [bucket_x_min..bucket_x_max]
 				cut_x = bucket_x * bucket_width+0.01
-				polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
+				try
+					polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
+				catch error
+					console.warn "Error optimizing terrain:", error
 
 			new_terrain_entities = []
 			for sliced_points_flat in polygons
