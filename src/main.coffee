@@ -114,9 +114,8 @@ stats = new Stats
 stats.showPanel(0)
 
 # UI to toggle localStorage flags, accessible with '~'/'`' key
-show_toggles = false
 gui = new GUI()
-gui.domElement.style.display = "none"
+gui.hide()
 option_names_to_keys = {
 	"Disable welcome message, start in edit mode": "tiamblia.disable_welcome_message"
 	"Show performance stats": "tiamblia.show_stats"
@@ -267,12 +266,7 @@ do animate = ->
 
 	# UI to toggle localStorage flags, accessible with '~'/'`' key
 	if keyboard.wasJustPressed("Backquote")
-		show_toggles = not show_toggles
-		if show_toggles
-			gui.domElement.style.display = "block"
-		else
-			gui.domElement.style.display = "none"
-
+		gui.show(gui._hidden)
 
 	# End of frame. Nothing must use wasJustPressed after this.
 	keyboard.resetForNextStep()
