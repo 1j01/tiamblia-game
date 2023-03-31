@@ -193,27 +193,46 @@ module.exports = class World
 			ctx.restore()
 		return
 	
+	bucket_width = 100
+	bucket_height = 100
 	updateCollisionBuckets: ->
 		@collision_buckets = {}
-		bucket_width = 100
 		for entity in @entities
 			bbox = entity.bbox()
 			bx1 = Math.floor(bbox.x/bucket_width)
 			bx2 = Math.floor((bbox.x+bbox.width)/bucket_width)
-			for bx in [bx1..bx2]
-				@collision_buckets[bx] ?= []
-				@collision_buckets[bx].push(entity)
+			for bxi in [bx1..bx2]
+				# one dimensional bucketization
+				# @collision_buckets[bxi] ?= []
+				# @collision_buckets[bxi].push(entity)
+				# two dimensional bucketization
+				@collision_buckets[bxi] ?= {}
+				by1 = Math.floor(bbox.y/bucket_height)
+				by2 = Math.floor((bbox.y+bbox.height)/bucket_height)
+				for byi in [by1..by2]
+					@collision_buckets[bxi][byi] ?= []
+					@collision_buckets[bxi][byi].push(entity)
 		return
 
 	collision: (point, {types=[Terrain], lineThickness=5}={})->
 		# lineThickness doesn't apply to polygons like Terrain
 		# also it's kind of a hack, because different entities could need different lineThicknesses
 		# and different segments within an entity too
-		
-		bx = Math.floor(point.x/100)
-		entities = @collision_buckets[bx] ? []
+		# Also note that lineThickness > bbox_padding could have false negatives
+		# at collision bucket boundaries.
+		# The bbox_padding was originally meant for framing entity previews (and maybe culling rendering).
+		# As of writing all entities have bbox_padding > 5, so this shouldn't be a problem.
 
-		# for entity in @entities
+		# no bucketization (to compare FPS, also disable updateCollisionBuckets)
+		# entities = @entities
+		# one dimensional bucketization
+		# b_x = Math.floor(point.x/bucket_width)
+		# entities = @collision_buckets[b_x] ? []
+		# two dimensional bucketization
+		b_x = Math.floor(point.x/bucket_width)
+		b_y = Math.floor(point.y/bucket_height)
+		entities = (@collision_buckets[b_x] ? {})[b_y] ? []
+
 		for entity in entities
 			if typeof types is "function"
 				if not types(entity)
