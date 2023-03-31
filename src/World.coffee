@@ -313,6 +313,10 @@ module.exports = class World
 		# The bbox_padding was originally meant for framing entity previews (and maybe culling rendering).
 		# As of writing all entities have bbox_padding > 5, so this shouldn't be a problem.
 
+		if not @collision_buckets
+			console.warn "Collision detection called before collision buckets were initialized."
+			@updateCollisionBuckets()
+
 		# no bucketization (to compare FPS, also disable updateCollisionBuckets)
 		# entities = @entities
 		# one dimensional bucketization
