@@ -112,6 +112,8 @@ gamepad_start_prev = false
 stats = new Stats
 stats.showPanel(0)
 
+terrain_optimized = false
+
 do animate = ->
 	return if window.CRASHED
 	show_stats = (try localStorage["tiamblia.show_stats"]) is "true"
@@ -182,8 +184,14 @@ do animate = ->
 		for entity in world.entities
 			if entity instanceof Player
 				entity.hair_initialized = false
+		
+		terrain_optimized = false
 
 	unless editor.editing
+
+		if not terrain_optimized
+			world.optimizeTerrain()
+			terrain_optimized = true
 
 		world.updateCollisionBuckets()
 
