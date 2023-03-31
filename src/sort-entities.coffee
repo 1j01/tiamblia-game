@@ -21,6 +21,7 @@ relative_sorts = [
 	[c(Arrow), c(ArcheryTarget)]
 	# For riding, player's legs go in front; it's implied that one goes behind,
 	# by posing the legs on top of each other.
+	# Note: there's also a special rule that makes sure there's nothing between the player and the deer.
 	[c(Player), c(Deer)]
 	# It looks best holding the arrow in front of the bow.
 	[c(Arrow), c(Player)]
@@ -94,6 +95,27 @@ module.exports = sort_entities = (world)->
 
 	# Topological sort is better because it can tell us if there is a cycle, i.e. inconsistency.
 	world.entities = topological_sort(world.entities, compare_entities)
+
+	# If there are any Deer, make sure there are no trees or anything between them and the Player.
+	# This is a special case because it can't be expressed as "A goes above B".
+	# Trees should be allowed to go above or below both the player and steed, but not between them.
+	# This rule moves the Deer closer to the Player in depth.
+	steeds = world.getEntitiesOfType(Deer)
+	players = world.getEntitiesOfType(Player)
+	for steed in steeds
+		player = players[0]
+		player_index = world.entities.indexOf(player)
+		steed_index = world.entities.indexOf(steed)
+		if player and player_index - steed_index > 1
+			non_steed_between = false
+			for entity in world.entities.slice(steed_index + 1, player_index)
+				if entity not instanceof Deer
+					non_steed_between = true
+					break
+			if non_steed_between
+				world.entities.splice(world.entities.indexOf(steed), 1)
+				world.entities.splice(world.entities.indexOf(player), 0, steed)
+				console.log "Sorted #{steed.constructor.name} closer to #{player.constructor.name}"
 
 	changed = world.entities.some (entity, i) -> entity isnt before_sort[i]
 	if changed

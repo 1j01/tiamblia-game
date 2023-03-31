@@ -6645,159 +6645,6 @@
 						"y": 0,
 						"name": "head"
 					},
-					"neck": {
-						"x": 0,
-						"y": 0,
-						"name": "neck"
-					}
-				},
-				"segments": {
-					"neck": {
-						"from": "head",
-						"to": "neck",
-						"name": "neck",
-						"length": 5
-					}
-				}
-			},
-			"x": -257.2884384074398,
-			"y": 34.27924211319697,
-			"id": "1410d29f-0aca-46b6-9e73-867581bf8954",
-			"bbox_padding": 30,
-			"_class_": "Deer",
-			"vx": 0,
-			"vy": 0,
-			"width": 27,
-			"height": 18,
-			"jump_height": 50,
-			"walk_speed": 4,
-			"run_speed": 6,
-			"move_x": 0,
-			"move_y": 0,
-			"jump": false,
-			"grounded": false,
-			"facing_x": 0,
-			"xp": 0,
-			"t": 0,
-			"lr": 0,
-			"dir": 0,
-			"dir_p": 1,
-			"dir_pl": 1,
-			"rideable": true,
-			"c": "hsla(13.415437811477435,10%,52.4229474391198%,1)",
-			"ground_angle": 0,
-			"ground_angle_smoothed": 0
-		},
-		{
-			"structure": {
-				"points": {
-					"head": {
-						"x": 0,
-						"y": 0,
-						"name": "head"
-					},
-					"neck": {
-						"x": 0,
-						"y": 0,
-						"name": "neck"
-					}
-				},
-				"segments": {
-					"neck": {
-						"from": "head",
-						"to": "neck",
-						"name": "neck",
-						"length": 5
-					}
-				}
-			},
-			"x": -1582.3188384074385,
-			"y": 3.175242113197001,
-			"id": "295babeb-1b78-4d5d-8138-e4f4efa7f3ea",
-			"bbox_padding": 30,
-			"_class_": "Deer",
-			"vx": 0,
-			"vy": 0,
-			"width": 27,
-			"height": 18,
-			"jump_height": 50,
-			"walk_speed": 4,
-			"run_speed": 6,
-			"move_x": 0,
-			"move_y": 0,
-			"jump": false,
-			"grounded": false,
-			"facing_x": 0,
-			"xp": 0,
-			"t": 0,
-			"lr": 0,
-			"dir": 0,
-			"dir_p": 1,
-			"dir_pl": 1,
-			"rideable": true,
-			"c": "hsla(8.258227073059377,10%,66.91667054300967%,1)",
-			"ground_angle": 0,
-			"ground_angle_smoothed": 0
-		},
-		{
-			"structure": {
-				"points": {
-					"head": {
-						"x": 0,
-						"y": 0,
-						"name": "head"
-					},
-					"neck": {
-						"x": 0,
-						"y": 0,
-						"name": "neck"
-					}
-				},
-				"segments": {
-					"neck": {
-						"from": "head",
-						"to": "neck",
-						"name": "neck",
-						"length": 5
-					}
-				}
-			},
-			"x": 1111.2875615925568,
-			"y": -21.70795788680313,
-			"id": "9556bc7c-1e58-456c-a79a-9cf462e57831",
-			"bbox_padding": 30,
-			"_class_": "Deer",
-			"vx": 0,
-			"vy": 0,
-			"width": 27,
-			"height": 18,
-			"jump_height": 50,
-			"walk_speed": 4,
-			"run_speed": 6,
-			"move_x": 0,
-			"move_y": 0,
-			"jump": false,
-			"grounded": false,
-			"facing_x": 0,
-			"xp": 0,
-			"t": 0,
-			"lr": 0,
-			"dir": 0,
-			"dir_p": 1,
-			"dir_pl": 1,
-			"rideable": true,
-			"c": "hsla(4.534998013757507,10%,65.66904570382964%,1)",
-			"ground_angle": 0,
-			"ground_angle_smoothed": 0
-		},
-		{
-			"structure": {
-				"points": {
-					"head": {
-						"x": 0,
-						"y": 0,
-						"name": "head"
-					},
 					"body": {
 						"x": 0,
 						"y": 0,
@@ -27878,6 +27725,159 @@
 			"id": "3e03146a-df23-4f10-998e-21e26cb0f083",
 			"bbox_padding": 15,
 			"_class_": "Caterpillar"
+		},
+		{
+			"structure": {
+				"points": {
+					"head": {
+						"x": 0,
+						"y": 0,
+						"name": "head"
+					},
+					"neck": {
+						"x": 0,
+						"y": 0,
+						"name": "neck"
+					}
+				},
+				"segments": {
+					"neck": {
+						"from": "head",
+						"to": "neck",
+						"name": "neck",
+						"length": 5
+					}
+				}
+			},
+			"x": -257.2884384074398,
+			"y": 34.27924211319697,
+			"id": "1410d29f-0aca-46b6-9e73-867581bf8954",
+			"bbox_padding": 30,
+			"_class_": "Deer",
+			"vx": 0,
+			"vy": 0,
+			"width": 27,
+			"height": 18,
+			"jump_height": 50,
+			"walk_speed": 4,
+			"run_speed": 6,
+			"move_x": 0,
+			"move_y": 0,
+			"jump": false,
+			"grounded": false,
+			"facing_x": 0,
+			"xp": 0,
+			"t": 0,
+			"lr": 0,
+			"dir": 0,
+			"dir_p": 1,
+			"dir_pl": 1,
+			"rideable": true,
+			"c": "hsla(13.415437811477435,10%,52.4229474391198%,1)",
+			"ground_angle": 0,
+			"ground_angle_smoothed": 0
+		},
+		{
+			"structure": {
+				"points": {
+					"head": {
+						"x": 0,
+						"y": 0,
+						"name": "head"
+					},
+					"neck": {
+						"x": 0,
+						"y": 0,
+						"name": "neck"
+					}
+				},
+				"segments": {
+					"neck": {
+						"from": "head",
+						"to": "neck",
+						"name": "neck",
+						"length": 5
+					}
+				}
+			},
+			"x": -1582.3188384074385,
+			"y": 3.175242113197001,
+			"id": "295babeb-1b78-4d5d-8138-e4f4efa7f3ea",
+			"bbox_padding": 30,
+			"_class_": "Deer",
+			"vx": 0,
+			"vy": 0,
+			"width": 27,
+			"height": 18,
+			"jump_height": 50,
+			"walk_speed": 4,
+			"run_speed": 6,
+			"move_x": 0,
+			"move_y": 0,
+			"jump": false,
+			"grounded": false,
+			"facing_x": 0,
+			"xp": 0,
+			"t": 0,
+			"lr": 0,
+			"dir": 0,
+			"dir_p": 1,
+			"dir_pl": 1,
+			"rideable": true,
+			"c": "hsla(8.258227073059377,10%,66.91667054300967%,1)",
+			"ground_angle": 0,
+			"ground_angle_smoothed": 0
+		},
+		{
+			"structure": {
+				"points": {
+					"head": {
+						"x": 0,
+						"y": 0,
+						"name": "head"
+					},
+					"neck": {
+						"x": 0,
+						"y": 0,
+						"name": "neck"
+					}
+				},
+				"segments": {
+					"neck": {
+						"from": "head",
+						"to": "neck",
+						"name": "neck",
+						"length": 5
+					}
+				}
+			},
+			"x": 1111.2875615925568,
+			"y": -21.70795788680313,
+			"id": "9556bc7c-1e58-456c-a79a-9cf462e57831",
+			"bbox_padding": 30,
+			"_class_": "Deer",
+			"vx": 0,
+			"vy": 0,
+			"width": 27,
+			"height": 18,
+			"jump_height": 50,
+			"walk_speed": 4,
+			"run_speed": 6,
+			"move_x": 0,
+			"move_y": 0,
+			"jump": false,
+			"grounded": false,
+			"facing_x": 0,
+			"xp": 0,
+			"t": 0,
+			"lr": 0,
+			"dir": 0,
+			"dir_p": 1,
+			"dir_pl": 1,
+			"rideable": true,
+			"c": "hsla(4.534998013757507,10%,65.66904570382964%,1)",
+			"ground_angle": 0,
+			"ground_angle_smoothed": 0
 		},
 		{
 			"structure": {
