@@ -245,9 +245,11 @@ module.exports = class World
 					sliced_points.push({x: sliced_points_flat[i], y: sliced_points_flat[i+1]})
 				# Relying on the specific serialization format of PolygonStructure.
 				# It stores points as an array, unlike the base class Structure, which supports named points.
-				new_terrain_entity = Entity.fromJSON(Object.assign(JSON.parse(JSON.stringify(old_terrain_entity)), {
+				ent_def = Object.assign(JSON.parse(JSON.stringify(old_terrain_entity)), {
 					structure: {points: sliced_points}
-				}))
+				})
+				delete ent_def.id
+				new_terrain_entity = Entity.fromJSON(ent_def)
 				new_terrain_entities.push(new_terrain_entity)
 			@entities.splice(@entities.indexOf(old_terrain_entity), 1, ...new_terrain_entities)
 		return
