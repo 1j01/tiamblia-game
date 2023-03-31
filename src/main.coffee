@@ -184,6 +184,9 @@ do animate = ->
 				entity.hair_initialized = false
 
 	unless editor.editing
+
+		world.updateCollisionBuckets()
+
 		for entity in world.entities # when entity isnt editor.editing_entity and entity not in editor.dragging_entities
 			entity.step(world, view, mouse)
 		

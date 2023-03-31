@@ -193,17 +193,39 @@ module.exports = class World
 			ctx.restore()
 		return
 	
+	updateCollisionBuckets: ->
+		@collision_buckets = {}
+		bucket_width = 100
+		for entity in @entities
+			bbox = entity.bbox()
+			bx1 = Math.floor(bbox.x/bucket_width)
+			bx2 = Math.floor((bbox.x+bbox.width)/bucket_width)
+			for bx in [bx1..bx2]
+				@collision_buckets[bx] ?= []
+				@collision_buckets[bx].push(entity)
+		return
+
 	collision: (point, {types=[Terrain], lineThickness=5}={})->
 		# lineThickness doesn't apply to polygons like Terrain
 		# also it's kind of a hack, because different entities could need different lineThicknesses
 		# and different segments within an entity too
 		
-		if typeof types is "function"
-			filter = types
-		else
-			filter = (entity)=> types.some((type)=> (entity instanceof type) and (entity.solid ? true))
-		
-		for entity in @entities when filter(entity)
+		bx = Math.floor(point.x/100)
+		entities = @collision_buckets[bx] ? []
+
+		# for entity in @entities
+		for entity in entities
+			if typeof types is "function"
+				if not types(entity)
+					continue
+			else
+				match = false
+				for type in types
+					if (entity instanceof type) and (entity.solid ? true)
+						match = true
+						break
+				if not match
+					continue
 			local_point = entity.fromWorld(point)
 			if entity.structure.pointInPolygon?
 				if entity.structure.pointInPolygon(local_point)
