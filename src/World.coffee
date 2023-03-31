@@ -260,6 +260,29 @@ module.exports = class World
 					polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
 				catch error
 					console.warn "Error optimizing terrain:", error
+				
+				# Overlap the polygons, both to avoid rendering artifacts,
+				# and for collision detection, particularly for the Caterpillar,
+				# as it's currently implemented (it has no thickness, and ends up
+				# crawling into the seams between polygons).
+				# Note that the overlap is least effective when zoomed out.
+				# TODO: Ideally we'd use a constant overlap in viewport coordinates,
+				# not world coordinates, for the rendering part.
+				# As for Caterpillars, they fall off the terrain when meeting a seam,
+				# because they project points outside of one polygon, landing inside another.
+				# TODO: handle projection recursively in Caterpillar,
+				# or rewrite with a proper physics engine.
+				overlap = 0.5
+				for polygon_coords in polygons
+					min_x = Infinity
+					max_x = -Infinity
+					for i in [0...polygon_coords.length] by 2
+						min_x = Math.min(min_x, polygon_coords[i])
+						max_x = Math.max(max_x, polygon_coords[i])
+					offset_dir = if Math.abs(min_x - cut_x) < epsilon then -1 else 1
+					for i in [0...polygon_coords.length] by 2
+						if Math.abs(polygon_coords[i] - cut_x) < epsilon
+							polygon_coords[i] += offset_dir * overlap
 
 			new_terrain_entities = []
 			for sliced_points_flat in polygons
