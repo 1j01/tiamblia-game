@@ -119,21 +119,24 @@ gui.hide()
 option_names_to_keys = {
 	"Disable welcome message, start in edit mode": "tiamblia.disable_welcome_message"
 	"Show performance stats": "tiamblia.show_stats"
+	"Debug Caterpillar class": "tiamblia.debug_caterpillar"
+	"Debug Arrow class": "tiamblia.debug_arrow"
 	"Show point names": "Skele2D show names"
 	"Show point indices": "Skele2D show indices"
 	"Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world"
 	"Disable constraint solving while editing": "Skele2D disable constraint solving"
-	"Debug Caterpillar class": "tiamblia.debug_caterpillar"
-	"Debug Arrow class": "tiamblia.debug_arrow"
 }
 options = {}
+tiamblia_folder = gui.addFolder("Tiamblia")
+skele2d_folder = gui.addFolder("Skele2D")
 for name, storage_key of option_names_to_keys then do (name, storage_key) ->
 	options[name] = (try localStorage[storage_key]) is "true"
-	gui.add(options, name).onChange (value) ->
+	folder = if storage_key.indexOf("Skele2D") is 0 then skele2d_folder else tiamblia_folder
+	folder.add(options, name).onChange (value) ->
 		localStorage[storage_key] = value
 
 options["Auto-spawn entities"] = ""
-gui.add(options, "Auto-spawn entities").onChange (value) ->
+tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 	localStorage["tiamblia.auto_spawn"] = value
 
 terrain_optimized = false
