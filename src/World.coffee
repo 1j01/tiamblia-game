@@ -233,27 +233,22 @@ module.exports = class World
 			bbox_max_world = old_terrain_entity.toWorld(old_terrain_entity.structure.bbox_max)
 			bucket_x_min = Math.floor(bbox_min_world.x/bucket_width)
 			bucket_x_max = Math.floor(bbox_max_world.x/bucket_width)
-			new_terrain_entities = []
+			polygons = [old_points_flat]
 			for bucket_x in [bucket_x_min..bucket_x_max]
-				x1 = bucket_x * bucket_width+0.01
-				x2 = (bucket_x + 1) * bucket_width
-				half_sliced_polygons = PolyK.Slice(old_points_flat, x1, 99999, x1, -99999)
-				sliced_polygons = []
-				for half_sliced_polygon in half_sliced_polygons
-					sliced_polygons.push(...PolyK.Slice(half_sliced_polygon, x2, -99999, x2, 99999))
-				for sliced_points_flat in sliced_polygons
-					sliced_points = []
-					for i in [0...sliced_points_flat.length] by 2
-						sliced_points.push({x: sliced_points_flat[i], y: sliced_points_flat[i+1]})
-					
-					console.log "sliced_points_flat", sliced_points_flat, "sliced_points", sliced_points
+				cut_x = bucket_x * bucket_width+0.01
+				polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
 
-					# Relying on the specific serialization format of PolygonStructure.
-					# It stores points as an array, unlike the base class Structure, which supports named points.
-					new_terrain_entity = Entity.fromJSON(Object.assign(JSON.parse(JSON.stringify(old_terrain_entity)), {
-						structure: {points: sliced_points}
-					}))
-					new_terrain_entities.push(new_terrain_entity)
+			new_terrain_entities = []
+			for sliced_points_flat in polygons
+				sliced_points = []
+				for i in [0...sliced_points_flat.length] by 2
+					sliced_points.push({x: sliced_points_flat[i], y: sliced_points_flat[i+1]})
+				# Relying on the specific serialization format of PolygonStructure.
+				# It stores points as an array, unlike the base class Structure, which supports named points.
+				new_terrain_entity = Entity.fromJSON(Object.assign(JSON.parse(JSON.stringify(old_terrain_entity)), {
+					structure: {points: sliced_points}
+				}))
+				new_terrain_entities.push(new_terrain_entity)
 			@entities.splice(@entities.indexOf(old_terrain_entity), 1, ...new_terrain_entities)
 		return
 
