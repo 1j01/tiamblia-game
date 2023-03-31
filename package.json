@@ -42,6 +42,7 @@
     "coffeescript": "^2.7.0",
     "css-loader": "^6.7.3",
     "gh-pages": "5.0.0",
+    "lil-gui": "^0.18.1",
     "nw-dev": "^3.0.1",
     "skele2d": "0.0.11",
     "stats.js": "^0.17.0",

@@ -3,6 +3,7 @@ Math.seedrandom("A world")
 
 {View, Mouse, Editor, Entity} = require "skele2d"
 Stats = require "stats.js"
+{GUI} = require "lil-gui"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -111,6 +112,30 @@ gamepad_start_prev = false
 
 stats = new Stats
 stats.showPanel(0)
+
+# UI to toggle localStorage flags, accessible with '~'/'`' key
+show_toggles = false
+gui = new GUI()
+gui.domElement.style.display = "none"
+option_names_to_keys = {
+	"Disable welcome message, start in edit mode": "tiamblia.disable_welcome_message"
+	"Show performance stats": "tiamblia.show_stats"
+	"Show point names": "Skele2D show names"
+	"Show point indices": "Skele2D show indices"
+	"Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world"
+	"Disable constraint solving while editing": "Skele2D disable constraint solving"
+	"Debug Caterpillar class": "tiamblia.debug_caterpillar"
+	"Debug Arrow class": "tiamblia.debug_arrow"
+}
+options = {}
+for name, storage_key of option_names_to_keys then do (name, storage_key) ->
+	options[name] = (try localStorage[storage_key]) is "true"
+	gui.add(options, name).onChange (value) ->
+		localStorage[storage_key] = value
+
+options["Auto-spawn entities"] = ""
+gui.add(options, "Auto-spawn entities").onChange (value) ->
+	localStorage["tiamblia.auto_spawn"] = value
 
 terrain_optimized = false
 
@@ -236,6 +261,15 @@ do animate = ->
 			new_entities = world.entities.filter((entity) -> entity.constructor.name not in class_names)
 			if new_entities.length isnt world.entities.length
 				editor.undoable -> world.entities = new_entities
+
+	# UI to toggle localStorage flags, accessible with '~'/'`' key
+	if keyboard.wasJustPressed("Backquote")
+		show_toggles = not show_toggles
+		if show_toggles
+			gui.domElement.style.display = "block"
+		else
+			gui.domElement.style.display = "none"
+
 
 	# End of frame. Nothing must use wasJustPressed after this.
 	keyboard.resetForNextStep()
