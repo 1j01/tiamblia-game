@@ -235,8 +235,28 @@ module.exports = class World
 			bucket_x_max = Math.floor(bbox_max_world.x/bucket_width)
 			polygons = [old_points_flat]
 			for bucket_x in [bucket_x_min..bucket_x_max]
-				cut_x = bucket_x * bucket_width+0.01
+				# PolyK has some problems when the cut line is exactly on a point.
+				# So we'll offset it a small amount.
+				# This may lead to tiny polygons if the terrain is doubly optimized,
+				# but ideally, the world editing workflow should involve resetting
+				# the simulation, so that terrain is not saved as split polygons,
+				# and in general so unnecessary changes are not made to the world,
+				# so that git diffs are small and there's less confusion,
+				# such as unknowingly saving the player with an idle animation just about to start.
+				
+				cut_x = bucket_x * bucket_width
+				epsilon = 0.0001
+				while polygons.some((polygon_coords) =>
+					polygon_coords.some((coord, i) =>
+						i % 2 is 0 and Math.abs(coord - cut_x) < epsilon
+					)
+				)
+					# I tried using https://www.npmjs.com/package/nextafter
+					# for a minimal offset, but it still got TypeError: i0 is undefined.
+					# cut_x = nextAfter(cut_x, Infinity)
+					cut_x += epsilon
 				try
+					# TODO: non-arbitrary y values, or at least bigger
 					polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
 				catch error
 					console.warn "Error optimizing terrain:", error
