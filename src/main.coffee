@@ -111,10 +111,14 @@ gamepad_start_prev = false
 
 stats = new Stats
 stats.showPanel(0)
-document.body.appendChild(stats.dom)
 
 do animate = ->
 	return if window.CRASHED
+	show_stats = (try localStorage["tiamblia.show_stats"]) is "true"
+	if show_stats
+		document.body.appendChild(stats.dom) unless stats.dom.parentNode
+	else
+		stats.dom.remove()
 	stats.begin()
 	requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
