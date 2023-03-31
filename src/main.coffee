@@ -154,24 +154,27 @@ do animate = ->
 	# This helps to see the space of randomization.
 	class_names = (try localStorage["tiamblia.auto_spawn"]) ? ""
 	class_names = if class_names.length > 0 then class_names.split(",") else []
-	for class_name in class_names
-		min_instances = 10
-		if world.entities.filter((entity) -> entity.constructor.name is class_name).length < min_instances
-			ent = Entity.fromJSON({_class_: class_name})
-			ent.x = Math.random() * 1000
-			ent.y = bottom_of_world
-			while world.collision(ent)
-				ent.y -= 3
-			world.entities.push(ent)
-			if ent.dna
-				# show examples of the same species beside it
-				for i in [0...3]
-					clone = Entity.fromJSON({_class_: class_name, dna: JSON.parse(JSON.stringify(ent.dna))})
-					clone.x = ent.x + 100 * (i + 1)
-					clone.y = bottom_of_world
-					while world.collision(clone)
-						clone.y -= 3
-					world.entities.push(clone)
+	try
+		for class_name in class_names
+			min_instances = 10
+			if world.entities.filter((entity) -> entity.constructor.name is class_name).length < min_instances
+				ent = Entity.fromJSON({_class_: class_name})
+				ent.x = Math.random() * 1000
+				ent.y = bottom_of_world
+				while world.collision(ent)
+					ent.y -= 3
+				world.entities.push(ent)
+				if ent.dna
+					# show examples of the same species beside it
+					for i in [0...3]
+						clone = Entity.fromJSON({_class_: class_name, dna: JSON.parse(JSON.stringify(ent.dna))})
+						clone.x = ent.x + 100 * (i + 1)
+						clone.y = bottom_of_world
+						while world.collision(clone)
+							clone.y -= 3
+						world.entities.push(clone)
+	catch error
+		console?.error? "Failed to auto-spawn entities:", error
 
 	# Hide welcome message after you start playing or toggle editing.
 	unless disable_welcome_message
