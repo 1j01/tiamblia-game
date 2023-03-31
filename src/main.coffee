@@ -2,6 +2,7 @@
 Math.seedrandom("A world")
 
 {View, Mouse, Editor, Entity} = require "skele2d"
+Stats = require "stats.js"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -108,8 +109,13 @@ window.do_a_redraw = redraw
 
 gamepad_start_prev = false
 
+stats = new Stats
+stats.showPanel(0)
+document.body.appendChild(stats.dom)
+
 do animate = ->
 	return if window.CRASHED
+	stats.begin()
 	requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
 
@@ -217,3 +223,5 @@ do animate = ->
 
 	# End of frame. Nothing must use wasJustPressed after this.
 	keyboard.resetForNextStep()
+
+	stats.end()
