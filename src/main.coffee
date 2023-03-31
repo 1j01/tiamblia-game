@@ -1,7 +1,7 @@
 
 Math.seedrandom("A world")
 
-{View, Mouse, Editor, Entity} = require "skele2d"
+{View, Mouse, Editor, Entity, Terrain} = require "skele2d"
 Stats = require "stats.js"
 {GUI} = require "lil-gui"
 World = require "./World.coffee"
@@ -99,6 +99,24 @@ redraw = ->
 	
 	world.draw(ctx, view)
 	editor.draw(ctx, view) if editor.editing
+
+	show_terrain_polygons = (try localStorage["tiamblia.debug_terrain"]) is "true"
+	if show_terrain_polygons
+		for entity in world.entities
+			if entity instanceof Terrain
+				ctx.translate(entity.x, entity.y)
+				ctx.strokeStyle = if entity.solid is false then "blue" else "red"
+				ctx.fillStyle = if entity.solid is false then "rgba(0, 0, 255, 0.2)" else "rgba(255, 0, 0, 0.2)"
+				ctx.lineWidth = 1 / view.scale
+				ctx.beginPath()
+				points = Object.values(entity.structure.points)
+				ctx.moveTo(points[0].x, points[0].y)
+				for point in points
+					ctx.lineTo(point.x, point.y)
+				ctx.closePath()
+				ctx.stroke()
+				ctx.fill()
+				ctx.translate(-entity.x, -entity.y)
 	
 	ctx.restore()
 
@@ -121,6 +139,7 @@ option_names_to_keys = {
 	"Show performance stats": "tiamblia.show_stats"
 	"Debug Caterpillar class": "tiamblia.debug_caterpillar"
 	"Debug Arrow class": "tiamblia.debug_arrow"
+	"Debug Terrain class": "tiamblia.debug_terrain"
 	"Show point names": "Skele2D show names"
 	"Show point indices": "Skele2D show indices"
 	"Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world"
