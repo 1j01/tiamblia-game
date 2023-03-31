@@ -1,6 +1,7 @@
 
 Entity = require "./entities/abstract/Entity.coffee"
 Terrain = require "./entities/abstract/Terrain.coffee"
+Water = require "./entities/terrain/Water.coffee"
 {distanceToLineSegment} = require("skele2d").helpers
 
 module.exports = class World
@@ -219,7 +220,10 @@ module.exports = class World
 		# so it can fit into the collision buckets.
 		# This happens at the start of the game.
 		old_terrain_entities = @getEntitiesOfType(Terrain)
-		for old_terrain_entity in old_terrain_entities
+		# Exempt water because 1. it's transparent, so overlapping polygons will not avoid rendering artifacts,
+		# and 2. it renders reflections using drawImage, which is expensive,
+		# and 3. it's not solid, so some collision checks will be skipped anyway.
+		for old_terrain_entity in old_terrain_entities when old_terrain_entity not instanceof Water
 			old_points = Object.values(old_terrain_entity.structure.points)
 			old_points_flat = []
 			for point in old_points
