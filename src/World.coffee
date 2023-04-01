@@ -199,7 +199,22 @@ module.exports = class World
 	updateCollisionBuckets: ->
 		@collision_buckets = {}
 		for entity in @entities
-			bbox = entity.bbox()
+			# For PolygonStructure, we can use the bounding box of the structure
+			# which ignores bbox_padding which shouldn't apply to polygons.
+			# For BoneStructure, bbox_padding makes lineThickness in collision detection work
+			# when entities are near the collision bucket boundary.
+			# TODO: separate bbox padding for visual and collision purposes.
+			if entity.structure.bbox_max
+				bbox_min_world = entity.toWorld(entity.structure.bbox_min)
+				bbox_max_world = entity.toWorld(entity.structure.bbox_max)
+				bbox = {
+					x: bbox_min_world.x
+					y: bbox_min_world.y
+					width: bbox_max_world.x - bbox_min_world.x
+					height: bbox_max_world.y - bbox_min_world.y
+				}
+			else
+				bbox = entity.bbox()
 			bx1 = Math.floor(bbox.x/bucket_width)
 			bx2 = Math.floor((bbox.x+bbox.width)/bucket_width)
 			for bxi in [bx1..bx2]
