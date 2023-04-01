@@ -340,17 +340,16 @@ module.exports = class World
 				catch error
 					console.warn "Error optimizing terrain:", error
 				
-				# Overlap the polygons, both to avoid rendering artifacts,
-				# and for collision detection, particularly for the Caterpillar,
-				# as it's currently implemented (it has no thickness, and ends up
-				# crawling into the seams between polygons).
-				# Note that the overlap is least effective when zoomed out.
-				# TODO: Ideally we'd use a constant overlap in viewport coordinates,
-				# not world coordinates, for the rendering part.
-				# As for Caterpillars, they fall off the terrain when meeting a seam,
-				# because they project points outside of one polygon, landing inside another.
-				# TODO: handle projection recursively in Caterpillar,
-				# or rewrite with a proper physics engine.
+				# Overlap the polygons, both ~~to avoid rendering artifacts~~ (no longer necessary),
+				# and for collision detection, particularly for the Caterpillar.
+				# Having no thickness, and following the polygon's contour,
+				# it used to crawl into the seams between polygons.
+				# I'm not sure this offset is needed anymore.
+				# I'd like to see if with 0 overlap, there's any point where @collision gives null along the seam.
+				# I could certainly reduce this at least, and should, to fix the player
+				# getting stuck where the offset makes the terrain stick out.
+				# (I could've made the offset take into account the slope of the (non-seam) line segment
+				# that the point is a part of, but I haven't bothered, and it probably isn't necessary if I reduce the offset.)
 				overlap = 0.5
 				for polygon_coords in polygons
 					min_x = Infinity
