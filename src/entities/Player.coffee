@@ -6,7 +6,7 @@ Arrow = require "./items/Arrow.coffee"
 Deer = require "./Deer.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
-{distance, distanceToLineSegment} = require("skele2d").helpers
+{distance} = require("skele2d").helpers
 TAU = Math.PI * 2
 
 # Actually treat it as a segment, not an infinite line
@@ -208,20 +208,6 @@ module.exports = class Player extends SimpleActor
 		@move_y = down - up
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
-		
-		closest_entity_to_world_point = (point_in_world_space, EntityClass, filter)=>
-			closest_dist = Infinity
-			closest_entity = null
-			closest_segment = null
-			for entity in world.getEntitiesOfType(EntityClass) when filter?(entity) or not filter
-				point_in_entity_space = entity.fromWorld(point_in_world_space)
-				for segment_name, segment of entity.structure.segments
-					dist = distanceToLineSegment(point_in_entity_space, segment.a, segment.b)
-					if dist < closest_dist
-						closest_dist = dist
-						closest_entity = entity
-						closest_segment = segment
-			return {closest_entity, closest_dist, closest_segment}
 
 		pick_up_distance_threshold = 10
 		@pick_up_timer ?= 0
@@ -268,8 +254,8 @@ module.exports = class Player extends SimpleActor
 			# but it's closer to the shoulder.
 			# Later logic can decide to not actually reach towards anything out of reach,
 			# or to reach towards a nearby item as long as you're moving towards it.
-			near_hand = closest_entity_to_world_point(hand_world, EntityClass, entity_filter)
-			near_shoulder = closest_entity_to_world_point(shoulder_world, EntityClass, entity_filter)
+			near_hand = world.closest(hand_world, EntityClass, entity_filter)
+			near_shoulder = world.closest(shoulder_world, EntityClass, entity_filter)
 
 			nearest = if near_hand.closest_dist < near_shoulder.closest_dist then near_hand else near_shoulder
 
@@ -297,7 +283,7 @@ module.exports = class Player extends SimpleActor
 			if @riding
 				@riding = null
 			else
-				search_result = closest_entity_to_world_point(from_point_in_world, Deer)
+				search_result = world.closest(from_point_in_world, Deer)
 				if search_result.closest_dist < 30
 					@riding = search_result.closest_entity
 

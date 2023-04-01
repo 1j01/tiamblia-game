@@ -4,6 +4,18 @@ Terrain = require "./entities/abstract/Terrain.coffee"
 Water = require "./entities/terrain/Water.coffee"
 {distanceToLineSegment} = require("skele2d").helpers
 
+# Actually treat it as a segment, not an infinite line
+# unlike copies of this function in some other files
+closestPointOnLineSegment = (point, a, b)->
+	# https://stackoverflow.com/a/3122532/2624876
+	a_to_p = {x: point.x - a.x, y: point.y - a.y}
+	a_to_b = {x: b.x - a.x, y: b.y - a.y}
+	atb2 = a_to_b.x**2 + a_to_b.y**2
+	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
+	t = atp_dot_atb / atb2
+	t = Math.max(0, Math.min(1, t))
+	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
+
 module.exports = class World
 	constructor: ->
 		@entities = []
@@ -390,3 +402,17 @@ module.exports = class World
 					if dist < lineThickness
 						return entity
 		return null
+
+	closest: (point_in_world_space, EntityClass, filter)=>
+		closest_dist = Infinity
+		closest_entity = null
+		closest_segment = null
+		for entity in @getEntitiesOfType(EntityClass) when filter?(entity) or not filter
+			point_in_entity_space = entity.fromWorld(point_in_world_space)
+			for segment_name, segment of entity.structure.segments
+				dist = distanceToLineSegment(point_in_entity_space, segment.a, segment.b)
+				if dist < closest_dist
+					closest_dist = dist
+					closest_entity = entity
+					closest_segment = segment
+		return {closest_entity, closest_dist, closest_segment}
