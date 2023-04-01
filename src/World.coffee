@@ -280,7 +280,7 @@ module.exports = class World
 				# can fit into two buckets. If we cut at the bucket boundaries
 				# instead and then overlap the polygons, each piece will fall into
 				# three buckets, even though it's barely more than one bucket wide.
-				cut_x = bucket_x * bucket_width + bucket_width/2
+				cut_x = bucket_x * bucket_width + bucket_width/2 - old_terrain_entity.x
 
 				# PolyK has some problems when the cut line is exactly on a point.
 				# So we'll offset it a small amount.
