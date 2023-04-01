@@ -158,6 +158,11 @@ options["Auto-spawn entities"] = (try localStorage["tiamblia.auto_spawn"]) ? ""
 tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 	localStorage["tiamblia.auto_spawn"] = value
 
+options["Clear Auto-Save"] = ->
+	localStorage.removeItem("Skele2D World")
+	alert "Cleared Skele2D World. Refresh the page to start over."
+skele2d_folder.add(options, "Clear Auto-Save")
+
 terrain_optimized = false
 
 do animate = ->
