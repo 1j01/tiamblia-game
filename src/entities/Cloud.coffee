@@ -14,6 +14,7 @@ module.exports = class Cloud extends Entity
 		@height = 35+Math.random()*10
 		@simplex = new SimplexNoise()
 		@t = 0
+		@intangible = true
 
 	toJSON: ->
 		def = {}
