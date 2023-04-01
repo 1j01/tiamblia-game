@@ -292,7 +292,7 @@ module.exports = class Arrow extends Entity
 						# })
 
 					# bounce off the surface, reflecting the angle
-					if speed > 0
+					if speed > 0 and closest_segment
 						vx = point.x - point.prev_x
 						vy = point.y - point.prev_y
 						# console.log("hit.constructor.name", hit.constructor.name, "coefficient_of_restitution", coefficient_of_restitution)
