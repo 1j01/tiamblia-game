@@ -276,6 +276,12 @@ module.exports = class World
 			bucket_x_max = Math.floor(bbox_max_world.x/bucket_width)
 			polygons = [old_points_flat]
 			for bucket_x in [bucket_x_min..bucket_x_max]
+				# Cut in the middle of the bucket, so that a piece of terrain
+				# can fit into two buckets. If we cut at the bucket boundaries
+				# instead and then overlap the polygons, each piece will fall into
+				# three buckets, even though it's barely more than one bucket wide.
+				cut_x = bucket_x * bucket_width + bucket_width/2
+
 				# PolyK has some problems when the cut line is exactly on a point.
 				# So we'll offset it a small amount.
 				# This may lead to tiny polygons if the terrain is doubly optimized,
@@ -284,8 +290,6 @@ module.exports = class World
 				# and in general so unnecessary changes are not made to the world,
 				# so that git diffs are small and there's less confusion,
 				# such as unknowingly saving the player with an idle animation just about to start.
-				
-				cut_x = bucket_x * bucket_width
 				epsilon = 0.0001
 				while polygons.some((polygon_coords) =>
 					polygon_coords.some((coord, i) =>
