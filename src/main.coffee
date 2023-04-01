@@ -109,7 +109,12 @@ redraw = ->
 				ctx.translate(entity.x, entity.y)
 				ctx.strokeStyle = if entity.solid is false then "blue" else "red"
 				ctx.fillStyle = if entity.solid is false then "rgba(0, 0, 255, 0.2)" else "rgba(255, 0, 0, 0.2)"
-				ctx.lineWidth = 1 / view.scale
+				if entity.intangible
+					ctx.setLineDash([5, 5])
+					ctx.fillStyle = "transparent"
+					ctx.lineWidth = 4 / view.scale
+				else
+					ctx.lineWidth = 1 / view.scale
 				ctx.beginPath()
 				points = Object.values(entity.structure.points)
 				ctx.moveTo(points[0].x, points[0].y)
@@ -119,6 +124,21 @@ redraw = ->
 				ctx.stroke()
 				ctx.fill()
 				ctx.translate(-entity.x, -entity.y)
+				ctx.setLineDash([])
+		for entity in world.derived_colliders
+			ctx.translate(entity.x, entity.y)
+			ctx.strokeStyle = if entity.solid is false then "aqua" else "fuchsia"
+			ctx.fillStyle = if entity.solid is false then "rgba(0, 255, 255, 0.2)" else "rgba(255, 0, 255, 0.2)"
+			ctx.lineWidth = 1 / view.scale
+			ctx.beginPath()
+			points = Object.values(entity.structure.points)
+			ctx.moveTo(points[0].x, points[0].y)
+			for point in points
+				ctx.lineTo(point.x, point.y)
+			ctx.closePath()
+			ctx.stroke()
+			ctx.fill()
+			ctx.translate(-entity.x, -entity.y)
 	
 	show_collision_buckets = (try localStorage["tiamblia.show_collision_buckets"]) is "true"
 	if show_collision_buckets

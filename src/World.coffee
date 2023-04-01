@@ -19,6 +19,7 @@ closestPointOnLineSegment = (point, a, b)->
 module.exports = class World
 	constructor: ->
 		@entities = []
+		@derived_colliders = []
 	
 	@format: "Tiamblia World"
 	@formatVersion: 4
@@ -210,7 +211,7 @@ module.exports = class World
 	bucket_height = 100
 	updateCollisionBuckets: ->
 		@collision_buckets = {}
-		for entity in @entities
+		for entity in [...@entities, ...@derived_colliders] when not entity.intangible
 			# For PolygonStructure, we can use the bounding box of the structure
 			# which ignores bbox_padding which shouldn't apply to polygons.
 			# For BoneStructure, bbox_padding makes lineThickness in collision detection work
@@ -268,11 +269,32 @@ module.exports = class World
 		# Divides terrain into smaller polygons horizontally,
 		# so it can fit into the collision buckets.
 		# This happens at the start of the game.
+		# Instead of creating new entities of the same type as the original,
+		# we'll leave the original entity for visual purposes,
+		# and store the derived colliders separately from entities, without serialization.
+		# This strategy allows perfect visual fidelity without hacks,
+		# and prevents the possibility of losing the original polygons
+		# by saving after starting the simulation, or doubly optimizing, creating slivers.
+
+		# First, undo any previous optimization.
+		# TODO: rename "old" -> "original"/"source"/"base"/"parent"/something,
+		# since it's no longer replaced entirely.
+		@derived_colliders = []
 		old_terrain_entities = @getEntitiesOfType(Terrain)
-		# Exempt water because 1. it's transparent, so overlapping polygons will not avoid rendering artifacts,
+		for old_terrain_entity in old_terrain_entities
+			if old_terrain_entity.intangible_because_optimized
+				delete old_terrain_entity.intangible
+				delete old_terrain_entity.intangible_because_optimized
+		
+		# I was exempting water because 1. it's transparent, so overlapping polygons will not avoid rendering artifacts,
 		# and 2. it renders reflections using drawImage, which is expensive,
 		# and 3. it's not solid, so some collision checks will be skipped anyway.
+		# But only 3. still applies. If I want to make an ocean, I can remove the exemption.
 		for old_terrain_entity in old_terrain_entities when old_terrain_entity not instanceof Water
+			# TODO: prevent optimization if there's not many points
+			old_terrain_entity.intangible = true
+			old_terrain_entity.intangible_because_optimized = true
+
 			old_points = Object.values(old_terrain_entity.structure.points)
 			old_points_flat = []
 			for point in old_points
@@ -341,20 +363,25 @@ module.exports = class World
 						if Math.abs(polygon_coords[i] - cut_x) < epsilon
 							polygon_coords[i] += offset_dir * overlap
 
-			new_terrain_entities = []
 			for sliced_points_flat in polygons
 				sliced_points = []
 				for i in [0...sliced_points_flat.length] by 2
 					sliced_points.push({x: sliced_points_flat[i], y: sliced_points_flat[i+1]})
 				# Relying on the specific serialization format of PolygonStructure.
 				# It stores points as an array, unlike the base class Structure, which supports named points.
+				# Also, this doesn't need to be the original entity class,
+				# we could probably just use the base class Terrain.
+				# We shouldn't need to do anything special to make it invisible,
+				# since it's not going in the world.entities array.
 				ent_def = Object.assign(JSON.parse(JSON.stringify(old_terrain_entity)), {
 					structure: {points: sliced_points}
+					intangible: false
+					intangible_because_optimized: false
+					entity_collider_is_derived_from: old_terrain_entity
 				})
 				delete ent_def.id
 				new_terrain_entity = Entity.fromJSON(ent_def)
-				new_terrain_entities.push(new_terrain_entity)
-			@entities.splice(@entities.indexOf(old_terrain_entity), 1, ...new_terrain_entities)
+				@derived_colliders.push(new_terrain_entity)
 		return
 
 	collision: (point, {types=[Terrain], lineThickness=5}={})->
@@ -370,7 +397,7 @@ module.exports = class World
 			console.warn "Collision detection called before collision buckets were initialized."
 			@updateCollisionBuckets()
 
-		# no bucketization (to compare FPS, also disable updateCollisionBuckets)
+		# no bucketization (to compare FPS, also disable updateCollisionBuckets and perhaps optimizeTerrain)
 		# entities = @entities
 		# one dimensional bucketization
 		# b_x = Math.floor(point.x/bucket_width)
@@ -395,6 +422,8 @@ module.exports = class World
 			local_point = entity.fromWorld(point)
 			if entity.structure.pointInPolygon?
 				if entity.structure.pointInPolygon(local_point)
+					if entity.entity_collider_is_derived_from
+						return entity.entity_collider_is_derived_from
 					return entity
 			else
 				for segment_name, segment of entity.structure.segments
@@ -420,8 +449,6 @@ module.exports = class World
 
 	# This is used for collision response in Caterpillar and Arrow.
 	projectPointOutside: (point_in_world_space, {types=[Terrain], outsideEntity}={})->
-		# TODO: use non-split polygons for collision resolution
-		# Split polygons are good for collision detection, but not for collision response.
 		# Ideally it should use joined polygons, with a boolean polygon union operation,
 		# so that it projects to the overall boundary of the terrain, even across different types of terrain,
 		# and prevents potential strange responses at crevices between different polygons.
