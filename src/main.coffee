@@ -154,7 +154,7 @@ for name, storage_key of option_names_to_keys then do (name, storage_key) ->
 	folder.add(options, name).onChange (value) ->
 		localStorage[storage_key] = value
 
-options["Auto-spawn entities"] = ""
+options["Auto-spawn entities"] = (try localStorage["tiamblia.auto_spawn"]) ? ""
 tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 	localStorage["tiamblia.auto_spawn"] = value
 
