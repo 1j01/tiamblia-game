@@ -130,7 +130,7 @@ redraw = ->
 		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
 		mouse_world = view.toWorld(mouse)
 		projected = world.projectPointOutside(mouse_world)
-		projected_point = projected?.closest_point_world ? mouse_world
+		projected_point = projected?.closest_point_in_world ? mouse_world
 		ctx.beginPath()
 		ctx.arc(projected_point.x, projected_point.y, 5/view.scale, 0, TAU)
 		ctx.fillStyle = "red"

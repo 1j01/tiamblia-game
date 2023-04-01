@@ -433,6 +433,6 @@ module.exports = class World
 				closest_segment = segment
 		if closest_segment
 			closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
-			closest_point_world = hit.toWorld(closest_point_in_hit_space)
-			return {closest_point_world, closest_point_in_hit_space, closest_segment}
+			closest_point_in_world = hit.toWorld(closest_point_in_hit_space)
+			return {closest_point_in_world, closest_point_in_hit_space, closest_segment}
 		return null

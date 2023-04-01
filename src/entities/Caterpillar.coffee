@@ -171,8 +171,8 @@ module.exports = class Caterpillar extends Entity
 						test_point_in_hit_space = hit.fromWorld(test_point_world)
 						projected = world.projectPointOutside(test_point_world, {outsideEntity: hit})
 						if projected
-							{closest_point_in_hit_space, closest_point_world, closest_segment} = projected
-							closest_point_local = @fromWorld(closest_point_world)
+							{closest_point_in_hit_space, closest_point_in_world, closest_segment} = projected
+							closest_point_local = @fromWorld(closest_point_in_world)
 
 							# part.x = closest_point_local.x
 							# part.y = closest_point_local.y
@@ -218,9 +218,9 @@ module.exports = class Caterpillar extends Entity
 					part_world = @toWorld(part)
 					projected = world.projectPointOutside(part_world, {outsideEntity: hit})
 					if projected
-						{closest_point_world, closest_point_in_hit_space, closest_segment} = projected
-						closest_point_local = @fromWorld(closest_point_world)
-						towards_ground = {x: part_world.x - closest_point_world.x, y: part_world.y - closest_point_world.y}
+						{closest_point_in_world, closest_point_in_hit_space, closest_segment} = projected
+						closest_point_local = @fromWorld(closest_point_in_world)
+						towards_ground = {x: part_world.x - closest_point_in_world.x, y: part_world.y - closest_point_in_world.y}
 						towards_ground_length = Math.hypot(towards_ground.x, towards_ground.y)
 						towards_ground.x /= towards_ground_length
 						towards_ground.y /= towards_ground_length

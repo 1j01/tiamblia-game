@@ -280,8 +280,8 @@ module.exports = class Arrow extends Entity
 					# Project the point back to the surface of the polygon.
 					projected = world.projectPointOutside(@toWorld(point), {outsideEntity: hit})
 					if projected
-						{closest_point_world, closest_segment} = projected
-						closest_point_local = @fromWorld(closest_point_world)
+						{closest_point_in_world, closest_segment} = projected
+						closest_point_local = @fromWorld(closest_point_in_world)
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
 						# debug_drawings.get(@).push({
