@@ -118,6 +118,11 @@ redraw = ->
 				ctx.fill()
 				ctx.translate(-entity.x, -entity.y)
 	
+	show_collision_buckets = (try localStorage["tiamblia.show_collision_buckets"]) is "true"
+	if show_collision_buckets
+		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
+		world.drawCollisionBuckets(ctx, view)
+
 	ctx.restore()
 
 # This is useful when debugging.
@@ -140,6 +145,7 @@ option_names_to_keys = {
 	"Debug Caterpillar class": "tiamblia.debug_caterpillar"
 	"Debug Arrow class": "tiamblia.debug_arrow"
 	"Debug Terrain class": "tiamblia.debug_terrain"
+	"Show collision buckets": "tiamblia.show_collision_buckets"
 	"Show point names": "Skele2D show names"
 	"Show point indices": "Skele2D show indices"
 	"Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world"

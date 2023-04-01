@@ -215,6 +215,28 @@ module.exports = class World
 					@collision_buckets[bxi][byi].push(entity)
 		return
 
+	drawCollisionBuckets: (ctx, view)->
+		ctx.lineWidth = 1 / view.scale
+		ctx.strokeStyle = "#FFFF00"
+		ctx.fillStyle = "rgba(255, 255, 0, 0.2)"
+		for b_x, bucket_row of @collision_buckets
+			for b_y, entities of bucket_row
+				# ctx.strokeRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
+				# ctx.fillRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
+				ctx.fillRect(b_x*bucket_width+1/view.scale, b_y*bucket_height+1/view.scale, bucket_width-2/view.scale, bucket_height-2/view.scale)
+				for entity in entities
+					# bbox = entity.bbox()
+					# ctx.fillRect(bbox.x, bbox.y, bbox.width, bbox.height)
+					# draw line from entity center to bucket center
+					entity_bbox = entity.bbox()
+					entity_cx = entity_bbox.x + entity_bbox.width/2
+					entity_cy = entity_bbox.y + entity_bbox.height/2
+					ctx.beginPath()
+					ctx.moveTo(entity_cx, entity_cy)
+					ctx.lineTo(b_x*bucket_width+bucket_width/2, b_y*bucket_height+bucket_height/2)
+					ctx.stroke()
+		return
+
 	optimizeTerrain: ->
 		# Divides terrain into smaller polygons horizontally,
 		# so it can fit into the collision buckets.
