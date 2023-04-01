@@ -278,18 +278,10 @@ module.exports = class Arrow extends Entity
 					# # })
 
 					# Project the point back to the surface of the polygon.
-					# This is done by finding the closest point on the polygon's edges.
-					closest_distance = Infinity
-					closest_segment = null
-					point_in_hit_space = hit.fromWorld(@toWorld(point))
-					for segment_name, segment of hit.structure.segments
-						dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
-						if dist < closest_distance
-							closest_distance = dist
-							closest_segment = segment
-					if closest_segment
-						closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
-						closest_point_local = @fromWorld(hit.toWorld(closest_point_in_hit_space))
+					projected = world.projectPointOutside(@toWorld(point), {outsideEntity: hit})
+					if projected
+						{closest_point_world, closest_segment} = projected
+						closest_point_local = @fromWorld(closest_point_world)
 						point.x = closest_point_local.x
 						point.y = closest_point_local.y
 						# debug_drawings.get(@).push({

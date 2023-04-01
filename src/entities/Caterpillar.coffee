@@ -168,18 +168,10 @@ module.exports = class Caterpillar extends Entity
 					)
 					if hit
 						# Project the part's position back to the surface of the ground.
-						# This is done by finding the closest point on the polygon's edges.
-						closest_distance = Infinity
-						closest_segment = null
 						test_point_in_hit_space = hit.fromWorld(test_point_world)
-						for segment_name, segment of hit.structure.segments
-							dist = distanceToLineSegment(test_point_in_hit_space, segment.a, segment.b)
-							if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
-								closest_distance = dist
-								closest_segment = segment
-						if closest_segment
-							closest_point_in_hit_space = closestPointOnLineSegment(test_point_in_hit_space, closest_segment.a, closest_segment.b)
-							closest_point_world = hit.toWorld(closest_point_in_hit_space)
+						projected = world.projectPointOutside(test_point_world, {outsideEntity: hit})
+						if projected
+							{closest_point_in_hit_space, closest_point_world, closest_segment} = projected
 							closest_point_local = @fromWorld(closest_point_world)
 
 							# part.x = closest_point_local.x
@@ -223,19 +215,10 @@ module.exports = class Caterpillar extends Entity
 					part.vy = 0
 
 					# Project the part's position back to the surface of the ground.
-					# This is done by finding the closest point on the polygon's edges.
-					closest_distance = Infinity
-					closest_segment = null
 					part_world = @toWorld(part)
-					part_in_hit_space = hit.fromWorld(part_world)
-					for segment_name, segment of hit.structure.segments
-						dist = distanceToLineSegment(part_in_hit_space, segment.a, segment.b)
-						if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
-							closest_distance = dist
-							closest_segment = segment
-					if closest_segment
-						closest_point_in_hit_space = closestPointOnLineSegment(part_in_hit_space, closest_segment.a, closest_segment.b)
-						closest_point_world = hit.toWorld(closest_point_in_hit_space)
+					projected = world.projectPointOutside(part_world, {outsideEntity: hit})
+					if projected
+						{closest_point_world, closest_point_in_hit_space, closest_segment} = projected
 						closest_point_local = @fromWorld(closest_point_world)
 						towards_ground = {x: part_world.x - closest_point_world.x, y: part_world.y - closest_point_world.y}
 						towards_ground_length = Math.hypot(towards_ground.x, towards_ground.y)

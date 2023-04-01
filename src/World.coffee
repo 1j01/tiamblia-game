@@ -403,6 +403,7 @@ module.exports = class World
 						return entity
 		return null
 
+	# This is used for picking up nearby items in Player.
 	closest: (point_in_world_space, EntityClass, filter)=>
 		closest_dist = Infinity
 		closest_entity = null
@@ -416,3 +417,22 @@ module.exports = class World
 					closest_entity = entity
 					closest_segment = segment
 		return {closest_entity, closest_dist, closest_segment}
+
+	# This is used for collision response in Caterpillar and Arrow.
+	projectPointOutside: (point_in_world_space, {types=[Terrain], outsideEntity}={})->
+		closest_distance = Infinity
+		closest_segment = null
+		hit = outsideEntity ? @collision(point_in_world_space, {types})
+		if not hit
+			return null
+		point_in_hit_space = hit.fromWorld(point_in_world_space)
+		for segment_name, segment of hit.structure.segments
+			dist = distanceToLineSegment(point_in_hit_space, segment.a, segment.b)
+			if dist < closest_distance and Math.hypot(segment.a.x - segment.b.x, segment.a.y - segment.b.y) > 0.1
+				closest_distance = dist
+				closest_segment = segment
+		if closest_segment
+			closest_point_in_hit_space = closestPointOnLineSegment(point_in_hit_space, closest_segment.a, closest_segment.b)
+			closest_point_world = hit.toWorld(closest_point_in_hit_space)
+			return {closest_point_world, closest_point_in_hit_space, closest_segment}
+		return null

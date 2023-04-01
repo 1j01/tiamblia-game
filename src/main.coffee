@@ -32,6 +32,8 @@ require "./entities/items/Bow.coffee"
 require "./entities/items/Arrow.coffee"
 require "./entities/items/ArcheryTarget.coffee"
 
+TAU = Math.PI * 2
+
 world = new World
 
 window.the_world = world
@@ -122,6 +124,25 @@ redraw = ->
 	if show_collision_buckets
 		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
 		world.drawCollisionBuckets(ctx, view)
+	
+	debug_project_point_outside = (try localStorage["tiamblia.debug_project_point_outside"]) is "true"
+	if debug_project_point_outside
+		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
+		mouse_world = view.toWorld(mouse)
+		projected = world.projectPointOutside(mouse_world)
+		projected_point = projected?.closest_point_world ? mouse_world
+		ctx.beginPath()
+		ctx.arc(projected_point.x, projected_point.y, 5/view.scale, 0, TAU)
+		ctx.fillStyle = "red"
+		ctx.fill()
+		if projected
+			ctx.strokeStyle = "red"
+			ctx.lineWidth = 1 / view.scale
+			ctx.beginPath()
+			ctx.arc(mouse_world.x, mouse_world.y, Math.hypot(projected_point.x - mouse_world.x, projected_point.y - mouse_world.y), 0, TAU)
+			ctx.moveTo(mouse_world.x, mouse_world.y)
+			ctx.lineTo(projected_point.x, projected_point.y)
+			ctx.stroke()
 
 	ctx.restore()
 
@@ -142,6 +163,7 @@ gui.hide()
 option_names_to_keys = {
 	"Disable welcome message, start in edit mode": "tiamblia.disable_welcome_message"
 	"Show performance stats": "tiamblia.show_stats"
+	"Debug projectPointOutside": "tiamblia.debug_project_point_outside"
 	"Debug Caterpillar class": "tiamblia.debug_caterpillar"
 	"Debug Arrow class": "tiamblia.debug_arrow"
 	"Debug Terrain class": "tiamblia.debug_terrain"
