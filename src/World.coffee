@@ -420,6 +420,11 @@ module.exports = class World
 
 	# This is used for collision response in Caterpillar and Arrow.
 	projectPointOutside: (point_in_world_space, {types=[Terrain], outsideEntity}={})->
+		# TODO: use non-split polygons for collision resolution
+		# Split polygons are good for collision detection, but not for collision response.
+		# Ideally it should use joined polygons, with a boolean polygon union operation,
+		# so that it projects to the overall boundary of the terrain, even across different types of terrain,
+		# and prevents potential strange responses at crevices between different polygons.
 		closest_distance = Infinity
 		closest_segment = null
 		hit = outsideEntity ? @collision(point_in_world_space, {types})
