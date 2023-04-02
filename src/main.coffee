@@ -44,7 +44,7 @@ terrain.x = 0
 terrain.y = 0
 terrain.generate()
 
-bottom_of_world = 300
+bottom_of_world = terrain.toWorld(terrain.structure.bbox_max).y
 
 canvas = document.createElement("canvas")
 document.body.appendChild(canvas)
