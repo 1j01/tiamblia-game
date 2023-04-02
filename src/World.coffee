@@ -296,6 +296,23 @@ module.exports = class World
 					ctx.stroke()
 		return
 
+	drawCollisionHeatMap: (ctx, view)->
+		ctx.lineWidth = 1 / view.scale
+		ctx.strokeStyle = "#FF0000"
+		for b_x, bucket_column of @hit_test_counts
+			for b_y, hit_test_count of bucket_column
+				if hit_test_count > 0
+					# The stroke is useful to see low hit counts
+					ctx.strokeRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
+					ctx.fillStyle = "rgba(255, 0, 0, #{hit_test_count/100})"
+					# ctx.fillRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
+					ctx.fillRect(b_x*bucket_width+1/view.scale, b_y*bucket_height+1/view.scale, bucket_width-2/view.scale, bucket_height-2/view.scale)
+		return
+
+	resetCollisionHeatMap: ->
+		@hit_test_counts = {}
+		return
+
 	optimizeTerrain: ->
 		# Divides terrain into smaller polygons horizontally,
 		# so it can fit into the collision buckets.
@@ -405,6 +422,7 @@ module.exports = class World
 				@derived_colliders.push(new_terrain_entity)
 		return
 
+	count_hit_tests = (try localStorage["tiamblia.count_hit_tests"]) is "true"
 	collision: (point, {types=[Terrain], lineThickness=5}={})->
 		# lineThickness doesn't apply to polygons like Terrain
 		# also it's kind of a hack, because different entities could need different lineThicknesses
@@ -427,6 +445,12 @@ module.exports = class World
 		b_x = Math.floor(point.x/bucket_width)
 		b_y = Math.floor(point.y/bucket_height)
 		entities = (@collision_buckets[b_x] ? {})[b_y] ? []
+
+		if count_hit_tests
+			@hit_test_counts ?= {}
+			@hit_test_counts[b_x] ?= {}
+			@hit_test_counts[b_x][b_y] ?= 0
+			@hit_test_counts[b_x][b_y]++
 
 		for entity in entities
 			if typeof types is "function"

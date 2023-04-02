@@ -157,6 +157,11 @@ redraw = ->
 		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
 		world.drawCollisionBuckets(ctx, view)
 	
+	count_hit_tests = (try localStorage["tiamblia.count_hit_tests"]) is "true"
+	if count_hit_tests
+		world.drawCollisionHeatMap(ctx, view)
+		world.resetCollisionHeatMap()
+	
 	debug_project_point_outside = (try localStorage["tiamblia.debug_project_point_outside"]) is "true"
 	if debug_project_point_outside
 		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
@@ -201,6 +206,7 @@ option_names_to_keys = {
 	"Debug Arrow class": "tiamblia.debug_arrow"
 	"Debug Terrain class": "tiamblia.debug_terrain"
 	"Show collision buckets": "tiamblia.show_collision_buckets"
+	"Show hit tested buckets": "tiamblia.count_hit_tests"
 	"Show point names": "Skele2D show names"
 	"Show point indices": "Skele2D show indices"
 	"Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world"
