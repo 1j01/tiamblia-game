@@ -310,10 +310,15 @@ module.exports = class World
 			bucket_x_max = Math.floor(bbox_max_world.x/bucket_width)
 			polygons = [old_points_flat]
 			for bucket_x in [bucket_x_min..bucket_x_max]
-				# Cut in the middle of the bucket, so that a piece of terrain
-				# can fit into two buckets. If we cut at the bucket boundaries
-				# instead and then overlap the polygons, each piece will fall into
-				# three buckets, even though it's barely more than one bucket wide.
+				# Cut in the middle of the bucket, because the terrain
+				# will land into two buckets anyways, right?
+				# I did this when I was overlapping the polygons for rendering and to
+				# prevent caterpillars from crawling through the cracks.
+				# With the overlap, the polygons would fit into 3 buckets,
+				# even though they were only slightly wider than 1 bucket,
+				# unless offset by more than the overlap.
+				# The overlap is no longer needed, and I've removed it.
+				# TODO: can I fit the polygons into 1 bucket now?
 				cut_x = bucket_x * bucket_width + bucket_width/2 - old_terrain_entity.x
 
 				# PolyK has some problems when the cut line is exactly on a point.
@@ -339,28 +344,6 @@ module.exports = class World
 					polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
 				catch error
 					console.warn "Error optimizing terrain:", error
-				
-				# Overlap the polygons, both ~~to avoid rendering artifacts~~ (no longer necessary),
-				# and for collision detection, particularly for the Caterpillar.
-				# Having no thickness, and following the polygon's contour,
-				# it used to crawl into the seams between polygons.
-				# I'm not sure this offset is needed anymore.
-				# I'd like to see if with 0 overlap, there's any point where @collision gives null along the seam.
-				# I could certainly reduce this at least, and should, to fix the player
-				# getting stuck where the offset makes the terrain stick out.
-				# (I could've made the offset take into account the slope of the (non-seam) line segment
-				# that the point is a part of, but I haven't bothered, and it probably isn't necessary if I reduce the offset.)
-				overlap = 0.5
-				for polygon_coords in polygons
-					min_x = Infinity
-					max_x = -Infinity
-					for i in [0...polygon_coords.length] by 2
-						min_x = Math.min(min_x, polygon_coords[i])
-						max_x = Math.max(max_x, polygon_coords[i])
-					offset_dir = if Math.abs(min_x - cut_x) < epsilon then -1 else 1
-					for i in [0...polygon_coords.length] by 2
-						if Math.abs(polygon_coords[i] - cut_x) < epsilon
-							polygon_coords[i] += offset_dir * overlap
 
 			for sliced_points_flat in polygons
 				sliced_points = []
