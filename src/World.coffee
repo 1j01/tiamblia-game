@@ -278,8 +278,8 @@ module.exports = class World
 		ctx.lineWidth = 1 / view.scale
 		ctx.strokeStyle = "#FFFF00"
 		ctx.fillStyle = "rgba(255, 255, 0, 0.2)"
-		for b_x, bucket_row of @collision_buckets
-			for b_y, entities of bucket_row
+		for b_x, bucket_column of @collision_buckets
+			for b_y, entities of bucket_column
 				# ctx.strokeRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
 				# ctx.fillRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
 				ctx.fillRect(b_x*bucket_width+1/view.scale, b_y*bucket_height+1/view.scale, bucket_width-2/view.scale, bucket_height-2/view.scale)
