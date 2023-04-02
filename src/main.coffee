@@ -3,7 +3,7 @@ Math.seedrandom("A world")
 
 {View, Mouse, Editor, Entity, Terrain} = require "skele2d"
 Stats = require "stats.js"
-{GUI} = require "lil-gui"
+{GUI, Controller} = require "lil-gui"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -236,6 +236,16 @@ options["Clear Auto-Save"] = ->
 skele2d_folder.add(options, "Clear Auto-Save")
 
 last_selected_entity = null
+# lil-gui.js doesn't support an onBeforeChange callback,
+# so we have to do this hack to integrate with the undo system.
+# Another way might be with a Proxy, might be cleaner.
+old_Controller_setValue = Controller::setValue
+Controller::setValue = (value) ->
+	if @object instanceof Entity
+		the_editor.undoable =>
+			old_Controller_setValue.call(@, value)
+	else
+		old_Controller_setValue.call(@, value)
 
 terrain_optimized = false
 
