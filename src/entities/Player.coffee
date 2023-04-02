@@ -309,7 +309,12 @@ module.exports = class Player extends SimpleActor
 		if @riding
 			new_pose = Player.poses[if prime_bow then "Riding Aiming" else "Riding"] ? @structure.getPose()
 		else if more_submerged
-			if @move_x isnt 0 and Player.animations["Swim"]
+			if @move_x is 0 and crouch
+				# TODO: DRY?
+				new_pose = Player.poses["Crouch"]
+				# There's no idle animation for crouching
+				prevent_idle()
+			else if @move_x isnt 0 and Player.animations["Swim"]
 				@run_animation_position += 0.1
 				new_pose = Pose.lerpAnimationLoop(Player.animations["Swim"], @run_animation_position)
 			else if Player.animations["Tread Water"]
