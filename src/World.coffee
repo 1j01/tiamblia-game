@@ -1,7 +1,6 @@
 
 Entity = require "./entities/abstract/Entity.coffee"
 Terrain = require "./entities/abstract/Terrain.coffee"
-Water = require "./entities/terrain/Water.coffee"
 {distanceToLineSegment} = require("skele2d").helpers
 
 # Actually treat it as a segment, not an infinite line
