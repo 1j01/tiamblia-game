@@ -288,8 +288,6 @@ module.exports = class World
 		
 		for old_terrain_entity in old_terrain_entities
 			# TODO: prevent optimization if there's not many points
-			old_terrain_entity.intangible = true
-			old_terrain_entity.intangible_because_optimized = true
 
 			old_points = Object.values(old_terrain_entity.structure.points)
 			old_points_flat = []
@@ -340,6 +338,12 @@ module.exports = class World
 					polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
 				catch error
 					console.warn "Error optimizing terrain:", error
+
+			if polygons.length is 1
+				continue
+
+			old_terrain_entity.intangible = true
+			old_terrain_entity.intangible_because_optimized = true
 
 			for sliced_points_flat in polygons
 				sliced_points = []
