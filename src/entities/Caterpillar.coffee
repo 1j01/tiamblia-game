@@ -76,6 +76,8 @@ module.exports = class Caterpillar extends Entity
 			if segment.b.name.match(/foot/)
 				segment.b.x = segment.a.x
 				segment.b.y = segment.a.y + segment.length
+		
+		return
 
 	step: (world)->
 		parts_list = Object.values(@structure.points).filter((part)=> part.name.match(/head|part/))
@@ -353,6 +355,7 @@ module.exports = class Caterpillar extends Entity
 						else
 							console.warn("diff is not finite, for Caterpillar self-collision constraint")
 
+		return
 	
 	accumulate_angular_constraint_forces: (a, b, pivot, relative_angle)->
 		angle_a = Math.atan2(a.y - b.y, a.x - b.x)
@@ -408,6 +411,8 @@ module.exports = class Caterpillar extends Entity
 		a.y = old_a.y
 		b.x = old_b.x
 		b.y = old_b.y
+
+		return
 
 	draw: (ctx, view, world)->
 		color = "green"
@@ -474,4 +479,6 @@ module.exports = class Caterpillar extends Entity
 					ctx.lineCap = "round"
 					ctx.strokeStyle = "lime"
 					ctx.stroke()
+	
+		return
 
