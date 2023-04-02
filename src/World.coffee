@@ -28,6 +28,11 @@ module.exports = class World
 		entities: @entities
 
 	fromJSON: (def)->
+		# ------------- DON'T PANIC -------------
+		# Format versioning is easy!
+		# The extensive comments and error handling are to help you learn.
+		# ---------------------------------------
+
 		if def.format isnt World.format
 			if def.format
 				throw new Error "Expected format to be \"#{World.format}\", got #{def.format}"
