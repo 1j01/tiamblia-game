@@ -139,6 +139,21 @@ module.exports = class World
 		# If you add it earlier, it won't be run on worlds that were saved
 		# with newer versions of the game.
 
+		# Similarly, if an upgrade step is buggy, it may be better to add a new one
+		# at the end that fixes the damage, rather than fixing the buggy one,
+		# if only so there is only one upgrade path to the current version,
+		# because theoretically an intermediate upgrade could rely on the broken data,
+		# although it's unlikely.
+		# That said, if information is lost in the buggy upgrade,
+		# it's probably better to fix the buggy one.
+		# If there is ever a scenario where an intermediate upgrade step
+		# relies on the broken data, AND information is lost in the buggy upgrade,
+		# one could extract data before the buggy upgrade, and then reapply it
+		# after the buggy upgrade, if available, but it still will be lost in files
+		# saved with the buggy upgrade, so you have to deal with both cases.
+		# Or you could update the intermediate upgrade steps to handle both cases.
+		# It just depends which is easier, and easier to get right.
+
 		# Handle format versions newer than supported
 		# This could offer a choice to the user to try to load the world anyway, but that's not implemented.
 		if def.formatVersion > World.formatVersion
