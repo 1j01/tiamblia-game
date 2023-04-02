@@ -46,6 +46,7 @@ module.exports = class World
 		# 	There is no automatic upgrade path for versions older than #{minimum_supported_version}."
 
 		# Upgrade old versions of the format
+		upgrading_from_version = def.formatVersion
 		if not def.formatVersion
 			if def.entities not instanceof Array
 				throw new Error "Expected entities to be an array, got #{def.entities}"
@@ -137,6 +138,8 @@ module.exports = class World
 		# Handle format versions newer than supported
 		# This could offer a choice to the user to try to load the world anyway, but that's not implemented.
 		if def.formatVersion > World.formatVersion
+			if def.formatVersion > upgrading_from_version
+				throw new Error "You forgot to update World.formatVersion to #{def.formatVersion} when adding an upgrade step!"
 			throw new Error "The format version #{def.formatVersion} is too new for this version of the game."
 		# Just in case the format version format changes to a string like X.Y.Z or something
 		if def.formatVersion isnt World.formatVersion
