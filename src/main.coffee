@@ -245,11 +245,12 @@ do animate = ->
 				ent.y = bottom_of_world
 
 				# Fix auto-spawn sometimes leaving entities at the bottom of the world
-				# world.updateCollisionBuckets() # doesn't help
-				if not world.collision(ent)
-					console.log "Not auto-spawning #{class_name} (yet) because there's no ground at", ent.x, ent.y
-					console.log "Total entities:", world.entities.length, "Terrain entities:", world.entities.filter((entity) -> entity instanceof Terrain).length, "#{class_name} entities:", existing_instances
-					break
+				# TODO: prevent `intangible` and `intangible_because_optimized` from being serialized, IFF `intangible_because_optimized`
+				# The only reason I haven't done that yet is because Skele2D owns Terrain,
+				# and I haven't committed yet to improving the API boundary between the game and Skele2D.
+				world.optimizeTerrain() unless terrain_optimized
+				terrain_optimized = true
+				world.updateCollisionBuckets()
 
 				while world.collision(ent)
 					ent.y -= 3
