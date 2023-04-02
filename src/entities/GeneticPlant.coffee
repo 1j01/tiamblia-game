@@ -69,8 +69,7 @@ module.exports = class GeneticPlant extends Tree
 		@init()
 
 	init: ->
-		delete @structure.points[k] for k of @structure.points
-		delete @structure.segments[k] for k of @structure.segments
+		@structure.clear()
 		@structure.addPoint("base") # Tree does this but we have to redo it because we deleted the points
 		@branch({
 			from: "base"
