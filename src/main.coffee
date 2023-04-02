@@ -72,6 +72,7 @@ else
 		editor.toggleEditing() if editor.editing
 		world.fromJSON = _fromJSON
 		world_loaded = true
+		return
 
 try
 	editor.load()
@@ -89,6 +90,7 @@ setInterval ->
 		localStorage.view_center_x = view.center_x
 		localStorage.view_center_y = view.center_y
 		localStorage.view_scale = view_to.scale
+	return
 , 200
 
 redraw = ->
@@ -165,6 +167,7 @@ redraw = ->
 			ctx.stroke()
 
 	ctx.restore()
+	return
 
 # This is useful when debugging.
 # You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
@@ -201,14 +204,18 @@ for name, storage_key of option_names_to_keys then do (name, storage_key) ->
 	folder = if storage_key.indexOf("Skele2D") is 0 then skele2d_folder else tiamblia_folder
 	folder.add(options, name).onChange (value) ->
 		localStorage[storage_key] = value
+		return
+	return
 
 options["Auto-spawn entities"] = (try localStorage["tiamblia.auto_spawn"]) ? ""
 tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 	localStorage["tiamblia.auto_spawn"] = value
+	return
 
 options["Clear Auto-Save"] = ->
 	localStorage.removeItem("Skele2D World")
 	alert "Cleared Skele2D World. Refresh the page to start over."
+	return
 skele2d_folder.add(options, "Clear Auto-Save")
 
 terrain_optimized = false
@@ -258,6 +265,7 @@ do animate = ->
 				welcome.style.pointerEvents = "none"
 				welcome.addEventListener "transitionend", ->
 					welcome.remove()
+					return
 
 	canvas.width = innerWidth unless canvas.width is innerWidth
 	canvas.height = innerHeight unless canvas.height is innerHeight
@@ -332,12 +340,16 @@ do animate = ->
 	# A little tool to randomize entities by pressing 'R'
 	if editor.editing and keyboard.wasJustPressed("KeyR")
 		if editor.selected_entities.length
-			editor.undoable -> randomize_entities(editor.selected_entities)
+			editor.undoable ->
+				randomize_entities(editor.selected_entities)
+				return
 		else
 			class_names = ((try localStorage["tiamblia.auto_spawn"]) or "").split(",")
 			new_entities = world.entities.filter((entity) -> entity.constructor.name not in class_names)
 			if new_entities.length isnt world.entities.length
-				editor.undoable -> world.entities = new_entities
+				editor.undoable ->
+					world.entities = new_entities
+					return
 
 	# Toggle development UI with backtick/tilde (`/~)
 	if keyboard.wasJustPressed("Backquote")
@@ -347,3 +359,4 @@ do animate = ->
 	keyboard.resetForNextStep()
 
 	stats.end()
+	return

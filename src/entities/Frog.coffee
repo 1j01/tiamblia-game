@@ -46,6 +46,7 @@ module.exports = class Frog extends SimpleActor
 		@move_y = 0
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
+		return
 	
 	draw: (ctx)->
 		ctx.save()
@@ -57,3 +58,4 @@ module.exports = class Frog extends SimpleActor
 		ctx.arc(@width/2,@height,@height/2,TAU/2,TAU,false)
 		ctx.fill()
 		ctx.restore()
+		return

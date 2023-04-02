@@ -83,6 +83,7 @@ module.exports = class GranddaddyLonglegs extends Entity
 		@structure.stepLayout({gravity: 0.5, collision})
 		@structure.stepLayout() for [0..10]
 		@structure.stepLayout({collision}) for [0..4]
+		return
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
@@ -99,3 +100,4 @@ module.exports = class GranddaddyLonglegs extends Entity
 		ctx.arc(0, 0, 10, 0, TAU)
 		ctx.fillStyle = "#2c1c0a" #"#C15723" #"brown"
 		ctx.fill()
+		return

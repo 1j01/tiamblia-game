@@ -10,13 +10,16 @@ off_angle = 0
 module.exports = window.enable_arrow_test_scene = ->
 	addEventListener "mousemove", (e) ->
 		off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2)
+		return
 
 	addEventListener "mousedown", (e) ->
 		if e.button is 1 # middle click
 			window.create_arrow_test_scene()
+		return
 	
 	window.create_arrow_test_scene()
 	# setTimeout window.create_arrow_test_scene, 1000
+	return
 
 module.exports = window.create_arrow_test_scene = ->
 
@@ -51,7 +54,7 @@ module.exports = window.create_arrow_test_scene = ->
 			arrows.push(arrow)
 	
 	world.entities.push(arrows...)
-		
+	return
 
 window.create_arrow_volley = ({x = 0, y = 0, angle_min = -Math.PI*3/4, angle_max = -Math.PI/4, speed_min = 5, speed_max = 20, count = 100}={}) ->
 	world = window.the_world
@@ -72,3 +75,4 @@ window.create_arrow_volley = ({x = 0, y = 0, angle_min = -Math.PI*3/4, angle_max
 		)
 		arrows.push(arrow)
 	world.entities.push(arrows...)
+	return

@@ -132,3 +132,5 @@ module.exports = class SimpleActor extends Entity
 		# 
 		# if @grounded and @jump
 		# 	@vy = -Math.sqrt(2 * gravity * @jump_height)
+
+		return

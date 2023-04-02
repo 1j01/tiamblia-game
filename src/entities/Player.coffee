@@ -33,6 +33,7 @@ addEventListener "mousemove", (e) ->
 		gamepad_aiming = false
 		mouse_detect_from.x = e.clientX
 		mouse_detect_from.y = e.clientY
+	return
 
 module.exports = class Player extends SimpleActor
 	addEntityClass(@)
@@ -643,7 +644,9 @@ module.exports = class Player extends SimpleActor
 		@simulate_hair(world)
 
 		@prev_real_facing_x = @real_facing_x
-	
+
+		return
+
 	simulate_hair: (world)->
 		{head, neck} = @structure.points
 		head_angle = Math.atan2(head.y - neck.y, head.x - neck.x)
@@ -705,7 +708,9 @@ module.exports = class Player extends SimpleActor
 					point.vy = point.y - point.prev_y
 
 			@hair_initialized = true
-	
+
+		return
+
 	draw: (ctx, view)->
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
@@ -831,3 +836,5 @@ module.exports = class Player extends SimpleActor
 		# ctx.lineTo(100 * Math.cos(@ground_angle), 100 * Math.sin(@ground_angle))
 		# ctx.strokeStyle = "red"
 		# ctx.stroke()
+
+		return

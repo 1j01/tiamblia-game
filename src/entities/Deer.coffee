@@ -56,6 +56,7 @@ module.exports = class Deer extends SimpleActor
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
+		return
 	
 	draw: (ctx)->
 		@dir_p=-1 if @dir < -0.3
@@ -113,3 +114,5 @@ module.exports = class Deer extends SimpleActor
 		ctx.fillRect(@width/-2,@height/-1,@width,@height*3/4)
 
 		ctx.restore()
+
+		return

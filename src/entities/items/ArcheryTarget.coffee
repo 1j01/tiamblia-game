@@ -18,6 +18,7 @@ module.exports = class ArcheryTarget extends Entity
 	
 	initLayout: ->
 		@structure.points.b.y += 100
+		return
 	
 	draw: (ctx)->
 		{a, b} = @structure.points
@@ -37,3 +38,4 @@ module.exports = class ArcheryTarget extends Entity
 			ctx.fillStyle = color
 			ctx.fill()
 		ctx.restore()
+		return

@@ -6,11 +6,12 @@ addEventListener "keyup", (e)-> delete keys[e.code]
 
 keyboard =
 	wasJustPressed: (code)->
-		keys[code]? and not prev_keys[code]?
+		return keys[code]? and not prev_keys[code]?
 	isHeld: (code)->
-		keys[code]?
+		return keys[code]?
 	resetForNextStep: ->
 		prev_keys = {}
 		prev_keys[k] = v for k, v of keys
+		return
 
 module.exports = keyboard

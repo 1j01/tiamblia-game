@@ -27,7 +27,7 @@ module.exports = class GrassyTerrain extends Terrain
 					y <= point.y <= y + height
 				)
 					contains_any_points = yes
-			contains_any_points
+			return contains_any_points
 		
 		rect_is_empty = (x, y, width, height)=>
 			center_point = {x: @x + x + width/2, y: @y + y + height/2}
@@ -152,3 +152,5 @@ module.exports = class GrassyTerrain extends Terrain
 			)
 		ctx.strokeStyle = @color_light
 		ctx.stroke()
+
+		return

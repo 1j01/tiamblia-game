@@ -49,6 +49,7 @@ module.exports = class Butterfly extends SimpleActor
 		@flap=Math.cos(@t+=0.5)
 		# run SimpleActor physics, which uses @move_x and @jump
 		# super(world)
+		return
 	
 	draw: (ctx)->
 		ctx.beginPath()
@@ -73,3 +74,5 @@ module.exports = class Butterfly extends SimpleActor
 		@flap_timer=-1 if @flap_timer < 0
 		@flap+=@flap_timer/20
 		@flap+=(-@flap-0.1)*0.1
+
+		return

@@ -66,6 +66,7 @@ module.exports = class Water extends Terrain
 				radius: Math.random() * 2 #(2 + Math.min(2, Math.abs(velocity_y/3)))
 				life: Math.random() * 100 + 10
 			})
+		return
 
 	step: ->
 		neighboring = []
@@ -123,6 +124,7 @@ module.exports = class Water extends Terrain
 			# (but that would obviously be worthless, and only confuse the code)
 			if bubble.life <= 0
 				@bubbles.splice(@bubbles.indexOf(bubble), 1)
+		return
 
 	draw: (ctx, view)->
 		wave_center_y = @min_y
@@ -205,6 +207,8 @@ module.exports = class Water extends Terrain
 		ctx.restore()
 
 		@draw_bubbles(ctx, view)
+
+		return
 	
 	draw_bubbles: (ctx, view)->
 		for bubble in @bubbles
@@ -219,4 +223,5 @@ module.exports = class Water extends Terrain
 			ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
 			ctx.fill()
 			ctx.restore()
+		return
 

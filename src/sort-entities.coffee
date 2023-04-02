@@ -122,6 +122,7 @@ module.exports = sort_entities = (world)->
 		console.log "Sort changed"
 		console.log "Before: #{before_sort.map((e) -> e.constructor.name).join(", ")}"
 		console.log "After: #{world.entities.map((e) -> e.constructor.name).join(", ")}"
+	return
 
 # topological_sort = (array, comparator) ->
 # 	# Create an empty dictionary to hold the graph.

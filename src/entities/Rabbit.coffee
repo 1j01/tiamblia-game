@@ -61,9 +61,11 @@ module.exports = class Rabbit extends SimpleActor
 		@smoothed_facing_x += (@facing_x - @smoothed_facing_x) / 5
 
 		@stepLayout()
+		return
 
 	initLayout: ->
 		@stepLayout()
+		return
 
 	stepLayout: ->
 		# Align skeleton to the body
@@ -71,6 +73,7 @@ module.exports = class Rabbit extends SimpleActor
 		@structure.points.head.y = @height * 0.5
 		@structure.points.body.x = @width/2 - @facing_x * @width/2
 		@structure.points.body.y = @height
+		return
 	
 	draw: (ctx)->
 		ctx.save() # body center transform
@@ -115,3 +118,4 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,TAU,false) # tail
 		ctx.fill()
 		ctx.restore() # end body center transform
+		return

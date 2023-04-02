@@ -14,3 +14,4 @@ module.exports = class Rock extends Terrain
 		ctx.closePath()
 		ctx.fillStyle = "#63625F"
 		ctx.fill()
+		return

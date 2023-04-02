@@ -41,3 +41,4 @@ module.exports = class Cloud extends Entity
 				false
 			)
 			ctx.fill()
+		return

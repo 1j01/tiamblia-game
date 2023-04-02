@@ -39,9 +39,11 @@ module.exports = class Bow extends Entity
 	initLayout: ->
 		@structure.points.serving.x -= @fistmele
 		@layout()
+		return
 	
 	step: (world)->
 		@layout()
+		return
 	
 	layout: ->
 		{top, bottom, grip, serving} = @structure.points
@@ -51,6 +53,7 @@ module.exports = class Bow extends Entity
 		top.y = grip.y + @height/2 * Math.sin(bow_angle) - @fistmele * Math.cos(bow_angle)
 		bottom.x = grip.x - @height/2 * Math.cos(bow_angle) - @fistmele * Math.sin(-bow_angle)
 		bottom.y = grip.y - @height/2 * Math.sin(bow_angle) - @fistmele * Math.cos(bow_angle)
+		return
 	
 	draw: (ctx)->
 		{top, bottom, grip, serving} = @structure.points
@@ -92,3 +95,4 @@ module.exports = class Bow extends Entity
 		
 		ctx.restore()
 		ctx.restore()
+		return

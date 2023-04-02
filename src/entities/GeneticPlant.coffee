@@ -80,6 +80,7 @@ module.exports = class GeneticPlant extends Tree
 			length: @dna.trunk_length_min + Math.random() * @dna.trunk_length_range
 			angle: -TAU/4
 		})
+		return
 
 	fromJSON: (def) ->
 		super(def)
@@ -87,6 +88,7 @@ module.exports = class GeneticPlant extends Tree
 		# using Entity.fromJSON with just the class name and dna property
 		if def.dna and not def.structure
 			@init()
+		return
 
 	random: ->
 		# Cached random values for determinism at runtime, not needed during initialization

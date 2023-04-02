@@ -14,7 +14,7 @@ module.exports = class SavannaTreeA extends Tree
 		leaf.scale_y = 1
 		leaf.color = "#627318" #"#363D1B"
 		leaf.is_leaf = true
-		leaf
+		return leaf
 	
 	draw: (ctx)->
 		for segment_name, segment of @structure.segments
@@ -37,3 +37,4 @@ module.exports = class SavannaTreeA extends Tree
 			ctx.fillStyle = leaf.color
 			ctx.fill()
 			ctx.restore()
+		return
