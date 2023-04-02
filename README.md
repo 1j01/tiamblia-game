@@ -47,3 +47,8 @@ To be clear, the parts are all working together right now, it's just the boundar
 
 When pulling new changes from Git, run `npm install` again in case there are new or updated dependencies.
 (You don't need to if `package-lock.json` hasn't changed.)
+
+## Deployment
+
+`npm run deploy` will build the project and deploy it to GitHub Pages.
+It will check first that skele2d isn't npm-linked, with a `predeploy` script. This requires bash.
