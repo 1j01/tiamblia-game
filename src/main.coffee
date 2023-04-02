@@ -240,11 +240,22 @@ last_selected_entity = null
 # so we have to do this hack to integrate with the undo system.
 # Another way might be with a Proxy, might be cleaner.
 # This is debounced because it's called a lot while dragging controllers.
+# `undoable()` will save, but if we're debouncing it, we need to save manually.
 last_setValue_call = -Infinity
+save_timeout = null
+ms_between_undos = 300
+ms_idle_before_saving = ms_between_undos * 2
 old_Controller_setValue = Controller::setValue
 Controller::setValue = (value) ->
-	if @object instanceof Entity and performance.now() - last_setValue_call > 300
-		the_editor.undoable =>
+	if @object instanceof Entity
+		clearTimeout(save_timeout)
+		save_timeout = setTimeout =>
+			the_editor.save()
+		, ms_idle_before_saving
+		if performance.now() - last_setValue_call > ms_between_undos
+			the_editor.undoable =>
+				old_Controller_setValue.call(@, value)
+		else
 			old_Controller_setValue.call(@, value)
 	else
 		old_Controller_setValue.call(@, value)
