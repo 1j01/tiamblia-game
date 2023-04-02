@@ -29,8 +29,10 @@ module.exports = class World
 
 	fromJSON: (def)->
 		# ------------- DON'T PANIC -------------
-		# Format versioning is easy!
-		# The extensive comments and error handling are to help you learn.
+		# File format versioning is easy!
+		# The long comments below and error handling are to help you learn.
+		# (And because I like to be thorough.)
+		# It's not a complicated process.
 		# ---------------------------------------
 
 		if def.format isnt World.format
