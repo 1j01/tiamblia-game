@@ -286,11 +286,7 @@ module.exports = class World
 				delete old_terrain_entity.intangible
 				delete old_terrain_entity.intangible_because_optimized
 		
-		# I was exempting water because 1. it's transparent, so overlapping polygons will not avoid rendering artifacts,
-		# and 2. it renders reflections using drawImage, which is expensive,
-		# and 3. it's not solid, so some collision checks will be skipped anyway.
-		# But only 3. still applies. If I want to make an ocean, I can remove the exemption.
-		for old_terrain_entity in old_terrain_entities when old_terrain_entity not instanceof Water
+		for old_terrain_entity in old_terrain_entities
 			# TODO: prevent optimization if there's not many points
 			old_terrain_entity.intangible = true
 			old_terrain_entity.intangible_because_optimized = true
