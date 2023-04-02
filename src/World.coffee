@@ -282,7 +282,10 @@ module.exports = class World
 			else
 				bbox = entity.bbox()
 			bx1 = Math.floor(bbox.x/bucket_width)
-			bx2 = Math.floor((bbox.x+bbox.width)/bucket_width)
+			bx2 = (bbox.x+bbox.width)/bucket_width
+			if bx2 is Math.floor(bx2)
+				bx2--
+			bx2 = Math.floor(bx2)
 			for bxi in [bx1..bx2]
 				# one dimensional bucketization
 				# @collision_buckets[bxi] ?= []
@@ -290,7 +293,10 @@ module.exports = class World
 				# two dimensional bucketization
 				@collision_buckets[bxi] ?= {}
 				by1 = Math.floor(bbox.y/bucket_height)
-				by2 = Math.floor((bbox.y+bbox.height)/bucket_height)
+				by2 = (bbox.y+bbox.height)/bucket_height
+				if by2 is Math.floor(by2)
+					by2--
+				by2 = Math.floor(by2)
 				for byi in [by1..by2]
 					@collision_buckets[bxi][byi] ?= []
 					@collision_buckets[bxi][byi].push(entity)
