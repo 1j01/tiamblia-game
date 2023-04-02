@@ -287,7 +287,15 @@ module.exports = class World
 				delete old_terrain_entity.intangible_because_optimized
 		
 		for old_terrain_entity in old_terrain_entities
-			# TODO: prevent optimization if there's not many points
+			# Prevent optimization if there's not many points
+			# This could be more nuanced, taking into account the area vs bounding box,
+			# or the number of buckets the polygon would occupy,
+			# or the ratio of the bounding box area to the sum of bounding boxes of split polygons.
+			# We don't need to optimize optimizeTerrain itself much because it's only run once,
+			# so running the splitting algorithm small polygons is not a big deal.
+			min_points = 10
+			if Object.keys(old_terrain_entity.structure.points).length < min_points
+				continue
 
 			old_points = Object.values(old_terrain_entity.structure.points)
 			old_points_flat = []
