@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 4
+	@formatVersion: 5
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -100,6 +100,30 @@ module.exports = class World
 				if ent_def.holding_arrow
 					ent_def.holding_arrows.push ent_def.holding_arrow
 				delete ent_def.holding_arrow
+		if def.formatVersion is 4
+			def.formatVersion = 5
+			# `intangible` was never meant to be serialized if it was `intangible_because_optimized`
+			# and this caused a problem with the auto spawn dev tool 
+			for ent_def in def.entities
+				if ent_def.intangible_because_optimized
+					delete ent_def.intangible
+					delete ent_def.intangible_because_optimized
+		# TODO: remove cruft from serialization, then enable this as an upgrade step
+		# # These other things were just cruft, not causing problems
+		# # GrassyTerrain: grass_tiles
+		# for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
+		# 	delete ent_def.grass_tiles
+		# # Player: reaching_for_segment, ...
+		# for ent_def in def.entities when ent_def._class_ is "Player"
+		# 	delete ent_def.reaching_for_segment
+		# # Terrain: width, max_height, left, right, bottom
+		# # These are pretty silly to serialize, since we can use the bounding box
+		# for ent_def in def.entities when ent_def._class_ is "Terrain"
+		# 	delete ent_def.width
+		# 	delete ent_def.max_height
+		# 	delete ent_def.left
+		# 	delete ent_def.right
+		# 	delete ent_def.bottom
 
 		# Note: it's a good idea to bump the version number when adding new features
 		# that won't be supported by older versions, even without upgrade code,

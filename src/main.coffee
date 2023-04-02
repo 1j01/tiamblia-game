@@ -34,6 +34,16 @@ require "./entities/items/ArcheryTarget.coffee"
 
 TAU = Math.PI * 2
 
+# Hack Terrain serialization to skip intangibility from terrain optimization
+# TODO: Skele2D shouldn't own Terrain class
+old_terrain_toJSON = Terrain::toJSON
+Terrain::toJSON = ->
+	def = old_terrain_toJSON.call(@)
+	if def.intangible_because_optimized
+		delete def.intangible_because_optimized
+		delete def.intangible
+	return def
+
 world = new World
 
 window.the_world = world
@@ -245,11 +255,6 @@ do animate = ->
 				ent.y = bottom_of_world
 
 				# Fix auto-spawn sometimes leaving entities at the bottom of the world
-				# TODO: prevent `intangible` and `intangible_because_optimized` from being serialized, IFF `intangible_because_optimized`
-				# The only reason I haven't done that yet is because Skele2D owns Terrain,
-				# and I haven't committed yet to improving the API boundary between the game and Skele2D.
-				world.optimizeTerrain() unless terrain_optimized
-				terrain_optimized = true
 				world.updateCollisionBuckets()
 
 				while world.collision(ent)
