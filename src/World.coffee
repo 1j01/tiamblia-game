@@ -134,6 +134,11 @@ module.exports = class World
 		# who should be using the latest version of the game anyway,
 		# so it's not as important, and I'm not bothering, basically as a policy.
 		# The worst it can do is cause some confusion when stepping back in git history.
+		
+		# Also note: if you forget to upgrade something,
+		# you should generally add a new version upgrade at the end.
+		# If you add it earlier, it won't be run on worlds that were saved
+		# with newer versions of the game.
 
 		# Handle format versions newer than supported
 		# This could offer a choice to the user to try to load the world anyway, but that's not implemented.
