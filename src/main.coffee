@@ -239,13 +239,16 @@ last_selected_entity = null
 # lil-gui.js doesn't support an onBeforeChange callback,
 # so we have to do this hack to integrate with the undo system.
 # Another way might be with a Proxy, might be cleaner.
+# This is debounced because it's called a lot while dragging controllers.
+last_setValue_call = -Infinity
 old_Controller_setValue = Controller::setValue
 Controller::setValue = (value) ->
-	if @object instanceof Entity
+	if @object instanceof Entity and performance.now() - last_setValue_call > 300
 		the_editor.undoable =>
 			old_Controller_setValue.call(@, value)
 	else
 		old_Controller_setValue.call(@, value)
+	last_setValue_call = performance.now()
 
 terrain_optimized = false
 
