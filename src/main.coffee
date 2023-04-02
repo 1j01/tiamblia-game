@@ -238,10 +238,19 @@ do animate = ->
 	try
 		for class_name in class_names
 			min_instances = 10
-			if world.entities.filter((entity) -> entity.constructor.name is class_name).length < min_instances
+			existing_instances = world.entities.filter((entity) -> entity.constructor.name is class_name).length
+			if existing_instances < min_instances
 				ent = Entity.fromJSON({_class_: class_name})
 				ent.x = Math.random() * 1000
 				ent.y = bottom_of_world
+
+				# Fix auto-spawn sometimes leaving entities at the bottom of the world
+				# world.updateCollisionBuckets() # doesn't help
+				if not world.collision(ent)
+					console.log "Not auto-spawning #{class_name} (yet) because there's no ground at", ent.x, ent.y
+					console.log "Total entities:", world.entities.length, "Terrain entities:", world.entities.filter((entity) -> entity instanceof Terrain).length, "#{class_name} entities:", existing_instances
+					break
+
 				while world.collision(ent)
 					ent.y -= 3
 				world.entities.push(ent)
