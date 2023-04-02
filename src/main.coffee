@@ -258,7 +258,7 @@ do animate = ->
 			if existing_instances < min_instances
 				ent = Entity.fromJSON({_class_: class_name})
 				ent.x = Math.random() * 1000
-				ent.y = bottom_of_world
+				ent.y = bottom_of_world - 1
 
 				# Fix auto-spawn sometimes leaving entities at the bottom of the world
 				world.updateCollisionBuckets()
@@ -271,7 +271,7 @@ do animate = ->
 					for i in [0...3]
 						clone = Entity.fromJSON({_class_: class_name, dna: JSON.parse(JSON.stringify(ent.dna))})
 						clone.x = ent.x + 100 * (i + 1)
-						clone.y = bottom_of_world
+						clone.y = bottom_of_world - 1
 						while world.collision(clone)
 							clone.y -= 3
 						world.entities.push(clone)
