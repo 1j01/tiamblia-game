@@ -215,6 +215,7 @@ option_names_to_keys = {
 options = {}
 tiamblia_folder = gui.addFolder("Tiamblia")
 skele2d_folder = gui.addFolder("Skele2D")
+entity_folder = gui.addFolder("Selected Entity")
 for name, storage_key of option_names_to_keys then do (name, storage_key) ->
 	options[name] = (try localStorage[storage_key]) is "true"
 	folder = if storage_key.indexOf("Skele2D") is 0 then skele2d_folder else tiamblia_folder
@@ -234,6 +235,8 @@ options["Clear Auto-Save"] = ->
 	return
 skele2d_folder.add(options, "Clear Auto-Save")
 
+last_selected_entity = null
+
 terrain_optimized = false
 
 do animate = ->
@@ -246,6 +249,18 @@ do animate = ->
 	stats.begin()
 	requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
+
+	selected_entity = editor.selected_entities[0]
+	if last_selected_entity isnt selected_entity
+		last_selected_entity = selected_entity
+		for child in entity_folder.children by -1
+			child.destroy()
+		for key, value of selected_entity
+			if typeof value in ["number", "string", "boolean"]
+				if key.match(/color/i)
+					entity_folder.addColor(selected_entity, key)
+				else
+					entity_folder.add(selected_entity, key)
 
 	# Spawn entities for dev purposes, especially for flora.
 	# This helps to see the space of randomization.
