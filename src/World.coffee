@@ -410,16 +410,7 @@ module.exports = class World
 			bucket_x_max = Math.floor(bbox_max_world.x/bucket_width)
 			polygons = [old_points_flat]
 			for bucket_x in [bucket_x_min..bucket_x_max]
-				# Cut in the middle of the bucket, because the terrain
-				# will land into two buckets anyways, right?
-				# I did this when I was overlapping the polygons for rendering and to
-				# prevent caterpillars from crawling through the cracks.
-				# With the overlap, the polygons would fit into 3 buckets,
-				# even though they were only slightly wider than 1 bucket,
-				# unless offset by more than the overlap.
-				# The overlap is no longer needed, and I've removed it.
-				# TODO: can I fit the polygons into 1 bucket now?
-				cut_x = bucket_x * bucket_width + bucket_width/2 - old_terrain_entity.x
+				cut_x = bucket_x * bucket_width - old_terrain_entity.x
 
 				# PolyK has some problems when the cut line is exactly on a point.
 				# So we'll offset it a small amount.
