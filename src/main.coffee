@@ -46,8 +46,6 @@ Terrain::toJSON = ->
 
 world = new World
 
-window.the_world = world
-
 terrain = new SavannaGrass
 world.entities.push terrain
 terrain.x = 0
@@ -66,7 +64,6 @@ view_smoothness = 7
 mouse = new Mouse(canvas)
 
 editor = new Editor(world, view, view_to, canvas, mouse)
-window.the_editor = editor
 
 welcome = document.getElementById("welcome")
 disable_welcome_message = (try localStorage["tiamblia.disable_welcome_message"]) is "true"
@@ -184,10 +181,16 @@ redraw = ->
 	ctx.restore()
 	return
 
-# This is useful when debugging.
+# For console access and quick hacks, some useful globals,
+# named to avoid accidental use in game code.
+# the_editor.selected_entities is often useful
+window.the_world = world
+window.the_entity_classes = (require "skele2d").entityClasses
+window.the_editor = editor
+Object.defineProperty(window, "the_player", get: => world.entities.filter((e)=> e instanceof Player)[0])
 # You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
 # and then see how entities are changed while stepping through simulation code.
-# (In Chrome this doesn't work, the canvas doesn't update, as of 2023.)
+# (This trick doesn't work in Chrome, as of 2023. The canvas doesn't update.)
 window.do_a_redraw = redraw
 
 gamepad_start_prev = false
@@ -195,7 +198,7 @@ gamepad_start_prev = false
 stats = new Stats
 stats.showPanel(0)
 
-# UI for development features, accessible with '~'/'`' key
+# UI for development features, accessible with the backtick/tilde (`/~) key
 gui = new GUI()
 gui.hide()
 option_names_to_keys = {
