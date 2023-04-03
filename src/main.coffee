@@ -287,6 +287,9 @@ do animate = ->
 					entity_folder.addColor(selected_entity, key)
 				else
 					entity_folder.add(selected_entity, key)
+	if gui._visible
+		for controller in entity_folder.controllersRecursive()
+			controller.updateDisplay()
 
 	# Spawn entities for dev purposes, especially for flora.
 	# This helps to see the space of randomization.
