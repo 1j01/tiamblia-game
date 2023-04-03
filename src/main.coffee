@@ -287,7 +287,10 @@ do animate = ->
 					entity_folder.addColor(selected_entity, key)
 				else
 					entity_folder.add(selected_entity, key)
-		entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
+		if selected_entity
+			entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
+		else
+			entity_folder.title("Selected Entity")
 	if gui._visible
 		for controller in entity_folder.controllersRecursive()
 			controller.updateDisplay()
