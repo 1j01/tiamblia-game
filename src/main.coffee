@@ -187,7 +187,12 @@ redraw = ->
 window.the_world = world
 window.the_entity_classes = (require "skele2d").entityClasses
 window.the_editor = editor
-Object.defineProperty(window, "the_player", get: => world.entities.filter((e)=> e instanceof Player)[0])
+Object.defineProperty(window, "the_player", get: =>
+	players = world.entities.filter((e)=> e instanceof Player)
+	if players.length > 1
+		console.warn "There's more than one player in the world!"
+	return players[0]
+)
 # You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
 # and then see how entities are changed while stepping through simulation code.
 # (This trick doesn't work in Chrome, as of 2023. The canvas doesn't update.)
