@@ -18,7 +18,7 @@ module.exports = class Cloud extends Entity
 
 	toJSON: ->
 		def = {}
-		def[k] = v for k, v of @ when k isnt "simplex"
+		def[k] = v for k, v of @ when k not in ["simplex", "intangible"]
 		def
 	
 	step: (world)->
