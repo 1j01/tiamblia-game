@@ -296,15 +296,22 @@ module.exports = class World
 					@collision_buckets[bxi][byi].push(entity)
 		return
 
-	drawCollisionBuckets: (ctx, view)->
+	drawCollisionBuckets: (ctx, view, mouse_world)->
+		# the_editor.selected_entities = []
 		ctx.lineWidth = 1 / view.scale
 		ctx.strokeStyle = "#FFFF00"
 		ctx.fillStyle = "rgba(255, 255, 0, 0.2)"
+		mouse_b_x = Math.floor(mouse_world.x/bucket_width)
+		mouse_b_y = Math.floor(mouse_world.y/bucket_height)
 		for b_x, bucket_column of @collision_buckets
 			for b_y, entities of bucket_column
+				b_x = Number(b_x)
+				b_y = Number(b_y)
 				# ctx.strokeRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
 				# ctx.fillRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
 				ctx.fillRect(b_x*bucket_width+1/view.scale, b_y*bucket_height+1/view.scale, bucket_width-2/view.scale, bucket_height-2/view.scale)
+				# continue if b_x isnt mouse_b_x or b_y isnt mouse_b_y
+				# continue if b_x <= mouse_b_x-1 or b_x >= mouse_b_x+1 or b_y <= mouse_b_y-1 or b_y >= mouse_b_y+1 # works without Number()
 				for entity in entities
 					# bbox = entity.bbox()
 					# ctx.fillRect(bbox.x, bbox.y, bbox.width, bbox.height)
@@ -316,6 +323,21 @@ module.exports = class World
 					ctx.moveTo(entity_cx, entity_cy)
 					ctx.lineTo(b_x*bucket_width+bucket_width/2, b_y*bucket_height+bucket_height/2)
 					ctx.stroke()
+					# Highlight the entity
+					if b_x is mouse_b_x and b_y is mouse_b_y
+						ctx.save()
+						ctx.strokeStyle = "rgba(255, 255, 0, 0.5)"
+						ctx.lineWidth = 10 / view.scale
+						ctx.lineCap = "round"
+						ctx.beginPath()
+						ctx.translate(entity.x, entity.y)
+						for segment_name, segment of entity.structure.segments
+							ctx.moveTo(segment.a.x, segment.a.y)
+							ctx.lineTo(segment.b.x, segment.b.y)
+						ctx.stroke()
+						ctx.restore()
+
+				# the_editor.selected_entities = entities
 		return
 
 	drawCollisionHeatMap: (ctx, view)->

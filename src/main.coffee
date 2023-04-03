@@ -155,7 +155,8 @@ redraw = ->
 	show_collision_buckets = (try localStorage["tiamblia.show_collision_buckets"]) is "true"
 	if show_collision_buckets
 		world.updateCollisionBuckets() if editor.editing # normally happens while simulating
-		world.drawCollisionBuckets(ctx, view)
+		mouse_world = view.toWorld(mouse)
+		world.drawCollisionBuckets(ctx, view, mouse_world)
 	
 	count_hit_tests = (try localStorage["tiamblia.count_hit_tests"]) is "true"
 	if count_hit_tests
