@@ -396,6 +396,15 @@ module.exports = class World
 				continue
 
 			old_points = Object.values(old_terrain_entity.structure.points)
+
+			# First offset the points so that the entity's position is (0, 0).
+			# This is important for precisely aligning the polygons with the buckets.
+			for point in old_points
+				point.x += old_terrain_entity.x
+				point.y += old_terrain_entity.y
+			old_terrain_entity.x = 0
+			old_terrain_entity.y = 0
+
 			old_points_flat = []
 			for point in old_points
 				old_points_flat.push(point.x, point.y)
@@ -421,6 +430,7 @@ module.exports = class World
 				# so that git diffs are small and there's less confusion,
 				# such as unknowingly saving the player with an idle animation just about to start.
 				epsilon = 0.0001
+				offset = 0
 				while polygons.some((polygon_coords) =>
 					polygon_coords.some((coord, i) =>
 						i % 2 is 0 and Math.abs(coord - cut_x) < epsilon
@@ -430,9 +440,17 @@ module.exports = class World
 					# for a minimal offset, but it still got TypeError: i0 is undefined.
 					# cut_x = nextAfter(cut_x, Infinity)
 					cut_x += epsilon
+					offset += epsilon
 				try
 					# TODO: non-arbitrary y values, or at least bigger
 					polygons = polygons.flatMap((polygon) -> PolyK.Slice(polygon, cut_x, -99999, cut_x, 99999))
+					# Bring points within offset+epsilon of the cut line back to the cut line.
+					# This way it can still fit cleanly into the collision buckets despite the offset kludge.
+					for polygon in polygons
+						for i in [0...polygon.length] by 2
+							# if Math.abs(polygon[i] - cut_x) < offset+epsilon
+							if Math.abs(polygon[i] - cut_x) < 0.1
+								polygon[i] = cut_x
 				catch error
 					console.warn "Error optimizing terrain:", error
 
