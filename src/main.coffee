@@ -281,12 +281,13 @@ do animate = ->
 		last_selected_entity = selected_entity
 		for child in entity_folder.children by -1
 			child.destroy()
-		for key, value of selected_entity
+		for key, value of selected_entity when key isnt "_class_"
 			if typeof value in ["number", "string", "boolean"]
 				if key.match(/color/i)
 					entity_folder.addColor(selected_entity, key)
 				else
 					entity_folder.add(selected_entity, key)
+		entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
 	if gui._visible
 		for controller in entity_folder.controllersRecursive()
 			controller.updateDisplay()
