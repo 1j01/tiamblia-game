@@ -4,14 +4,12 @@
 /***/ 378:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Entity, Terrain, Water, World, closestPointOnLineSegment, distanceToLineSegment,
+var Entity, Terrain, World, closestPointOnLineSegment, distanceToLineSegment,
   indexOf = [].indexOf;
 
 Entity = __webpack_require__(293);
 
 Terrain = __webpack_require__(891);
-
-Water = __webpack_require__(469);
 
 ({distanceToLineSegment} = (__webpack_require__(505).helpers));
 
@@ -39,7 +37,7 @@ closestPointOnLineSegment = function(point, a, b) {
 };
 
 module.exports = World = (function() {
-  var bucket_height, bucket_width;
+  var bucket_height, bucket_width, count_hit_tests;
 
   class World {
     constructor() {
@@ -58,7 +56,13 @@ module.exports = World = (function() {
     }
 
     fromJSON(def) {
-      var average_x, average_y, dot_or_bracket, ent_def, entity, i, j, k, l, len, len1, len2, len3, len4, len5, m, n, o, point_def, point_name, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, search_object, top_key, top_value;
+      var average_x, average_y, dot_or_bracket, ent_def, entity, i, j, k, l, len, len1, len2, len3, len4, len5, len6, m, n, o, p, point_def, point_name, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, search_object, top_key, top_value, upgrading_from_version;
+      // ------------- DON'T PANIC -------------
+      // File format versioning is easy!
+      // The long comments below and error handling are to help you learn.
+      // (And because I like to be thorough.)
+      // It's not a complicated process.
+      // ---------------------------------------
       if (def.format !== World.format) {
         if (def.format) {
           throw new Error(`Expected format to be \"${World.format}\", got ${def.format}`);
@@ -79,6 +83,7 @@ module.exports = World = (function() {
       // 	There is no automatic upgrade path for versions older than #{minimum_supported_version}."
 
       // Upgrade old versions of the format
+      upgrading_from_version = def.formatVersion;
       if (!def.formatVersion) {
         if (!(def.entities instanceof Array)) {
           throw new Error(`Expected entities to be an array, got ${def.entities}`);
@@ -169,6 +174,36 @@ module.exports = World = (function() {
           delete ent_def.holding_arrow;
         }
       }
+      if (def.formatVersion === 4) {
+        def.formatVersion = 5;
+        ref6 = def.entities;
+        // `intangible` was never meant to be serialized if it was `intangible_because_optimized`
+        // and this caused a problem with the auto spawn dev tool 
+        for (n = 0, len4 = ref6.length; n < len4; n++) {
+          ent_def = ref6[n];
+          if (ent_def.intangible_because_optimized) {
+            delete ent_def.intangible;
+            delete ent_def.intangible_because_optimized;
+          }
+        }
+      }
+      // TODO: remove cruft from serialization, then enable this as an upgrade step
+      // # These other things were just cruft, not causing problems
+      // # GrassyTerrain: grass_tiles
+      // for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
+      // 	delete ent_def.grass_tiles
+      // # Player: reaching_for_segment, ...
+      // for ent_def in def.entities when ent_def._class_ is "Player"
+      // 	delete ent_def.reaching_for_segment
+      // # Terrain: width, max_height, left, right, bottom
+      // # These are pretty silly to serialize, since we can use the bounding box
+      // for ent_def in def.entities when ent_def._class_ is "Terrain"
+      // 	delete ent_def.width
+      // 	delete ent_def.max_height
+      // 	delete ent_def.left
+      // 	delete ent_def.right
+      // 	delete ent_def.bottom
+
       // Note: it's a good idea to bump the version number when adding new features
       // that won't be supported by older versions, even without upgrade code,
       // but this is more important for applications, or games with level sharing.
@@ -178,9 +213,32 @@ module.exports = World = (function() {
       // so it's not as important, and I'm not bothering, basically as a policy.
       // The worst it can do is cause some confusion when stepping back in git history.
 
+      // Also note: if you forget to upgrade something,
+      // you should generally add a new version upgrade at the end.
+      // If you add it earlier, it won't be run on worlds that were saved
+      // with newer versions of the game.
+
+      // Similarly, if an upgrade step is buggy, it may be better to add a new one
+      // at the end that fixes the damage, rather than fixing the buggy one,
+      // if only so there is only one upgrade path to the current version,
+      // because theoretically an intermediate upgrade could rely on the broken data,
+      // although it's unlikely.
+      // That said, if information is lost in the buggy upgrade,
+      // it's probably better to fix the buggy one.
+      // If there is ever a scenario where an intermediate upgrade step
+      // relies on the broken data, AND information is lost in the buggy upgrade,
+      // one could extract data before the buggy upgrade, and then reapply it
+      // after the buggy upgrade, if available, but it still will be lost in files
+      // saved with the buggy upgrade, so you have to deal with both cases.
+      // Or you could update the intermediate upgrade steps to handle both cases.
+      // It just depends which is easier, and easier to get right.
+
       // Handle format versions newer than supported
       // This could offer a choice to the user to try to load the world anyway, but that's not implemented.
       if (def.formatVersion > World.formatVersion) {
+        if (def.formatVersion > upgrading_from_version) {
+          throw new Error(`You forgot to update World.formatVersion to ${def.formatVersion} when adding an upgrade step!`);
+        }
         throw new Error(`The format version ${def.formatVersion} is too new for this version of the game.`);
       }
       // Just in case the format version format changes to a string like X.Y.Z or something
@@ -192,9 +250,9 @@ module.exports = World = (function() {
       if (!(def.entities instanceof Array)) {
         throw new Error(`Expected entities to be an array, got ${def.entities}`);
       }
-      ref6 = def.entities;
-      for (i = n = 0, len4 = ref6.length; n < len4; i = ++n) {
-        ent_def = ref6[i];
+      ref7 = def.entities;
+      for (i = o = 0, len5 = ref7.length; o < len5; i = ++o) {
+        ent_def = ref7[i];
         if (typeof ent_def._class_ !== "string") {
           throw new Error(`Expected entities[${i}]._class_ to be a string, got ${ent_def._class_}`);
         }
@@ -250,18 +308,18 @@ module.exports = World = (function() {
       
       // Initialize the world
       this.entities = (function() {
-        var len5, o, ref7, results;
-        ref7 = def.entities;
+        var len6, p, ref8, results;
+        ref8 = def.entities;
         results = [];
-        for (o = 0, len5 = ref7.length; o < len5; o++) {
-          ent_def = ref7[o];
+        for (p = 0, len6 = ref8.length; p < len6; p++) {
+          ent_def = ref8[p];
           results.push(Entity.fromJSON(ent_def));
         }
         return results;
       })();
-      ref7 = this.entities;
-      for (o = 0, len5 = ref7.length; o < len5; o++) {
-        entity = ref7[o];
+      ref8 = this.entities;
+      for (p = 0, len6 = ref8.length; p < len6; p++) {
+        entity = ref8[p];
         entity.resolveReferences(this);
       }
     }
@@ -385,15 +443,15 @@ module.exports = World = (function() {
     }
 
     drawCollisionBuckets(ctx, view) {
-      var b_x, b_y, bucket_row, entities, entity, entity_bbox, entity_cx, entity_cy, j, len, ref;
+      var b_x, b_y, bucket_column, entities, entity, entity_bbox, entity_cx, entity_cy, j, len, ref;
       ctx.lineWidth = 1 / view.scale;
       ctx.strokeStyle = "#FFFF00";
       ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
       ref = this.collision_buckets;
       for (b_x in ref) {
-        bucket_row = ref[b_x];
-        for (b_y in bucket_row) {
-          entities = bucket_row[b_y];
+        bucket_column = ref[b_x];
+        for (b_y in bucket_column) {
+          entities = bucket_column[b_y];
           // ctx.strokeRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
           // ctx.fillRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
           ctx.fillRect(b_x * bucket_width + 1 / view.scale, b_y * bucket_height + 1 / view.scale, bucket_width - 2 / view.scale, bucket_height - 2 / view.scale);
@@ -414,8 +472,32 @@ module.exports = World = (function() {
       }
     }
 
+    drawCollisionHeatMap(ctx, view) {
+      var b_x, b_y, bucket_column, hit_test_count, ref;
+      ctx.lineWidth = 1 / view.scale;
+      ctx.strokeStyle = "#FF0000";
+      ref = this.hit_test_counts;
+      for (b_x in ref) {
+        bucket_column = ref[b_x];
+        for (b_y in bucket_column) {
+          hit_test_count = bucket_column[b_y];
+          if (hit_test_count > 0) {
+            // The stroke is useful to see low hit counts
+            ctx.strokeRect(b_x * bucket_width, b_y * bucket_height, bucket_width, bucket_height);
+            ctx.fillStyle = `rgba(255, 0, 0, ${hit_test_count / 100})`;
+            // ctx.fillRect(b_x*bucket_width, b_y*bucket_height, bucket_width, bucket_height)
+            ctx.fillRect(b_x * bucket_width + 1 / view.scale, b_y * bucket_height + 1 / view.scale, bucket_width - 2 / view.scale, bucket_height - 2 / view.scale);
+          }
+        }
+      }
+    }
+
+    resetCollisionHeatMap() {
+      this.hit_test_counts = {};
+    }
+
     optimizeTerrain() {
-      var bbox_max_world, bbox_min_world, bucket_x, bucket_x_max, bucket_x_min, cut_x, ent_def, epsilon, error, i, j, k, l, len, len1, len2, len3, m, n, new_terrain_entity, o, old_points, old_points_flat, old_terrain_entities, old_terrain_entity, point, polygons, ref, ref1, ref2, sliced_points, sliced_points_flat;
+      var bbox_max_world, bbox_min_world, bucket_x, bucket_x_max, bucket_x_min, cut_x, ent_def, epsilon, error, i, j, k, l, len, len1, len2, len3, m, min_points, n, new_terrain_entity, o, old_points, old_points_flat, old_terrain_entities, old_terrain_entity, point, polygons, ref, ref1, ref2, sliced_points, sliced_points_flat;
       // Divides terrain into smaller polygons horizontally,
       // so it can fit into the collision buckets.
       // This happens at the start of the game.
@@ -440,9 +522,16 @@ module.exports = World = (function() {
       }
       for (k = 0, len1 = old_terrain_entities.length; k < len1; k++) {
         old_terrain_entity = old_terrain_entities[k];
-        // TODO: prevent optimization if there's not many points
-        old_terrain_entity.intangible = true;
-        old_terrain_entity.intangible_because_optimized = true;
+        // Prevent optimization if there's not many points
+        // This could be more nuanced, taking into account the area vs bounding box,
+        // or the number of buckets the polygon would occupy,
+        // or the ratio of the bounding box area to the sum of bounding boxes of split polygons.
+        // We don't need to optimize optimizeTerrain itself much because it's only run once,
+        // so running the splitting algorithm small polygons is not a big deal.
+        min_points = 10;
+        if (Object.keys(old_terrain_entity.structure.points).length < min_points) {
+          continue;
+        }
         old_points = Object.values(old_terrain_entity.structure.points);
         old_points_flat = [];
         for (l = 0, len2 = old_points.length; l < len2; l++) {
@@ -499,6 +588,11 @@ module.exports = World = (function() {
             console.warn("Error optimizing terrain:", error);
           }
         }
+        if (polygons.length === 1) {
+          continue;
+        }
+        old_terrain_entity.intangible = true;
+        old_terrain_entity.intangible_because_optimized = true;
         for (n = 0, len3 = polygons.length; n < len3; n++) {
           sliced_points_flat = polygons[n];
           sliced_points = [];
@@ -530,7 +624,7 @@ module.exports = World = (function() {
     }
 
     collision(point, {types = [Terrain], lineThickness = 5} = {}) {
-      var b_x, b_y, dist, entities, entity, j, k, len, len1, local_point, match, ref, ref1, ref2, ref3, segment, segment_name, type;
+      var b_x, b_y, base, base1, dist, entities, entity, j, k, len, len1, local_point, match, ref, ref1, ref2, ref3, segment, segment_name, type;
       // lineThickness doesn't apply to polygons like Terrain
       // also it's kind of a hack, because different entities could need different lineThicknesses
       // and different segments within an entity too
@@ -551,6 +645,18 @@ module.exports = World = (function() {
       b_x = Math.floor(point.x / bucket_width);
       b_y = Math.floor(point.y / bucket_height);
       entities = (ref = ((ref1 = this.collision_buckets[b_x]) != null ? ref1 : {})[b_y]) != null ? ref : [];
+      if (count_hit_tests) {
+        if (this.hit_test_counts == null) {
+          this.hit_test_counts = {};
+        }
+        if ((base = this.hit_test_counts)[b_x] == null) {
+          base[b_x] = {};
+        }
+        if ((base1 = this.hit_test_counts[b_x])[b_y] == null) {
+          base1[b_y] = 0;
+        }
+        this.hit_test_counts[b_x][b_y]++;
+      }
       for (j = 0, len = entities.length; j < len; j++) {
         entity = entities[j];
         if (typeof types === "function") {
@@ -652,11 +758,17 @@ module.exports = World = (function() {
 
   World.format = "Tiamblia World";
 
-  World.formatVersion = 4;
+  World.formatVersion = 5;
 
   bucket_width = 100;
 
   bucket_height = 100;
+
+  count_hit_tests = ((function() {
+    try {
+      return localStorage["tiamblia.count_hit_tests"];
+    } catch (error1) {}
+  })()) === "true";
 
   return World;
 
@@ -680,14 +792,14 @@ off_angle = 0;
 
 module.exports = window.enable_arrow_test_scene = function() {
   addEventListener("mousemove", function(e) {
-    return off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2);
+    off_angle = Math.atan2(e.clientY - innerHeight / 2, e.clientX - innerWidth / 2);
   });
   addEventListener("mousedown", function(e) {
     if (e.button === 1) { // middle click
-      return window.create_arrow_test_scene();
+      window.create_arrow_test_scene();
     }
   });
-  return window.create_arrow_test_scene();
+  window.create_arrow_test_scene();
 };
 
 // setTimeout window.create_arrow_test_scene, 1000
@@ -719,7 +831,7 @@ module.exports = window.create_arrow_test_scene = function() {
       arrows.push(arrow);
     }
   }
-  return world.entities.push(...arrows);
+  world.entities.push(...arrows);
 };
 
 window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 4, angle_max = -Math.PI / 4, speed_min = 5, speed_max = 20, count = 100} = {}) {
@@ -739,7 +851,7 @@ window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 
     arrow.setVelocity(arrow_speed * Math.cos(arrow_angle), arrow_speed * Math.sin(arrow_angle));
     arrows.push(arrow);
   }
-  return world.entities.push(...arrows);
+  world.entities.push(...arrows);
 };
 
 
@@ -806,7 +918,7 @@ module.exports = Bird = (function() {
       this.vy += 0.1;
       this.x += this.vx;
       this.y += this.vy;
-      return this.flap_timer--;
+      this.flap_timer--;
     }
 
     // run SimpleActor physics, which uses @move_x and @jump
@@ -825,7 +937,7 @@ module.exports = Bird = (function() {
         this.flap_timer = -1;
       }
       this.flap += this.flap_timer / 20;
-      return this.flap += (-this.flap - 0.1) * 0.1;
+      this.flap += (-this.flap - 0.1) * 0.1;
     }
 
   };
@@ -905,7 +1017,7 @@ module.exports = Butterfly = (function() {
       this.vy += 0.01;
       this.x += this.vx;
       this.y += this.vy;
-      return this.flap = Math.cos(this.t += 0.5);
+      this.flap = Math.cos(this.t += 0.5);
     }
 
     // run SimpleActor physics, which uses @move_x and @jump
@@ -932,7 +1044,7 @@ module.exports = Butterfly = (function() {
         this.flap_timer = -1;
       }
       this.flap += this.flap_timer / 20;
-      return this.flap += (-this.flap - 0.1) * 0.1;
+      this.flap += (-this.flap - 0.1) * 0.1;
     }
 
   };
@@ -1336,28 +1448,24 @@ module.exports = Caterpillar = (function() {
     }
 
     initLayout() {
-      var ref, ref1, results, segment, segment_name;
+      var ref, ref1, segment, segment_name;
       ref = this.structure.segments;
       for (segment_name in ref) {
         segment = ref[segment_name];
         segment.b.x = segment.a.x + segment.length;
       }
       ref1 = this.structure.segments;
-      results = [];
       for (segment_name in ref1) {
         segment = ref1[segment_name];
         if (segment.b.name.match(/foot/)) {
           segment.b.x = segment.a.x;
-          results.push(segment.b.y = segment.a.y + segment.length);
-        } else {
-          results.push(void 0);
+          segment.b.y = segment.a.y + segment.length;
         }
       }
-      return results;
     }
 
     step(world) {
-      var angle_offset, angle_offsets, attachment_entity, attachment_hit_space, attachment_local, attachment_world, candidates, closest_point_in_hit_space, closest_point_in_world, closest_point_local, closest_segment, collision, cos_leg_angle, crawl_speed, delta_length, delta_x, delta_y, diff, dist_to_previous, fixity, foot, foot_list, foot_offset, forward_vector, ground_angle, heading, hit, i, j, k, l, leg_angle, leg_length, leg_vector, len, len1, len2, len3, len4, len5, len6, len7, len8, lift_foot, m, max_angle_offset, n, n_angle_offsets_per_dir, next_part, o, other_part, other_part_index, otherwise_attached, p, part, part_in_world, part_index, part_world, parts_list, prev_part, projected, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, relative_angle, results, s, segment, segment_name, segments_list, side, sin_leg_angle, t, target_min_length, test_point_in_hit_space, test_point_world, too_far_under_water, towards_ground, towards_ground_angle, towards_ground_length, u, w, water;
+      var angle_offset, angle_offsets, attachment_entity, attachment_hit_space, attachment_local, attachment_world, candidates, closest_point_in_hit_space, closest_point_in_world, closest_point_local, closest_segment, collision, cos_leg_angle, crawl_speed, delta_length, delta_x, delta_y, diff, dist_to_previous, fixity, foot, foot_list, foot_offset, forward_vector, ground_angle, heading, hit, i, j, k, l, leg_angle, leg_length, leg_vector, len, len1, len10, len2, len3, len4, len5, len6, len7, len8, len9, lift_foot, m, max_angle_offset, n, n_angle_offsets_per_dir, next_part, o, other_part, other_part_index, otherwise_attached, p, part, part_in_world, part_index, part_world, parts_list, prev_part, projected, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, relative_angle, s, segment, segment_name, segments_list, side, sin_leg_angle, t, target_min_length, test_point_in_hit_space, test_point_world, too_far_under_water, towards_ground, towards_ground_angle, towards_ground_length, u, w, water, x, y;
       parts_list = Object.values(this.structure.points).filter((part) => {
         return part.name.match(/head|part/);
       });
@@ -1662,7 +1770,6 @@ module.exports = Caterpillar = (function() {
         part.towards_ground_smoothed.y += (((ref4 = (ref5 = part.towards_ground) != null ? ref5.y : void 0) != null ? ref4 : 0) - part.towards_ground_smoothed.y) * 0.1;
       }
 // constrain distances
-      results = [];
       for (i = u = 0; u < 4; i = ++u) {
         for (part_index = w = 0, len8 = parts_list.length; w < len8; part_index = ++w) {
           part = parts_list[part_index];
@@ -1713,50 +1820,37 @@ module.exports = Caterpillar = (function() {
             console.warn("diff is not finite, for Caterpillar distance constraint");
           }
         }
-        results.push((function() {
-          var len9, results1, x;
 // self-collision
-          results1 = [];
-          for (part_index = x = 0, len9 = parts_list.length; x < len9; part_index = ++x) {
-            part = parts_list[part_index];
-            results1.push((function() {
-              var len10, results2, y;
+        for (part_index = x = 0, len9 = parts_list.length; x < len9; part_index = ++x) {
+          part = parts_list[part_index];
 //when part_index isnt other_part_index
-              results2 = [];
-              for (other_part_index = y = 0, len10 = parts_list.length; y < len10; other_part_index = ++y) {
-                other_part = parts_list[other_part_index];
-                if (Math.abs(part_index - other_part_index) < 3) {
-                  continue;
-                }
-                delta_x = part.x - other_part.x;
-                delta_y = part.y - other_part.y;
-                delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
-                target_min_length = part.radius + other_part.radius;
-                if (delta_length < target_min_length) {
-                  diff = (delta_length - target_min_length) / delta_length;
-                  if (isFinite(diff)) {
-                    part.x -= delta_x * 0.5 * diff;
-                    part.y -= delta_y * 0.5 * diff;
-                    other_part.x += delta_x * 0.5 * diff;
-                    other_part.y += delta_y * 0.5 * diff;
-                    part.vx -= delta_x * 0.5 * diff;
-                    part.vy -= delta_y * 0.5 * diff;
-                    other_part.vx += delta_x * 0.5 * diff;
-                    results2.push(other_part.vy += delta_y * 0.5 * diff);
-                  } else {
-                    results2.push(console.warn("diff is not finite, for Caterpillar self-collision constraint"));
-                  }
-                } else {
-                  results2.push(void 0);
-                }
+          for (other_part_index = y = 0, len10 = parts_list.length; y < len10; other_part_index = ++y) {
+            other_part = parts_list[other_part_index];
+            if (Math.abs(part_index - other_part_index) < 3) {
+              continue;
+            }
+            delta_x = part.x - other_part.x;
+            delta_y = part.y - other_part.y;
+            delta_length = Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+            target_min_length = part.radius + other_part.radius;
+            if (delta_length < target_min_length) {
+              diff = (delta_length - target_min_length) / delta_length;
+              if (isFinite(diff)) {
+                part.x -= delta_x * 0.5 * diff;
+                part.y -= delta_y * 0.5 * diff;
+                other_part.x += delta_x * 0.5 * diff;
+                other_part.y += delta_y * 0.5 * diff;
+                part.vx -= delta_x * 0.5 * diff;
+                part.vy -= delta_y * 0.5 * diff;
+                other_part.vx += delta_x * 0.5 * diff;
+                other_part.vy += delta_y * 0.5 * diff;
+              } else {
+                console.warn("diff is not finite, for Caterpillar self-collision constraint");
               }
-              return results2;
-            })());
+            }
           }
-          return results1;
-        })());
+        }
       }
-      return results;
     }
 
     accumulate_angular_constraint_forces(a, b, pivot, relative_angle) {
@@ -1830,11 +1924,11 @@ module.exports = Caterpillar = (function() {
       a.x = old_a.x;
       a.y = old_a.y;
       b.x = old_b.x;
-      return b.y = old_b.y;
+      b.y = old_b.y;
     }
 
     draw(ctx, view, world) {
-      var attachment_local, color, entity, j, k, len, part, part_index, parts_list, ref, ref1, results, segment, segment_name;
+      var attachment_local, color, entity, j, k, len, part, part_index, parts_list, ref, ref1, segment, segment_name;
       color = "green";
       ref = this.structure.segments;
       for (segment_name in ref) {
@@ -1885,7 +1979,6 @@ module.exports = Caterpillar = (function() {
         }
       }
       ref1 = Object.values(this.structure.points);
-      results = [];
       for (k = 0, len = ref1.length; k < len; k++) {
         part = ref1[k];
         if (((function() {
@@ -1913,15 +2006,10 @@ module.exports = Caterpillar = (function() {
             ctx.lineWidth = 1;
             ctx.lineCap = "round";
             ctx.strokeStyle = "lime";
-            results.push(ctx.stroke());
-          } else {
-            results.push(void 0);
+            ctx.stroke();
           }
-        } else {
-          results.push(void 0);
         }
       }
-      return results;
     }
 
   };
@@ -1980,17 +2068,15 @@ module.exports = Cloud = (function() {
     // if @x > terrain.width+300
     // 	@poof=true
     draw(ctx) {
-      var i, j, results;
+      var i, j;
       ctx.fillStyle = "#A9D9FA";
-      results = [];
       for (i = j = 0; j <= 20; i = ++j) {
         ctx.beginPath();
         // @simplex.noise2D(68+i,@t)*-TAU,
         // @simplex.noise2D(20+i,@t)*TAU,
         ctx.arc(this.simplex.noise2D(5 + i, this.t + i * 3.92) * this.width + this.width / 2, this.simplex.noise2D(26 + i, this.t + i * 2.576) * this.height + this.height / 2, Math.abs(this.simplex.noise2D(73 + i * 5.2, this.t + i) * this.width), 0, TAU, false);
-        results.push(ctx.fill());
+        ctx.fill();
       }
-      return results;
     }
 
   };
@@ -2076,7 +2162,7 @@ module.exports = Deer = (function() {
       this.move_x = this.dir * 0.2;
       this.move_y = -1;
       // run SimpleActor physics, which uses @move_x and @jump
-      return super.step(world);
+      super.step(world);
     }
 
     draw(ctx) {
@@ -2134,7 +2220,7 @@ module.exports = Deer = (function() {
       
       // body
       ctx.fillRect(this.width / -2, this.height / -1, this.width, this.height * 3 / 4);
-      return ctx.restore();
+      ctx.restore();
     }
 
   };
@@ -2207,7 +2293,7 @@ module.exports = Frog = (function() {
       this.move_x = this.dir * 0.2;
       this.move_y = 0;
       // run SimpleActor physics, which uses @move_x and @jump
-      return super.step(world);
+      super.step(world);
     }
 
     draw(ctx) {
@@ -2219,7 +2305,7 @@ module.exports = Frog = (function() {
       ctx.arc(this.width / 2, this.height / 4 - this.vy, this.height / 2, 0, TAU / 2, false);
       ctx.arc(this.width / 2, this.height, this.height / 2, TAU / 2, TAU, false);
       ctx.fill();
-      return ctx.restore();
+      ctx.restore();
     }
 
   };
@@ -2309,15 +2395,9 @@ module.exports = GeneticPlant = (function() {
     }
 
     init() {
-      var k;
-      for (k in this.structure.points) {
-        delete this.structure.points[k];
-      }
-      for (k in this.structure.segments) {
-        delete this.structure.segments[k];
-      }
+      this.structure.clear();
       this.structure.addPoint("base"); // Tree does this but we have to redo it because we deleted the points
-      return this.branch({
+      this.branch({
         from: "base",
         to: "1",
         juice: Math.random() * 10 + 5,
@@ -2332,7 +2412,7 @@ module.exports = GeneticPlant = (function() {
       // in main.coffee I have a dev helper that creates clones with the same DNA
       // using Entity.fromJSON with just the class name and dna property
       if (def.dna && !def.structure) {
-        return this.init();
+        this.init();
       }
     }
 
@@ -2564,7 +2644,7 @@ module.exports = GranddaddyLonglegs = (function() {
     }
 
     step(world) {
-      var collision, current_foot_point_name, current_foot_pos, dist, foot_point, force, i, j, k, l, leg, len, next_foot_pos, point_name, ref, ref1, results, segment_name;
+      var collision, current_foot_point_name, current_foot_pos, dist, foot_point, force, i, j, k, l, leg, len, next_foot_pos, point_name, ref, ref1, segment_name;
       if (this.toWorld(this.structure.points[this.foot_point_names[0]]).y > 400) {
         return;
       }
@@ -2617,11 +2697,9 @@ module.exports = GranddaddyLonglegs = (function() {
       for (var k = 0; k <= 10; k++) {
         this.structure.stepLayout();
       }
-      results = [];
       for (var l = 0; l <= 4; l++) {
-        results.push(this.structure.stepLayout({collision}));
+        this.structure.stepLayout({collision});
       }
-      return results;
     }
 
     draw(ctx) {
@@ -2642,7 +2720,7 @@ module.exports = GranddaddyLonglegs = (function() {
       ctx.scale(1, 0.7);
       ctx.arc(0, 0, 10, 0, TAU);
       ctx.fillStyle = "#2c1c0a"; //"#C15723" #"brown"
-      return ctx.fill();
+      ctx.fill();
     }
 
   };
@@ -2726,7 +2804,7 @@ addEventListener("mousemove", function(e) {
   if (Math.hypot(e.clientX - mouse_detect_from.x, e.clientY - mouse_detect_from.y) > mouse_detect_threshold) {
     gamepad_aiming = false;
     mouse_detect_from.x = e.clientX;
-    return mouse_detect_from.y = e.clientY;
+    mouse_detect_from.y = e.clientY;
   }
 });
 
@@ -3400,11 +3478,11 @@ module.exports = Player = (function() {
       
       // Hair physics
       this.simulate_hair(world);
-      return this.prev_real_facing_x = this.real_facing_x;
+      this.prev_real_facing_x = this.real_facing_x;
     }
 
     simulate_hair(world) {
-      var a, air_friction, back_x, back_y, buoyancy, delta_length, delta_x, delta_y, diff, fluid_friction, gravity, hair_index, hair_iterations, hair_length, head, head_angle, head_global, i, j, k, l, len, len1, len2, len3, len4, m, n, neck, o, p, point, points, ref, ref1, ref2, ref3, ref4, results, seg_length, submerged, water_friction;
+      var a, air_friction, back_x, back_y, buoyancy, delta_length, delta_x, delta_y, diff, fluid_friction, gravity, hair_index, hair_iterations, hair_length, head, head_angle, head_global, i, j, k, l, len, len1, len2, len3, len4, m, n, neck, o, p, point, points, ref, ref1, ref2, ref3, ref4, seg_length, submerged, water_friction;
       ({head, neck} = this.structure.points);
       head_angle = Math.atan2(head.y - neck.y, head.x - neck.x);
       head_global = this.toWorld(head);
@@ -3412,7 +3490,6 @@ module.exports = Player = (function() {
       air_friction = 0.2;
       water_friction = 0.2;
       hair_length = 30;
-      results = [];
       for (j = 0, ref = hair_iterations; (0 <= ref ? j <= ref : j >= ref); 0 <= ref ? j++ : j--) {
         ref1 = this.hairs;
         for (k = 0, len = ref1.length; k < len; k++) {
@@ -3479,9 +3556,8 @@ module.exports = Player = (function() {
             point.vy = point.y - point.prev_y;
           }
         }
-        results.push(this.hair_initialized = true);
+        this.hair_initialized = true;
       }
-      return results;
     }
 
     draw(ctx, view) {
@@ -3625,7 +3701,7 @@ module.exports = Player = (function() {
         ctx.fill();
       }
       // /head
-      return ctx.restore();
+      ctx.restore();
     }
 
   };
@@ -3855,11 +3931,11 @@ module.exports = Rabbit = (function() {
       // run SimpleActor physics, which uses @move_x and @jump
       super.step(world);
       this.smoothed_facing_x += (this.facing_x - this.smoothed_facing_x) / 5;
-      return this.stepLayout();
+      this.stepLayout();
     }
 
     initLayout() {
-      return this.stepLayout();
+      this.stepLayout();
     }
 
     stepLayout() {
@@ -3867,7 +3943,7 @@ module.exports = Rabbit = (function() {
       this.structure.points.head.x = this.width / 2 + this.facing_x * this.width / 2;
       this.structure.points.head.y = this.height * 0.5;
       this.structure.points.body.x = this.width / 2 - this.facing_x * this.width / 2;
-      return this.structure.points.body.y = this.height;
+      this.structure.points.body.y = this.height;
     }
 
     draw(ctx) {
@@ -3914,7 +3990,7 @@ module.exports = Rabbit = (function() {
       ctx.beginPath();
       ctx.arc(-this.smoothed_facing_x * this.width / 2, 0, this.height / 5, 0, TAU, false); // tail
       ctx.fill();
-      return ctx.restore(); // end body center transform
+      ctx.restore(); // end body center transform
     }
 
   };
@@ -3961,7 +4037,7 @@ module.exports = SavannaTreeA = (function() {
     }
 
     draw(ctx) {
-      var leaf, point_name, ref, ref1, results, segment, segment_name;
+      var leaf, point_name, ref, ref1, segment, segment_name;
       ref = this.structure.segments;
       for (segment_name in ref) {
         segment = ref[segment_name];
@@ -3974,7 +4050,6 @@ module.exports = SavannaTreeA = (function() {
         ctx.stroke();
       }
       ref1 = this.structure.points;
-      results = [];
       for (point_name in ref1) {
         leaf = ref1[point_name];
         if (!leaf.is_leaf) {
@@ -3989,9 +4064,8 @@ module.exports = SavannaTreeA = (function() {
         ctx.arc(0, 0, leaf.radius, 0, TAU);
         ctx.fillStyle = leaf.color;
         ctx.fill();
-        results.push(ctx.restore());
+        ctx.restore();
       }
-      return results;
     }
 
   };
@@ -4380,7 +4454,7 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
       ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
     }
     ctx.strokeStyle = this.color_light;
-    return ctx.stroke();
+    ctx.stroke();
   }
 
 };
@@ -4461,7 +4535,7 @@ module.exports = SimpleActor = (function() {
 
     // console.log "no ground found"
     step(world) {
-      var go, more_submerged, move_x, move_y, resolution, results;
+      var go, more_submerged, move_x, move_y, resolution;
       if (this.y > 400) {
         return;
       }
@@ -4561,7 +4635,6 @@ module.exports = SimpleActor = (function() {
       if (Math.abs(move_y) > resolution) {
         this.grounded = false;
       }
-      results = [];
       while (Math.abs(move_y) > resolution) {
         go = Math.sign(move_y) * resolution;
         if (world.collision({
@@ -4582,9 +4655,8 @@ module.exports = SimpleActor = (function() {
           break;
         }
         move_y -= go;
-        results.push(this.y += go);
+        this.y += go;
       }
-      return results;
     }
 
   };
@@ -4719,7 +4791,7 @@ module.exports = Tree = class Tree extends Entity {
         angle: angle - Math.random() * TAU / 8
       });
       if (Math.random() < 0.2) {
-        return this.branch({
+        this.branch({
           from: name,
           to: `${to}-c`,
           juice,
@@ -4728,7 +4800,7 @@ module.exports = Tree = class Tree extends Entity {
       }
     } else {
       leaf_point = this.structure.points[name];
-      return this.leaf(leaf_point);
+      this.leaf(leaf_point);
     }
   }
 
@@ -4742,7 +4814,7 @@ module.exports = Tree = class Tree extends Entity {
   }
 
   draw(ctx) {
-    var leaf, point_name, ref, ref1, results, segment, segment_name;
+    var leaf, point_name, ref, ref1, segment, segment_name;
     ref = this.structure.segments;
     for (segment_name in ref) {
       segment = ref[segment_name];
@@ -4755,16 +4827,14 @@ module.exports = Tree = class Tree extends Entity {
       ctx.stroke();
     }
     ref1 = this.structure.points;
-    results = [];
     for (point_name in ref1) {
       leaf = ref1[point_name];
       if (!leaf.is_leaf) {
         continue;
       }
       ctx.beginPath();
-      results.push(ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU));
+      ctx.arc(leaf.x, leaf.y, leaf.radius, 0, TAU);
     }
-    return results;
   }
 
 };
@@ -4807,7 +4877,7 @@ module.exports = ArcheryTarget = (function() {
     }
 
     initLayout() {
-      return this.structure.points.b.y += 100;
+      this.structure.points.b.y += 100;
     }
 
     draw(ctx) {
@@ -4833,7 +4903,7 @@ module.exports = ArcheryTarget = (function() {
         ctx.fillStyle = color;
         ctx.fill();
       }
-      return ctx.restore();
+      ctx.restore();
     }
 
   };
@@ -5511,11 +5581,11 @@ module.exports = Bow = (function() {
 
     initLayout() {
       this.structure.points.serving.x -= this.fistmele;
-      return this.layout();
+      this.layout();
     }
 
     step(world) {
-      return this.layout();
+      this.layout();
     }
 
     layout() {
@@ -5525,7 +5595,7 @@ module.exports = Bow = (function() {
       top.x = grip.x + this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
       top.y = grip.y + this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
       bottom.x = grip.x - this.height / 2 * Math.cos(bow_angle) - this.fistmele * Math.sin(-bow_angle);
-      return bottom.y = grip.y - this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
+      bottom.y = grip.y - this.height / 2 * Math.sin(bow_angle) - this.fistmele * Math.cos(bow_angle);
     }
 
     draw(ctx) {
@@ -5562,7 +5632,7 @@ module.exports = Bow = (function() {
       ctx.fillStyle = "#AB7939";
       ctx.fill();
       ctx.restore();
-      return ctx.restore();
+      ctx.restore();
     }
 
   };
@@ -5631,7 +5701,7 @@ module.exports = Rock = (function() {
       }
       ctx.closePath();
       ctx.fillStyle = "#63625F";
-      return ctx.fill();
+      ctx.fill();
     }
 
   };
@@ -5755,15 +5825,14 @@ module.exports = Water = (function() {
     }
 
     makeWaves(world_pos, radius = 5, velocity_y = 5) {
-      var angle, i, j, local_pos, ref, ref1, ref2, ref3, results, x;
+      var angle, i, j, local_pos, ref, ref1, ref2, ref3, x;
       local_pos = this.fromWorld(world_pos);
       for (x = i = ref = Math.round(local_pos.x - radius), ref1 = Math.round(local_pos.x + radius); (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
         this.waves_vy[x - this.min_x] = velocity_y * (1 - Math.abs(x - local_pos.x) / radius);
       }
-      results = [];
       for (j = 0, ref2 = Math.min(20, radius * Math.abs(velocity_y)); (0 <= ref2 ? j <= ref2 : j >= ref2); 0 <= ref2 ? j++ : j--) {
         angle = Math.random() * Math.PI * 2;
-        results.push(this.bubbles.push({
+        this.bubbles.push({
           x: local_pos.x + Math.cos(angle) * radius,
           // y: local_pos.y + Math.sin(angle) * radius
           y: ((ref3 = this.waves_vy[Math.round(local_pos.x) - this.min_x]) != null ? ref3 : 0) + this.min_y,
@@ -5771,13 +5840,12 @@ module.exports = Water = (function() {
           vy: Math.sin(angle) * (1 * Math.random()) + Math.min(10, Math.abs(velocity_y / 3)),
           radius: Math.random() * 2, //(2 + Math.min(2, Math.abs(velocity_y/3)))
           life: Math.random() * 100 + 10
-        }));
+        });
       }
-      return results;
     }
 
     step() {
-      var bubble, closest_distance, closest_point, closest_segment, dist, i, j, k, neighboring, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, results, segment, segment_name, waves_x, x;
+      var bubble, closest_distance, closest_point, closest_segment, dist, i, j, k, neighboring, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, segment, segment_name, waves_x, x;
       neighboring = [];
       for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
         neighboring[x - this.min_x] = ((ref2 = this.waves_y[x - this.min_x - 1]) != null ? ref2 : 0) + ((ref3 = this.waves_y[x - this.min_x + 1]) != null ? ref3 : 0);
@@ -5789,7 +5857,6 @@ module.exports = Water = (function() {
         this.waves_y[x - this.min_x] += this.waves_vy[x - this.min_x];
       }
       ref6 = this.bubbles;
-      results = [];
       for (k = ref6.length - 1; k >= 0; k += -1) {
         bubble = ref6[k];
         bubble.life -= 1;
@@ -5847,12 +5914,9 @@ module.exports = Water = (function() {
         // (haha it could if I sorted the bubbles by life)
         // (but that would obviously be worthless, and only confuse the code)
         if (bubble.life <= 0) {
-          results.push(this.bubbles.splice(this.bubbles.indexOf(bubble), 1));
-        } else {
-          results.push(void 0);
+          this.bubbles.splice(this.bubbles.indexOf(bubble), 1);
         }
       }
-      return results;
     }
 
     draw(ctx, view) {
@@ -5937,13 +6001,12 @@ module.exports = Water = (function() {
       // This could be fixed by drawing the game world in a larger canvas and then
       // cropping it to the normal viewport size.
       ctx.restore();
-      return this.draw_bubbles(ctx, view);
+      this.draw_bubbles(ctx, view);
     }
 
     draw_bubbles(ctx, view) {
-      var bubble, i, len, ref, results;
+      var bubble, i, len, ref;
       ref = this.bubbles;
-      results = [];
       for (i = 0, len = ref.length; i < len; i++) {
         bubble = ref[i];
         ctx.save();
@@ -5956,9 +6019,8 @@ module.exports = Water = (function() {
         // ctx.stroke()
         ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
         ctx.fill();
-        results.push(ctx.restore());
+        ctx.restore();
       }
-      return results;
     }
 
   };
@@ -5997,14 +6059,12 @@ keyboard = {
     return keys[code] != null;
   },
   resetForNextStep: function() {
-    var k, results, v;
+    var k, v;
     prev_keys = {};
-    results = [];
     for (k in keys) {
       v = keys[k];
-      results.push(prev_keys[k] = v);
+      prev_keys[k] = v;
     }
-    return results;
   }
 };
 
@@ -6240,7 +6300,7 @@ module.exports = sort_entities = function(world) {
     console.log(`Before: ${before_sort.map(function(e) {
       return e.constructor.name;
     }).join(", ")}`);
-    return console.log(`After: ${world.entities.map(function(e) {
+    console.log(`After: ${world.entities.map(function(e) {
       return e.constructor.name;
     }).join(", ")}`);
   }
@@ -9511,7 +9571,7 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{do
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-var CactusTree, Editor, Entity, GUI, GeneticPlant, Mouse, Player, SavannaGrass, Stats, TAU, Terrain, View, World, _fromJSON, animate, bottom_of_world, canvas, ctx, disable_welcome_message, e, editor, gamepad_start_prev, gui, keyboard, mouse, name, option_names_to_keys, options, randomize_entities, redraw, ref, skele2d_folder, sort_entities, stats, storage_key, terrain, terrain_optimized, tiamblia_folder, view, view_smoothness, view_to, welcome, world, world_loaded,
+var Controller, Editor, Entity, GUI, Mouse, Player, SavannaGrass, Stats, TAU, Terrain, View, World, _fromJSON, animate, bottom_of_world, canvas, ctx, disable_welcome_message, e, editor, entity_folder, gamepad_start_prev, gui, keyboard, last_selected_entity, last_undoable_time, mouse, ms_between_undos, ms_idle_before_saving, name, old_Controller_setValue, old_terrain_toJSON, option_names_to_keys, options, property_inspector_exclusions, randomize_entities, redraw, ref, save_timeout, skele2d_folder, sort_entities, stats, storage_key, terrain, terrain_optimized, tiamblia_folder, view, view_smoothness, view_to, welcome, world, world_loaded,
   indexOf = [].indexOf;
 
 Math.seedrandom("A world");
@@ -9520,7 +9580,7 @@ Math.seedrandom("A world");
 
 Stats = __webpack_require__(443);
 
-({GUI} = __webpack_require__(33));
+({GUI, Controller} = __webpack_require__(33));
 
 World = __webpack_require__(378);
 
@@ -9533,9 +9593,9 @@ randomize_entities = __webpack_require__(880);
 __webpack_require__(372);
 
 // require each entity to add it to the entity registry
-GeneticPlant = __webpack_require__(224);
+__webpack_require__(224);
 
-CactusTree = __webpack_require__(678);
+__webpack_require__(678);
 
 __webpack_require__(847);
 
@@ -9575,6 +9635,20 @@ __webpack_require__(233);
 
 TAU = Math.PI * 2;
 
+// Hack Terrain serialization to skip intangibility from terrain optimization
+// TODO: Skele2D shouldn't own Terrain class
+old_terrain_toJSON = Terrain.prototype.toJSON;
+
+Terrain.prototype.toJSON = function() {
+  var def;
+  def = old_terrain_toJSON.call(this);
+  if (def.intangible_because_optimized) {
+    delete def.intangible_because_optimized;
+    delete def.intangible;
+  }
+  return def;
+};
+
 world = new World();
 
 window.the_world = world;
@@ -9589,7 +9663,7 @@ terrain.y = 0;
 
 terrain.generate();
 
-bottom_of_world = 300;
+bottom_of_world = terrain.toWorld(terrain.structure.bbox_max).y;
 
 canvas = document.createElement("canvas");
 
@@ -9630,7 +9704,7 @@ if (disable_welcome_message) {
       editor.toggleEditing();
     }
     world.fromJSON = _fromJSON;
-    return world_loaded = true;
+    world_loaded = true;
   };
 }
 
@@ -9662,12 +9736,12 @@ setInterval(function() {
     // TODO: should probably only save if you pan/zoom
     localStorage.view_center_x = view.center_x;
     localStorage.view_center_y = view.center_y;
-    return localStorage.view_scale = view_to.scale;
+    localStorage.view_scale = view_to.scale;
   }
 }, 200);
 
 redraw = function() {
-  var debug_project_point_outside, entity, j, k, l, len, len1, len2, len3, m, mouse_world, point, points, projected, projected_point, ref, ref1, ref2, show_collision_buckets, show_terrain_polygons;
+  var count_hit_tests, debug_project_point_outside, entity, j, k, l, len, len1, len2, len3, m, mouse_world, point, points, projected, projected_point, ref, ref1, ref2, show_collision_buckets, show_terrain_polygons;
   world.drawBackground(ctx, view);
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -9742,6 +9816,15 @@ redraw = function() {
     }
     world.drawCollisionBuckets(ctx, view);
   }
+  count_hit_tests = ((function() {
+    try {
+      return localStorage["tiamblia.count_hit_tests"];
+    } catch (error1) {}
+  })()) === "true";
+  if (count_hit_tests) {
+    world.drawCollisionHeatMap(ctx, view);
+    world.resetCollisionHeatMap();
+  }
   debug_project_point_outside = ((function() {
     try {
       return localStorage["tiamblia.debug_project_point_outside"];
@@ -9768,7 +9851,7 @@ redraw = function() {
       ctx.stroke();
     }
   }
-  return ctx.restore();
+  ctx.restore();
 };
 
 // This is useful when debugging.
@@ -9796,6 +9879,7 @@ option_names_to_keys = {
   "Debug Arrow class": "tiamblia.debug_arrow",
   "Debug Terrain class": "tiamblia.debug_terrain",
   "Show collision buckets": "tiamblia.show_collision_buckets",
+  "Show hit tested buckets": "tiamblia.count_hit_tests",
   "Show point names": "Skele2D show names",
   "Show point indices": "Skele2D show indices",
   "Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world",
@@ -9808,6 +9892,8 @@ tiamblia_folder = gui.addFolder("Tiamblia");
 
 skele2d_folder = gui.addFolder("Skele2D");
 
+entity_folder = gui.addFolder("Selected Entity");
+
 for (name in option_names_to_keys) {
   storage_key = option_names_to_keys[name];
   (function(name, storage_key) {
@@ -9818,8 +9904,8 @@ for (name in option_names_to_keys) {
       } catch (error1) {}
     })()) === "true";
     folder = storage_key.indexOf("Skele2D") === 0 ? skele2d_folder : tiamblia_folder;
-    return folder.add(options, name).onChange(function(value) {
-      return localStorage[storage_key] = value;
+    folder.add(options, name).onChange(function(value) {
+      localStorage[storage_key] = value;
     });
   })(name, storage_key);
 }
@@ -9831,20 +9917,72 @@ options["Auto-spawn entities"] = (ref = ((function() {
 })())) != null ? ref : "";
 
 tiamblia_folder.add(options, "Auto-spawn entities").onChange(function(value) {
-  return localStorage["tiamblia.auto_spawn"] = value;
+  localStorage["tiamblia.auto_spawn"] = value;
 });
 
 options["Clear Auto-Save"] = function() {
   localStorage.removeItem("Skele2D World");
-  return alert("Cleared Skele2D World. Refresh the page to start over.");
+  alert("Cleared Skele2D World. Refresh the page to start over.");
 };
 
 skele2d_folder.add(options, "Clear Auto-Save");
 
+last_selected_entity = null;
+
+// lil-gui.js doesn't support an onBeforeChange callback,
+// so we have to do this hack to integrate with the undo system.
+// Another way might be with a Proxy, might be cleaner.
+// This is debounced because it's called a lot while dragging controllers.
+// `undoable()` will save, but if we're debouncing it, we need to save manually.
+last_undoable_time = -2e308;
+
+save_timeout = null;
+
+ms_between_undos = 300;
+
+ms_idle_before_saving = ms_between_undos * 2;
+
+old_Controller_setValue = Controller.prototype.setValue;
+
+Controller.prototype.setValue = function(value) {
+  var c, controller_edits_entity;
+  controller_edits_entity = false;
+  c = this;
+  while (c) {
+    if (c.object instanceof Entity) {
+      controller_edits_entity = true;
+      break;
+    }
+    c = c.parent;
+  }
+  // controller_edits_entity = @ in entity_folder.controllersRecursive() # alternative
+  if (controller_edits_entity) {
+    clearTimeout(save_timeout);
+    save_timeout = setTimeout(() => {
+      return the_editor.save();
+    }, ms_idle_before_saving);
+    if (performance.now() - last_undoable_time > ms_between_undos) {
+      the_editor.undoable(() => {
+        old_Controller_setValue.call(this, value);
+      });
+      last_undoable_time = performance.now();
+    } else {
+      old_Controller_setValue.call(this, value);
+    }
+  } else {
+    old_Controller_setValue.call(this, value);
+  }
+};
+
+// "waves" is old, it shouldn't be on the Water entity anymore
+// TODO: move this info into the respective entity classes
+// and maybe base it on serialization by default, but allow more properties to be excluded
+property_inspector_exclusions = ["_class_", "structure", "random_values", "simplex", "waves_y", "waves_vy", "bubbles", "waves"];
+
 terrain_optimized = false;
 
 (animate = function() {
-  var class_name, class_names, clone, ent, entity, error, gamepad, i, j, k, l, len, len1, len2, len3, m, min_instances, n, new_entities, player, ref1, ref2, ref3, ref4, ref5, show_stats;
+  var child, class_name, class_names, clone, controller, ent, entity, error, existing_instances, gamepad, i, j, k, l, len, len1, len2, len3, len4, m, make_controllers, min_instances, n, new_entities, o, p, player, ref1, ref2, ref3, ref4, ref5, ref6, ref7, selected_entity, show_stats;
   if (window.CRASHED) {
     return;
   }
@@ -9863,39 +10001,99 @@ terrain_optimized = false;
   stats.begin();
   requestAnimationFrame(animate);
   Math.seedrandom(performance.now());
+  selected_entity = editor.selected_entities[0];
+  if (last_selected_entity !== selected_entity) {
+    last_selected_entity = selected_entity;
+    ref1 = entity_folder.children;
+    for (j = ref1.length - 1; j >= 0; j += -1) {
+      child = ref1[j];
+      child.destroy();
+    }
+    make_controllers = function(object, folder) {
+      var array_folder, key, ref2, results, value;
+      results = [];
+      for (key in object) {
+        value = object[key];
+        if (indexOf.call(property_inspector_exclusions, key) < 0) {
+          if ((ref2 = typeof value) === "number" || ref2 === "string" || ref2 === "boolean") {
+            if (key.match(/color/i) && typeof value === "string") {
+              results.push(folder.addColor(object, key));
+            } else {
+              results.push(folder.add(object, key));
+            }
+          } else if (typeof value === "object" && value) {
+            if (value instanceof Array) {
+              if (value.length > 0) {
+                array_folder = folder.addFolder(key);
+                // for i in [0...value.length]
+                // 	# make_controllers(value[i], array_folder.addFolder("#{key}[#{i}]"))
+                // 	make_controllers({[i]: value[i]}, array_folder)
+                results.push(make_controllers(Object.assign({}, value), array_folder));
+              } else {
+                results.push(void 0);
+              }
+            } else if (value.constructor === Object) {
+              results.push(make_controllers(value, folder.addFolder(key)));
+            } else {
+              results.push(console.log(`Unknown type for ${key}: ${value.constructor.name}`));
+            }
+          } else {
+            results.push(console.log(`Unknown type for ${key}: ${typeof value}`));
+          }
+        }
+      }
+      return results;
+    };
+    make_controllers(selected_entity, entity_folder);
+    if (selected_entity) {
+      entity_folder.title(`Selected Entity (${selected_entity.constructor.name})`);
+    } else {
+      entity_folder.title("Selected Entity");
+    }
+  }
+  if (gui._visible) {
+    ref2 = entity_folder.controllersRecursive();
+    for (k = 0, len = ref2.length; k < len; k++) {
+      controller = ref2[k];
+      controller.updateDisplay();
+    }
+  }
   // Spawn entities for dev purposes, especially for flora.
   // This helps to see the space of randomization.
-  class_names = (ref1 = ((function() {
+  class_names = (ref3 = ((function() {
     try {
       return localStorage["tiamblia.auto_spawn"];
     } catch (error1) {}
-  })())) != null ? ref1 : "";
+  })())) != null ? ref3 : "";
   class_names = class_names.length > 0 ? class_names.split(",") : [];
   try {
-    for (j = 0, len = class_names.length; j < len; j++) {
-      class_name = class_names[j];
+    for (l = 0, len1 = class_names.length; l < len1; l++) {
+      class_name = class_names[l];
       min_instances = 10;
-      if (world.entities.filter(function(entity) {
+      existing_instances = world.entities.filter(function(entity) {
         return entity.constructor.name === class_name;
-      }).length < min_instances) {
+      }).length;
+      if (existing_instances < min_instances) {
         ent = Entity.fromJSON({
           _class_: class_name
         });
         ent.x = Math.random() * 1000;
-        ent.y = bottom_of_world;
+        ent.y = bottom_of_world - 1;
+        // Fix auto-spawn sometimes leaving entities at the bottom of the world
+        world.updateCollisionBuckets();
         while (world.collision(ent)) {
           ent.y -= 3;
         }
         world.entities.push(ent);
         if (ent.dna) {
 // show examples of the same species beside it
-          for (i = k = 0; k < 3; i = ++k) {
+          for (i = m = 0; m < 3; i = ++m) {
             clone = Entity.fromJSON({
               _class_: class_name,
               dna: JSON.parse(JSON.stringify(ent.dna))
             });
             clone.x = ent.x + 100 * (i + 1);
-            clone.y = bottom_of_world;
+            clone.y = bottom_of_world - 1;
             while (world.collision(clone)) {
               clone.y -= 3;
             }
@@ -9921,7 +10119,7 @@ terrain_optimized = false;
         welcome.style.opacity = 0;
         welcome.style.pointerEvents = "none";
         welcome.addEventListener("transitionend", function() {
-          return welcome.remove();
+          welcome.remove();
         });
       }
     }
@@ -9933,13 +10131,13 @@ terrain_optimized = false;
     canvas.height = innerHeight;
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ref3 = (ref2 = ((function() {
+  ref5 = (ref4 = ((function() {
     try {
       return navigator.getGamepads();
     } catch (error1) {}
-  })())) != null ? ref2 : [];
-  for (l = 0, len1 = ref3.length; l < len1; l++) {
-    gamepad = ref3[l];
+  })())) != null ? ref4 : [];
+  for (n = 0, len2 = ref5.length; n < len2; n++) {
+    gamepad = ref5[n];
     if (!(gamepad)) {
       continue;
     }
@@ -9959,12 +10157,12 @@ terrain_optimized = false;
     // (I could also use the relative sorts list to sort only the added entity,
     // and this could be useful for gameplay code that might want to add entities.)
     sort_entities(world);
-    ref4 = world.entities;
+    ref6 = world.entities;
     // Fix hair attachment when dragging after simulating.
     // A better fix would be to have an event that fires while dragging
     // (or otherwise moving an entity, such as with the arrow keys, which isn't supported yet.)
-    for (m = 0, len2 = ref4.length; m < len2; m++) {
-      entity = ref4[m];
+    for (o = 0, len3 = ref6.length; o < len3; o++) {
+      entity = ref6[o];
       if (entity instanceof Player) {
         entity.hair_initialized = false;
       }
@@ -9977,10 +10175,10 @@ terrain_optimized = false;
       terrain_optimized = true;
     }
     world.updateCollisionBuckets();
-    ref5 = world.entities;
+    ref7 = world.entities;
     // when entity isnt editor.editing_entity and entity not in editor.dragging_entities
-    for (n = 0, len3 = ref5.length; n < len3; n++) {
-      entity = ref5[n];
+    for (p = 0, len4 = ref7.length; p < len4; p++) {
+      entity = ref7[p];
       entity.step(world, view, mouse);
     }
     
@@ -10015,7 +10213,7 @@ terrain_optimized = false;
   if (editor.editing && keyboard.wasJustPressed("KeyR")) {
     if (editor.selected_entities.length) {
       editor.undoable(function() {
-        return randomize_entities(editor.selected_entities);
+        randomize_entities(editor.selected_entities);
       });
     } else {
       class_names = (((function() {
@@ -10024,12 +10222,12 @@ terrain_optimized = false;
         } catch (error1) {}
       })()) || "").split(",");
       new_entities = world.entities.filter(function(entity) {
-        var ref6;
-        return ref6 = entity.constructor.name, indexOf.call(class_names, ref6) < 0;
+        var ref8;
+        return ref8 = entity.constructor.name, indexOf.call(class_names, ref8) < 0;
       });
       if (new_entities.length !== world.entities.length) {
         editor.undoable(function() {
-          return world.entities = new_entities;
+          world.entities = new_entities;
         });
       }
     }
@@ -10040,7 +10238,7 @@ terrain_optimized = false;
   }
   // End of frame. Nothing must use wasJustPressed after this.
   keyboard.resetForNextStep();
-  return stats.end();
+  stats.end();
 })();
 
 })();
