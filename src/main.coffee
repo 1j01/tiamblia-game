@@ -247,7 +247,15 @@ ms_between_undos = 300
 ms_idle_before_saving = ms_between_undos * 2
 old_Controller_setValue = Controller::setValue
 Controller::setValue = (value) ->
-	if @object instanceof Entity
+	controller_edits_entity = false
+	c = @
+	while c
+		if c.object instanceof Entity
+			controller_edits_entity = true
+			break
+		c = c.parent
+	# controller_edits_entity = @ in entity_folder.controllersRecursive() # alternative
+	if controller_edits_entity
 		clearTimeout(save_timeout)
 		save_timeout = setTimeout =>
 			the_editor.save()
@@ -262,6 +270,11 @@ Controller::setValue = (value) ->
 	else
 		old_Controller_setValue.call(@, value)
 	return
+
+# "waves" is old, it shouldn't be on the Water entity anymore
+# TODO: move this info into the respective entity classes
+# and maybe base it on serialization by default, but allow more properties to be excluded
+property_inspector_exclusions = ["_class_", "structure", "random_values", "simplex", "waves_y", "waves_vy", "bubbles", "waves"]
 
 terrain_optimized = false
 
@@ -281,12 +294,28 @@ do animate = ->
 		last_selected_entity = selected_entity
 		for child in entity_folder.children by -1
 			child.destroy()
-		for key, value of selected_entity when key isnt "_class_"
-			if typeof value in ["number", "string", "boolean"]
-				if key.match(/color/i)
-					entity_folder.addColor(selected_entity, key)
+		make_controllers = (object, folder)->
+			for key, value of object when key not in property_inspector_exclusions
+				if typeof value in ["number", "string", "boolean"]
+					if key.match(/color/i) and typeof value is "string"
+						folder.addColor(object, key)
+					else
+						folder.add(object, key)
+				else if typeof value is "object" and value
+					if value instanceof Array
+						if value.length > 0
+							array_folder = folder.addFolder(key)
+							# for i in [0...value.length]
+							# 	# make_controllers(value[i], array_folder.addFolder("#{key}[#{i}]"))
+							# 	make_controllers({[i]: value[i]}, array_folder)
+							make_controllers(Object.assign({}, value), array_folder)
+					else if value.constructor is Object
+						make_controllers(value, folder.addFolder(key))
+					else
+						console.log("Unknown type for #{key}: #{value.constructor.name}")
 				else
-					entity_folder.add(selected_entity, key)
+					console.log("Unknown type for #{key}: #{typeof value}")
+		make_controllers(selected_entity, entity_folder)
 		if selected_entity
 			entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
 		else
