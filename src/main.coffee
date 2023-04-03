@@ -241,7 +241,7 @@ last_selected_entity = null
 # Another way might be with a Proxy, might be cleaner.
 # This is debounced because it's called a lot while dragging controllers.
 # `undoable()` will save, but if we're debouncing it, we need to save manually.
-last_setValue_call = -Infinity
+last_undoable_time = -Infinity
 save_timeout = null
 ms_between_undos = 300
 ms_idle_before_saving = ms_between_undos * 2
@@ -252,14 +252,16 @@ Controller::setValue = (value) ->
 		save_timeout = setTimeout =>
 			the_editor.save()
 		, ms_idle_before_saving
-		if performance.now() - last_setValue_call > ms_between_undos
+		if performance.now() - last_undoable_time > ms_between_undos
 			the_editor.undoable =>
 				old_Controller_setValue.call(@, value)
+				return
+			last_undoable_time = performance.now()
 		else
 			old_Controller_setValue.call(@, value)
 	else
 		old_Controller_setValue.call(@, value)
-	last_setValue_call = performance.now()
+	return
 
 terrain_optimized = false
 
