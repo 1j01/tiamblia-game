@@ -51,4 +51,5 @@ When pulling new changes from Git, run `npm install` again in case there are new
 ## Deployment
 
 `npm run deploy` will build the project and deploy it to GitHub Pages.
-It will check first that skele2d isn't npm-linked, with a `predeploy` script. This requires bash.
+It will check first that skele2d isn't npm-linked, and that the working directory is clean,
+with a `predeploy` script.
