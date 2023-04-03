@@ -49,6 +49,10 @@ module.exports = class Bird extends SimpleActor
 		@flap_timer--
 		# run SimpleActor physics, which uses @move_x and @jump
 		# super(world)
+		# This was in draw() before, and it looks kinda confusing...
+		@flap_timer=-1 if @flap_timer < 0
+		@flap+=@flap_timer/20
+		@flap+=(-@flap-0.1)*0.1
 		return
 	
 	draw: (ctx)->
@@ -60,7 +64,4 @@ module.exports = class Bird extends SimpleActor
 		ctx.moveTo(0,0)
 		ctx.lineTo(0-Math.cos(@flap-f)*@wingspan,0+Math.sin(@flap-f)*@wingspan)
 		ctx.stroke()
-		@flap_timer=-1 if @flap_timer < 0
-		@flap+=@flap_timer/20
-		@flap+=(-@flap-0.1)*0.1
 		return

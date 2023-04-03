@@ -643,6 +643,9 @@ module.exports = class Player extends SimpleActor
 		# Hair physics
 		@simulate_hair(world)
 
+		@smoothed_facing_x_for_eyes ?= 0
+		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
+
 		@prev_real_facing_x = @real_facing_x
 
 		return
@@ -817,8 +820,6 @@ module.exports = class Player extends SimpleActor
 		eye_spacing = 0.6 # radians
 		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = eye_color
-		@smoothed_facing_x_for_eyes ?= 0
-		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
 		for eye_signature in [-1, 1]
 			# 3D projection in one axis
 			head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
