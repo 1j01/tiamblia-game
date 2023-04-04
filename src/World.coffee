@@ -175,7 +175,9 @@ module.exports = class World
 			# so we need to construct _refs_ here based on accidentally serialized entity references.
 			for ent_def in def.entities when ent_def._class_ is "Player"
 				ent_def._refs_ ?= {}
-				# for prop in ["reaching_for_entity", "holding_bow", "grounded", "riding"]
+				# grounded and riding are from hit tests, which now return Terrain entities
+				# for prop in ["reaching_for_entity", "holding_bow", "riding", "grounded", "submerged"]
+				# we can do this more generally just as easily, or easier
 				for prop of ent_def
 					if ent_def[prop]?._class_
 						ent_def._refs_[prop] = ent_def[prop].id
