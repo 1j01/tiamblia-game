@@ -353,6 +353,14 @@ do animate = ->
 							make_controllers(Object.assign({}, value), array_folder)
 					else if value.constructor is Object
 						make_controllers(value, folder.addFolder(key))
+					else if value instanceof Entity
+						# Make button to select entity
+						do (key, value)=>
+							button_key = "Select #{key}"
+							button_fn = ->
+								editor.selected_entities = [value]
+								return
+							folder.add({[button_key]: button_fn}, button_key)
 					else
 						console.log("Unknown type for #{key}: #{value.constructor.name}")
 				else if value
