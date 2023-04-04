@@ -347,9 +347,6 @@ do animate = ->
 					if value instanceof Array
 						if value.length > 0
 							array_folder = folder.addFolder(key)
-							# for i in [0...value.length]
-							# 	# make_controllers(value[i], array_folder.addFolder("#{key}[#{i}]"))
-							# 	make_controllers({[i]: value[i]}, array_folder)
 							make_controllers(Object.assign({}, value), array_folder)
 					else if value.constructor is Object
 						make_controllers(value, folder.addFolder(key))
