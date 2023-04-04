@@ -317,6 +317,44 @@ Controller::setValue = (value) ->
 # and maybe base it on serialization by default, but allow more properties to be excluded
 property_inspector_exclusions = ["_class_", "structure", "random_values", "simplex", "waves_y", "waves_vy", "bubbles", "waves"]
 
+inspect_entity = (selected_entity)->
+	for child in entity_folder.children by -1
+		child.destroy()
+	make_controllers = (object, folder)->
+		for key, value of object when key not in property_inspector_exclusions
+			if typeof value in ["number", "string", "boolean"]
+				# unlike dat.gui, lil-gui.js only supports RGB colors, no hsl, and no alpha
+				if key.match(/color/i) and typeof value is "string" and value[0] is "#" and value.length in [4, 7]
+					folder.addColor(object, key)
+				else
+					folder.add(object, key)
+			else if typeof value is "object" and value
+				if value instanceof Array
+					if value.length > 0
+						array_folder = folder.addFolder(key)
+						make_controllers(Object.assign({}, value), array_folder)
+				else if value.constructor is Object
+					make_controllers(value, folder.addFolder(key))
+				else if value instanceof Entity
+					# Make button to select entity
+					do (key, value)=>
+						button_key = "Select #{key}"
+						button_fn = ->
+							editor.selected_entities = [value]
+							return
+						folder.add({[button_key]: button_fn}, button_key)
+				else
+					console.log("Unknown type for #{key}: #{value.constructor.name}")
+			else if value
+				console.log("Unknown type for #{key}: #{typeof value}")
+			else
+				console.log("Skipping #{value} value for #{key}")
+	make_controllers(selected_entity, entity_folder)
+	if selected_entity
+		entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
+	else
+		entity_folder.title("Selected Entity")
+
 terrain_optimized = false
 
 do animate = ->
@@ -333,42 +371,7 @@ do animate = ->
 	selected_entity = editor.selected_entities[0]
 	if last_selected_entity isnt selected_entity
 		last_selected_entity = selected_entity
-		for child in entity_folder.children by -1
-			child.destroy()
-		make_controllers = (object, folder)->
-			for key, value of object when key not in property_inspector_exclusions
-				if typeof value in ["number", "string", "boolean"]
-					# unlike dat.gui, lil-gui.js only supports RGB colors, no hsl, and no alpha
-					if key.match(/color/i) and typeof value is "string" and value[0] is "#" and value.length in [4, 7]
-						folder.addColor(object, key)
-					else
-						folder.add(object, key)
-				else if typeof value is "object" and value
-					if value instanceof Array
-						if value.length > 0
-							array_folder = folder.addFolder(key)
-							make_controllers(Object.assign({}, value), array_folder)
-					else if value.constructor is Object
-						make_controllers(value, folder.addFolder(key))
-					else if value instanceof Entity
-						# Make button to select entity
-						do (key, value)=>
-							button_key = "Select #{key}"
-							button_fn = ->
-								editor.selected_entities = [value]
-								return
-							folder.add({[button_key]: button_fn}, button_key)
-					else
-						console.log("Unknown type for #{key}: #{value.constructor.name}")
-				else if value
-					console.log("Unknown type for #{key}: #{typeof value}")
-				else
-					console.log("Skipping #{value} value for #{key}")
-		make_controllers(selected_entity, entity_folder)
-		if selected_entity
-			entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
-		else
-			entity_folder.title("Selected Entity")
+		inspect_entity(selected_entity)
 	if gui._visible
 		for controller in entity_folder.controllersRecursive()
 			controller.updateDisplay()
