@@ -317,9 +317,15 @@ Controller::setValue = (value) ->
 # and maybe base it on serialization by default, but allow more properties to be excluded
 property_inspector_exclusions = ["_class_", "structure", "random_values", "simplex", "waves_y", "waves_vy", "bubbles", "waves"]
 
-inspect_entity = (selected_entity)->
+inspect_entity = (selected_entity, breadcrumbs=[])->
+	# Note: selected_entity may be null/undefined, for deselection
 	for child in entity_folder.children by -1
 		child.destroy()
+	if breadcrumbs.length > 0
+		button_name = "Back to #{breadcrumbs[breadcrumbs.length - 1].constructor.name}"
+		button_action = ->
+			inspect_entity(breadcrumbs[breadcrumbs.length - 1], breadcrumbs.slice(0, breadcrumbs.length - 1))
+		entity_folder.add({[button_name]: button_action}, button_name)
 	make_controllers = (object, folder)->
 		for key, value of object when key not in property_inspector_exclusions
 			if typeof value in ["number", "string", "boolean"]
@@ -341,6 +347,9 @@ inspect_entity = (selected_entity)->
 						button_key = "Select #{key}"
 						button_fn = ->
 							editor.selected_entities = [value]
+							inspect_entity(value, [...breadcrumbs, selected_entity])
+							# avoid inspect_entity on next frame clearing breadcrumbs
+							last_selected_entity = value
 							return
 						folder.add({[button_key]: button_fn}, button_key)
 				else
