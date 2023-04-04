@@ -159,6 +159,11 @@ module.exports = class Player extends SimpleActor
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
 		@hair_initialized = false
 
+	toJSON: ->
+		def = {}
+		def[k] = v for k, v of @ when k not in ["reaching_for_segment", "reaching_for_entity", "reaching_with_secondary_hand", "ground_angle"]
+		def
+
 	step: (world, view, mouse)->
 		{sternum} = @structure.points
 		from_point_in_world = @toWorld(sternum)

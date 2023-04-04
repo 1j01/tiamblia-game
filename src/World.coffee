@@ -21,7 +21,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 5
+	@formatVersion: 6
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -115,14 +115,20 @@ module.exports = class World
 				if ent_def.intangible_because_optimized
 					delete ent_def.intangible
 					delete ent_def.intangible_because_optimized
-		# TODO: remove cruft from serialization, then enable this as an upgrade step
-		# # These other things were just cruft, not causing problems
+		if def.formatVersion is 5
+			def.formatVersion = 6
+			# Remove cruft from Player: reaching_for_segment, reaching_for_segment, reaching_for_entity, reaching_with_secondary_hand, ground_angle, smoothed_vy, hair_x_scales
+			for ent_def in def.entities when ent_def._class_ is "Player"
+				delete ent_def.reaching_for_segment
+				delete ent_def.reaching_for_entity
+				delete ent_def.reaching_with_secondary_hand
+				delete ent_def.ground_angle
+				delete ent_def.smoothed_vy
+				delete ent_def.hair_x_scales
+		# TODO: remove more cruft from serialization
 		# # GrassyTerrain: grass_tiles
 		# for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
 		# 	delete ent_def.grass_tiles
-		# # Player: reaching_for_segment, ...
-		# for ent_def in def.entities when ent_def._class_ is "Player"
-		# 	delete ent_def.reaching_for_segment
 		# # Terrain: width, max_height, left, right, bottom
 		# # These are pretty silly to serialize, since we can use the bounding box
 		# for ent_def in def.entities when ent_def._class_ is "Terrain"
