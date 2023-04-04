@@ -2,6 +2,7 @@
 Entity = require "./entities/abstract/Entity.coffee"
 Terrain = require "./entities/abstract/Terrain.coffee"
 {distanceToLineSegment} = require("skele2d").helpers
+hsl_to_rgb_hex = require "./hsl-to-rgb-hex.js"
 
 # Actually treat it as a segment, not an infinite line
 # unlike copies of this function in some other files
@@ -21,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 6
+	@formatVersion: 7
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -125,10 +126,37 @@ module.exports = class World
 				delete ent_def.ground_angle
 				delete ent_def.smoothed_vy
 				delete ent_def.hair_x_scales
+		if def.formatVersion is 6
+			def.formatVersion = 7
+			# Rename color properties to include "color" to be picked up by the entity inspector/editor
+			# and convert hsl[a] to rgb hex when appropriate, using hsl_to_rgb_hex
+			to_hex_if_hsl = (color) ->
+				if color.match(/hsl/i)
+					return hsl_to_rgb_hex(color)
+				return color
+			# Rabbit: c -> body_color, c2 -> body_shadow_color
+			# Butterfly: c1 -> color_1, c2 -> color_2
+			# Frog: c -> body_color
+			# Deer: c -> body_color
+			for ent_def in def.entities when ent_def._class_ in ["Frog", "Deer", "Rabbit"]
+				ent_def.body_color = to_hex_if_hsl(ent_def.c)
+				delete ent_def.c
+			# c2 differs between Rabbit and Butterfly
+			for ent_def in def.entities when ent_def._class_ is "Rabbit"
+				ent_def.body_shadow_color = to_hex_if_hsl(ent_def.c2)
+				delete ent_def.c2
+			for ent_def in def.entities when ent_def._class_ is "Butterfly"
+				ent_def.color_1 = to_hex_if_hsl(ent_def.c1)
+				delete ent_def.c1
+				ent_def.color_2 = to_hex_if_hsl(ent_def.c2)
+				delete ent_def.c2
 		# TODO: remove more cruft from serialization
 		# # GrassyTerrain: grass_tiles
 		# for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
 		# 	delete ent_def.grass_tiles
+		# # Water: waves
+		# for ent_def in def.entities when ent_def._class_ is "Water"
+		# 	delete ent_def.waves
 		# # Terrain: width, max_height, left, right, bottom
 		# # These are pretty silly to serialize, since we can use the bounding box
 		# for ent_def in def.entities when ent_def._class_ is "Terrain"

@@ -1,5 +1,6 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 {addEntityClass} = require "skele2d"
+hsl_to_rgb_hex = require "../hsl-to-rgb-hex.js"
 
 TAU = Math.PI * 2
 r = -> Math.random()*2-1
@@ -21,7 +22,8 @@ module.exports = class Frog extends SimpleActor
 		@xp = 0; @t = 0
 		@lr = 0
 		@dir = 0
-		@c = "hsla("+(150-Math.random()*50)+","+(50+Math.random()*50)+"%,"+(50-Math.random()*20)+"%,1)"
+		# hex is for lil-gui based entity properties editor
+		@body_color = hsl_to_rgb_hex("hsla("+(150-Math.random()*50)+","+(50+Math.random()*50)+"%,"+(50-Math.random()*20)+"%,1)")
 
 	step: (world)->
 		if @grounded
@@ -51,7 +53,7 @@ module.exports = class Frog extends SimpleActor
 	draw: (ctx)->
 		ctx.save()
 		ctx.rotate(@vx/5)
-		ctx.fillStyle=@c
+		ctx.fillStyle=@body_color
 		#ctx.fillRect(@x,@y,@width,@height)
 		ctx.beginPath()
 		ctx.arc(@width/2,@height/4-@vy,@height/2,0,TAU/2,false)

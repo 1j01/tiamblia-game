@@ -1,5 +1,6 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 {addEntityClass} = require "skele2d"
+hsl_to_rgb_hex = require "../hsl-to-rgb-hex.js"
 
 r = -> Math.random()*2-1
 
@@ -19,8 +20,9 @@ module.exports = class Butterfly extends SimpleActor
 		@width = 4; @height = 4
 		@go_x = r()*5; @go_y = r()*5
 		@t = r()*5; @flap = r()*5; @flap_timer = r()*15
-		@c1 = "hsla("+(Math.random()*360)+",100%,"+(50+Math.random()*50)+"%,1)"
-		@c2 = "hsla("+(Math.random()*360)+",100%,"+(50+Math.random()*50)+"%,1)"
+		# hex is for lil-gui based entity properties editor
+		@color_1 = hsl_to_rgb_hex("hsla("+(Math.random()*360)+",100%,"+(50+Math.random()*50)+"%,1)")
+		@color_2 = hsl_to_rgb_hex("hsla("+(Math.random()*360)+",100%,"+(50+Math.random()*50)+"%,1)")
 
 	step: (world)->
 		for i in [0..50]
@@ -59,7 +61,7 @@ module.exports = class Butterfly extends SimpleActor
 		ctx.beginPath()
 		f=2.8
 		
-		ctx.strokeStyle=@c1
+		ctx.strokeStyle=@color_1
 		ctx.moveTo(0,0)
 		ctx.lineTo(0+Math.cos(@flap-f)*@width,0+Math.sin(@flap-f)*@width)
 		ctx.moveTo(0,0)
@@ -67,7 +69,7 @@ module.exports = class Butterfly extends SimpleActor
 		ctx.stroke()
 		ctx.beginPath()
 		
-		ctx.strokeStyle=@c2
+		ctx.strokeStyle=@color_2
 		ctx.moveTo(0,0)
 		ctx.lineTo(0+Math.cos(@flap+f)*@width,0+Math.sin(@flap+f)*@width)
 		ctx.moveTo(0,0)

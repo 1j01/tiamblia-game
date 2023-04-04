@@ -1,6 +1,7 @@
 SimpleActor = require "./abstract/SimpleActor.coffee"
 Entity = require "./abstract/Entity.coffee"
 {addEntityClass} = require "skele2d"
+hsl_to_rgb_hex = require "../hsl-to-rgb-hex.js"
 
 TAU = Math.PI * 2
 r = -> Math.random()*2-1
@@ -24,7 +25,8 @@ module.exports = class Deer extends SimpleActor
 		@lr = 0
 		@dir = 0; @dir_p = 1; @dir_pl = 1
 		@rideable = true
-		@c = "hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)"
+		# hex is for lil-gui based entity properties editor
+		@body_color = hsl_to_rgb_hex("hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)")
 		@ground_angle = 0
 		@ground_angle_smoothed = 0
 
@@ -68,7 +70,7 @@ module.exports = class Deer extends SimpleActor
 		ctx.rotate(@ground_angle_smoothed)
 		
 		ctx.beginPath()
-		ctx.fillStyle=@c
+		ctx.fillStyle=@body_color
 		ctx.arc(0,-@height/2,@height/3,0,TAU,true)
 		ctx.fill()
 		
@@ -89,7 +91,7 @@ module.exports = class Deer extends SimpleActor
 		ctx.lineTo(Math.cos(@lr+TAU/2+0.2)*10+@width/2,@height/2+Math.sin(@lr+TAU/2)*8)
 		ctx.stroke()
 		
-		ctx.fillStyle=@c
+		ctx.fillStyle=@body_color
 		ctx.save() # head
 		ctx.translate(@width/2,@height*-3/4)
 		ctx.rotate(-0.4+Math.cos(@x/50))

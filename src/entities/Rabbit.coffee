@@ -21,8 +21,8 @@ module.exports = class Rabbit extends SimpleActor
 		@xp = 0; @t = 0
 		@lr = 0
 		@dir = 0
-		@c = "#FFF"
-		@c2 = "#DDD"
+		@body_color = "#FFF"
+		@body_shadow_color = "#DDD"
 		@eye_color = "#000"
 		@alive = true
 		@smoothed_facing_x = @facing_x = 1
@@ -87,12 +87,12 @@ module.exports = class Rabbit extends SimpleActor
 				angle = Math.pow(Math.abs(angle), 0.5) * Math.sign(angle)
 			ctx.rotate(angle / 2)
 
-		ctx.fillStyle=@c2
+		ctx.fillStyle=@body_shadow_color
 		# ctx.fillRect(0,0,@width,@height)
 		ctx.beginPath()
 		ctx.arc(0,0,@height/2,TAU*0.45,TAU*1.05,false) # body
 		ctx.fill()
-		ctx.fillStyle=@c
+		ctx.fillStyle=@body_color
 		ctx.save() # head transform
 		ctx.translate(@smoothed_facing_x*@width/3,-@height/3)
 		ctx.beginPath()
@@ -102,7 +102,7 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.beginPath()
 		ctx.arc(0,0,1,0,TAU,false) # eye
 		ctx.fill()
-		ctx.fillStyle=@c
+		ctx.fillStyle=@body_color
 		ctx.beginPath()
 		ctx.save() # ear transform
 		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
@@ -113,7 +113,7 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fill()
 		ctx.restore() # end ear transform
 		ctx.restore() # end head transform
-		ctx.fillStyle=@c
+		ctx.fillStyle=@body_color
 		ctx.beginPath()
 		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,TAU,false) # tail
 		ctx.fill()
