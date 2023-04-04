@@ -159,9 +159,20 @@ module.exports = class Player extends SimpleActor
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
 		@hair_initialized = false
 
+	# Entity::resolveReferences handles _refs_ when deserializing
+	# Unfortunately we have to reimplement the _refs_ logic here to extend the toJSON method
+	# to ignore more properties when serializing.
+	# TODO: use a library for a general solution to circular references
+	# TODO: make it easier to exclude properties when serializing
+	# Note: animation is gameplay-significant due to the physical nature of picking up items, so it should not be excluded.
 	toJSON: ->
 		def = {}
-		def[k] = v for k, v of @ when k not in ["reaching_for_segment", "reaching_for_entity", "reaching_with_secondary_hand", "ground_angle"]
+		for k, v of @ when k not in ["_refs_", "reaching_for_segment", "reaching_for_entity", "reaching_with_secondary_hand", "ground_angle"]
+			if v instanceof Entity
+				def._refs_ ?= {}
+				def._refs_[k] = v.id
+			else
+				def[k] = v
 		def
 
 	step: (world, view, mouse)->
