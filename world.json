@@ -1,6 +1,6 @@
 {
 	"format": "Tiamblia World",
-	"formatVersion": 5,
+	"formatVersion": 6,
 	"entities": [
 		{
 			"structure": {
@@ -28083,6 +28083,7 @@
 			"idle_animation": null,
 			"idle_timer": 740,
 			"real_facing_x": 0,
+			"smoothed_facing_x_for_eyes": 0,
 			"landing_momentum": 0,
 			"hairs": [
 				[
@@ -28338,20 +28339,7 @@
 					}
 				]
 			],
-			"hair_initialized": false,
-			"smoothed_vy": 0.4999999999999999,
-			"hair_x_scales": [
-				-5e-324,
-				-1e-323,
-				-1.5e-323,
-				-2e-323,
-				-2.5e-323,
-				-3e-323,
-				-3.5e-323,
-				-4e-323,
-				-4.4e-323
-			],
-			"smoothed_facing_x_for_eyes": 0
+			"hair_initialized": false
 		},
 		{
 			"structure": {
