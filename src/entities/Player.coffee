@@ -149,7 +149,11 @@ module.exports = class Player extends SimpleActor
 		@other_idle_animation_position = 0
 		@idle_animation = null
 		@idle_timer = 0
-		@real_facing_x = @facing_x = 1
+		# real_facing_x switches while aiming backwards, then reverts to facing_x if you stop aiming
+		# TODO: split real_facing_x into upper_body_facing_x and lower_body_facing_x so that
+		# the upper body can aim backwards while the lower body matches the facing direction of a mount
+		# (It looks very silly when the player flips around completely while riding a horse.)
+		@smoothed_facing_x_for_eyes = @real_facing_x = @facing_x = 1
 		@landing_momentum = 0 # for bending knees when landing
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
@@ -643,7 +647,6 @@ module.exports = class Player extends SimpleActor
 		# Hair physics
 		@simulate_hair(world)
 
-		@smoothed_facing_x_for_eyes ?= 0
 		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
 
 		@prev_real_facing_x = @real_facing_x
