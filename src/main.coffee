@@ -243,6 +243,39 @@ options["Clear Auto-Save"] = ->
 	return
 skele2d_folder.add(options, "Clear Auto-Save")
 
+options["Load World"] = ->
+	input = document.createElement("input")
+	input.type = "file"
+	input.accept = ".json"
+	input.onchange = (e)=>
+		reader = new FileReader()
+		reader.onload = (e)=>
+			try
+				parsed = JSON.parse(e.target.result)
+			catch error
+				editor.warn("Failed to parse file as JSON: #{error}")
+				return
+			editor.undoable =>
+				try
+					world.fromJSON(parsed)
+				catch error
+					editor.warn("Failed to load world: #{error}")
+				return
+			return
+		reader.readAsText(e.target.files[0])
+		return
+	input.click()
+	return
+skele2d_folder.add(options, "Load World")
+
+options["Save World"] = ->
+	a = document.createElement("a")
+	a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(world.toJSON(), null, "\t"))
+	a.download = "Tiamblia World.json"
+	a.click()
+	return
+skele2d_folder.add(options, "Save World")
+
 last_selected_entity = null
 # lil-gui.js doesn't support an onBeforeChange callback,
 # so we have to do this hack to integrate with the undo system.
