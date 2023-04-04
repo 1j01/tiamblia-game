@@ -338,6 +338,7 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 				if value instanceof Array
 					if value.length > 0
 						array_folder = folder.addFolder(key)
+						array_folder.close()
 						make_controllers(Object.assign({}, value), array_folder)
 				else if value.constructor is Object
 					make_controllers(value, folder.addFolder(key))
