@@ -338,7 +338,8 @@ do animate = ->
 		make_controllers = (object, folder)->
 			for key, value of object when key not in property_inspector_exclusions
 				if typeof value in ["number", "string", "boolean"]
-					if key.match(/color/i) and typeof value is "string"
+					# unlike dat.gui, lil-gui.js only supports RGB colors, no hsl, and no alpha
+					if key.match(/color/i) and typeof value is "string" and value[0] is "#" and value.length in [4, 7]
 						folder.addColor(object, key)
 					else
 						folder.add(object, key)
