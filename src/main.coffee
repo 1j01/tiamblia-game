@@ -355,8 +355,10 @@ do animate = ->
 						make_controllers(value, folder.addFolder(key))
 					else
 						console.log("Unknown type for #{key}: #{value.constructor.name}")
-				else
+				else if value
 					console.log("Unknown type for #{key}: #{typeof value}")
+				else
+					console.log("Skipping #{value} value for #{key}")
 		make_controllers(selected_entity, entity_folder)
 		if selected_entity
 			entity_folder.title("Selected Entity (#{selected_entity.constructor.name})")
