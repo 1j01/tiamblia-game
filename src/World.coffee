@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 7
+	@formatVersion: 8
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -150,6 +150,36 @@ module.exports = class World
 				delete ent_def.c1
 				ent_def.color_2 = to_hex_if_hsl(ent_def.c2)
 				delete ent_def.c2
+		if def.formatVersion is 7
+			def.formatVersion = 8
+			# Fix botched entity references in Player when naively defining a toJSON overload.
+			# Entity defines a limited system for resolving references to other Entities:
+			###
+			resolveReferences: (world)->
+				if @_refs_
+					for k, id of @_refs_
+						@[k] = world.getEntityByID(id)
+					delete @_refs_
+			
+			toJSON: ->
+				obj = {}
+				for k, v of @ when k isnt "_refs_"
+					if v instanceof Entity
+						obj._refs_ ?= {}
+						obj._refs_[k] = v.id
+					else
+						obj[k] = v
+				obj
+			###
+			# I temporarily overrode toJSON without taking _refs_ into account,
+			# so we need to construct _refs_ here based on accidentally serialized entity references.
+			for ent_def in def.entities when ent_def._class_ is "Player"
+				ent_def._refs_ ?= {}
+				# for prop in ["reaching_for_entity", "holding_bow", "grounded", "riding"]
+				for prop of ent_def
+					if ent_def[prop]?._class_
+						ent_def._refs_[prop] = ent_def[prop].id
+						delete ent_def[prop]
 		# TODO: remove more cruft from serialization
 		# # GrassyTerrain: grass_tiles
 		# for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
