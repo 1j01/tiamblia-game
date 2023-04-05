@@ -366,10 +366,10 @@ Controller::setValue = (value) ->
 	if controller_edits_entity
 		clearTimeout(save_timeout)
 		save_timeout = setTimeout =>
-			the_editor.save()
+			editor.save()
 		, ms_idle_before_saving
 		if performance.now() - last_undoable_time > ms_between_undos
-			the_editor.undoable =>
+			editor.undoable =>
 				old_Controller_setValue.call(@, value)
 				return
 			last_undoable_time = performance.now()
