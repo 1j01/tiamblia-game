@@ -4,6 +4,7 @@ Math.seedrandom("A world")
 {View, Mouse, Editor, Entity, Terrain} = require "skele2d"
 Stats = require "stats.js"
 {GUI, Controller} = require "lil-gui"
+idb_keyval = require "idb-keyval" # just for persisting file handles
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -243,38 +244,93 @@ options["Clear Auto-Save"] = ->
 	return
 skele2d_folder.add(options, "Clear Auto-Save")
 
-options["Load World"] = ->
-	input = document.createElement("input")
-	input.type = "file"
-	input.accept = ".json"
-	input.onchange = (e)=>
-		reader = new FileReader()
-		reader.onload = (e)=>
-			try
-				parsed = JSON.parse(e.target.result)
-			catch error
-				editor.warn("Failed to parse file as JSON: #{error}")
-				return
-			editor.undoable =>
-				try
-					world.fromJSON(parsed)
-				catch error
-					editor.warn("Failed to load world: #{error}")
-				return
-			return
-		reader.readAsText(e.target.files[0])
-		return
-	input.click()
+file_handle = null
+idb_keyval.get("tiamblia.file_handle").then (value) ->
+	file_handle = value
 	return
+load_from_json = (json)->
+	try
+		parsed = JSON.parse(json)
+	catch error
+		editor.warn("Failed to parse file as JSON: #{error}")
+		return false
+	# TODO: don't create extra undo step if error occurs in fromJSON
+	editor.undoable =>
+		try
+			world.fromJSON(parsed)
+		catch error
+			editor.warn("Failed to load world: #{error}")
+		return false
+	return true
+file_open = ->
+	if showOpenFilePicker?
+		try
+			[new_file_handle] = await showOpenFilePicker({accept: [{description: "JSON", extensions: ["json"]}]})
+			file = await new_file_handle.getFile()
+			json = await file.text()
+		catch exception
+			if exception.name is "AbortError"
+				return
+			editor.warn("Failed to open file: #{exception}")
+			return
+		if load_from_json(json)
+			file_handle = new_file_handle
+			idb_keyval.set("tiamblia.file_handle", file_handle)
+	else
+		input = document.createElement("input")
+		input.type = "file"
+		input.accept = ".json"
+		input.onchange = =>
+			# load_from_json(await input.files[0].text())
+			reader = new FileReader()
+			reader.onload = =>
+				load_from_json(reader.result)
+				return
+			reader.readAsText(input.files[0])
+			return
+		input.click()
+	return
+file_save_as = ->
+	json = JSON.stringify(world.toJSON(), null, "\t")
+	if showSaveFilePicker?
+		try
+			file_handle = await showSaveFilePicker({types: [{description: "JSON", accept: {"application/json": [".json"]}}]})
+			writable = await file_handle.createWritable()
+			await writable.write(json)
+			await writable.close()
+		catch exception
+			if exception.name is "AbortError"
+				return
+			editor.warn("Failed to save file: #{exception}")
+			return
+	else
+		a = document.createElement("a")
+		a.href = "data:application/json;charset=utf-8," + encodeURIComponent(json)
+		a.download = "Tiamblia World.json"
+		a.click()
+	return
+file_save = ->
+	if file_handle?
+		json = JSON.stringify(world.toJSON(), null, "\t")
+		try
+			writable = await file_handle.createWritable()
+			await writable.write(json)
+			await writable.close()
+		catch error
+			editor.warn("Failed to save file: #{error}")
+			return
+	else
+		file_save_as()
+	return
+
+options["Load World"] = file_open
 skele2d_folder.add(options, "Load World")
 
-options["Save World"] = ->
-	a = document.createElement("a")
-	a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(world.toJSON(), null, "\t"))
-	a.download = "Tiamblia World.json"
-	a.click()
-	return
+options["Save World"] = file_save
 skele2d_folder.add(options, "Save World")
+
+options["Save World As"] = file_save_as
+skele2d_folder.add(options, "Save World As")
 
 last_selected_entity = null
 # lil-gui.js doesn't support an onBeforeChange callback,

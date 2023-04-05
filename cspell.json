@@ -87,6 +87,7 @@
 		"isnt",
 		"keydown",
 		"keyup",
+		"keyval",
 		"lerp",
 		"longlegs",
 		"longlegses",
