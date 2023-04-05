@@ -15,6 +15,30 @@ const config = {
   devServer: {
     static: {
       directory: path.resolve(__dirname, ""),
+      watch: {
+        ignored: [
+          // To debug this what's reloading the dev server,
+          // look for "[webpack-dev-server] Server started" in the console,
+          // open the file and set a breakpoint in the logging function.
+          // It logs the file that triggered the reload.
+          // (More directly, you can search for the "static-changed" message handler.)
+          // There doesn't seem to be any useful logging in the dev server itself,
+          // even when setting env var DEBUG=* (though I don't know how much of the dev server uses the debug module).
+          path.resolve(__dirname, ".git/**"),
+          path.resolve(__dirname, ".history/**"), // Local History VS Code extension
+          path.resolve(__dirname, ".vscode/**"),
+          path.resolve(__dirname, "node_modules/**"),
+          path.resolve(__dirname, "build/**"), // webpack output
+          path.resolve(__dirname, "app-build/**"), // folder for deployment
+          // These are loaded with XHR, not imported, as of 2023-04-04.
+          // But more importantly, world.json is saved with the FS Access API,
+          // and if the page reloads when it changes, it can end up empty.
+          // Chrome writes a .crswap file to the filesystem, and then renames it to world.json.
+          path.resolve(__dirname, "world.json"),
+          path.resolve(__dirname, "world.json.crswap"),
+          path.resolve(__dirname, "animations/**"),
+        ],
+      },
     },
     hot: false,
   },
