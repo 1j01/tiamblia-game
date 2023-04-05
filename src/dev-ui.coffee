@@ -181,6 +181,18 @@ Controller::setValue = (value) ->
 		old_Controller_setValue.call(@, value)
 	return
 
+style_button_as_link = (button) ->
+	button.style.background = "none"
+	button.style.border = "none"
+	button.style.padding = "0"
+	button.style.font = "inherit"
+	button.style.cursor = "pointer"
+	button.style.color = "#2277FF"
+	button.style.textDecoration = "underline"
+	button.style.textAlign = "left"
+	button.style.fontWeight = "bold"
+	return
+
 # The ButtonController doesn't look good in the inspector, for linked entities.
 # Note that this class uses a different constructor signature than ButtonController,
 # because it doesn't use the object's property as the function, nor the key as name.
@@ -191,21 +203,46 @@ class LinkButtonController extends Controller
 		@$button = document.createElement("button")
 		@$button.textContent = link_name
 
-		# stylize button as link
-		@$button.style.background = "none"
-		@$button.style.border = "none"
-		@$button.style.padding = "0"
-		@$button.style.font = "inherit"
-		@$button.style.cursor = "pointer"
-		@$button.style.color = "#2277FF"
-		@$button.style.textDecoration = "underline"
-		@$button.style.textAlign = "left"
-		@$button.style.fontWeight = "bold"
+		style_button_as_link(@$button)
 
 		@$button.addEventListener "click", =>
 			link_action()
 
 		@$widget.append(@$button)
+
+		@updateDisplay()
+
+	updateDisplay: ->
+		return this
+
+class BreadcrumbsController extends Controller
+	constructor: (parent, object, property, links)->
+		super(parent, object, property, "breadcrumbs-controller")
+
+		@$buttons = []
+		for link, link_index in links then do (link, link_index) =>
+			button = document.createElement("button")
+			button.textContent = link.name
+
+			style_button_as_link(button)
+
+			button.addEventListener "click", =>
+				link.action()
+
+			button.style.width = "auto"
+
+			if not link.action?
+				button.disabled = true
+				button.style.color = "inherit"
+				button.style.textDecoration = "none"
+				button.style.cursor = "default"
+
+			@$widget.append(button)
+			@$widget.append(document.createTextNode(" > ")) unless link_index is links.length - 1
+			@$buttons.push(button)
+
+		@$widget.style.display = "inline-block"
+		@$name.style.display = "none"
 
 		@updateDisplay()
 
@@ -221,12 +258,12 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 	# Note: selected_entity may be null/undefined, for deselection
 	for child in entity_folder.children by -1
 		child.destroy()
-	if breadcrumbs.length > 0
-		for breadcrumb_entity, breadcrumb_index in breadcrumbs then do (breadcrumb_entity, breadcrumb_index) =>
-			button_name = "Back to #{breadcrumb_entity.constructor.name}"
-			button_action = ->
-				inspect_entity(breadcrumb_entity, breadcrumbs.slice(0, breadcrumb_index))
-			entity_folder.add({[button_name]: button_action}, button_name)
+	if breadcrumbs.length > 1
+		new BreadcrumbsController(entity_folder, {}, "", breadcrumbs.map((breadcrumb, breadcrumb_index) -> {
+			name: breadcrumb.entity.constructor.name
+			action: if breadcrumb.entity isnt selected_entity then ->
+				inspect_entity(breadcrumb.entity, breadcrumbs.slice(0, breadcrumb_index + 1))
+		}))
 		
 	make_controllers = (object, folder)->
 		for key, value of object when key not in property_inspector_exclusions
@@ -249,7 +286,11 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 					do (key, value)=>
 						button_fn = ->
 							editor.selected_entities = [value]
-							inspect_entity(value, [...breadcrumbs, selected_entity])
+							new_breadcrumb = {
+								entity: value
+								key: key
+							}
+							inspect_entity(value, [...breadcrumbs, new_breadcrumb])
 							# avoid inspect_entity on next frame clearing breadcrumbs
 							last_selected_entity = value
 							return
@@ -270,9 +311,10 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 
 update_property_inspector = ->
 	selected_entity = editor.selected_entities[0]
+	# TODO: update with added/removed properties
 	if last_selected_entity isnt selected_entity
 		last_selected_entity = selected_entity
-		inspect_entity(selected_entity)
+		inspect_entity(selected_entity, if selected_entity then [{entity: selected_entity, key: null}])
 	else
 		for controller in entity_folder.controllersRecursive()
 			controller.updateDisplay()
