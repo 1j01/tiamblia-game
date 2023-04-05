@@ -222,10 +222,12 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 	for child in entity_folder.children by -1
 		child.destroy()
 	if breadcrumbs.length > 0
-		button_name = "Back to #{breadcrumbs[breadcrumbs.length - 1].constructor.name}"
-		button_action = ->
-			inspect_entity(breadcrumbs[breadcrumbs.length - 1], breadcrumbs.slice(0, breadcrumbs.length - 1))
-		entity_folder.add({[button_name]: button_action}, button_name)
+		for breadcrumb_entity, breadcrumb_index in breadcrumbs then do (breadcrumb_entity, breadcrumb_index) =>
+			button_name = "Back to #{breadcrumb_entity.constructor.name}"
+			button_action = ->
+				inspect_entity(breadcrumb_entity, breadcrumbs.slice(0, breadcrumb_index))
+			entity_folder.add({[button_name]: button_action}, button_name)
+		
 	make_controllers = (object, folder)->
 		for key, value of object when key not in property_inspector_exclusions
 			if typeof value in ["number", "string", "boolean"]
