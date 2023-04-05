@@ -281,10 +281,13 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 				if value instanceof Array
 					if value.length > 0
 						array_folder = folder.addFolder(key)
+						array_folder.title("#{key} (#{value.length})")
 						array_folder.close()
 						make_controllers(Object.assign({}, value), array_folder)
 				else if value.constructor is Object
-					make_controllers(value, folder.addFolder(key))
+					new_folder = folder.addFolder(key)
+					new_folder.title("#{key} {...}")
+					make_controllers(value, new_folder)
 				else if value instanceof Entity
 					# Make button to select entity
 					do (key, value)=>
