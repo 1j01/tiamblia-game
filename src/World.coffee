@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 9
+	@formatVersion: 10
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -202,16 +202,29 @@ module.exports = class World
 					# Keep the object so the references can be resolved into it,
 					# but clear it of the accidentally serialized entities.
 					ent_def.holding_arrows = []
-		
+		if def.formatVersion is 9
+			def.formatVersion = 10
+			# Remove cruft from serialization
+			# GrassyTerrain: grass_tiles Map is derived state.
+			# Previously it was serialized as an empty object, now it's omitted.
+			for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
+				delete ent_def.grass_tiles
+			# Water: waves was renamed waves_y, but most files have the new property already.
+			# (waves_y has been, since its introduction, created automatically.)
+			# Water: ccw, min_x, max_x, min_y, max_y are all derived from the polygon
+			for ent_def in def.entities when ent_def._class_ is "Water"
+				if ent_def.waves and not ent_def.waves_y
+					ent_def.waves_y = ent_def.waves
+				delete ent_def.waves
+				delete ent_def.ccw
+				delete ent_def.min_x
+				delete ent_def.max_x
+				delete ent_def.min_y
+				delete ent_def.max_y
 		# TODO: remove more cruft from serialization
-		# # GrassyTerrain: grass_tiles
-		# for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
-		# 	delete ent_def.grass_tiles
-		# # Water: waves
-		# for ent_def in def.entities when ent_def._class_ is "Water"
-		# 	delete ent_def.waves
+		# can't do this until we own Terrain, right now it's part of Skele2D.
 		# # Terrain: width, max_height, left, right, bottom
-		# # These are pretty silly to serialize, since we can use the bounding box
+		# # These are pretty silly to serialize (or store), since we can use the bounding box
 		# for ent_def in def.entities when ent_def._class_ is "Terrain"
 		# 	delete ent_def.width
 		# 	delete ent_def.max_height

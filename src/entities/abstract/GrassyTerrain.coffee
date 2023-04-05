@@ -6,8 +6,6 @@ module.exports = class GrassyTerrain extends Terrain
 		super()
 		@bbox_padding = 30
 		@grass_tiles = new Map
-		@grass_tiles.fromJSON = (map_obj)=>
-		@grass_tiles.toJSON = (map_obj)=> {}
 		@structure.onchange = =>
 			@grass_tiles.forEach (tile)=>
 				for shade in ["dark", "light"]
@@ -16,6 +14,11 @@ module.exports = class GrassyTerrain extends Terrain
 		@color = "#C29853"
 		@color_dark = "#A17A3F"
 		@color_light = "#D2B06A"
+	
+	toJSON: ->
+		def = {}
+		def[k] = v for k, v of super() when k isnt "grass_tiles"
+		def
 	
 	draw: (ctx, view)->
 		

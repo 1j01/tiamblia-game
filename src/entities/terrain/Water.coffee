@@ -51,6 +51,11 @@ module.exports = class Water extends Terrain
 			@ccw = double_area > 0
 		@bubbles = []
 	
+	toJSON: ->
+		def = {}
+		def[k] = v for k, v of super() when k not in ["ccw", "min_x", "max_x", "min_y", "max_y"]
+		def
+
 	makeWaves: (world_pos, radius=5, velocity_y=5)->
 		local_pos = @fromWorld(world_pos)
 		for x in [Math.round(local_pos.x - radius)...Math.round(local_pos.x + radius)]
