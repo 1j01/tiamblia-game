@@ -449,7 +449,7 @@ do animate = ->
 	if last_selected_entity isnt selected_entity
 		last_selected_entity = selected_entity
 		inspect_entity(selected_entity)
-	if gui._visible
+	unless gui._hidden
 		for controller in entity_folder.controllersRecursive()
 			controller.updateDisplay()
 
