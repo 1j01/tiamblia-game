@@ -159,21 +159,58 @@ module.exports = class Player extends SimpleActor
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
 		@hair_initialized = false
 
-	# Entity::resolveReferences handles _refs_ when deserializing
-	# Unfortunately we have to reimplement the _refs_ logic here to extend the toJSON method
-	# to ignore more properties when serializing.
+	# Serialization
+	# Entity::resolveReferences handles _refs_ when deserializing,
+	# but in a super limited way: only for references to other entities, only at the top level.
+	# We need to overload (or override, or officially update) it to handle references inside arrays and objects.
 	# TODO: use a library for a general solution to circular references
-	# TODO: make it easier to exclude properties when serializing
+	# TODO: make it easier to exclude properties when serializing, i.e. without overloading toJSON
+
+	resolveReferences: (world)->
+		# if @_refs_
+		# 	for k, id of @_refs_
+		# 		@[k] = world.getEntityByID(id)
+		# 	delete @_refs_
+		if @_recursive_refs_
+			for [key_path, entity_id] in @_recursive_refs_
+				[...key_path, last_key] = key_path
+				obj = @
+				for key in key_path
+					obj = obj[key]
+				obj[last_key] = world.getEntityByID(entity_id)
+			delete @_recursive_refs_
+		return
+
 	# Note: animation is gameplay-significant due to the physical nature of picking up items, so it should not be excluded.
+	serialization_exclusions = ["_refs_", "_recursive_refs_", "reaching_for_segment", "reaching_for_entity", "reaching_with_secondary_hand", "ground_angle"]
+
 	toJSON: ->
-		def = {}
-		for k, v of @ when k not in ["_refs_", "reaching_for_segment", "reaching_for_entity", "reaching_with_secondary_hand", "ground_angle"]
-			if v instanceof Entity
-				def._refs_ ?= {}
-				def._refs_[k] = v.id
-			else
-				def[k] = v
-		def
+		# def = {}
+		# for k, v of @ when k not in serialization_exclusions
+		# 	if v instanceof Entity
+		# 		def._refs_ ?= {}
+		# 		def._refs_[k] = v.id
+		# 	else
+		# 		def[k] = v
+		# return def
+		_recursive_refs_ = []
+		store_refs = (obj, key_path=[])->
+			obj_def = if obj instanceof Array then [] else {}
+			for k, v of obj when k not in serialization_exclusions
+				if typeof v is "object" and v
+					if v instanceof Entity
+						_recursive_refs_.push([[...key_path, k], v.id])
+					else
+						if v.toJSON
+							v = v.toJSON()
+						obj_def[k] = store_refs(v, [...key_path, k])
+				else
+					obj_def[k] = v
+			return obj_def
+		ent_def = store_refs(@)
+		if _recursive_refs_.length
+			ent_def._recursive_refs_ = _recursive_refs_
+		return ent_def
 
 	step: (world, view, mouse)->
 		{sternum} = @structure.points
@@ -613,12 +650,6 @@ module.exports = class Player extends SimpleActor
 				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle)
 				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle)
 		
-		# Serialization is broken; ad-hoc resolve references
-		for arrow, arrow_index in @holding_arrows
-			arrow_ent = world.getEntityByID(arrow.id)
-			@holding_arrows[arrow_index] = arrow_ent
-		@holding_arrows = @holding_arrows.filter((arrow) -> arrow)
-
 		for arrow, arrow_index in @holding_arrows
 			arrow.lodging_constraints.length = 0 # pull it out if it's lodged in an object
 			arrow.x = @x

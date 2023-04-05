@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 8
+	@formatVersion: 9
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -182,6 +182,27 @@ module.exports = class World
 					if ent_def[prop]?._class_
 						ent_def._refs_[prop] = ent_def[prop].id
 						delete ent_def[prop]
+		if def.formatVersion is 8
+			def.formatVersion = 9
+			# Player now serializes references as _recursive_refs_: [[key_path, id], ...] where key_path is an array of keys
+			# instead of _refs: {key: id, ...} which only worked for top-level entity references.
+			# This is to fix incorrect serialization of holding_arrows, which is an array of entities,
+			# which had a workaround of ad-hoc resolving references using the id of the accidentally serialized entity.
+			# We need to convert _refs to _recursive_refs_ here, but also fix up holding_arrows.
+			for ent_def in def.entities when ent_def._class_ is "Player"
+				if ent_def._refs_
+					ent_def._recursive_refs_ = []
+					for key, id of ent_def._refs_
+						ent_def._recursive_refs_.push([[key], id])
+					delete ent_def._refs_
+				if ent_def.holding_arrows
+					ent_def._recursive_refs_ ?= []
+					for arrow_def, i in ent_def.holding_arrows
+						ent_def._recursive_refs_.push([["holding_arrows", i], arrow_def.id])
+					# Keep the object so the references can be resolved into it,
+					# but clear it of the accidentally serialized entities.
+					ent_def.holding_arrows = []
+		
 		# TODO: remove more cruft from serialization
 		# # GrassyTerrain: grass_tiles
 		# for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
@@ -238,6 +259,9 @@ module.exports = class World
 			throw new Error "Unsupported format version #{def.formatVersion}"
 		
 		# Validate the current version of the format
+		# Note: if any validation becomes invalid here,
+		# you may want to "archive" it in the last upgrade step where it was valid,
+		# so that it can still validate worlds saved with that version or earlier.
 		if def.entities not instanceof Array
 			throw new Error "Expected entities to be an array, got #{def.entities}"
 		for ent_def, i in def.entities
@@ -252,7 +276,11 @@ module.exports = class World
 			if typeof ent_def.structure isnt "object"
 				throw new Error "Expected entities[#{i}].structure to be an object, got #{ent_def.structure}"
 			# Ensure there are no entity references not at the top level of an entity
-			# (resolveReferences only handles top-level references as a special case)
+			# Entity::resolveReferences only handles top-level references as a special case.
+			# Player::resolveReferences actually overloads it with a more general solution,
+			# but it's not yet improved in skele2d, which owns Entity (currently).
+			# In either case, _class_ should not appear except at the top level of an entity,
+			# since references are serialized with just the id.
 			dot_or_bracket = (key)=>
 				if key.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
 					return ".#{key}"
@@ -267,9 +295,8 @@ module.exports = class World
 						path_to_value = "#{path_to_obj}#{dot_or_bracket(key)}"
 						# console.debug "search_object: #{path_to_value} = #{JSON.stringify(value)}"
 						if key is "_class_"
-							# throw new Error "Entity references must be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)} #{get_more_context()[0]} #{JSON.stringify(get_more_context()[1])}"
-							# Player class has a workaround for this for holding_arrows, so don't throw an error.
-							console.warn "Entity references should only be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)}", ...get_more_context()
+							throw new Error "Entity references must be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)} #{get_more_context()[0]} #{JSON.stringify(get_more_context()[1])}"
+							# console.error "Entity references should only be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)}", ...get_more_context()
 						if typeof value is "object" and value isnt null
 							search_object(value, path_to_value, get_more_context)
 				return
