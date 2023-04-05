@@ -266,7 +266,10 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 		new BreadcrumbsController(entity_folder, {}, "", breadcrumbs.map((breadcrumb, breadcrumb_index) -> {
 			name: breadcrumb.entity.constructor.name
 			action: if breadcrumb.entity isnt selected_entity then ->
+				editor.selected_entities = [breadcrumb.entity]
 				inspect_entity(breadcrumb.entity, breadcrumbs.slice(0, breadcrumb_index + 1))
+				# avoid inspect_entity on next frame clearing breadcrumbs
+				last_selected_entity = breadcrumb.entity
 		}))
 		
 	make_controllers = (object, folder)->
