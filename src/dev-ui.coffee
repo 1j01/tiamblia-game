@@ -238,7 +238,11 @@ class BreadcrumbsController extends Controller
 				button.style.cursor = "default"
 
 			@$widget.append(button)
-			@$widget.append(document.createTextNode(" > ")) unless link_index is links.length - 1
+			unless link_index is links.length - 1
+				span = document.createElement("span")
+				span.textContent = " ❱ "
+				span.style.color = "#777"
+				@$widget.append(span)
 			@$buttons.push(button)
 
 		@$widget.style.display = "inline-block"
