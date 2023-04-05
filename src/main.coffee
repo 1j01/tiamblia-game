@@ -323,6 +323,17 @@ file_save = ->
 		file_save_as()
 	return
 
+addEventListener "keydown", (event) ->
+	if event.key is "s" and event.ctrlKey
+		event.preventDefault()
+		file_save()
+		return
+	if event.key is "o" and event.ctrlKey
+		event.preventDefault()
+		file_open()
+		return
+	return
+
 options["Load World"] = file_open
 skele2d_folder.add(options, "Load World")
 
