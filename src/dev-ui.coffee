@@ -105,6 +105,7 @@ file_save_as = ->
 				return
 			editor.warn("Failed to save file: #{exception}")
 			return
+		idb_keyval.set("tiamblia.file_handle", file_handle)
 	else
 		a = document.createElement("a")
 		a.href = "data:application/json;charset=utf-8," + encodeURIComponent(json)
