@@ -181,6 +181,37 @@ Controller::setValue = (value) ->
 		old_Controller_setValue.call(@, value)
 	return
 
+# The ButtonController doesn't look good in the inspector, for linked entities.
+# Note that this class uses a different constructor signature than ButtonController,
+# because it doesn't use the object's property as the function, nor the key as name.
+class LinkButtonController extends Controller
+	constructor: (parent, object, property, link_name, link_action)->
+		super(parent, object, property, "link-button-controller")
+
+		@$button = document.createElement("button")
+		@$button.textContent = link_name
+
+		# stylize button as link
+		@$button.style.background = "none"
+		@$button.style.border = "none"
+		@$button.style.padding = "0"
+		@$button.style.font = "inherit"
+		@$button.style.cursor = "pointer"
+		@$button.style.color = "#2277FF"
+		@$button.style.textDecoration = "underline"
+		@$button.style.textAlign = "left"
+		@$button.style.fontWeight = "bold"
+
+		@$button.addEventListener "click", =>
+			link_action()
+
+		@$widget.append(@$button)
+
+		@updateDisplay()
+
+	updateDisplay: ->
+		return this
+
 # "waves" is old, it shouldn't be on the Water entity anymore
 # TODO: move this info into the respective entity classes
 # and maybe base it on serialization by default, but allow more properties to be excluded
@@ -214,14 +245,15 @@ inspect_entity = (selected_entity, breadcrumbs=[])->
 				else if value instanceof Entity
 					# Make button to select entity
 					do (key, value)=>
-						button_key = "Select #{key}"
 						button_fn = ->
 							editor.selected_entities = [value]
 							inspect_entity(value, [...breadcrumbs, selected_entity])
 							# avoid inspect_entity on next frame clearing breadcrumbs
 							last_selected_entity = value
 							return
-						folder.add({[button_key]: button_fn}, button_key)
+						# button_key = "Select #{key}"
+						# folder.add({[button_key]: button_fn}, button_key)
+						new LinkButtonController(folder, object, key, value.constructor.name, button_fn)
 				else
 					console.log("Unknown type for #{key}: #{value.constructor.name}")
 			else if value
