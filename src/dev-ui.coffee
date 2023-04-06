@@ -93,10 +93,12 @@ load_from_json = (json)->
 	catch error
 		editor.warn("Failed to parse file as JSON: #{error}")
 		return false
-	# TODO: don't create extra undo step if error occurs in fromJSON
+	# TODO: don't create extra undo step if error occurs in *.fromJSON()
 	editor.undoable =>
 		try
-			world.fromJSON(parsed)
+			# world.fromJSON(parsed)
+			# This avoids ghost a selection. It's a little hacky to use the editor's serialization methods, though.
+			editor.fromJSON({world: parsed, selected_entity_ids: [], editing_entity_id: null, selected_point_names: []})
 		catch error
 			editor.warn("Failed to load world: #{error}")
 		return false
