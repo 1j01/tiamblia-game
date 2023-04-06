@@ -21,9 +21,13 @@ module.exports = class Deer extends SimpleActor
 		@bbox_padding = 30
 		
 		@width = 27; @height = 18
-		@xp = 0; @t = 0
-		@lr = 0
-		@dir = 0; @smoothed_facing_x = @facing_x = 1
+		@xp = 0 # previous x position
+		@t = 0 # idle timer... while in the air??? or I guess this was trying to
+		# avoid getting stuck for too long on a cliff, a hill too steep to climb.
+		# I don't know if it works with the new game, after porting from tiamblia-original.
+		@lr = 0 # leg rotation
+		@dir = 0 # movement direction/speed
+		@smoothed_facing_x = @facing_x = 1
 		@rideable = true
 		# hex is for lil-gui based entity properties editor
 		@body_color = hsl_to_rgb_hex("hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)")
@@ -59,8 +63,9 @@ module.exports = class Deer extends SimpleActor
 		@xp = @x
 
 		@move_x = @dir*0.2
+		# swim upwards always if in water
 		@move_y = -1
-		# run SimpleActor physics, which uses @move_x and @jump
+		# run SimpleActor physics, which uses @move_x/y and @jump
 		super(world)
 
 		@smoothed_facing_x += (@facing_x-@smoothed_facing_x)/10
