@@ -272,8 +272,10 @@ module.exports = class Player extends SimpleActor
 		@pick_up_timer -= 1
 		pick_up_any = (EntityClass, prop, use_secondary_hand=false, hold_many=false)=>
 			# Skele2D editor sets entity.destroyed if you delete an entity
+			# If you delete an entity while it's being held, and then save and load,
+			# it will come back as null. So we need to handle both cases.
 			if hold_many
-				@[prop] = @[prop].filter((entity)-> not entity.destroyed)
+				@[prop] = @[prop].filter((entity)-> entity and not entity.destroyed)
 			else
 				@[prop] = null if @[prop]?.destroyed
 			
