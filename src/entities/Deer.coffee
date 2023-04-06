@@ -26,7 +26,6 @@ module.exports = class Deer extends SimpleActor
 		# avoid getting stuck for too long on a cliff, a hill too steep to climb.
 		# I don't know if it works with the new game, after porting from tiamblia-original.
 		@lr = 0 # leg rotation
-		@dir = 0 # movement direction/speed
 		@smoothed_facing_x = @facing_x = 1
 		@rideable = true
 		# hex is for lil-gui based entity properties editor
@@ -42,27 +41,25 @@ module.exports = class Deer extends SimpleActor
 			@ground_angle = Math.atan2(Math.sin(@ground_angle), Math.cos(@ground_angle))
 			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/5
 			if Math.random() < 0.01
-				@dir = r()
-				if Math.abs(@dir) < 0.3
-					@dir = 0
+				@move_x = r()
+				if Math.abs(@move_x) < 0.3
+					@move_x = 0
 		else
 			@ground_angle = 0
 			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/10
 			if Math.abs(@xp-@x) < 1
 				@t++
 				if @t > 15
-					@dir = r()
-					if Math.abs(@dir) < 0.3
-						@dir = 0
+					@move_x = r()
+					if Math.abs(@move_x) < 0.3
+						@move_x = 0
 					@t=0
 			else
 				@t=0
 		
-		@vx += (@dir)/5
 		@lr += Math.abs(@vx)/5
 		@xp = @x
 
-		@move_x = @dir*0.2
 		# swim upwards always if in water
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x/y and @jump

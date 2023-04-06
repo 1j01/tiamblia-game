@@ -346,8 +346,7 @@ module.exports = class Player extends SimpleActor
 					@riding = search_result.closest_entity
 
 		if @riding
-			# @riding.move_x = @move_x
-			@riding.dir = @move_x # old code...
+			@riding.move_x = @move_x
 			@riding.jump = @jump
 			@facing_x = @riding.facing_x
 			offset_distance = 20

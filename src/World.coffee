@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 11
+	@formatVersion: 12
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -233,6 +233,12 @@ module.exports = class World
 				delete ent_def.dir_pl
 				ent_def.facing_x = ent_def.dir_p if ent_def.dir_p?
 				delete ent_def.dir_p
+		if def.formatVersion is 11
+			def.formatVersion = 12
+			# Deer: dir is removed in favor of move_x from SimpleActor
+			for ent_def in def.entities when ent_def._class_ is "Deer"
+				ent_def.move_x = ent_def.dir if ent_def.dir?
+				delete ent_def.dir
 
 		# TODO: remove more cruft from serialization
 		# can't do this until we own Terrain, right now it's part of Skele2D.
