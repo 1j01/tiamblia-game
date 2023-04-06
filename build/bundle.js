@@ -4,7 +4,7 @@
 /***/ 378:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Entity, Terrain, World, closestPointOnLineSegment, distanceToLineSegment,
+var Entity, Terrain, World, closestPointOnLineSegment, distanceToLineSegment, hsl_to_rgb_hex,
   indexOf = [].indexOf;
 
 Entity = __webpack_require__(293);
@@ -12,6 +12,8 @@ Entity = __webpack_require__(293);
 Terrain = __webpack_require__(891);
 
 ({distanceToLineSegment} = (__webpack_require__(505).helpers));
+
+hsl_to_rgb_hex = __webpack_require__(10);
 
 // Actually treat it as a segment, not an infinite line
 // unlike copies of this function in some other files
@@ -56,7 +58,7 @@ module.exports = World = (function() {
     }
 
     fromJSON(def) {
-      var average_x, average_y, dot_or_bracket, ent_def, entity, i, j, k, l, len, len1, len2, len3, len4, len5, len6, m, n, o, p, point_def, point_name, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, search_object, top_key, top_value, upgrading_from_version;
+      var arrow_def, average_x, average_y, dot_or_bracket, ent_def, entity, i, i1, id, j, j1, k, k1, key, l, l1, len, len1, len10, len11, len12, len13, len14, len15, len16, len17, len18, len19, len2, len3, len4, len5, len6, len7, len8, len9, m, n, o, p, point_def, point_name, prop, q, r, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref2, ref20, ref21, ref22, ref23, ref24, ref25, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, search_object, to_hex_if_hsl, top_key, top_value, u, upgrading_from_version, v, w, x, y, z;
       // ------------- DON'T PANIC -------------
       // File format versioning is easy!
       // The long comments below and error handling are to help you learn.
@@ -187,16 +189,267 @@ module.exports = World = (function() {
           }
         }
       }
-      // TODO: remove cruft from serialization, then enable this as an upgrade step
-      // # These other things were just cruft, not causing problems
-      // # GrassyTerrain: grass_tiles
-      // for ent_def in def.entities when ent_def._class_ in ["GrassyTerrain", "LushGrass", "SavannaGrass"]
-      // 	delete ent_def.grass_tiles
-      // # Player: reaching_for_segment, ...
-      // for ent_def in def.entities when ent_def._class_ is "Player"
-      // 	delete ent_def.reaching_for_segment
+      if (def.formatVersion === 5) {
+        def.formatVersion = 6;
+        ref7 = def.entities;
+        // Remove cruft from Player: reaching_for_segment, reaching_for_segment, reaching_for_entity, reaching_with_secondary_hand, ground_angle, smoothed_vy, hair_x_scales
+        for (o = 0, len5 = ref7.length; o < len5; o++) {
+          ent_def = ref7[o];
+          if (!(ent_def._class_ === "Player")) {
+            continue;
+          }
+          delete ent_def.reaching_for_segment;
+          delete ent_def.reaching_for_entity;
+          delete ent_def.reaching_with_secondary_hand;
+          delete ent_def.ground_angle;
+          delete ent_def.smoothed_vy;
+          delete ent_def.hair_x_scales;
+        }
+      }
+      if (def.formatVersion === 6) {
+        def.formatVersion = 7;
+        // Rename color properties to include "color" to be picked up by the entity inspector/editor
+        // and convert hsl[a] to rgb hex when appropriate, using hsl_to_rgb_hex
+        to_hex_if_hsl = function(color) {
+          if (color.match(/hsl/i)) {
+            return hsl_to_rgb_hex(color);
+          }
+          return color;
+        };
+        ref8 = def.entities;
+        // Rabbit: c -> body_color, c2 -> body_shadow_color
+        // Butterfly: c1 -> color_1, c2 -> color_2
+        // Frog: c -> body_color
+        // Deer: c -> body_color
+        for (p = 0, len6 = ref8.length; p < len6; p++) {
+          ent_def = ref8[p];
+          if (!((ref9 = ent_def._class_) === "Frog" || ref9 === "Deer" || ref9 === "Rabbit")) {
+            continue;
+          }
+          ent_def.body_color = to_hex_if_hsl(ent_def.c);
+          delete ent_def.c;
+        }
+        ref10 = def.entities;
+        // c2 differs between Rabbit and Butterfly
+        for (q = 0, len7 = ref10.length; q < len7; q++) {
+          ent_def = ref10[q];
+          if (!(ent_def._class_ === "Rabbit")) {
+            continue;
+          }
+          ent_def.body_shadow_color = to_hex_if_hsl(ent_def.c2);
+          delete ent_def.c2;
+        }
+        ref11 = def.entities;
+        for (r = 0, len8 = ref11.length; r < len8; r++) {
+          ent_def = ref11[r];
+          if (!(ent_def._class_ === "Butterfly")) {
+            continue;
+          }
+          ent_def.color_1 = to_hex_if_hsl(ent_def.c1);
+          delete ent_def.c1;
+          ent_def.color_2 = to_hex_if_hsl(ent_def.c2);
+          delete ent_def.c2;
+        }
+      }
+      if (def.formatVersion === 7) {
+        def.formatVersion = 8;
+        ref12 = def.entities;
+        // Fix botched entity references in Player when naively defining a toJSON overload.
+        // Entity defines a limited system for resolving references to other Entities:
+        /*
+        resolveReferences: (world)->
+        	if @_refs_
+        		for k, id of @_refs_
+        			@[k] = world.getEntityByID(id)
+        		delete @_refs_
+
+        toJSON: ->
+        	obj = {}
+        	for k, v of @ when k isnt "_refs_"
+        		if v instanceof Entity
+        			obj._refs_ ?= {}
+        			obj._refs_[k] = v.id
+        		else
+        			obj[k] = v
+        	obj
+        */
+        // I temporarily overrode toJSON without taking _refs_ into account,
+        // so we need to construct _refs_ here based on accidentally serialized entity references.
+        for (s = 0, len9 = ref12.length; s < len9; s++) {
+          ent_def = ref12[s];
+          if (!(ent_def._class_ === "Player")) {
+            continue;
+          }
+          if (ent_def._refs_ == null) {
+            ent_def._refs_ = {};
+          }
+// grounded and riding are from hit tests, which now return Terrain entities
+// for prop in ["reaching_for_entity", "holding_bow", "riding", "grounded", "submerged"]
+// we can do this more generally just as easily, or easier
+          for (prop in ent_def) {
+            if ((ref13 = ent_def[prop]) != null ? ref13._class_ : void 0) {
+              ent_def._refs_[prop] = ent_def[prop].id;
+              delete ent_def[prop];
+            }
+          }
+        }
+      }
+      if (def.formatVersion === 8) {
+        def.formatVersion = 9;
+        ref14 = def.entities;
+        // Player now serializes references as _recursive_refs_: [[key_path, id], ...] where key_path is an array of keys
+        // instead of _refs: {key: id, ...} which only worked for top-level entity references.
+        // This is to fix incorrect serialization of holding_arrows, which is an array of entities,
+        // which had a workaround of ad-hoc resolving references using the id of the accidentally serialized entity.
+        // We need to convert _refs to _recursive_refs_ here, but also fix up holding_arrows.
+        for (u = 0, len10 = ref14.length; u < len10; u++) {
+          ent_def = ref14[u];
+          if (!(ent_def._class_ === "Player")) {
+            continue;
+          }
+          if (ent_def._refs_) {
+            ent_def._recursive_refs_ = [];
+            ref15 = ent_def._refs_;
+            for (key in ref15) {
+              id = ref15[key];
+              ent_def._recursive_refs_.push([[key], id]);
+            }
+            delete ent_def._refs_;
+          }
+          if (ent_def.holding_arrows) {
+            if (ent_def._recursive_refs_ == null) {
+              ent_def._recursive_refs_ = [];
+            }
+            ref16 = ent_def.holding_arrows;
+            for (i = v = 0, len11 = ref16.length; v < len11; i = ++v) {
+              arrow_def = ref16[i];
+              ent_def._recursive_refs_.push([["holding_arrows", i], arrow_def.id]);
+            }
+            // Keep the object so the references can be resolved into it,
+            // but clear it of the accidentally serialized entities.
+            ent_def.holding_arrows = [];
+          }
+        }
+      }
+      if (def.formatVersion === 9) {
+        def.formatVersion = 10;
+        ref17 = def.entities;
+        // Remove cruft from serialization
+        // GrassyTerrain: grass_tiles Map is derived state.
+        // Previously it was serialized as an empty object, now it's omitted.
+        for (w = 0, len12 = ref17.length; w < len12; w++) {
+          ent_def = ref17[w];
+          if ((ref18 = ent_def._class_) === "GrassyTerrain" || ref18 === "LushGrass" || ref18 === "SavannaGrass") {
+            delete ent_def.grass_tiles;
+          }
+        }
+        ref19 = def.entities;
+        // Water: waves was renamed waves_y, but most files have the new property already.
+        // (waves_y has been, since its introduction, created automatically.)
+        // Water: ccw, min_x, max_x, min_y, max_y are all derived from the polygon
+        for (x = 0, len13 = ref19.length; x < len13; x++) {
+          ent_def = ref19[x];
+          if (!(ent_def._class_ === "Water")) {
+            continue;
+          }
+          if (ent_def.waves && !ent_def.waves_y) {
+            ent_def.waves_y = ent_def.waves;
+          }
+          delete ent_def.waves;
+          delete ent_def.ccw;
+          delete ent_def.min_x;
+          delete ent_def.max_x;
+          delete ent_def.min_y;
+          delete ent_def.max_y;
+        }
+      }
+      if (def.formatVersion === 10) {
+        def.formatVersion = 11;
+        ref20 = def.entities;
+        // Deer: dir_pl -> smoothed_facing_x, dir_p is renamed/removed in favor of facing_x from SimpleActor
+        // I believe the 'l' stood for "linearly interpolated", but I'm not sure about the 'p'.
+        // Maybe 'p' meant "positive(/negative)"? or "pointing", as in a facing direction?
+        // I copied this code from an era where I used single-letter variable names.
+        // Those were the days... where I can't understand my code from.
+        for (y = 0, len14 = ref20.length; y < len14; y++) {
+          ent_def = ref20[y];
+          if (!(ent_def._class_ === "Deer")) {
+            continue;
+          }
+          if (ent_def.dir_pl != null) {
+            ent_def.smoothed_facing_x = ent_def.dir_pl;
+          }
+          delete ent_def.dir_pl;
+          if (ent_def.dir_p != null) {
+            ent_def.facing_x = ent_def.dir_p;
+          }
+          delete ent_def.dir_p;
+        }
+      }
+      if (def.formatVersion === 11) {
+        def.formatVersion = 12;
+        ref21 = def.entities;
+        // Deer: dir is removed in favor of move_x from SimpleActor
+        for (z = 0, len15 = ref21.length; z < len15; z++) {
+          ent_def = ref21[z];
+          if (!(ent_def._class_ === "Deer")) {
+            continue;
+          }
+          if (ent_def.dir != null) {
+            ent_def.move_x = ent_def.dir;
+          }
+          delete ent_def.dir;
+        }
+      }
+      if (def.formatVersion === 12) {
+        def.formatVersion = 13;
+        ref22 = def.entities;
+        // Deer: xp -> x_prev, t -> idle_timer, lr -> leg_rotation
+        for (i1 = 0, len16 = ref22.length; i1 < len16; i1++) {
+          ent_def = ref22[i1];
+          if (!(ent_def._class_ === "Deer")) {
+            continue;
+          }
+          if (ent_def.xp != null) {
+            ent_def.x_prev = ent_def.xp;
+          }
+          delete ent_def.xp;
+          if (ent_def.t != null) {
+            ent_def.idle_timer = ent_def.t;
+          }
+          delete ent_def.t;
+          if (ent_def.lr != null) {
+            ent_def.leg_rotation = ent_def.lr;
+          }
+          delete ent_def.lr;
+        }
+      }
+      if (def.formatVersion === 13) {
+        def.formatVersion = 14;
+        ref23 = def.entities;
+        // Player: real_facing_x -> upper_body_facing_x and lower_body_facing_x, prev_real_facing_x -> prev_upper_body_prev_facing_x
+        for (j1 = 0, len17 = ref23.length; j1 < len17; j1++) {
+          ent_def = ref23[j1];
+          if (!(ent_def._class_ === "Player")) {
+            continue;
+          }
+          if (ent_def.real_facing_x != null) {
+            ent_def.upper_body_facing_x = ent_def.real_facing_x;
+          }
+          if (ent_def.real_facing_x != null) {
+            ent_def.lower_body_facing_x = ent_def.real_facing_x;
+          }
+          delete ent_def.real_facing_x;
+          if (ent_def.prev_real_facing_x != null) {
+            ent_def.prev_upper_body_facing_x = ent_def.prev_real_facing_x;
+          }
+          delete ent_def.prev_real_facing_x;
+        }
+      }
+      // TODO: remove more cruft from serialization
+      // can't do this until we own Terrain, right now it's part of Skele2D.
       // # Terrain: width, max_height, left, right, bottom
-      // # These are pretty silly to serialize, since we can use the bounding box
+      // # These are pretty silly to serialize (or store), since we can use the bounding box
       // for ent_def in def.entities when ent_def._class_ is "Terrain"
       // 	delete ent_def.width
       // 	delete ent_def.max_height
@@ -247,12 +500,15 @@ module.exports = World = (function() {
       }
       
       // Validate the current version of the format
+      // Note: if any validation becomes invalid here,
+      // you may want to "archive" it in the last upgrade step where it was valid,
+      // so that it can still validate worlds saved with that version or earlier.
       if (!(def.entities instanceof Array)) {
         throw new Error(`Expected entities to be an array, got ${def.entities}`);
       }
-      ref7 = def.entities;
-      for (i = o = 0, len5 = ref7.length; o < len5; i = ++o) {
-        ent_def = ref7[i];
+      ref24 = def.entities;
+      for (i = k1 = 0, len18 = ref24.length; k1 < len18; i = ++k1) {
+        ent_def = ref24[i];
         if (typeof ent_def._class_ !== "string") {
           throw new Error(`Expected entities[${i}]._class_ to be a string, got ${ent_def._class_}`);
         }
@@ -269,7 +525,11 @@ module.exports = World = (function() {
           throw new Error(`Expected entities[${i}].structure to be an object, got ${ent_def.structure}`);
         }
         // Ensure there are no entity references not at the top level of an entity
-        // (resolveReferences only handles top-level references as a special case)
+        // Entity::resolveReferences only handles top-level references as a special case.
+        // Player::resolveReferences actually overloads it with a more general solution,
+        // but it's not yet improved in skele2d, which owns Entity (currently).
+        // In either case, _class_ should not appear except at the top level of an entity,
+        // since references are serialized with just the id.
         dot_or_bracket = (key) => {
           if (key.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
             return `.${key}`;
@@ -280,7 +540,7 @@ module.exports = World = (function() {
           }
         };
         search_object = (obj, path_to_obj, get_more_context) => {
-          var key, path_to_value, value;
+          var path_to_value, value;
           // console.debug "search_object(", obj, ",", JSON.stringify(path_to_obj), ")"
           if (typeof obj === "object" && obj !== null) {
             for (key in obj) {
@@ -288,10 +548,9 @@ module.exports = World = (function() {
               path_to_value = `${path_to_obj}${dot_or_bracket(key)}`;
               // console.debug "search_object: #{path_to_value} = #{JSON.stringify(value)}"
               if (key === "_class_") {
-                // throw new Error "Entity references must be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)} #{get_more_context()[0]} #{JSON.stringify(get_more_context()[1])}"
-                // Player class has a workaround for this for holding_arrows, so don't throw an error.
-                console.warn(`Entity references should only be at the top level of an entity, but found ${path_to_value} = ${JSON.stringify(value)}`, ...get_more_context());
+                throw new Error(`Entity references must be at the top level of an entity, but found ${path_to_value} = ${JSON.stringify(value)} ${get_more_context()[0]} ${JSON.stringify(get_more_context()[1])}`);
               }
+              // console.error "Entity references should only be at the top level of an entity, but found #{path_to_value} = #{JSON.stringify(value)}", ...get_more_context()
               if (typeof value === "object" && value !== null) {
                 search_object(value, path_to_value, get_more_context);
               }
@@ -308,18 +567,18 @@ module.exports = World = (function() {
       
       // Initialize the world
       this.entities = (function() {
-        var len6, p, ref8, results;
-        ref8 = def.entities;
+        var l1, len19, ref25, results;
+        ref25 = def.entities;
         results = [];
-        for (p = 0, len6 = ref8.length; p < len6; p++) {
-          ent_def = ref8[p];
+        for (l1 = 0, len19 = ref25.length; l1 < len19; l1++) {
+          ent_def = ref25[l1];
           results.push(Entity.fromJSON(ent_def));
         }
         return results;
       })();
-      ref8 = this.entities;
-      for (p = 0, len6 = ref8.length; p < len6; p++) {
-        entity = ref8[p];
+      ref25 = this.entities;
+      for (l1 = 0, len19 = ref25.length; l1 < len19; l1++) {
+        entity = ref25[l1];
         entity.resolveReferences(this);
       }
     }
@@ -758,7 +1017,7 @@ module.exports = World = (function() {
 
   World.format = "Tiamblia World";
 
-  World.formatVersion = 5;
+  World.formatVersion = 14;
 
   bucket_width = 100;
 
@@ -857,6 +1116,542 @@ window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 
 
 /***/ }),
 
+/***/ 100:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var BreadcrumbsController, Controller, Entity, GUI, LinkButtonController, editor, entity_folder, file_handle, file_open, file_save, file_save_as, gui, idb_keyval, inspect_entity, last_selected_entity, last_undoable_time, load_from_json, ms_between_undos, ms_idle_before_saving, name, old_Controller_setValue, option_names_to_keys, options, property_inspector_exclusions, ref, save_timeout, skele2d_folder, storage_key, store_file_handle, style_button_as_link, tiamblia_folder, update_property_inspector, verify_permission, world,
+  indexOf = [].indexOf;
+
+({Entity} = __webpack_require__(505));
+
+({GUI, Controller} = __webpack_require__(33));
+
+idb_keyval = __webpack_require__(193); // just for persisting file handles
+
+
+// dependencies injected via configure_property_inspector()
+editor = null;
+
+world = null;
+
+// UI for development features, accessible with the backtick/tilde (`/~) key
+gui = new GUI();
+
+gui.hide();
+
+option_names_to_keys = {
+  "Disable welcome message, start in edit mode": "tiamblia.disable_welcome_message",
+  "Show performance stats": "tiamblia.show_stats",
+  "Debug projectPointOutside": "tiamblia.debug_project_point_outside",
+  "Debug Caterpillar class": "tiamblia.debug_caterpillar",
+  "Debug Arrow class": "tiamblia.debug_arrow",
+  "Debug Terrain class": "tiamblia.debug_terrain",
+  "Show collision buckets": "tiamblia.show_collision_buckets",
+  "Show hit tested buckets": "tiamblia.count_hit_tests",
+  "Show point names": "Skele2D show names",
+  "Show point indices": "Skele2D show indices",
+  "Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world",
+  "Disable constraint solving while editing": "Skele2D disable constraint solving"
+};
+
+options = {};
+
+tiamblia_folder = gui.addFolder("Tiamblia");
+
+skele2d_folder = gui.addFolder("Skele2D");
+
+entity_folder = gui.addFolder("Selected Entity");
+
+for (name in option_names_to_keys) {
+  storage_key = option_names_to_keys[name];
+  (function(name, storage_key) {
+    var folder;
+    options[name] = ((function() {
+      try {
+        return localStorage[storage_key];
+      } catch (error1) {}
+    })()) === "true";
+    folder = storage_key.indexOf("Skele2D") === 0 ? skele2d_folder : tiamblia_folder;
+    folder.add(options, name).onChange(function(value) {
+      localStorage[storage_key] = value;
+    });
+  })(name, storage_key);
+}
+
+options["Auto-spawn entities"] = (ref = ((function() {
+  try {
+    return localStorage["tiamblia.auto_spawn"];
+  } catch (error1) {}
+})())) != null ? ref : "";
+
+tiamblia_folder.add(options, "Auto-spawn entities").onChange(function(value) {
+  localStorage["tiamblia.auto_spawn"] = value;
+});
+
+file_handle = null;
+
+// Verify the user has granted permission to read or write to the file, if
+// permission hasn't been granted, request permission.
+// getFile() can fail without requesting permission.
+
+// @param {FileSystemFileHandle} file_handle File handle to check.
+// @param {boolean} with_write whether write permission should be checked.
+// @return {boolean} whether the user has granted read/write permission.
+verify_permission = async function(file_handle, with_write) {
+  options = {};
+  if (with_write) {
+    options.writable = true;
+    // For Chrome 86 and later...
+    options.mode = "readwrite";
+  }
+  if ((await file_handle.queryPermission(options)) === "granted") {
+    return true;
+  }
+  if ((await file_handle.requestPermission(options)) === "granted") {
+    return true;
+  }
+  return false;
+};
+
+options["Clear Auto-Save"] = async function() {
+  var default_file_handle, exception, file, json;
+  if (!confirm("Are you sure you want to reload the default world?")) {
+    return;
+  }
+  localStorage.removeItem("Skele2D World");
+  file_handle = null;
+  await idb_keyval.del("tiamblia.file_handle");
+  try {
+    default_file_handle = (await idb_keyval.get("tiamblia.default_world_file_handle"));
+    if (default_file_handle) {
+      await verify_permission(default_file_handle, false);
+      file = (await default_file_handle.getFile());
+      json = (await file.text());
+      load_from_json(json);
+      file_handle = default_file_handle;
+      await idb_keyval.set("tiamblia.file_handle", file_handle);
+    } else {
+      location.reload();
+    }
+  } catch (error1) {
+    exception = error1;
+    alert(`Cleared Skele2D World, but failed to load default world:\n\n${exception}\n\nRefresh the page to start over.`);
+  }
+};
+
+skele2d_folder.add(options, "Clear Auto-Save");
+
+idb_keyval.get("tiamblia.file_handle").then(function(value) {
+  file_handle = value;
+});
+
+load_from_json = function(json) {
+  var error, parsed;
+  try {
+    parsed = JSON.parse(json);
+  } catch (error1) {
+    error = error1;
+    editor.warn(`Failed to parse file as JSON: ${error}`);
+    return false;
+  }
+  // TODO: don't create extra undo step if error occurs in *.fromJSON()
+  editor.undoable(() => {
+    try {
+      // world.fromJSON(parsed)
+      // This avoids ghost a selection. It's a little hacky to use the editor's serialization methods, though.
+      editor.fromJSON({
+        world: parsed,
+        selected_entity_ids: [],
+        editing_entity_id: null,
+        selected_point_names: []
+      });
+    } catch (error1) {
+      error = error1;
+      editor.warn(`Failed to load world: ${error}`);
+    }
+    return false;
+  });
+  return true;
+};
+
+store_file_handle = function(file_handle) {
+  idb_keyval.set("tiamblia.file_handle", file_handle);
+  // Maybe I should rename this file to be less generic
+  if (file_handle.name === "world.json") {
+    idb_keyval.set("tiamblia.default_world_file_handle", file_handle);
+  }
+};
+
+file_open = async function() {
+  var exception, file, input, json, new_file_handle;
+  if (typeof showOpenFilePicker !== "undefined" && showOpenFilePicker !== null) {
+    try {
+      [new_file_handle] = (await showOpenFilePicker({
+        accept: [
+          {
+            description: "JSON",
+            extensions: ["json"]
+          }
+        ]
+      }));
+      file = (await new_file_handle.getFile());
+      json = (await file.text());
+    } catch (error1) {
+      exception = error1;
+      if (exception.name === "AbortError") {
+        return;
+      }
+      editor.warn(`Failed to open file: ${exception}`);
+      return;
+    }
+    if (load_from_json(json)) {
+      file_handle = new_file_handle;
+      store_file_handle(file_handle);
+    }
+  } else {
+    input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = () => {
+      var reader;
+      // load_from_json(await input.files[0].text())
+      reader = new FileReader();
+      reader.onload = () => {
+        load_from_json(reader.result);
+      };
+      reader.readAsText(input.files[0]);
+    };
+    input.click();
+  }
+};
+
+file_save_as = async function() {
+  var a, exception, json, writable;
+  json = JSON.stringify(world.toJSON(), null, "\t");
+  if (typeof showSaveFilePicker !== "undefined" && showSaveFilePicker !== null) {
+    try {
+      file_handle = (await showSaveFilePicker({
+        types: [
+          {
+            description: "JSON",
+            accept: {
+              "application/json": [".json"]
+            }
+          }
+        ]
+      }));
+      writable = (await file_handle.createWritable());
+      await writable.write(json);
+      await writable.close();
+    } catch (error1) {
+      exception = error1;
+      if (exception.name === "AbortError") {
+        return;
+      }
+      editor.warn(`Failed to save file: ${exception}`);
+      return;
+    }
+    store_file_handle(file_handle);
+  } else {
+    a = document.createElement("a");
+    a.href = "data:application/json;charset=utf-8," + encodeURIComponent(json);
+    a.download = "Tiamblia World.json";
+    a.click();
+  }
+};
+
+file_save = async function() {
+  var error, json, writable;
+  if (file_handle != null) {
+    json = JSON.stringify(world.toJSON(), null, "\t");
+    try {
+      writable = (await file_handle.createWritable());
+      await writable.write(json);
+      await writable.close();
+    } catch (error1) {
+      error = error1;
+      editor.warn(`Failed to save file: ${error}`);
+      return;
+    }
+  } else {
+    file_save_as();
+  }
+};
+
+addEventListener("keydown", function(event) {
+  if (event.key === "s" && event.ctrlKey) {
+    event.preventDefault();
+    file_save();
+    return;
+  }
+  if (event.key === "o" && event.ctrlKey) {
+    event.preventDefault();
+    file_open();
+    return;
+  }
+});
+
+options["Load World"] = file_open;
+
+skele2d_folder.add(options, "Load World");
+
+options["Save World"] = file_save;
+
+skele2d_folder.add(options, "Save World");
+
+options["Save World As"] = file_save_as;
+
+skele2d_folder.add(options, "Save World As");
+
+last_selected_entity = null;
+
+// lil-gui.js doesn't support an onBeforeChange callback,
+// so we have to do this hack to integrate with the undo system.
+// Another way might be with a Proxy, might be cleaner.
+// This is debounced because it's called a lot while dragging controllers.
+// `undoable()` will save, but if we're debouncing it, we need to save manually.
+last_undoable_time = -2e308;
+
+save_timeout = null;
+
+ms_between_undos = 300;
+
+ms_idle_before_saving = ms_between_undos * 2;
+
+old_Controller_setValue = Controller.prototype.setValue;
+
+Controller.prototype.setValue = function(value) {
+  var c, controller_edits_entity;
+  controller_edits_entity = false;
+  c = this;
+  while (c) {
+    if (c.object instanceof Entity) {
+      controller_edits_entity = true;
+      break;
+    }
+    c = c.parent;
+  }
+  // controller_edits_entity = @ in entity_folder.controllersRecursive() # alternative
+  if (controller_edits_entity) {
+    clearTimeout(save_timeout);
+    save_timeout = setTimeout(() => {
+      return editor.save();
+    }, ms_idle_before_saving);
+    if (performance.now() - last_undoable_time > ms_between_undos) {
+      editor.undoable(() => {
+        old_Controller_setValue.call(this, value);
+      });
+      last_undoable_time = performance.now();
+    } else {
+      old_Controller_setValue.call(this, value);
+    }
+  } else {
+    old_Controller_setValue.call(this, value);
+  }
+};
+
+style_button_as_link = function(button) {
+  button.style.background = "none";
+  button.style.border = "none";
+  button.style.padding = "0";
+  button.style.font = "inherit";
+  button.style.cursor = "pointer";
+  button.style.color = "#2277FF";
+  button.style.textDecoration = "underline";
+  button.style.textAlign = "left";
+  button.style.fontWeight = "bold";
+};
+
+// The ButtonController doesn't look good in the inspector, for linked entities.
+// Note that this class uses a different constructor signature than ButtonController,
+// because it doesn't use the object's property as the function, nor the key as name.
+LinkButtonController = class LinkButtonController extends Controller {
+  constructor(parent, object, property, link_name, link_action) {
+    super(parent, object, property, "link-button-controller");
+    this.$button = document.createElement("button");
+    this.$button.textContent = link_name;
+    style_button_as_link(this.$button);
+    this.$button.addEventListener("click", () => {
+      return link_action();
+    });
+    this.$widget.append(this.$button);
+    this.updateDisplay();
+  }
+
+  updateDisplay() {
+    return this;
+  }
+
+};
+
+BreadcrumbsController = class BreadcrumbsController extends Controller {
+  constructor(parent, object, property, links) {
+    var i, len, link, link_index;
+    super(parent, object, property, "breadcrumbs-controller");
+    this.$buttons = [];
+    for (link_index = i = 0, len = links.length; i < len; link_index = ++i) {
+      link = links[link_index];
+      ((link, link_index) => {
+        var button, span;
+        button = document.createElement("button");
+        button.textContent = link.name;
+        style_button_as_link(button);
+        button.addEventListener("click", () => {
+          return link.action();
+        });
+        button.style.width = "auto";
+        if (link.action == null) {
+          button.disabled = true;
+          button.style.color = "inherit";
+          button.style.textDecoration = "none";
+          button.style.cursor = "default";
+        }
+        this.$widget.append(button);
+        if (link_index !== links.length - 1) {
+          span = document.createElement("span");
+          span.textContent = " ❱ ";
+          span.style.color = "#777";
+          this.$widget.append(span);
+        }
+        return this.$buttons.push(button);
+      })(link, link_index);
+    }
+    this.$widget.style.display = "inline-block";
+    this.$name.style.display = "none";
+    this.updateDisplay();
+  }
+
+  updateDisplay() {
+    return this;
+  }
+
+};
+
+// "waves" is old, it shouldn't be on the Water entity anymore
+// TODO: move this info into the respective entity classes
+// and maybe base it on serialization by default, but allow more properties to be excluded
+property_inspector_exclusions = ["_class_", "structure", "random_values", "simplex", "waves_y", "waves_vy", "bubbles", "waves"];
+
+inspect_entity = function(selected_entity, breadcrumbs = []) {
+  var child, i, make_controllers, ref1;
+  ref1 = entity_folder.children;
+  // Note: selected_entity may be null/undefined, for deselection
+  for (i = ref1.length - 1; i >= 0; i += -1) {
+    child = ref1[i];
+    child.destroy();
+  }
+  if (breadcrumbs.length > 1) {
+    new BreadcrumbsController(entity_folder, {}, "", breadcrumbs.map(function(breadcrumb, breadcrumb_index) {
+      return {
+        name: breadcrumb.entity.constructor.name,
+        action: breadcrumb.entity !== selected_entity ? function() {
+          editor.selected_entities = [breadcrumb.entity];
+          inspect_entity(breadcrumb.entity, breadcrumbs.slice(0, breadcrumb_index + 1));
+          // avoid inspect_entity on next frame clearing breadcrumbs
+          return last_selected_entity = breadcrumb.entity;
+        } : void 0
+      };
+    }));
+  }
+  make_controllers = function(object, folder) {
+    var array_folder, key, new_folder, ref2, ref3, results, value;
+    results = [];
+    for (key in object) {
+      value = object[key];
+      if (indexOf.call(property_inspector_exclusions, key) < 0) {
+        if ((ref2 = typeof value) === "number" || ref2 === "string" || ref2 === "boolean") {
+          // unlike dat.gui, lil-gui.js only supports RGB colors, no hsl, and no alpha
+          if (key.match(/color/i) && typeof value === "string" && value[0] === "#" && ((ref3 = value.length) === 4 || ref3 === 7)) {
+            results.push(folder.addColor(object, key));
+          } else {
+            results.push(folder.add(object, key));
+          }
+        } else if (typeof value === "object" && value) {
+          if (value instanceof Array) {
+            if (value.length > 0) {
+              array_folder = folder.addFolder(key);
+              array_folder.title(`${key} (${value.length})`);
+              array_folder.close();
+              results.push(make_controllers(Object.assign({}, value), array_folder));
+            } else {
+              results.push(void 0);
+            }
+          } else if (value.constructor === Object) {
+            new_folder = folder.addFolder(key);
+            new_folder.title(`${key} {...}`);
+            results.push(make_controllers(value, new_folder));
+          } else if (value instanceof Entity) {
+            // Make button to select entity
+            results.push(((key, value) => {
+              var button_fn;
+              button_fn = function() {
+                var new_breadcrumb;
+                editor.selected_entities = [value];
+                new_breadcrumb = {
+                  entity: value,
+                  key: key
+                };
+                inspect_entity(value, [...breadcrumbs, new_breadcrumb]);
+                // avoid inspect_entity on next frame clearing breadcrumbs
+                last_selected_entity = value;
+              };
+              // button_key = "Select #{key}"
+              // folder.add({[button_key]: button_fn}, button_key)
+              return new LinkButtonController(folder, object, key, value.constructor.name, button_fn);
+            })(key, value));
+          } else {
+            results.push(console.log(`Unknown type for ${key}: ${value.constructor.name}`));
+          }
+        } else if (value) {
+          results.push(console.log(`Unknown type for ${key}: ${typeof value}`));
+        } else {
+          results.push(console.log(`Skipping ${value} value for ${key}`));
+        }
+      }
+    }
+    return results;
+  };
+  make_controllers(selected_entity, entity_folder);
+  if (selected_entity) {
+    return entity_folder.title(`Selected Entity (${selected_entity.constructor.name})`);
+  } else {
+    return entity_folder.title("Selected Entity");
+  }
+};
+
+update_property_inspector = function() {
+  var controller, i, len, ref1, selected_entity;
+  selected_entity = editor.selected_entities[0];
+  // TODO: update with added/removed properties
+  if (last_selected_entity !== selected_entity) {
+    last_selected_entity = selected_entity;
+    inspect_entity(selected_entity, selected_entity ? [
+      {
+        entity: selected_entity,
+        key: null
+      }
+    ] : void 0);
+  } else {
+    ref1 = entity_folder.controllersRecursive();
+    for (i = 0, len = ref1.length; i < len; i++) {
+      controller = ref1[i];
+      controller.updateDisplay();
+    }
+  }
+};
+
+module.exports.gui = gui;
+
+module.exports.update_property_inspector = update_property_inspector;
+
+module.exports.configure_property_inspector = function(dependencies) {
+  editor = dependencies.editor;
+  world = dependencies.world;
+};
+
+
+/***/ }),
+
 /***/ 653:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
@@ -919,10 +1714,16 @@ module.exports = Bird = (function() {
       this.x += this.vx;
       this.y += this.vy;
       this.flap_timer--;
+      if (this.flap_timer < 0) {
+        // run SimpleActor physics, which uses @move_x and @jump
+        // super(world)
+        // This was in draw() before, and it looks kinda confusing...
+        this.flap_timer = -1;
+      }
+      this.flap += this.flap_timer / 20;
+      this.flap += (-this.flap - 0.1) * 0.1;
     }
 
-    // run SimpleActor physics, which uses @move_x and @jump
-    // super(world)
     draw(ctx) {
       var f;
       ctx.strokeStyle = "#000";
@@ -933,11 +1734,6 @@ module.exports = Bird = (function() {
       ctx.moveTo(0, 0);
       ctx.lineTo(0 - Math.cos(this.flap - f) * this.wingspan, 0 + Math.sin(this.flap - f) * this.wingspan);
       ctx.stroke();
-      if (this.flap_timer < 0) {
-        this.flap_timer = -1;
-      }
-      this.flap += this.flap_timer / 20;
-      this.flap += (-this.flap - 0.1) * 0.1;
     }
 
   };
@@ -954,11 +1750,13 @@ module.exports = Bird = (function() {
 /***/ 739:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Butterfly, SimpleActor, addEntityClass, r;
+var Butterfly, SimpleActor, addEntityClass, hsl_to_rgb_hex, r;
 
 SimpleActor = __webpack_require__(339);
 
 ({addEntityClass} = __webpack_require__(505));
+
+hsl_to_rgb_hex = __webpack_require__(10);
 
 r = function() {
   return Math.random() * 2 - 1;
@@ -982,8 +1780,9 @@ module.exports = Butterfly = (function() {
       this.t = r() * 5;
       this.flap = r() * 5;
       this.flap_timer = r() * 15;
-      this.c1 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
-      this.c2 = "hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)";
+      // hex is for lil-gui based entity properties editor
+      this.color_1 = hsl_to_rgb_hex("hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)");
+      this.color_2 = hsl_to_rgb_hex("hsla(" + (Math.random() * 360) + ",100%," + (50 + Math.random() * 50) + "%,1)");
     }
 
     step(world) {
@@ -1018,33 +1817,34 @@ module.exports = Butterfly = (function() {
       this.x += this.vx;
       this.y += this.vy;
       this.flap = Math.cos(this.t += 0.5);
+      if (this.flap_timer < 0) {
+        // run SimpleActor physics, which uses @move_x and @jump
+        // super(world)
+        // This was in draw() before, and it looks confusing, together with @flap=... above
+        this.flap_timer = -1;
+      }
+      this.flap += this.flap_timer / 20;
+      this.flap += (-this.flap - 0.1) * 0.1;
     }
 
-    // run SimpleActor physics, which uses @move_x and @jump
-    // super(world)
     draw(ctx) {
       var f;
       ctx.beginPath();
       f = 2.8;
-      ctx.strokeStyle = this.c1;
+      ctx.strokeStyle = this.color_1;
       ctx.moveTo(0, 0);
       ctx.lineTo(0 + Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
       ctx.moveTo(0, 0);
       ctx.lineTo(0 - Math.cos(this.flap - f) * this.width, 0 + Math.sin(this.flap - f) * this.width);
       ctx.stroke();
       ctx.beginPath();
-      ctx.strokeStyle = this.c2;
+      ctx.strokeStyle = this.color_2;
       ctx.moveTo(0, 0);
       ctx.lineTo(0 + Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
       ctx.moveTo(0, 0);
       ctx.lineTo(0 - Math.cos(this.flap + f) * this.width, 0 + Math.sin(this.flap + f) * this.width);
       ctx.stroke();
       ctx.beginPath();
-      if (this.flap_timer < 0) {
-        this.flap_timer = -1;
-      }
-      this.flap += this.flap_timer / 20;
-      this.flap += (-this.flap - 0.1) * 0.1;
     }
 
   };
@@ -2053,7 +2853,7 @@ module.exports = Cloud = (function() {
       ref = this;
       for (k in ref) {
         v = ref[k];
-        if (k !== "simplex") {
+        if (k !== "simplex" && k !== "intangible") {
           def[k] = v;
         }
       }
@@ -2093,13 +2893,15 @@ module.exports = Cloud = (function() {
 /***/ 857:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Deer, Entity, SimpleActor, TAU, addEntityClass, r;
+var Deer, Entity, SimpleActor, TAU, addEntityClass, hsl_to_rgb_hex, r;
 
 SimpleActor = __webpack_require__(339);
 
 Entity = __webpack_require__(293);
 
 ({addEntityClass} = __webpack_require__(505));
+
+hsl_to_rgb_hex = __webpack_require__(10);
 
 TAU = Math.PI * 2;
 
@@ -2121,18 +2923,20 @@ module.exports = Deer = (function() {
       this.bbox_padding = 30;
       this.width = 27;
       this.height = 18;
-      this.xp = 0;
-      this.t = 0;
-      this.lr = 0;
-      this.dir = 0;
-      this.dir_p = 1;
-      this.dir_pl = 1;
+      this.x_prev = 0; // previous x position
+      this.linger_time = 0; // I guess this was trying to
+      // avoid getting stuck for too long on a cliff, a hill too steep to climb.
+      // I don't know if it works with the new game, after porting from tiamblia-original.
+      this.leg_rotation = 0; // leg rotation
+      this.smoothed_facing_x = this.facing_x = 1;
       this.rideable = true;
-      this.c = "hsla(" + (Math.random() * 20) + "," + 10 + "%," + (50 + Math.random() * 20) + "%,1)";
+      // hex is for lil-gui based entity properties editor
+      this.body_color = hsl_to_rgb_hex("hsla(" + (Math.random() * 20) + "," + 10 + "%," + (50 + Math.random() * 20) + "%,1)");
       this.ground_angle = 0;
       this.ground_angle_smoothed = 0;
     }
 
+    // smoothed_facing_x and ground_angle_smoothed, huh? inconsistent naming scheme
     step(world) {
       var ref;
       if (this.grounded) {
@@ -2141,63 +2945,62 @@ module.exports = Deer = (function() {
         this.ground_angle = Math.atan2(Math.sin(this.ground_angle), Math.cos(this.ground_angle));
         this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 5;
         if (Math.random() < 0.01) {
-          this.dir = r();
+          this.move_x = r();
+          if (Math.abs(this.move_x) < 0.3) {
+            this.move_x = 0;
+          }
         }
       } else {
         this.ground_angle = 0;
         this.ground_angle_smoothed += (this.ground_angle - this.ground_angle_smoothed) / 10;
-        if (Math.abs(this.xp - this.x) < 1) {
-          this.t++;
-          if (this.t > 15) {
-            this.dir = r();
-            this.t = 0;
+        if (Math.abs(this.x_prev - this.x) < 1) {
+          this.linger_time++;
+          if (this.linger_time > 15) {
+            this.move_x = r();
+            if (Math.abs(this.move_x) < 0.3) {
+              this.move_x = 0;
+            }
+            this.linger_time = 0;
           }
         } else {
-          this.t = 0;
+          this.linger_time = 0;
         }
       }
-      this.vx += this.dir / 5;
-      this.lr += Math.abs(this.vx) / 5;
-      this.xp = this.x;
-      this.move_x = this.dir * 0.2;
+      this.leg_rotation += Math.abs(this.vx) / 5;
+      this.x_prev = this.x;
+      // swim upwards always if in water
       this.move_y = -1;
-      // run SimpleActor physics, which uses @move_x and @jump
+      // run SimpleActor physics, which uses @move_x/y and @jump
       super.step(world);
+      this.smoothed_facing_x += (this.facing_x - this.smoothed_facing_x) / 10;
     }
 
     draw(ctx) {
-      if (this.dir < -0.3) {
-        this.dir_p = -1;
-      }
-      if (this.dir > 0.3) {
-        this.dir_p = 1;
-      }
-      this.dir_pl += (this.dir_p - this.dir_pl) / 10;
       ctx.save();
       // ctx.translate(@x,@y+@height*3/4)
       ctx.translate(0, this.height * 3 / 4);
       ctx.rotate(this.ground_angle_smoothed);
       ctx.beginPath();
-      ctx.fillStyle = this.c;
+      ctx.fillStyle = this.body_color;
       ctx.arc(0, -this.height / 2, this.height / 3, 0, TAU, true);
       ctx.fill();
-      ctx.scale(this.dir_pl, 1);
+      ctx.scale(this.smoothed_facing_x, 1);
       // ctx.rotate(@vx/-10)
       // legs
       ctx.strokeStyle = "#a55";
       ctx.beginPath();
       ctx.moveTo(-this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
+      ctx.lineTo(Math.cos(this.leg_rotation) * 10 - this.width / 2, this.height / 2 + Math.sin(this.leg_rotation) * 8);
       ctx.moveTo(-this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr + TAU / 2) * 10 - this.width / 2, this.height / 2 + Math.sin(this.lr + TAU / 2) * 8);
+      ctx.lineTo(Math.cos(this.leg_rotation + TAU / 2) * 10 - this.width / 2, this.height / 2 + Math.sin(this.leg_rotation + TAU / 2) * 8);
       ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr + 0.1) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr) * 8);
+      ctx.lineTo(Math.cos(this.leg_rotation + 0.1) * 10 + this.width / 2, this.height / 2 + Math.sin(this.leg_rotation) * 8);
       ctx.moveTo(this.width / 2, -this.height / 2);
-      ctx.lineTo(Math.cos(this.lr + TAU / 2 + 0.2) * 10 + this.width / 2, this.height / 2 + Math.sin(this.lr + TAU / 2) * 8);
+      ctx.lineTo(Math.cos(this.leg_rotation + TAU / 2 + 0.2) * 10 + this.width / 2, this.height / 2 + Math.sin(this.leg_rotation + TAU / 2) * 8);
       ctx.stroke();
-      ctx.fillStyle = this.c;
+      ctx.fillStyle = this.body_color;
       ctx.save(); // head
       ctx.translate(this.width / 2, this.height * -3 / 4);
       ctx.rotate(-0.4 + Math.cos(this.x / 50));
@@ -2237,11 +3040,13 @@ module.exports = Deer = (function() {
 /***/ 162:
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-var Frog, SimpleActor, TAU, addEntityClass, r;
+var Frog, SimpleActor, TAU, addEntityClass, hsl_to_rgb_hex, r;
 
 SimpleActor = __webpack_require__(339);
 
 ({addEntityClass} = __webpack_require__(505));
+
+hsl_to_rgb_hex = __webpack_require__(10);
 
 TAU = Math.PI * 2;
 
@@ -2266,7 +3071,8 @@ module.exports = Frog = (function() {
       this.t = 0;
       this.lr = 0;
       this.dir = 0;
-      this.c = "hsla(" + (150 - Math.random() * 50) + "," + (50 + Math.random() * 50) + "%," + (50 - Math.random() * 20) + "%,1)";
+      // hex is for lil-gui based entity properties editor
+      this.body_color = hsl_to_rgb_hex("hsla(" + (150 - Math.random() * 50) + "," + (50 + Math.random() * 50) + "%," + (50 - Math.random() * 20) + "%,1)");
     }
 
     step(world) {
@@ -2299,7 +3105,7 @@ module.exports = Frog = (function() {
     draw(ctx) {
       ctx.save();
       ctx.rotate(this.vx / 5);
-      ctx.fillStyle = this.c;
+      ctx.fillStyle = this.body_color;
       //ctx.fillRect(@x,@y,@width,@height)
       ctx.beginPath();
       ctx.arc(this.width / 2, this.height / 4 - this.vy, this.height / 2, 0, TAU / 2, false);
@@ -2738,6 +3544,8 @@ module.exports = GranddaddyLonglegs = (function() {
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
 var Arrow, Bow, Deer, Entity, Player, Pose, SimpleActor, TAU, addEntityClass, closestPointOnLineSegment, distance, gamepad_aiming, gamepad_deadzone, gamepad_detect_threshold, gamepad_jump_prev, gamepad_mount_prev, keyboard, mouse_detect_from, mouse_detect_threshold,
+  splice = [].splice,
+  indexOf = [].indexOf,
   modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 SimpleActor = __webpack_require__(339);
@@ -2809,6 +3617,8 @@ addEventListener("mousemove", function(e) {
 });
 
 module.exports = Player = (function() {
+  var serialization_exclusions;
+
   class Player extends SimpleActor {
     constructor() {
       super();
@@ -2918,16 +3728,20 @@ module.exports = Player = (function() {
       this.other_idle_animation_position = 0;
       this.idle_animation = null;
       this.idle_timer = 0;
-      this.real_facing_x = this.facing_x = 1;
+      // @upper_body_facing_x switches while aiming backwards, then reverts to facing_x if you stop aiming
+      // @lower_body_facing_x also switches while aiming backwards except if you're riding a mount.
+      // It looks very silly if the player flips around completely while riding a horse, just to aim,
+      // but when not riding, it looks a bit better to flip wholly around.
+      this.smoothed_facing_x_for_eyes = this.upper_body_facing_x = this.lower_body_facing_x = this.facing_x = 1;
       this.landing_momentum = 0; // for bending knees when landing
       this.hairs = (function() {
         var j, results;
         results = [];
         for (var j = 0; j <= 5; j++) {
           results.push((function() {
-            var k, results1;
+            var l, results1;
             results1 = [];
-            for (var k = 0; k <= 4; k++) {
+            for (var l = 0; l <= 4; l++) {
               results1.push({
                 x: 0,
                 y: 0,
@@ -2943,8 +3757,76 @@ module.exports = Player = (function() {
       this.hair_initialized = false;
     }
 
+    // Serialization
+    // Entity::resolveReferences handles _refs_ when deserializing,
+    // but in a super limited way: only for references to other entities, only at the top level.
+    // We need to overload (or override, or officially update) it to handle references inside arrays and objects.
+    // TODO: use a library for a general solution to circular references
+    // TODO: make it easier to exclude properties when serializing, i.e. without overloading toJSON
+    resolveReferences(world) {
+      var entity_id, j, key, key_path, l, last_key, len, len1, obj, ref, ref1;
+      // if @_refs_
+      // 	for k, id of @_refs_
+      // 		@[k] = world.getEntityByID(id)
+      // 	delete @_refs_
+      if (this._recursive_refs_) {
+        ref = this._recursive_refs_;
+        for (j = 0, len = ref.length; j < len; j++) {
+          [key_path, entity_id] = ref[j];
+          ref1 = key_path, [...key_path] = ref1, [last_key] = splice.call(key_path, -1);
+          obj = this;
+          for (l = 0, len1 = key_path.length; l < len1; l++) {
+            key = key_path[l];
+            obj = obj[key];
+          }
+          obj[last_key] = world.getEntityByID(entity_id);
+        }
+        delete this._recursive_refs_;
+      }
+    }
+
+    toJSON() {
+      var _recursive_refs_, ent_def, store_refs;
+      // def = {}
+      // for k, v of @ when k not in serialization_exclusions
+      // 	if v instanceof Entity
+      // 		def._refs_ ?= {}
+      // 		def._refs_[k] = v.id
+      // 	else
+      // 		def[k] = v
+      // return def
+      _recursive_refs_ = [];
+      store_refs = function(obj, key_path = []) {
+        var k, obj_def, v;
+        obj_def = obj instanceof Array ? [] : {};
+        for (k in obj) {
+          v = obj[k];
+          if (indexOf.call(serialization_exclusions, k) < 0) {
+            if (typeof v === "object" && v) {
+              if (v instanceof Entity) {
+                _recursive_refs_.push([[...key_path, k], v.id]);
+              } else {
+                if (v.toJSON) {
+                  v = v.toJSON();
+                }
+                obj_def[k] = store_refs(v, [...key_path, k]);
+              }
+            } else {
+              obj_def[k] = v;
+            }
+          }
+        }
+        return obj_def;
+      };
+      ent_def = store_refs(this);
+      if (_recursive_refs_.length) {
+        ent_def._recursive_refs_ = _recursive_refs_;
+      }
+      return ent_def;
+    }
+
     step(world, view, mouse) {
-      var a_world, aim_angle, angle, arm_angle, arm_extension, arm_span, arrow, arrow_angle, arrow_ent, arrow_index, b_world, bow, bow_angle, c_world, c_world_soon, center, crouch, distance_from_shoulder, distance_from_shoulder_soon, down, draw_back_distance, draw_bow, draw_to, dx, dx_soon, dy, dy_soon, elbow_x, elbow_y, factor, fan_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hand, hand_world, hand_world_soon, hand_x, hand_y, head, head_x_before_posing, head_y_before_posing, hold_offset, index, j, k, l, left, len, len1, len2, lerp_factor, max_draw_distance, max_y_diff, meta_lerp_factor, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, moving, moving_towards_item, neck, new_head_x, new_head_y, new_pose, offset_angle, offset_distance, other_idle_animation, pick_up_any, pick_up_distance_threshold, point, point_name, pose_elbow, pose_hand, pose_primary_shoulder, pose_secondary_shoulder, pose_shoulder, pose_shoulder_world, pose_shoulder_world_soon, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, reach_distance, reach_point_local, reach_point_world, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, right, search_result, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, squat_factor, sternum, subtle_idle_animation, target_lerp_factor, transition_duration, up, within_reach, x, y;
+      var a_world, aim_angle, angle, arm_angle, arm_extension, arm_span, arrow, arrow_angle, arrow_index, b_world, bow, bow_angle, c_world, c_world_soon, center, crouch, distance_from_shoulder, distance_from_shoulder_soon, down, draw_back_distance, draw_bow, draw_to, dx, dx_soon, dy, dy_soon, elbow_x, elbow_y, factor, fan_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hand, hand_world, hand_world_soon, hand_x, hand_y, head, head_x_before_posing, head_y_before_posing, hold_offset, index, j, l, left, len, len1, lerp_factor, lower_body_pose, lower_point_names, max_draw_distance, max_y_diff, meta_lerp_factor, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, moving, moving_towards_item, neck, new_head_x, new_head_y, new_pose, offset_angle, offset_distance, other_idle_animation, pick_up_any, pick_up_distance_threshold, point, point_name, pose_elbow, pose_hand, pose_primary_shoulder, pose_secondary_shoulder, pose_shoulder, pose_shoulder_world, pose_shoulder_world_soon, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, reach_distance, reach_point_local, reach_point_world, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, right, search_result, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, squat_factor, sternum, subtle_idle_animation, target_lerp_factor, transition_duration, up, upper_body_pose, within_reach, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
       
@@ -3000,7 +3882,7 @@ module.exports = Player = (function() {
       // Note: You're allowed to prime and draw the bow without an arrow.
       prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
       draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
-      crouch = down && !this.riding;
+      crouch = down && this.grounded && !this.riding;
       // TODO: configurable controls
       this.move_x = right - left;
       this.move_y = down - up;
@@ -3014,9 +3896,11 @@ module.exports = Player = (function() {
       pick_up_any = (EntityClass, prop, use_secondary_hand = false, hold_many = false) => {
         var entity_filter, hand, hand_world, near_hand, near_shoulder, nearest, primary_hand, primary_shoulder, ref2, secondary_hand, secondary_shoulder, shoulder, shoulder_world;
         // Skele2D editor sets entity.destroyed if you delete an entity
+        // If you delete an entity while it's being held, and then save and load,
+        // it will come back as null. So we need to handle both cases.
         if (hold_many) {
           this[prop] = this[prop].filter(function(entity) {
-            return !entity.destroyed;
+            return entity && !entity.destroyed;
           });
         } else {
           if ((ref2 = this[prop]) != null ? ref2.destroyed : void 0) {
@@ -3098,8 +3982,7 @@ module.exports = Player = (function() {
         }
       }
       if (this.riding) {
-        // @riding.move_x = @move_x
-        this.riding.dir = this.move_x; // old code...
+        this.riding.move_x = this.move_x;
         this.riding.jump = this.jump;
         this.facing_x = this.riding.facing_x;
         offset_distance = 20;
@@ -3168,7 +4051,7 @@ module.exports = Player = (function() {
         } else {
           prevent_idle();
           if (Player.animations["Run"]) {
-            this.run_animation_position += Math.abs(this.move_x) / 5 * this.facing_x * this.real_facing_x;
+            this.run_animation_position += Math.abs(this.move_x) / 5 * this.facing_x * this.lower_body_facing_x;
             new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], this.run_animation_position);
           } else {
             new_pose = this.structure.getPose();
@@ -3178,18 +4061,49 @@ module.exports = Player = (function() {
         prevent_idle();
         new_pose = (ref5 = (ref6 = Player.poses["Jumping"]) != null ? ref6 : Player.poses["Stand"]) != null ? ref5 : this.structure.getPose();
       }
-      if (this.real_facing_x < 0) {
-        new_pose = Pose.horizontallyFlip(new_pose);
-      }
       
-      // Avoid mutating the pose/animation data
+      // Make sure to avoid mutating the pose data,
+      // since new_pose may be a reference to a pose in Player.poses!
+      // (It's not a problem for animations, since interpolation returns a new pose.)
+      // Either use Pose.copy or another pure function like Pose.horizontallyFlip.
+
+      // This is a more concise way to handle upper/lower body flipping,
+      // but the implementation below may be more clear.
+      // if @upper_body_facing_x < 0
+      // 	new_pose = Pose.horizontallyFlip(new_pose)
+      // else
+      // 	# Avoid mutating the pose data
+      // 	new_pose = Pose.copy(new_pose)
+      // if @lower_body_facing_x isnt @upper_body_facing_x
+      // 	new_pose_for_lower_body = Pose.horizontallyFlip(new_pose)
+      // 	for point_name in ["pelvis", "left hip", "right hip", "left knee", "right knee", "left foot", "right foot"]
+      // 		new_pose.points[point_name] = new_pose_for_lower_body.points[point_name]
+      upper_body_pose = Pose.copy(new_pose);
+      if (this.upper_body_facing_x < 0) {
+        upper_body_pose = Pose.horizontallyFlip(upper_body_pose);
+      }
+      lower_body_pose = Pose.copy(new_pose);
+      if (this.lower_body_facing_x < 0) {
+        lower_body_pose = Pose.horizontallyFlip(lower_body_pose);
+      }
+      // Combine the two poses
       new_pose = Pose.copy(new_pose);
+      lower_point_names = ["pelvis", "left hip", "right hip", "left knee", "right knee", "left foot", "right foot"];
+      ref7 = new_pose.points;
+      for (point_name in ref7) {
+        point = ref7[point_name];
+        if (indexOf.call(lower_point_names, point_name) >= 0) {
+          new_pose.points[point_name] = lower_body_pose.points[point_name];
+        } else {
+          new_pose.points[point_name] = upper_body_pose.points[point_name];
+        }
+      }
       head_x_before_posing = this.structure.points["head"].x;
       head_y_before_posing = this.structure.points["head"].y;
       // rotate the pose based on the ground angle
       // TODO: balance the character better; lean while running; keep feet out of the ground
       // I may need to define new poses to do this well.
-      ground_angle = (ref7 = (ref8 = this.riding) != null ? ref8.ground_angle_smoothed : void 0) != null ? ref7 : this.find_ground_angle(world);
+      ground_angle = (ref8 = (ref9 = this.riding) != null ? ref9.ground_angle_smoothed : void 0) != null ? ref8 : this.find_ground_angle(world);
       this.ground_angle = ground_angle;
       if ((ground_angle != null) && isFinite(ground_angle)) {
         // there's no helper for rotation yet
@@ -3200,9 +4114,9 @@ module.exports = Player = (function() {
           x: center.x,
           y: center.y // copy
         };
-        ref9 = new_pose.points;
-        for (point_name in ref9) {
-          point = ref9[point_name];
+        ref10 = new_pose.points;
+        for (point_name in ref10) {
+          point = ref10[point_name];
           if (this.riding) {
             factor = 1;
           } else {
@@ -3321,7 +4235,8 @@ module.exports = Player = (function() {
       }
       // This does a lot of the grunt work of smoothing things out
       this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
-      this.real_facing_x = this.facing_x;
+      this.upper_body_facing_x = this.facing_x;
+      this.lower_body_facing_x = this.facing_x;
       if (prime_bow) {
         // Restore head position, in order to do linear interpolation.
         // In this state, the head is not controlled by the pose, but by the bow aiming.
@@ -3371,7 +4286,10 @@ module.exports = Player = (function() {
           secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle);
           // make head look along aim path
           angle = modulo(aim_angle - TAU / 4, TAU);
-          this.real_facing_x = angle < TAU / 2 ? -1 : 1;
+          this.upper_body_facing_x = angle < TAU / 2 ? -1 : 1;
+          if (!this.riding) {
+            this.lower_body_facing_x = this.upper_body_facing_x;
+          }
           ({head, neck} = this.structure.points);
           new_head_x = neck.x + 5 * Math.cos(angle + (angle < TAU / 2 ? TAU / 2 : 0));
           new_head_y = neck.y + 5 * Math.sin(angle + (angle < TAU / 2 ? TAU / 2 : 0));
@@ -3388,7 +4306,7 @@ module.exports = Player = (function() {
             this.facing_turn_timer = 0;
           }
           transition_duration = 50;
-          if (this.prev_real_facing_x !== this.real_facing_x) {
+          if (this.prev_upper_body_facing_x !== this.upper_body_facing_x) {
             this.facing_turn_timer = transition_duration;
           }
           this.facing_turn_timer -= 1;
@@ -3420,19 +4338,8 @@ module.exports = Player = (function() {
           bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle);
         }
       }
-      ref10 = this.holding_arrows;
-      
-      // Serialization is broken; ad-hoc resolve references
-      for (arrow_index = k = 0, len1 = ref10.length; k < len1; arrow_index = ++k) {
-        arrow = ref10[arrow_index];
-        arrow_ent = world.getEntityByID(arrow.id);
-        this.holding_arrows[arrow_index] = arrow_ent;
-      }
-      this.holding_arrows = this.holding_arrows.filter(function(arrow) {
-        return arrow;
-      });
       ref11 = this.holding_arrows;
-      for (arrow_index = l = 0, len2 = ref11.length; l < len2; arrow_index = ++l) {
+      for (arrow_index = l = 0, len1 = ref11.length; l < len1; arrow_index = ++l) {
         arrow = ref11[arrow_index];
         arrow.lodging_constraints.length = 0; // pull it out if it's lodged in an object
         arrow.x = this.x;
@@ -3448,7 +4355,7 @@ module.exports = Player = (function() {
           arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle);
         } else {
           angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x);
-          arrow_angle = angle - (TAU / 4 + 0.2) * this.real_facing_x;
+          arrow_angle = angle - (TAU / 4 + 0.2) * this.upper_body_facing_x;
           // near fletching, good for one arrow
           hold_offset = -5;
           // hold a bit more centered when there's more arrows
@@ -3478,11 +4385,12 @@ module.exports = Player = (function() {
       
       // Hair physics
       this.simulate_hair(world);
-      this.prev_real_facing_x = this.real_facing_x;
+      this.smoothed_facing_x_for_eyes += (this.upper_body_facing_x - this.smoothed_facing_x_for_eyes) / 5;
+      this.prev_upper_body_facing_x = this.upper_body_facing_x;
     }
 
     simulate_hair(world) {
-      var a, air_friction, back_x, back_y, buoyancy, delta_length, delta_x, delta_y, diff, fluid_friction, gravity, hair_index, hair_iterations, hair_length, head, head_angle, head_global, i, j, k, l, len, len1, len2, len3, len4, m, n, neck, o, p, point, points, ref, ref1, ref2, ref3, ref4, seg_length, submerged, water_friction;
+      var a, air_friction, back_x, back_y, buoyancy, delta_length, delta_x, delta_y, diff, fluid_friction, gravity, hair_index, hair_iterations, hair_length, head, head_angle, head_global, i, j, l, len, len1, len2, len3, len4, m, n, neck, o, p, point, points, q, ref, ref1, ref2, ref3, ref4, seg_length, submerged, water_friction;
       ({head, neck} = this.structure.points);
       head_angle = Math.atan2(head.y - neck.y, head.x - neck.x);
       head_global = this.toWorld(head);
@@ -3492,24 +4400,24 @@ module.exports = Player = (function() {
       hair_length = 30;
       for (j = 0, ref = hair_iterations; (0 <= ref ? j <= ref : j >= ref); 0 <= ref ? j++ : j--) {
         ref1 = this.hairs;
-        for (k = 0, len = ref1.length; k < len; k++) {
-          points = ref1[k];
-          for (l = 0, len1 = points.length; l < len1; l++) {
-            point = points[l];
+        for (l = 0, len = ref1.length; l < len; l++) {
+          points = ref1[l];
+          for (m = 0, len1 = points.length; m < len1; m++) {
+            point = points[m];
             point.prev_x = point.x;
             point.prev_y = point.y;
           }
         }
         ref2 = this.hairs;
-        for (hair_index = m = 0, len2 = ref2.length; m < len2; hair_index = ++m) {
+        for (hair_index = n = 0, len2 = ref2.length; n < len2; hair_index = ++n) {
           points = ref2[hair_index];
           a = head_angle + hair_index / this.hairs.length * TAU / 2 - TAU / 4;
-          back_x = Math.sin(head_angle) * 2 * this.real_facing_x;
-          back_y = Math.cos(head_angle) * 2 * this.real_facing_x;
+          back_x = Math.sin(head_angle) * 2 * this.upper_body_facing_x;
+          back_y = Math.cos(head_angle) * 2 * this.upper_body_facing_x;
           points[0].x = head_global.x + Math.cos(a) * 3 + back_x;
           points[0].y = head_global.y + Math.sin(a) * 3 + back_y;
           seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length;
-          for (i = n = 1, ref3 = points.length; (1 <= ref3 ? n < ref3 : n > ref3); i = 1 <= ref3 ? ++n : --n) {
+          for (i = o = 1, ref3 = points.length; (1 <= ref3 ? o < ref3 : o > ref3); i = 1 <= ref3 ? ++o : --o) {
             if (!this.hair_initialized) {
               points[i].x = points[i - 1].x;
               points[i].y = points[i - 1].y + seg_length;
@@ -3548,10 +4456,10 @@ module.exports = Player = (function() {
           }
         }
         ref4 = this.hairs;
-        for (o = 0, len3 = ref4.length; o < len3; o++) {
-          points = ref4[o];
-          for (p = 0, len4 = points.length; p < len4; p++) {
-            point = points[p];
+        for (p = 0, len3 = ref4.length; p < len3; p++) {
+          points = ref4[p];
+          for (q = 0, len4 = points.length; q < len4; q++) {
+            point = points[q];
             point.vx = point.x - point.prev_x;
             point.vy = point.y - point.prev_y;
           }
@@ -3561,7 +4469,7 @@ module.exports = Player = (function() {
     }
 
     draw(ctx, view) {
-      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, head, head_rotation_angle, j, k, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
+      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, head, head_rotation_angle, j, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, m, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
       ({
         head,
         sternum,
@@ -3600,8 +4508,8 @@ module.exports = Player = (function() {
         local_point = this.fromWorld(hair_points[0]);
         ctx.moveTo(local_point.x, local_point.y);
         ref1 = hair_points.slice(1);
-        for (k = 0, len1 = ref1.length; k < len1; k++) {
-          point = ref1[k];
+        for (l = 0, len1 = ref1.length; l < len1; l++) {
+          point = ref1[l];
           // ctx.lineTo(point.x, point.y)
           local_point = this.fromWorld(point);
           ctx.lineTo(local_point.x, local_point.y);
@@ -3686,13 +4594,9 @@ module.exports = Player = (function() {
       eye_spacing = 0.6; // radians
       turn_limit = TAU / 8; // radians, TAU/4 = head facing completely sideways, only one eye visible
       ctx.fillStyle = eye_color;
-      if (this.smoothed_facing_x_for_eyes == null) {
-        this.smoothed_facing_x_for_eyes = 0;
-      }
-      this.smoothed_facing_x_for_eyes += (this.real_facing_x - this.smoothed_facing_x_for_eyes) / 5;
       ref3 = [-1, 1];
-      for (l = 0, len2 = ref3.length; l < len2; l++) {
-        eye_signature = ref3[l];
+      for (m = 0, len2 = ref3.length; m < len2; m++) {
+        eye_signature = ref3[m];
         // 3D projection in one axis
         head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
         eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5 * 0.9;
@@ -3709,6 +4613,9 @@ module.exports = Player = (function() {
   addEntityClass(Player);
 
   Entity.initAnimation(Player);
+
+  // Note: animation is gameplay-significant due to the physical nature of picking up items, so it should not be excluded.
+  serialization_exclusions = ["_refs_", "_recursive_refs_", "reaching_for_segment", "reaching_for_entity", "reaching_with_secondary_hand", "ground_angle"];
 
   return Player;
 
@@ -3889,8 +4796,8 @@ module.exports = Rabbit = (function() {
       this.t = 0;
       this.lr = 0;
       this.dir = 0;
-      this.c = "#FFF";
-      this.c2 = "#DDD";
+      this.body_color = "#FFF";
+      this.body_shadow_color = "#DDD";
       this.eye_color = "#000";
       this.alive = true;
       this.smoothed_facing_x = this.facing_x = 1;
@@ -3960,12 +4867,12 @@ module.exports = Rabbit = (function() {
         }
         ctx.rotate(angle / 2);
       }
-      ctx.fillStyle = this.c2;
+      ctx.fillStyle = this.body_shadow_color;
       // ctx.fillRect(0,0,@width,@height)
       ctx.beginPath();
       ctx.arc(0, 0, this.height / 2, TAU * 0.45, TAU * 1.05, false); // body
       ctx.fill();
-      ctx.fillStyle = this.c;
+      ctx.fillStyle = this.body_color;
       ctx.save(); // head transform
       ctx.translate(this.smoothed_facing_x * this.width / 3, -this.height / 3);
       ctx.beginPath();
@@ -3975,7 +4882,7 @@ module.exports = Rabbit = (function() {
       ctx.beginPath();
       ctx.arc(0, 0, 1, 0, TAU, false); // eye
       ctx.fill();
-      ctx.fillStyle = this.c;
+      ctx.fillStyle = this.body_color;
       ctx.beginPath();
       ctx.save(); // ear transform
       ctx.translate(-this.smoothed_facing_x * this.width / 9, -this.height / 6);
@@ -3986,7 +4893,7 @@ module.exports = Rabbit = (function() {
       ctx.fill();
       ctx.restore(); // end ear transform
       ctx.restore(); // end head transform
-      ctx.fillStyle = this.c;
+      ctx.fillStyle = this.body_color;
       ctx.beginPath();
       ctx.arc(-this.smoothed_facing_x * this.width / 2, 0, this.height / 5, 0, TAU, false); // tail
       ctx.fill();
@@ -4276,10 +5183,6 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
     super();
     this.bbox_padding = 30;
     this.grass_tiles = new Map();
-    this.grass_tiles.fromJSON = (map_obj) => {};
-    this.grass_tiles.toJSON = (map_obj) => {
-      return {};
-    };
     this.structure.onchange = () => {
       return this.grass_tiles.forEach((tile) => {
         var blade, i, len, ref, results, shade;
@@ -4288,11 +5191,11 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
         for (i = 0, len = ref.length; i < len; i++) {
           shade = ref[i];
           results.push((function() {
-            var k, len1, ref1, results1;
+            var l, len1, ref1, results1;
             ref1 = tile[`${shade}_blades`];
             results1 = [];
-            for (k = 0, len1 = ref1.length; k < len1; k++) {
-              blade = ref1[k];
+            for (l = 0, len1 = ref1.length; l < len1; l++) {
+              blade = ref1[l];
               results1.push(delete blade.visible);
             }
             return results1;
@@ -4306,8 +5209,21 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
     this.color_light = "#D2B06A";
   }
 
+  toJSON() {
+    var def, k, ref, v;
+    def = {};
+    ref = super.toJSON();
+    for (k in ref) {
+      v = ref[k];
+      if (k !== "grass_tiles") {
+        def[k] = v;
+      }
+    }
+    return def;
+  }
+
   draw(ctx, view) {
-    var bbox, blade, bottom, contains_any_points, dark_blades, first_tile_xi, first_tile_yi, i, j, k, l, last_tile_xi, last_tile_yi, left, len, len1, len2, len3, light_blades, m, n, o, p, point, point_name, q, random, rect_contains_any_points, rect_is_empty, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, right, shade, tile, tile_name, tile_size, tile_x, tile_xi, tile_y, tile_yi, top, view_point, x, y;
+    var bbox, blade, bottom, contains_any_points, dark_blades, first_tile_xi, first_tile_yi, i, j, l, last_tile_xi, last_tile_yi, left, len, len1, len2, len3, light_blades, m, n, o, p, point, point_name, q, r, random, rect_contains_any_points, rect_is_empty, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, right, shade, tile, tile_name, tile_size, tile_x, tile_xi, tile_y, tile_yi, top, view_point, x, y;
     rect_contains_any_points = (x, y, width, height) => {
       var contains_any_points, point, point_name, ref, ref1, ref2;
       contains_any_points = false;
@@ -4386,7 +5302,7 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
     first_tile_yi = Math.floor(top / tile_size);
     last_tile_yi = Math.floor(bottom / tile_size);
     for (tile_xi = i = ref1 = first_tile_xi, ref2 = last_tile_xi; (ref1 <= ref2 ? i <= ref2 : i >= ref2); tile_xi = ref1 <= ref2 ? ++i : --i) {
-      for (tile_yi = k = ref3 = first_tile_yi, ref4 = last_tile_yi; (ref3 <= ref4 ? k <= ref4 : k >= ref4); tile_yi = ref3 <= ref4 ? ++k : --k) {
+      for (tile_yi = l = ref3 = first_tile_yi, ref4 = last_tile_yi; (ref3 <= ref4 ? l <= ref4 : l >= ref4); tile_yi = ref3 <= ref4 ? ++l : --l) {
         tile_name = `(${tile_xi}, ${tile_yi})`;
         // tile_x = @x + tile_xi * tile_size
         // tile_y = @y + tile_yi * tile_size
@@ -4402,10 +5318,10 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
               dark_blades: [],
               light_blades: []
             };
-            for (var l = 0; l <= 350; l++) {
+            for (var m = 0; m <= 350; m++) {
               x = tile_x + random() * tile_size;
               y = tile_y + random() * tile_size;
-              for (j = m = 0, ref5 = random() * 3 + 1; (0 <= ref5 ? m <= ref5 : m >= ref5); j = 0 <= ref5 ? ++m : --m) {
+              for (j = n = 0, ref5 = random() * 3 + 1; (0 <= ref5 ? n <= ref5 : n >= ref5); j = 0 <= ref5 ? ++n : --n) {
                 shade = random() < 0.5 ? "dark" : "light";
                 tile[`${shade}_blades`].push({x, y});
                 x += (random() + 1) * 3;
@@ -4421,11 +5337,11 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
           // ctx.fillRect(tile_x, tile_y, tile_size, tile_size)
           // # ctx.fillStyle = "rgba(255, 0, 255, 0.4)"
           // # ctx.fillRect(tile_x + tile_size/8, tile_y + tile_size/8, tile_size * 3/4, tile_size * 3/4)
-          for (n = 0, len = ref6.length; n < len; n++) {
-            shade = ref6[n];
+          for (o = 0, len = ref6.length; o < len; o++) {
+            shade = ref6[o];
             ref7 = tile[`${shade}_blades`];
-            for (o = 0, len1 = ref7.length; o < len1; o++) {
-              blade = ref7[o];
+            for (p = 0, len1 = ref7.length; p < len1; p++) {
+              blade = ref7[p];
               point = this.toWorld(blade);
               if (view.testRect(point.x, point.y - 10, 0, 10, 15)) {
                 view_point = view.fromWorld(point);
@@ -4440,16 +5356,16 @@ module.exports = GrassyTerrain = class GrassyTerrain extends Terrain {
       }
     }
     ctx.beginPath();
-    for (p = 0, len2 = dark_blades.length; p < len2; p++) {
-      ({x, y} = dark_blades[p]);
+    for (q = 0, len2 = dark_blades.length; q < len2; q++) {
+      ({x, y} = dark_blades[q]);
       ctx.moveTo(x, y);
       ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
     }
     ctx.strokeStyle = this.color_dark;
     ctx.stroke();
     ctx.beginPath();
-    for (q = 0, len3 = light_blades.length; q < len3; q++) {
-      ({x, y} = light_blades[q]);
+    for (r = 0, len3 = light_blades.length; r < len3; r++) {
+      ({x, y} = light_blades[r]);
       ctx.moveTo(x, y);
       ctx.lineTo(x + this.simplex.noise2D(-x + y + 78 + Date.now() / 2000, y + 549) * 5, y - (2 + this.simplex.noise2D(y * 40.45, x + 340)) * 10);
     }
@@ -5824,6 +6740,19 @@ module.exports = Water = (function() {
       this.bubbles = [];
     }
 
+    toJSON() {
+      var def, k, ref, v;
+      def = {};
+      ref = super.toJSON();
+      for (k in ref) {
+        v = ref[k];
+        if (k !== "ccw" && k !== "min_x" && k !== "max_x" && k !== "min_y" && k !== "max_y") {
+          def[k] = v;
+        }
+      }
+      return def;
+    }
+
     makeWaves(world_pos, radius = 5, velocity_y = 5) {
       var angle, i, j, local_pos, ref, ref1, ref2, ref3, x;
       local_pos = this.fromWorld(world_pos);
@@ -5845,7 +6774,7 @@ module.exports = Water = (function() {
     }
 
     step() {
-      var bubble, closest_distance, closest_point, closest_segment, dist, i, j, k, neighboring, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, segment, segment_name, waves_x, x;
+      var bubble, closest_distance, closest_point, closest_segment, dist, i, j, l, neighboring, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, segment, segment_name, waves_x, x;
       neighboring = [];
       for (x = i = ref = this.min_x, ref1 = this.max_x; (ref <= ref1 ? i < ref1 : i > ref1); x = ref <= ref1 ? ++i : --i) {
         neighboring[x - this.min_x] = ((ref2 = this.waves_y[x - this.min_x - 1]) != null ? ref2 : 0) + ((ref3 = this.waves_y[x - this.min_x + 1]) != null ? ref3 : 0);
@@ -5857,8 +6786,8 @@ module.exports = Water = (function() {
         this.waves_y[x - this.min_x] += this.waves_vy[x - this.min_x];
       }
       ref6 = this.bubbles;
-      for (k = ref6.length - 1; k >= 0; k += -1) {
-        bubble = ref6[k];
+      for (l = ref6.length - 1; l >= 0; l += -1) {
+        bubble = ref6[l];
         bubble.life -= 1;
         bubble.x += bubble.vx;
         bubble.y += bubble.vy;
@@ -9539,6 +10468,276 @@ u(++l%c.children.length)},!1);var k=(performance||Date).now(),g=k,a=0,r=e(new f.
 b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{dom:q,update:function(h,w){c=Math.min(c,h);k=Math.max(k,h);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,r,m);b.fillStyle=f;b.fillText(g(h)+" "+e+" ("+g(c)+"-"+g(k)+")",t,v);b.drawImage(q,d+a,m,n-a,p,d,m,n-a,p);b.fillRect(d+n-a,m,a,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d+n-a,m,a,g((1-h/w)*p))}}};return f});
 
 
+/***/ }),
+
+/***/ 10:
+/***/ ((module) => {
+
+module.exports = function hsl_to_rgb_hex (hsl) {
+	if (typeof hsl === 'string') {
+		hsl = hsl.match(/(\d+(\.\d+)?)/g).map(function (a) {
+			return +a;
+		});
+	}
+	const h = hsl[0] / 360;
+	const s = hsl[1] / 100;
+	const l = hsl[2] / 100;
+	let t2;
+	let t3;
+	let val;
+
+	if (s === 0) {
+		val = l * 255;
+		return [val, val, val];
+	}
+
+	if (l < 0.5) {
+		t2 = l * (1 + s);
+	} else {
+		t2 = l + s - l * s;
+	}
+
+	const t1 = 2 * l - t2;
+
+	const rgb = [0, 0, 0];
+	for (let i = 0; i < 3; i++) {
+		t3 = h + 1 / 3 * -(i - 1);
+		if (t3 < 0) {
+			t3++;
+		}
+
+		if (t3 > 1) {
+			t3--;
+		}
+
+		if (6 * t3 < 1) {
+			val = t1 + (t2 - t1) * 6 * t3;
+		} else if (2 * t3 < 1) {
+			val = t2;
+		} else if (3 * t3 < 2) {
+			val = t1 + (t2 - t1) * (2 / 3 - t3) * 6;
+		} else {
+			val = t1;
+		}
+
+		rgb[i] = val * 255;
+	}
+
+	// to hex
+	return `#${rgb.map(function (a) {
+		return ('0' + Math.round(a).toString(16)).slice(-2);
+	}).join('')}`;
+};
+
+
+/***/ }),
+
+/***/ 193:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "clear": () => (/* binding */ clear),
+/* harmony export */   "createStore": () => (/* binding */ createStore),
+/* harmony export */   "del": () => (/* binding */ del),
+/* harmony export */   "delMany": () => (/* binding */ delMany),
+/* harmony export */   "entries": () => (/* binding */ entries),
+/* harmony export */   "get": () => (/* binding */ get),
+/* harmony export */   "getMany": () => (/* binding */ getMany),
+/* harmony export */   "keys": () => (/* binding */ keys),
+/* harmony export */   "promisifyRequest": () => (/* binding */ promisifyRequest),
+/* harmony export */   "set": () => (/* binding */ set),
+/* harmony export */   "setMany": () => (/* binding */ setMany),
+/* harmony export */   "update": () => (/* binding */ update),
+/* harmony export */   "values": () => (/* binding */ values)
+/* harmony export */ });
+function promisifyRequest(request) {
+    return new Promise((resolve, reject) => {
+        // @ts-ignore - file size hacks
+        request.oncomplete = request.onsuccess = () => resolve(request.result);
+        // @ts-ignore - file size hacks
+        request.onabort = request.onerror = () => reject(request.error);
+    });
+}
+function createStore(dbName, storeName) {
+    const request = indexedDB.open(dbName);
+    request.onupgradeneeded = () => request.result.createObjectStore(storeName);
+    const dbp = promisifyRequest(request);
+    return (txMode, callback) => dbp.then((db) => callback(db.transaction(storeName, txMode).objectStore(storeName)));
+}
+let defaultGetStoreFunc;
+function defaultGetStore() {
+    if (!defaultGetStoreFunc) {
+        defaultGetStoreFunc = createStore('keyval-store', 'keyval');
+    }
+    return defaultGetStoreFunc;
+}
+/**
+ * Get a value by its key.
+ *
+ * @param key
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function get(key, customStore = defaultGetStore()) {
+    return customStore('readonly', (store) => promisifyRequest(store.get(key)));
+}
+/**
+ * Set a value with a key.
+ *
+ * @param key
+ * @param value
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function set(key, value, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        store.put(value, key);
+        return promisifyRequest(store.transaction);
+    });
+}
+/**
+ * Set multiple values at once. This is faster than calling set() multiple times.
+ * It's also atomic – if one of the pairs can't be added, none will be added.
+ *
+ * @param entries Array of entries, where each entry is an array of `[key, value]`.
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function setMany(entries, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        entries.forEach((entry) => store.put(entry[1], entry[0]));
+        return promisifyRequest(store.transaction);
+    });
+}
+/**
+ * Get multiple values by their keys
+ *
+ * @param keys
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function getMany(keys, customStore = defaultGetStore()) {
+    return customStore('readonly', (store) => Promise.all(keys.map((key) => promisifyRequest(store.get(key)))));
+}
+/**
+ * Update a value. This lets you see the old value and update it as an atomic operation.
+ *
+ * @param key
+ * @param updater A callback that takes the old value and returns a new value.
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function update(key, updater, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => 
+    // Need to create the promise manually.
+    // If I try to chain promises, the transaction closes in browsers
+    // that use a promise polyfill (IE10/11).
+    new Promise((resolve, reject) => {
+        store.get(key).onsuccess = function () {
+            try {
+                store.put(updater(this.result), key);
+                resolve(promisifyRequest(store.transaction));
+            }
+            catch (err) {
+                reject(err);
+            }
+        };
+    }));
+}
+/**
+ * Delete a particular key from the store.
+ *
+ * @param key
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function del(key, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        store.delete(key);
+        return promisifyRequest(store.transaction);
+    });
+}
+/**
+ * Delete multiple keys at once.
+ *
+ * @param keys List of keys to delete.
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function delMany(keys, customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        keys.forEach((key) => store.delete(key));
+        return promisifyRequest(store.transaction);
+    });
+}
+/**
+ * Clear all values in the store.
+ *
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function clear(customStore = defaultGetStore()) {
+    return customStore('readwrite', (store) => {
+        store.clear();
+        return promisifyRequest(store.transaction);
+    });
+}
+function eachCursor(store, callback) {
+    store.openCursor().onsuccess = function () {
+        if (!this.result)
+            return;
+        callback(this.result);
+        this.result.continue();
+    };
+    return promisifyRequest(store.transaction);
+}
+/**
+ * Get all keys in the store.
+ *
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function keys(customStore = defaultGetStore()) {
+    return customStore('readonly', (store) => {
+        // Fast path for modern browsers
+        if (store.getAllKeys) {
+            return promisifyRequest(store.getAllKeys());
+        }
+        const items = [];
+        return eachCursor(store, (cursor) => items.push(cursor.key)).then(() => items);
+    });
+}
+/**
+ * Get all values in the store.
+ *
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function values(customStore = defaultGetStore()) {
+    return customStore('readonly', (store) => {
+        // Fast path for modern browsers
+        if (store.getAll) {
+            return promisifyRequest(store.getAll());
+        }
+        const items = [];
+        return eachCursor(store, (cursor) => items.push(cursor.value)).then(() => items);
+    });
+}
+/**
+ * Get all entries in the store. Each entry is an array of `[key, value]`.
+ *
+ * @param customStore Method to get a custom store. Use with caution (see the docs).
+ */
+function entries(customStore = defaultGetStore()) {
+    return customStore('readonly', (store) => {
+        // Fast path for modern browsers
+        // (although, hopefully we'll get a simpler path some day)
+        if (store.getAll && store.getAllKeys) {
+            return Promise.all([
+                promisifyRequest(store.getAllKeys()),
+                promisifyRequest(store.getAll()),
+            ]).then(([keys, values]) => keys.map((key, i) => [key, values[i]]));
+        }
+        const items = [];
+        return customStore('readonly', (store) => eachCursor(store, (cursor) => items.push([cursor.key, cursor.value])).then(() => items));
+    });
+}
+
+
+
+
 /***/ })
 
 /******/ 	});
@@ -9568,10 +10767,39 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{do
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-var Controller, Editor, Entity, GUI, Mouse, Player, SavannaGrass, Stats, TAU, Terrain, View, World, _fromJSON, animate, bottom_of_world, canvas, ctx, disable_welcome_message, e, editor, entity_folder, gamepad_start_prev, gui, keyboard, last_selected_entity, last_undoable_time, mouse, ms_between_undos, ms_idle_before_saving, name, old_Controller_setValue, old_terrain_toJSON, option_names_to_keys, options, property_inspector_exclusions, randomize_entities, redraw, ref, save_timeout, skele2d_folder, sort_entities, stats, storage_key, terrain, terrain_optimized, tiamblia_folder, view, view_smoothness, view_to, welcome, world, world_loaded,
+var Editor, Entity, Mouse, Player, SavannaGrass, Stats, TAU, Terrain, View, World, _fromJSON, animate, bottom_of_world, canvas, configure_property_inspector, ctx, disable_welcome_message, e, editor, gamepad_start_prev, gui, keyboard, mouse, old_terrain_toJSON, randomize_entities, redraw, sort_entities, stats, terrain, terrain_optimized, update_property_inspector, view, view_smoothness, view_to, welcome, world, world_loaded,
   indexOf = [].indexOf;
 
 Math.seedrandom("A world");
@@ -9580,7 +10808,7 @@ Math.seedrandom("A world");
 
 Stats = __webpack_require__(443);
 
-({GUI, Controller} = __webpack_require__(33));
+({gui, update_property_inspector, configure_property_inspector} = __webpack_require__(100));
 
 World = __webpack_require__(378);
 
@@ -9651,8 +10879,6 @@ Terrain.prototype.toJSON = function() {
 
 world = new World();
 
-window.the_world = world;
-
 terrain = new SavannaGrass();
 
 world.entities.push(terrain);
@@ -9681,7 +10907,7 @@ mouse = new Mouse(canvas);
 
 editor = new Editor(world, view, view_to, canvas, mouse);
 
-window.the_editor = editor;
+configure_property_inspector({editor, world});
 
 welcome = document.getElementById("welcome");
 
@@ -9854,10 +11080,31 @@ redraw = function() {
   ctx.restore();
 };
 
-// This is useful when debugging.
+// For console access and quick hacks, some useful globals,
+// named to avoid accidental use in game code.
+// the_editor.selected_entities is often useful
+window.the_world = world;
+
+window.the_entity_classes = (__webpack_require__(505).entityClasses);
+
+window.the_editor = editor;
+
+Object.defineProperty(window, "the_player", {
+  get: () => {
+    var players;
+    players = world.entities.filter((e) => {
+      return e instanceof Player;
+    });
+    if (players.length > 1) {
+      console.warn("There's more than one player in the world!");
+    }
+    return players[0];
+  }
+});
+
 // You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
 // and then see how entities are changed while stepping through simulation code.
-// (In Chrome this doesn't work, the canvas doesn't update, as of 2023.)
+// (This trick doesn't work in Chrome, as of 2023. The canvas doesn't update.)
 window.do_a_redraw = redraw;
 
 gamepad_start_prev = false;
@@ -9866,123 +11113,10 @@ stats = new Stats();
 
 stats.showPanel(0);
 
-// UI for development features, accessible with '~'/'`' key
-gui = new GUI();
-
-gui.hide();
-
-option_names_to_keys = {
-  "Disable welcome message, start in edit mode": "tiamblia.disable_welcome_message",
-  "Show performance stats": "tiamblia.show_stats",
-  "Debug projectPointOutside": "tiamblia.debug_project_point_outside",
-  "Debug Caterpillar class": "tiamblia.debug_caterpillar",
-  "Debug Arrow class": "tiamblia.debug_arrow",
-  "Debug Terrain class": "tiamblia.debug_terrain",
-  "Show collision buckets": "tiamblia.show_collision_buckets",
-  "Show hit tested buckets": "tiamblia.count_hit_tests",
-  "Show point names": "Skele2D show names",
-  "Show point indices": "Skele2D show indices",
-  "Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world",
-  "Disable constraint solving while editing": "Skele2D disable constraint solving"
-};
-
-options = {};
-
-tiamblia_folder = gui.addFolder("Tiamblia");
-
-skele2d_folder = gui.addFolder("Skele2D");
-
-entity_folder = gui.addFolder("Selected Entity");
-
-for (name in option_names_to_keys) {
-  storage_key = option_names_to_keys[name];
-  (function(name, storage_key) {
-    var folder;
-    options[name] = ((function() {
-      try {
-        return localStorage[storage_key];
-      } catch (error1) {}
-    })()) === "true";
-    folder = storage_key.indexOf("Skele2D") === 0 ? skele2d_folder : tiamblia_folder;
-    folder.add(options, name).onChange(function(value) {
-      localStorage[storage_key] = value;
-    });
-  })(name, storage_key);
-}
-
-options["Auto-spawn entities"] = (ref = ((function() {
-  try {
-    return localStorage["tiamblia.auto_spawn"];
-  } catch (error1) {}
-})())) != null ? ref : "";
-
-tiamblia_folder.add(options, "Auto-spawn entities").onChange(function(value) {
-  localStorage["tiamblia.auto_spawn"] = value;
-});
-
-options["Clear Auto-Save"] = function() {
-  localStorage.removeItem("Skele2D World");
-  alert("Cleared Skele2D World. Refresh the page to start over.");
-};
-
-skele2d_folder.add(options, "Clear Auto-Save");
-
-last_selected_entity = null;
-
-// lil-gui.js doesn't support an onBeforeChange callback,
-// so we have to do this hack to integrate with the undo system.
-// Another way might be with a Proxy, might be cleaner.
-// This is debounced because it's called a lot while dragging controllers.
-// `undoable()` will save, but if we're debouncing it, we need to save manually.
-last_undoable_time = -2e308;
-
-save_timeout = null;
-
-ms_between_undos = 300;
-
-ms_idle_before_saving = ms_between_undos * 2;
-
-old_Controller_setValue = Controller.prototype.setValue;
-
-Controller.prototype.setValue = function(value) {
-  var c, controller_edits_entity;
-  controller_edits_entity = false;
-  c = this;
-  while (c) {
-    if (c.object instanceof Entity) {
-      controller_edits_entity = true;
-      break;
-    }
-    c = c.parent;
-  }
-  // controller_edits_entity = @ in entity_folder.controllersRecursive() # alternative
-  if (controller_edits_entity) {
-    clearTimeout(save_timeout);
-    save_timeout = setTimeout(() => {
-      return the_editor.save();
-    }, ms_idle_before_saving);
-    if (performance.now() - last_undoable_time > ms_between_undos) {
-      the_editor.undoable(() => {
-        old_Controller_setValue.call(this, value);
-      });
-      last_undoable_time = performance.now();
-    } else {
-      old_Controller_setValue.call(this, value);
-    }
-  } else {
-    old_Controller_setValue.call(this, value);
-  }
-};
-
-// "waves" is old, it shouldn't be on the Water entity anymore
-// TODO: move this info into the respective entity classes
-// and maybe base it on serialization by default, but allow more properties to be excluded
-property_inspector_exclusions = ["_class_", "structure", "random_values", "simplex", "waves_y", "waves_vy", "bubbles", "waves"];
-
 terrain_optimized = false;
 
 (animate = function() {
-  var child, class_name, class_names, clone, controller, ent, entity, error, existing_instances, gamepad, i, j, k, l, len, len1, len2, len3, len4, m, make_controllers, min_instances, n, new_entities, o, p, player, ref1, ref2, ref3, ref4, ref5, ref6, ref7, selected_entity, show_stats;
+  var class_name, class_names, clone, ent, entity, error, existing_instances, gamepad, i, j, k, l, len, len1, len2, len3, m, min_instances, n, new_entities, player, ref, ref1, ref2, ref3, ref4, show_stats;
   if (window.CRASHED) {
     return;
   }
@@ -10001,74 +11135,20 @@ terrain_optimized = false;
   stats.begin();
   requestAnimationFrame(animate);
   Math.seedrandom(performance.now());
-  selected_entity = editor.selected_entities[0];
-  if (last_selected_entity !== selected_entity) {
-    last_selected_entity = selected_entity;
-    ref1 = entity_folder.children;
-    for (j = ref1.length - 1; j >= 0; j += -1) {
-      child = ref1[j];
-      child.destroy();
-    }
-    make_controllers = function(object, folder) {
-      var array_folder, key, ref2, results, value;
-      results = [];
-      for (key in object) {
-        value = object[key];
-        if (indexOf.call(property_inspector_exclusions, key) < 0) {
-          if ((ref2 = typeof value) === "number" || ref2 === "string" || ref2 === "boolean") {
-            if (key.match(/color/i) && typeof value === "string") {
-              results.push(folder.addColor(object, key));
-            } else {
-              results.push(folder.add(object, key));
-            }
-          } else if (typeof value === "object" && value) {
-            if (value instanceof Array) {
-              if (value.length > 0) {
-                array_folder = folder.addFolder(key);
-                // for i in [0...value.length]
-                // 	# make_controllers(value[i], array_folder.addFolder("#{key}[#{i}]"))
-                // 	make_controllers({[i]: value[i]}, array_folder)
-                results.push(make_controllers(Object.assign({}, value), array_folder));
-              } else {
-                results.push(void 0);
-              }
-            } else if (value.constructor === Object) {
-              results.push(make_controllers(value, folder.addFolder(key)));
-            } else {
-              results.push(console.log(`Unknown type for ${key}: ${value.constructor.name}`));
-            }
-          } else {
-            results.push(console.log(`Unknown type for ${key}: ${typeof value}`));
-          }
-        }
-      }
-      return results;
-    };
-    make_controllers(selected_entity, entity_folder);
-    if (selected_entity) {
-      entity_folder.title(`Selected Entity (${selected_entity.constructor.name})`);
-    } else {
-      entity_folder.title("Selected Entity");
-    }
-  }
-  if (gui._visible) {
-    ref2 = entity_folder.controllersRecursive();
-    for (k = 0, len = ref2.length; k < len; k++) {
-      controller = ref2[k];
-      controller.updateDisplay();
-    }
+  if (!gui._hidden) {
+    update_property_inspector();
   }
   // Spawn entities for dev purposes, especially for flora.
   // This helps to see the space of randomization.
-  class_names = (ref3 = ((function() {
+  class_names = (ref = ((function() {
     try {
       return localStorage["tiamblia.auto_spawn"];
     } catch (error1) {}
-  })())) != null ? ref3 : "";
+  })())) != null ? ref : "";
   class_names = class_names.length > 0 ? class_names.split(",") : [];
   try {
-    for (l = 0, len1 = class_names.length; l < len1; l++) {
-      class_name = class_names[l];
+    for (j = 0, len = class_names.length; j < len; j++) {
+      class_name = class_names[j];
       min_instances = 10;
       existing_instances = world.entities.filter(function(entity) {
         return entity.constructor.name === class_name;
@@ -10087,7 +11167,7 @@ terrain_optimized = false;
         world.entities.push(ent);
         if (ent.dna) {
 // show examples of the same species beside it
-          for (i = m = 0; m < 3; i = ++m) {
+          for (i = k = 0; k < 3; i = ++k) {
             clone = Entity.fromJSON({
               _class_: class_name,
               dna: JSON.parse(JSON.stringify(ent.dna))
@@ -10131,13 +11211,13 @@ terrain_optimized = false;
     canvas.height = innerHeight;
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ref5 = (ref4 = ((function() {
+  ref2 = (ref1 = ((function() {
     try {
       return navigator.getGamepads();
     } catch (error1) {}
-  })())) != null ? ref4 : [];
-  for (n = 0, len2 = ref5.length; n < len2; n++) {
-    gamepad = ref5[n];
+  })())) != null ? ref1 : [];
+  for (l = 0, len1 = ref2.length; l < len1; l++) {
+    gamepad = ref2[l];
     if (!(gamepad)) {
       continue;
     }
@@ -10157,12 +11237,12 @@ terrain_optimized = false;
     // (I could also use the relative sorts list to sort only the added entity,
     // and this could be useful for gameplay code that might want to add entities.)
     sort_entities(world);
-    ref6 = world.entities;
+    ref3 = world.entities;
     // Fix hair attachment when dragging after simulating.
     // A better fix would be to have an event that fires while dragging
     // (or otherwise moving an entity, such as with the arrow keys, which isn't supported yet.)
-    for (o = 0, len3 = ref6.length; o < len3; o++) {
-      entity = ref6[o];
+    for (m = 0, len2 = ref3.length; m < len2; m++) {
+      entity = ref3[m];
       if (entity instanceof Player) {
         entity.hair_initialized = false;
       }
@@ -10175,10 +11255,10 @@ terrain_optimized = false;
       terrain_optimized = true;
     }
     world.updateCollisionBuckets();
-    ref7 = world.entities;
+    ref4 = world.entities;
     // when entity isnt editor.editing_entity and entity not in editor.dragging_entities
-    for (p = 0, len4 = ref7.length; p < len4; p++) {
-      entity = ref7[p];
+    for (n = 0, len3 = ref4.length; n < len3; n++) {
+      entity = ref4[n];
       entity.step(world, view, mouse);
     }
     
@@ -10222,8 +11302,8 @@ terrain_optimized = false;
         } catch (error1) {}
       })()) || "").split(",");
       new_entities = world.entities.filter(function(entity) {
-        var ref8;
-        return ref8 = entity.constructor.name, indexOf.call(class_names, ref8) < 0;
+        var ref5;
+        return ref5 = entity.constructor.name, indexOf.call(class_names, ref5) < 0;
       });
       if (new_entities.length !== world.entities.length) {
         editor.undoable(function() {
