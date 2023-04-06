@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 10
+	@formatVersion: 11
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -221,6 +221,19 @@ module.exports = class World
 				delete ent_def.max_x
 				delete ent_def.min_y
 				delete ent_def.max_y
+		if def.formatVersion is 10
+			def.formatVersion = 11
+			# Deer: dir_pl -> smoothed_facing_x, dir_p is renamed/removed in favor of facing_x from SimpleActor
+			# I believe the 'l' stood for "linearly interpolated", but I'm not sure about the 'p'.
+			# Maybe 'p' meant "positive(/negative)"? or "pointing", as in a facing direction?
+			# I copied this code from an era where I used single-letter variable names.
+			# Those were the days... where I can't understand my code from.
+			for ent_def in def.entities when ent_def._class_ is "Deer"
+				ent_def.smoothed_facing_x = ent_def.dir_pl if ent_def.dir_pl?
+				delete ent_def.dir_pl
+				ent_def.facing_x = ent_def.dir_p if ent_def.dir_p?
+				delete ent_def.dir_p
+
 		# TODO: remove more cruft from serialization
 		# can't do this until we own Terrain, right now it's part of Skele2D.
 		# # Terrain: width, max_height, left, right, bottom

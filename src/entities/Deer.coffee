@@ -23,12 +23,13 @@ module.exports = class Deer extends SimpleActor
 		@width = 27; @height = 18
 		@xp = 0; @t = 0
 		@lr = 0
-		@dir = 0; @dir_p = 1; @dir_pl = 1
+		@dir = 0; @smoothed_facing_x = @facing_x = 1
 		@rideable = true
 		# hex is for lil-gui based entity properties editor
 		@body_color = hsl_to_rgb_hex("hsla("+(Math.random()*20)+","+(10)+"%,"+(50+Math.random()*20)+"%,1)")
 		@ground_angle = 0
 		@ground_angle_smoothed = 0
+		# smoothed_facing_x and ground_angle_smoothed, huh? inconsistent naming scheme
 
 	step: (world)->
 		if @grounded
@@ -38,6 +39,8 @@ module.exports = class Deer extends SimpleActor
 			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/5
 			if Math.random() < 0.01
 				@dir = r()
+				if Math.abs(@dir) < 0.3
+					@dir = 0
 		else
 			@ground_angle = 0
 			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/10
@@ -45,6 +48,8 @@ module.exports = class Deer extends SimpleActor
 				@t++
 				if @t > 15
 					@dir = r()
+					if Math.abs(@dir) < 0.3
+						@dir = 0
 					@t=0
 			else
 				@t=0
@@ -53,15 +58,12 @@ module.exports = class Deer extends SimpleActor
 		@lr += Math.abs(@vx)/5
 		@xp = @x
 
-
 		@move_x = @dir*0.2
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
 
-		@dir_p=-1 if @dir < -0.3
-		@dir_p=1 if @dir > 0.3
-		@dir_pl += (@dir_p-@dir_pl)/10
+		@smoothed_facing_x += (@facing_x-@smoothed_facing_x)/10
 		return
 	
 	draw: (ctx)->
@@ -75,7 +77,7 @@ module.exports = class Deer extends SimpleActor
 		ctx.arc(0,-@height/2,@height/3,0,TAU,true)
 		ctx.fill()
 		
-		ctx.scale(@dir_pl,1)
+		ctx.scale(@smoothed_facing_x,1)
 		# ctx.rotate(@vx/-10)
 		# legs
 		ctx.strokeStyle="#a55"
