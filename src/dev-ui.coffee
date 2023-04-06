@@ -69,7 +69,13 @@ options["Clear Auto-Save"] = ->
 	try
 		default_file_handle = await idb_keyval.get("tiamblia.default_world_file_handle")
 		if default_file_handle
-			await verify_permission(default_file_handle, false)
+			unless await verify_permission(default_file_handle, false)
+				# This maybe doesn't fit with the spirit of a "Cancel" button...
+				# location.reload()
+				# I could simplify the UI by not clearing the auto-save if the user doesn't have permission to load the default world.
+				# But it's a little weird since you don't need permission, if there's no file handle. It CAN just reload the page.
+				alert "Auto-save cleared. If you want to get it back, edit something. If you want to load the default world, refresh the page."
+				return
 			file = await default_file_handle.getFile()
 			json = await file.text()
 			load_from_json(json)
@@ -142,6 +148,7 @@ file_save_as = ->
 	if showSaveFilePicker?
 		try
 			file_handle = await showSaveFilePicker({types: [{description: "JSON", accept: {"application/json": [".json"]}}]})
+			return unless await verify_permission(file_handle, true)
 			writable = await file_handle.createWritable()
 			await writable.write(json)
 			await writable.close()
@@ -161,6 +168,7 @@ file_save = ->
 	if file_handle?
 		json = JSON.stringify(world.toJSON(), null, "\t")
 		try
+			return unless await verify_permission(file_handle, true)
 			writable = await file_handle.createWritable()
 			await writable.write(json)
 			await writable.close()
