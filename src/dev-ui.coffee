@@ -40,13 +40,16 @@ tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 	localStorage["tiamblia.auto_spawn"] = value
 	return
 
+file_handle = null
+
 options["Clear Auto-Save"] = ->
 	localStorage.removeItem("Skele2D World")
+	file_handle = null
+	idb_keyval.del("tiamblia.file_handle")
 	alert "Cleared Skele2D World. Refresh the page to start over."
 	return
 skele2d_folder.add(options, "Clear Auto-Save")
 
-file_handle = null
 idb_keyval.get("tiamblia.file_handle").then (value) ->
 	file_handle = value
 	return
