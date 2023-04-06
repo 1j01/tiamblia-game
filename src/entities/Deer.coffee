@@ -21,11 +21,11 @@ module.exports = class Deer extends SimpleActor
 		@bbox_padding = 30
 		
 		@width = 27; @height = 18
-		@xp = 0 # previous x position
-		@t = 0 # idle timer... while in the air??? or I guess this was trying to
+		@x_prev = 0 # previous x position
+		@linger_time = 0 # I guess this was trying to
 		# avoid getting stuck for too long on a cliff, a hill too steep to climb.
 		# I don't know if it works with the new game, after porting from tiamblia-original.
-		@lr = 0 # leg rotation
+		@leg_rotation = 0 # leg rotation
 		@smoothed_facing_x = @facing_x = 1
 		@rideable = true
 		# hex is for lil-gui based entity properties editor
@@ -47,18 +47,18 @@ module.exports = class Deer extends SimpleActor
 		else
 			@ground_angle = 0
 			@ground_angle_smoothed += (@ground_angle-@ground_angle_smoothed)/10
-			if Math.abs(@xp-@x) < 1
-				@t++
-				if @t > 15
+			if Math.abs(@x_prev-@x) < 1
+				@linger_time++
+				if @linger_time > 15
 					@move_x = r()
 					if Math.abs(@move_x) < 0.3
 						@move_x = 0
-					@t=0
+					@linger_time=0
 			else
-				@t=0
+				@linger_time=0
 		
-		@lr += Math.abs(@vx)/5
-		@xp = @x
+		@leg_rotation += Math.abs(@vx)/5
+		@x_prev = @x
 
 		# swim upwards always if in water
 		@move_y = -1
@@ -85,15 +85,15 @@ module.exports = class Deer extends SimpleActor
 		ctx.strokeStyle="#a55"
 		ctx.beginPath()
 		ctx.moveTo(-@width/2,-@height/2)
-		ctx.lineTo(Math.cos(@lr)*10-@width/2,@height/2+Math.sin(@lr)*8)
+		ctx.lineTo(Math.cos(@leg_rotation)*10-@width/2,@height/2+Math.sin(@leg_rotation)*8)
 		ctx.moveTo(-@width/2,-@height/2)
-		ctx.lineTo(Math.cos(@lr+TAU/2)*10-@width/2,@height/2+Math.sin(@lr+TAU/2)*8)
+		ctx.lineTo(Math.cos(@leg_rotation+TAU/2)*10-@width/2,@height/2+Math.sin(@leg_rotation+TAU/2)*8)
 		ctx.stroke()
 		ctx.beginPath()
 		ctx.moveTo(@width/2,-@height/2)
-		ctx.lineTo(Math.cos(@lr+0.1)*10+@width/2,@height/2+Math.sin(@lr)*8)
+		ctx.lineTo(Math.cos(@leg_rotation+0.1)*10+@width/2,@height/2+Math.sin(@leg_rotation)*8)
 		ctx.moveTo(@width/2,-@height/2)
-		ctx.lineTo(Math.cos(@lr+TAU/2+0.2)*10+@width/2,@height/2+Math.sin(@lr+TAU/2)*8)
+		ctx.lineTo(Math.cos(@leg_rotation+TAU/2+0.2)*10+@width/2,@height/2+Math.sin(@leg_rotation+TAU/2)*8)
 		ctx.stroke()
 		
 		ctx.fillStyle=@body_color
