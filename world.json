@@ -1,6 +1,6 @@
 {
 	"format": "Tiamblia World",
-	"formatVersion": 10,
+	"formatVersion": 14,
 	"entities": [
 		{
 			"structure": {
@@ -27761,17 +27761,16 @@
 			"move_y": 0,
 			"jump": false,
 			"grounded": false,
-			"facing_x": 0,
-			"xp": 0,
-			"t": 0,
-			"lr": 0,
-			"dir": 0,
-			"dir_p": 1,
-			"dir_pl": 1,
+			"facing_x": 1,
+			"x_prev": 0,
+			"linger_time": 0,
+			"leg_rotation": 0,
+			"smoothed_facing_x": 1,
 			"rideable": true,
 			"body_color": "#927f7a",
 			"ground_angle": 0,
-			"ground_angle_smoothed": 0
+			"ground_angle_smoothed": 0,
+			"idle_timer": 0
 		},
 		{
 			"structure": {
@@ -27812,17 +27811,16 @@
 			"move_y": 0,
 			"jump": false,
 			"grounded": false,
-			"facing_x": 0,
-			"xp": 0,
-			"t": 0,
-			"lr": 0,
-			"dir": 0,
-			"dir_p": 1,
-			"dir_pl": 1,
+			"facing_x": 1,
+			"x_prev": 0,
+			"linger_time": 0,
+			"leg_rotation": 0,
+			"smoothed_facing_x": 1,
 			"rideable": true,
 			"body_color": "#b3a5a2",
 			"ground_angle": 0,
-			"ground_angle_smoothed": 0
+			"ground_angle_smoothed": 0,
+			"idle_timer": 0
 		},
 		{
 			"structure": {
@@ -27863,17 +27861,16 @@
 			"move_y": 0,
 			"jump": false,
 			"grounded": false,
-			"facing_x": 0,
-			"xp": 0,
-			"t": 0,
-			"lr": 0,
-			"dir": 0,
-			"dir_p": 1,
-			"dir_pl": 1,
+			"facing_x": 1,
+			"x_prev": 0,
+			"linger_time": 0,
+			"leg_rotation": 0,
+			"smoothed_facing_x": 1,
 			"rideable": true,
 			"body_color": "#b0a09f",
 			"ground_angle": 0,
-			"ground_angle_smoothed": 0
+			"ground_angle_smoothed": 0,
+			"idle_timer": 0
 		},
 		{
 			"structure": {
@@ -28078,7 +28075,8 @@
 			"other_idle_animation_position": 0,
 			"idle_animation": null,
 			"idle_timer": 0,
-			"real_facing_x": 1,
+			"lower_body_facing_x": 1,
+			"upper_body_facing_x": 1,
 			"smoothed_facing_x_for_eyes": 1,
 			"landing_momentum": 0,
 			"hairs": [
