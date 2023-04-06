@@ -259,7 +259,7 @@ module.exports = class Player extends SimpleActor
 		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
 		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
 		
-		crouch = down and not @riding
+		crouch = down and @grounded and not @riding
 
 		# TODO: configurable controls
 		@move_x = right - left
