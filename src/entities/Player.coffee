@@ -149,11 +149,11 @@ module.exports = class Player extends SimpleActor
 		@other_idle_animation_position = 0
 		@idle_animation = null
 		@idle_timer = 0
-		# real_facing_x switches while aiming backwards, then reverts to facing_x if you stop aiming
-		# TODO: split real_facing_x into upper_body_facing_x and lower_body_facing_x so that
-		# the upper body can aim backwards while the lower body matches the facing direction of a mount
-		# (It looks very silly when the player flips around completely while riding a horse.)
-		@smoothed_facing_x_for_eyes = @real_facing_x = @facing_x = 1
+		# @upper_body_facing_x switches while aiming backwards, then reverts to facing_x if you stop aiming
+		# @lower_body_facing_x also switches while aiming backwards except if you're riding a mount.
+		# It looks very silly if the player flips around completely while riding a horse, just to aim,
+		# but when not riding, it looks a bit better to flip wholly around.
+		@smoothed_facing_x_for_eyes = @upper_body_facing_x = @lower_body_facing_x = @facing_x = 1
 		@landing_momentum = 0 # for bending knees when landing
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
@@ -409,7 +409,7 @@ module.exports = class Player extends SimpleActor
 			else
 				prevent_idle()
 				if Player.animations["Run"]
-					@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * @real_facing_x
+					@run_animation_position += Math.abs(@move_x) / 5 * @facing_x * @lower_body_facing_x
 					new_pose = Pose.lerpAnimationLoop(Player.animations["Run"], @run_animation_position)
 				else
 					new_pose = @structure.getPose()
@@ -417,11 +417,39 @@ module.exports = class Player extends SimpleActor
 			prevent_idle()
 			new_pose = Player.poses["Jumping"] ? Player.poses["Stand"] ? @structure.getPose()
 		
-		if @real_facing_x < 0
-			new_pose = Pose.horizontallyFlip(new_pose)
-		
-		# Avoid mutating the pose/animation data
+		# Make sure to avoid mutating the pose data,
+		# since new_pose may be a reference to a pose in Player.poses!
+		# (It's not a problem for animations, since interpolation returns a new pose.)
+		# Either use Pose.copy or another pure function like Pose.horizontallyFlip.
+
+		# This is a more concise way to handle upper/lower body flipping,
+		# but the implementation below may be more clear.
+		# if @upper_body_facing_x < 0
+		# 	new_pose = Pose.horizontallyFlip(new_pose)
+		# else
+		# 	# Avoid mutating the pose data
+		# 	new_pose = Pose.copy(new_pose)
+		# if @lower_body_facing_x isnt @upper_body_facing_x
+		# 	new_pose_for_lower_body = Pose.horizontallyFlip(new_pose)
+		# 	for point_name in ["pelvis", "left hip", "right hip", "left knee", "right knee", "left foot", "right foot"]
+		# 		new_pose.points[point_name] = new_pose_for_lower_body.points[point_name]
+
+		upper_body_pose = Pose.copy(new_pose)
+		if @upper_body_facing_x < 0
+			upper_body_pose = Pose.horizontallyFlip(upper_body_pose)
+
+		lower_body_pose = Pose.copy(new_pose)
+		if @lower_body_facing_x < 0
+			lower_body_pose = Pose.horizontallyFlip(lower_body_pose)
+
+		# Combine the two poses
 		new_pose = Pose.copy(new_pose)
+		lower_point_names = ["pelvis", "left hip", "right hip", "left knee", "right knee", "left foot", "right foot"]
+		for point_name, point of new_pose.points
+			if point_name in lower_point_names
+				new_pose.points[point_name] = lower_body_pose.points[point_name]
+			else
+				new_pose.points[point_name] = upper_body_pose.points[point_name]
 
 		head_x_before_posing = @structure.points["head"].x
 		head_y_before_posing = @structure.points["head"].y
@@ -549,7 +577,8 @@ module.exports = class Player extends SimpleActor
 		# This does a lot of the grunt work of smoothing things out
 		@structure.setPose(Pose.lerp(@structure.getPose(), new_pose, 0.3))
 		
-		@real_facing_x = @facing_x
+		@upper_body_facing_x = @facing_x
+		@lower_body_facing_x = @facing_x
 
 		if prime_bow
 			# Restore head position, in order to do linear interpolation.
@@ -607,7 +636,8 @@ module.exports = class Player extends SimpleActor
 				secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle)
 				# make head look along aim path
 				angle = (aim_angle - TAU/4) %% TAU
-				@real_facing_x = if angle < TAU/2 then -1 else 1
+				@upper_body_facing_x = if angle < TAU/2 then -1 else 1
+				@lower_body_facing_x = @upper_body_facing_x unless @riding
 				{head, neck} = @structure.points
 				new_head_x = neck.x + 5 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
 				new_head_y = neck.y + 5 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
@@ -622,7 +652,7 @@ module.exports = class Player extends SimpleActor
 				# neck stretch, temporarily, during the transition. @FIXME
 				@facing_turn_timer ?= 0
 				transition_duration = 50
-				if @prev_real_facing_x != @real_facing_x
+				if @prev_upper_body_facing_x != @upper_body_facing_x
 					@facing_turn_timer = transition_duration
 				@facing_turn_timer -= 1
 				lerp_factor = 1 #- 0.3
@@ -664,7 +694,7 @@ module.exports = class Player extends SimpleActor
 				arrow.structure.points.tip.y = sternum.y + (draw_to + arrow.length) * Math.sin(aim_angle)
 			else
 				angle = Math.atan2(primary_hand.y - sternum.y, primary_hand.x - sternum.x)
-				arrow_angle = angle - (TAU/4 + 0.2) * @real_facing_x
+				arrow_angle = angle - (TAU/4 + 0.2) * @upper_body_facing_x
 				# near fletching, good for one arrow
 				hold_offset = -5
 				# hold a bit more centered when there's more arrows
@@ -693,9 +723,9 @@ module.exports = class Player extends SimpleActor
 		# Hair physics
 		@simulate_hair(world)
 
-		@smoothed_facing_x_for_eyes += (@real_facing_x - @smoothed_facing_x_for_eyes) / 5
+		@smoothed_facing_x_for_eyes += (@upper_body_facing_x - @smoothed_facing_x_for_eyes) / 5
 
-		@prev_real_facing_x = @real_facing_x
+		@prev_upper_body_facing_x = @upper_body_facing_x
 
 		return
 
@@ -717,8 +747,8 @@ module.exports = class Player extends SimpleActor
 
 			for points, hair_index in @hairs
 				a = head_angle + hair_index / @hairs.length * TAU/2 - TAU/4
-				back_x = Math.sin(head_angle) * 2 * @real_facing_x
-				back_y = Math.cos(head_angle) * 2 * @real_facing_x
+				back_x = Math.sin(head_angle) * 2 * @upper_body_facing_x
+				back_y = Math.cos(head_angle) * 2 * @upper_body_facing_x
 				points[0].x = head_global.x + Math.cos(a) * 3 + back_x
 				points[0].y = head_global.y + Math.sin(a) * 3 + back_y
 				seg_length = (hair_length + (Math.cos(a - head_angle) - 0.5) * 5) / points.length

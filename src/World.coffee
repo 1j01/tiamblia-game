@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 13
+	@formatVersion: 14
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -249,6 +249,15 @@ module.exports = class World
 				delete ent_def.t
 				ent_def.leg_rotation = ent_def.lr if ent_def.lr?
 				delete ent_def.lr
+		if def.formatVersion is 13
+			def.formatVersion = 14
+			# Player: real_facing_x -> upper_body_facing_x and lower_body_facing_x, prev_real_facing_x -> prev_upper_body_prev_facing_x
+			for ent_def in def.entities when ent_def._class_ is "Player"
+				ent_def.upper_body_facing_x = ent_def.real_facing_x if ent_def.real_facing_x?
+				ent_def.lower_body_facing_x = ent_def.real_facing_x if ent_def.real_facing_x?
+				delete ent_def.real_facing_x
+				ent_def.prev_upper_body_facing_x = ent_def.prev_real_facing_x if ent_def.prev_real_facing_x?
+				delete ent_def.prev_real_facing_x
 
 		# TODO: remove more cruft from serialization
 		# can't do this until we own Terrain, right now it's part of Skele2D.
