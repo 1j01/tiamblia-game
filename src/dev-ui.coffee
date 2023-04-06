@@ -42,12 +42,46 @@ tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 
 file_handle = null
 
+# Verify the user has granted permission to read or write to the file, if
+# permission hasn't been granted, request permission.
+# getFile() can fail without requesting permission.
+#
+# @param {FileSystemFileHandle} file_handle File handle to check.
+# @param {boolean} with_write whether write permission should be checked.
+# @return {boolean} whether the user has granted read/write permission.
+verify_permission = (file_handle, with_write)->
+	options = {}
+	if with_write
+		options.writable = true
+		# For Chrome 86 and later...
+		options.mode = "readwrite"
+	if await file_handle.queryPermission(options) is "granted"
+		return true
+	if await file_handle.requestPermission(options) is "granted"
+		return true
+	return false
+
 options["Clear Auto-Save"] = ->
+	return unless confirm("Are you sure you want to reload the default world?")
 	localStorage.removeItem("Skele2D World")
 	file_handle = null
-	idb_keyval.del("tiamblia.file_handle")
-	alert "Cleared Skele2D World. Refresh the page to start over."
-	return
+	await idb_keyval.del("tiamblia.file_handle")
+	try
+		default_file_handle = await idb_keyval.get("tiamblia.default_world_file_handle")
+		if default_file_handle
+			await verify_permission(default_file_handle, false)
+			file = await default_file_handle.getFile()
+			json = await file.text()
+			load_from_json(json)
+			file_handle = default_file_handle
+			await idb_keyval.set("tiamblia.file_handle", file_handle)
+			return
+		else
+			location.reload()
+			return
+	catch exception
+		alert "Cleared Skele2D World, but failed to load default world:\n\n#{exception}\n\nRefresh the page to start over."
+		return
 skele2d_folder.add(options, "Clear Auto-Save")
 
 idb_keyval.get("tiamblia.file_handle").then (value) ->
@@ -67,6 +101,12 @@ load_from_json = (json)->
 			editor.warn("Failed to load world: #{error}")
 		return false
 	return true
+store_file_handle = (file_handle) ->
+	idb_keyval.set("tiamblia.file_handle", file_handle)
+	# Maybe I should rename this file to be less generic
+	if file_handle.name is "world.json"
+		idb_keyval.set("tiamblia.default_world_file_handle", file_handle)
+	return
 file_open = ->
 	if showOpenFilePicker?
 		try
@@ -80,7 +120,7 @@ file_open = ->
 			return
 		if load_from_json(json)
 			file_handle = new_file_handle
-			idb_keyval.set("tiamblia.file_handle", file_handle)
+			store_file_handle(file_handle)
 	else
 		input = document.createElement("input")
 		input.type = "file"
@@ -108,7 +148,7 @@ file_save_as = ->
 				return
 			editor.warn("Failed to save file: #{exception}")
 			return
-		idb_keyval.set("tiamblia.file_handle", file_handle)
+		store_file_handle(file_handle)
 	else
 		a = document.createElement("a")
 		a.href = "data:application/json;charset=utf-8," + encodeURIComponent(json)
