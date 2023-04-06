@@ -58,12 +58,13 @@ module.exports = class Deer extends SimpleActor
 		@move_y = -1
 		# run SimpleActor physics, which uses @move_x and @jump
 		super(world)
-		return
-	
-	draw: (ctx)->
+
 		@dir_p=-1 if @dir < -0.3
 		@dir_p=1 if @dir > 0.3
 		@dir_pl += (@dir_p-@dir_pl)/10
+		return
+	
+	draw: (ctx)->
 		ctx.save()
 		# ctx.translate(@x,@y+@height*3/4)
 		ctx.translate(0,@height*3/4)
