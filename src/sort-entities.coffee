@@ -25,8 +25,9 @@ relative_sorts = [
 	[c(Player), c(Deer)]
 	# It looks best holding the arrow in front of the bow.
 	[c(Arrow), c(Player)]
+	# Player now manually sorts Bow in relation to itself (when holding it)
 	# [c(Player), c(Bow)] # can look better in some cases, but not while aiming or turning
-	[c(Bow), c(Player)]
+	# [c(Bow), c(Player)]
 	[c(Arrow), c(Bow)]
 
 	# Water is transparent, and it should discolor any entities submerged in it.

@@ -699,6 +699,21 @@ module.exports = class Player extends SimpleActor
 			else
 				bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle)
 				bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle)
+			
+			# sort bow in front or behind player
+			bow_index = the_world.entities.indexOf(bow)
+			player_index = the_world.entities.indexOf(@)
+			if prime_bow
+				if bow_index < player_index
+					the_world.entities.splice(bow_index, 1)
+					player_index = the_world.entities.indexOf(@)
+					the_world.entities.splice(player_index + 1, 0, bow)
+			else
+				if bow_index > player_index
+					the_world.entities.splice(bow_index, 1)
+					player_index = the_world.entities.indexOf(@)
+					the_world.entities.splice(player_index, 0, bow)
+
 		
 		for arrow, arrow_index in @holding_arrows
 			arrow.lodging_constraints.length = 0 # pull it out if it's lodged in an object
