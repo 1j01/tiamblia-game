@@ -880,25 +880,28 @@ module.exports = class Player extends SimpleActor
 		ctx.restore()
 		
 		# head, including top of hair
+		head_radius_y = 5.5
+		head_radius_x = head_radius_y*0.9
+		hair_radius = head_radius_y
 		ctx.save()
 		ctx.translate(head.x, head.y)
 		ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
 		# head
 		ctx.save()
-		ctx.scale(0.9, 1)
+		ctx.scale(head_radius_x/head_radius_y, 1)
 		ctx.beginPath()
-		ctx.arc(0, 0, 5.5, 0, TAU)
+		ctx.arc(0, 0, head_radius_y, 0, TAU)
 		ctx.fillStyle = skin_color
 		ctx.fill()
 		ctx.restore()
 		# top of hair
 		ctx.beginPath()
-		ctx.arc(0, 0, 5.5, 0, TAU/2)
+		ctx.arc(0, 0, hair_radius, 0, TAU/2)
 		ctx.fillStyle = hair_color
 		ctx.fill()
 		# eyes
-		# TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
-		ctx.arc(0, 0, 5.5*0.9, 0, TAU)
+		# TODO: refactor to use the same scaled arc as the head; hair can go after the eyes
+		ctx.arc(0, 0, head_radius_x, 0, TAU)
 		ctx.clip()
 		eye_spacing = 0.6 # radians
 		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
@@ -906,7 +909,7 @@ module.exports = class Player extends SimpleActor
 		for eye_signature in [-1, 1]
 			# 3D projection in one axis
 			head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
-			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5*0.9
+			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius_x
 			ctx.beginPath()
 			ctx.arc(eye_x, -1, 1, 0, TAU)
 			ctx.fill()
