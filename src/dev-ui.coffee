@@ -61,7 +61,7 @@ verify_permission = (file_handle, with_write)->
 		return true
 	return false
 
-options["Clear Auto-Save"] = ->
+clear_auto_save = ->
 	return unless confirm("Are you sure you want to reload the default world?")
 	localStorage.removeItem("Skele2D World")
 	file_handle = null
@@ -88,7 +88,6 @@ options["Clear Auto-Save"] = ->
 	catch exception
 		alert "Cleared Skele2D World, but failed to load default world:\n\n#{exception}\n\nRefresh the page to start over."
 		return
-skele2d_folder.add(options, "Clear Auto-Save")
 
 idb_keyval.get("tiamblia.file_handle").then (value) ->
 	file_handle = value
@@ -190,14 +189,31 @@ addEventListener "keydown", (event) ->
 		return
 	return
 
-options["Load World"] = file_open
-skele2d_folder.add(options, "Load World")
+icons =
+	open: 53
+	save: 22
+	save_as: 22.2 # ...see hack below
+	revert: 76
 
-options["Save World"] = file_save
-skele2d_folder.add(options, "Save World")
+add_button = (folder, name, icon, callback)->
+	button_controller = folder.add({[name]: callback}, name)
+	img = document.createElement("img")
+	if icon is 22.2
+		# stupid fake save as icon
+		icon = 22
+		img.style.transform = "scale(0.8) translate(-2px, -2px)"
+		img.style.filter = "drop-shadow(3px 3px 0px hsl(200, 80%, 40%)"
+	img.src = "icons/png/#{icon}.png"
+	img.style.float = "left"
+	img.style.marginRight = "5px"
+	img.style.marginLeft = "5px"
+	button_controller.$name.prepend(img)
+	return
 
-options["Save World As"] = file_save_as
-skele2d_folder.add(options, "Save World As")
+add_button(skele2d_folder, "Clear Auto-Save", icons.revert, clear_auto_save)
+add_button(skele2d_folder, "Load World", icons.open, file_open)
+add_button(skele2d_folder, "Save World", icons.save, file_save)
+add_button(skele2d_folder, "Save World As", icons.save_as, file_save_as)
 
 last_selected_entity = null
 # lil-gui.js doesn't support an onBeforeChange callback,
