@@ -372,7 +372,44 @@ module.exports = class World
 	drawBackground: (ctx, view)->
 		ctx.fillStyle = "#32C8FF"
 		ctx.fillRect(0, 0, view.width, view.height)
+		if not @bg
+			@bg = document.createElement("canvas")
+			@bg.width = 5000
+			@bg.height = 800
+			@drawMountains(@bg.getContext("2d"))
+		ctx.drawImage(@bg,(-view.center_x-5000/2)/2,500-view.center_y/5)
 		return
+	
+	drawMountains: (ctx)->
+		green = off
+		if green
+			ctx.fillStyle = "hsla(155,#{90 - (Math.random() * 6)}%,#{59 - (Math.random() * 6)}%,1)"
+		else
+			ctx.fillStyle = "hsla(205,#{90 - (Math.random() * 6)}%,#{69 - (Math.random() * 6)}%,1)"
+		ctx.fillRect 0, 100, ctx.canvas.width, ctx.canvas.height
+		i = 0
+		while i < 3
+			#ctx.globalAlpha=0.4
+			#y=ctx.canvas.height-(3-i)*100-200
+			if green
+				ctx.fillStyle = "hsla(155,#{80 - (i * 10) - (Math.random() * 6)}%,#{65 - (i * 0) - (Math.random() * 6)}%,1)"
+			else
+				ctx.fillStyle = "hsla(205,#{80 - (i * 10) - (Math.random() * 6)}%,#{65 - (i * 0) - (Math.random() * 6)}%,1)"
+			x = -Math.random() * 50
+			while x < ctx.canvas.width
+				y = i * 100 + 100
+				w = ((Math.random() * 50 + 50) * i + 10) * 5
+				h = (Math.random() * 50 * i + 10 + w / 2) / 2
+				if Math.random() < 0.2
+					# if Math.random() < 0.2
+					# 	#ctx.fillStyle="hsla(155,"+(80-i*10-Math.random()*6)+"%,"+(65-i*0-Math.random()*6)+"%,1)"
+					ctx.beginPath()
+					ctx.moveTo x, y
+					ctx.lineTo x + w, y
+					ctx.lineTo x + w / 2, y - h
+					ctx.fill()
+				x += w * Math.random()
+			i += 0.1
 	
 	draw: (ctx, view)->
 		# ctx.fillStyle = "#32C8FF"
