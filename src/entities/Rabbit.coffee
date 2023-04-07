@@ -87,9 +87,12 @@ module.exports = class Rabbit extends SimpleActor
 				angle = Math.pow(Math.abs(angle), 0.5) * Math.sign(angle)
 			ctx.rotate(angle / 2)
 
-		ctx.fillStyle=@body_shadow_color
-		# ctx.fillRect(0,0,@width,@height)
 		ctx.beginPath()
+		ctx.fillStyle=@body_color
+		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,TAU,false) # tail
+		ctx.fill()
+		ctx.beginPath()
+		ctx.fillStyle=@body_shadow_color
 		ctx.arc(0,0,@height/2,TAU*0.45,TAU*1.05,false) # body
 		ctx.fill()
 		ctx.fillStyle=@body_color
@@ -140,9 +143,5 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fill()
 		ctx.restore() # end ear transform and above-eyes clip
 		ctx.restore() # end head transform
-		ctx.fillStyle=@body_color
-		ctx.beginPath()
-		ctx.arc(-@smoothed_facing_x*@width/2,0,@height/5,0,TAU,false) # tail
-		ctx.fill()
 		ctx.restore() # end body center transform
 		return
