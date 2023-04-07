@@ -75,7 +75,7 @@ module.exports = class Rabbit extends SimpleActor
 		@structure.points.body.y = @height
 		return
 	
-	draw: (ctx)->
+	draw: (ctx, view)->
 		ctx.save() # body center transform
 		ctx.translate(@width/2,@height)
 		
@@ -103,6 +103,7 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.clip()
 		ctx.beginPath()
 		eye_radius = 1
+		eye_y = -1
 		eye_spacing = 1 # radians
 		turn_limit = TAU/5 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = @eye_color
@@ -116,21 +117,28 @@ module.exports = class Rabbit extends SimpleActor
 				# non-physical kludge to make the eyes transition away when going behind the head
 				eye_x += Math.cos(eye_spacing * eye_signature - head_rotation_angle) * head_radius * eye_signature * -1
 			ctx.beginPath()
-			ctx.arc(eye_x, -1, eye_radius, 0, TAU)
+			ctx.arc(eye_x, eye_y, eye_radius, 0, TAU)
 			ctx.fill()
 		ctx.beginPath()
 		ctx.restore() # end head clip
 		ctx.fill()
 		ctx.fillStyle=@body_color
 		ctx.beginPath()
-		ctx.save() # ear transform
+		ctx.save() # ear transform and above-eyes clip
+		above_eyes_y = eye_y - eye_radius
+		ctx.rect(-@width*5,above_eyes_y-@height*10,@width*10,@height*10)
+		# ctx.lineWidth = 1 / view.scale
+		# ctx.strokeStyle = "#F0F"
+		# ctx.stroke()
+		ctx.clip()
+		ctx.beginPath()
 		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
 		# ctx.rotate(Math.sin(performance.now()/1000))
 		ctx.rotate(-Math.min(TAU/6, Math.max(-TAU/6, @vx/3)))
 		ctx.scale(1, 3)
 		ctx.arc(0,-@height/9,1,0,TAU,false) # ear
 		ctx.fill()
-		ctx.restore() # end ear transform
+		ctx.restore() # end ear transform and above-eyes clip
 		ctx.restore() # end head transform
 		ctx.fillStyle=@body_color
 		ctx.beginPath()
