@@ -512,6 +512,8 @@ module.exports = class Player extends SimpleActor
 		secondary_hand = @structure.points["left hand"]
 		primary_elbow = @structure.points["right elbow"]
 		secondary_elbow = @structure.points["left elbow"]
+		primary_shoulder = @structure.points["right shoulder"]
+		secondary_shoulder = @structure.points["left shoulder"]
 
 		# Make hand reach for items
 		if @reaching_for_entity
@@ -631,8 +633,23 @@ module.exports = class Player extends SimpleActor
 				bow_angle = aim_angle
 				primary_hand.x = sternum.x + @bow_drawn_to * Math.cos(aim_angle)
 				primary_hand.y = sternum.y + @bow_drawn_to * Math.sin(aim_angle)
-				primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle)
-				primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle)
+				# primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle)
+				# primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle)
+				# Place the elbow at the midpoint between the hand and the shoulder
+				primary_elbow.x = (primary_hand.x + primary_shoulder.x) / 2
+				primary_elbow.y = (primary_hand.y + primary_shoulder.y) / 2
+				# "Then offset it to keep the segments the right length"
+				# We don't actually want this, because the arm should bend in 3D space,
+				# and basically just stay straight in 2D!
+				# arm_angle = Math.atan2(primary_hand.y - primary_shoulder.y, primary_hand.x - primary_shoulder.x)
+				# arm_extension = Math.hypot(primary_hand.x - primary_shoulder.x, primary_hand.y - primary_shoulder.y)
+				# offset_angle = arm_angle + TAU/4
+				# offset_distance = Math.abs(arm_span - arm_extension)
+				# if Math.sin(offset_angle) < 0
+				# 	offset_angle += TAU/2
+				# primary_elbow.x += Math.cos(offset_angle) * offset_distance
+				# primary_elbow.y += Math.sin(offset_angle) * offset_distance
+
 				# primary_elbow.y = sternum.y - 3
 				secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle)
 				secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle)
@@ -849,6 +866,8 @@ module.exports = class Player extends SimpleActor
 				ctx.lineWidth = 3
 				ctx.lineCap = "round"
 				ctx.strokeStyle = skin_color
+				# debug:
+				# ctx.strokeStyle = if segment_names is in_front_of_dress_segment_names then "yellow" else skin_color
 				ctx.stroke()
 		draw_limbs(behind_dress_segment_names)
 
