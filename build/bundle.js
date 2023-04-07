@@ -4486,7 +4486,7 @@ module.exports = Player = (function() {
     }
 
     draw(ctx, view) {
-      var dress_color, eye_color, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, head, head_rotation_angle, j, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, m, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
+      var dress_color, eye_color, eye_radius, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, hair_radius, head, head_radius_x, head_radius_y, head_rotation_angle, j, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, m, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
       ({
         head,
         sternum,
@@ -4586,28 +4586,26 @@ module.exports = Player = (function() {
       ctx.fillStyle = dress_color;
       ctx.fill();
       ctx.restore();
-      
-      // head, including top of hair
+      head_radius_y = 5.5;
+      head_radius_x = head_radius_y * 0.9;
+      hair_radius = head_radius_y;
+      // head and top of hair
       ctx.save();
       ctx.translate(head.x, head.y);
       ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU / 4);
-      // head
+      // head ellipse
       ctx.save();
-      ctx.scale(0.9, 1);
+      ctx.scale(head_radius_x / head_radius_y, 1);
       ctx.beginPath();
-      ctx.arc(0, 0, 5.5, 0, TAU);
+      ctx.arc(0, 0, head_radius_y, 0, TAU);
       ctx.fillStyle = skin_color;
       ctx.fill();
-      ctx.restore();
-      // top of hair
-      ctx.beginPath();
-      ctx.arc(0, 0, 5.5, 0, TAU / 2);
-      ctx.fillStyle = hair_color;
-      ctx.fill();
-      // eyes
-      // TODO: refactor 5.5 and 0.9. Make hair defined in terms of head, not vice versa, and use variables.
-      ctx.arc(0, 0, 5.5 * 0.9, 0, TAU);
+      // clip to head ellipse
       ctx.clip();
+      // reverse the scale so that the eyes are the same size regardless of head proportions
+      ctx.scale(head_radius_y / head_radius_x, 1);
+      // eyes
+      eye_radius = 1;
       eye_spacing = 0.6; // radians
       turn_limit = TAU / 8; // radians, TAU/4 = head facing completely sideways, only one eye visible
       ctx.fillStyle = eye_color;
@@ -4616,12 +4614,19 @@ module.exports = Player = (function() {
         eye_signature = ref3[m];
         // 3D projection in one axis
         head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
-        eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * 5.5 * 0.9;
+        eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius_x;
         ctx.beginPath();
-        ctx.arc(eye_x, -1, 1, 0, TAU);
+        ctx.arc(eye_x, -1, eye_radius, 0, TAU);
         ctx.fill();
       }
-      // /head
+      // /head ellipse clip
+      ctx.restore();
+      // top of hair
+      ctx.beginPath();
+      ctx.arc(0, 0, hair_radius, 0, TAU / 2);
+      ctx.fillStyle = hair_color;
+      ctx.fill();
+      // /head and top of hair
       ctx.restore();
     }
 
@@ -4871,9 +4876,10 @@ module.exports = Rabbit = (function() {
     }
 
     draw(ctx) {
-      var angle;
-      ctx.save(); // body center transform
-      ctx.translate(this.width / 2, this.height);
+      var angle, back_of_head, draw_head_arc, ear_rotation_radius, ear_signature, ear_spacing, ear_x, eye_radius, eye_signature, eye_spacing, eye_x, eye_y, head_radius, head_rotation_angle, i, j, len, len1, ref, ref1, turn_limit;
+      ctx.save(); // body transform
+      // ctx.translate(@width/2,@height)
+      ctx.translate(0, this.height);
       
       // for cute hopping, rotate based on the angle of movement
       if (this.vx !== 0) {
@@ -4884,37 +4890,74 @@ module.exports = Rabbit = (function() {
         }
         ctx.rotate(angle / 2);
       }
-      ctx.fillStyle = this.body_shadow_color;
-      // ctx.fillRect(0,0,@width,@height)
       ctx.beginPath();
+      ctx.fillStyle = this.body_color;
+      ctx.arc(-this.smoothed_facing_x * this.width / 2, 0, this.height / 5, 0, TAU, false); // tail
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = this.body_shadow_color;
       ctx.arc(0, 0, this.height / 2, TAU * 0.45, TAU * 1.05, false); // body
       ctx.fill();
       ctx.fillStyle = this.body_color;
       ctx.save(); // head transform
       ctx.translate(this.smoothed_facing_x * this.width / 3, -this.height / 3);
       ctx.beginPath();
-      ctx.arc(0, 0, this.height / 3, TAU * 0.45, TAU * 1.05, false); // head
-      ctx.fill();
-      ctx.fillStyle = this.eye_color;
-      ctx.beginPath();
-      ctx.arc(0, 0, 1, 0, TAU, false); // eye
-      ctx.fill();
-      ctx.fillStyle = this.body_color;
-      ctx.beginPath();
-      ctx.save(); // ear transform
-      ctx.translate(-this.smoothed_facing_x * this.width / 9, -this.height / 6);
+      head_radius = this.height / 3;
+      draw_head_arc = function() {
+        return ctx.arc(0, 0, head_radius, TAU * 0.45, TAU * 1.05, false);
+      };
+      draw_head_arc();
+      ctx.fill(); // head
       // ctx.rotate(Math.sin(performance.now()/1000))
-      ctx.rotate(-Math.min(TAU / 6, Math.max(-TAU / 6, this.vx / 3)));
-      ctx.scale(1, 3);
-      ctx.arc(0, -this.height / 9, 1, 0, TAU, false); // ear
+      turn_limit = TAU / 5; // radians, TAU/4 = head facing completely sideways, only one eye visible
+      ear_spacing = TAU / 12; // radians
+      ear_rotation_radius = head_radius * 0.8;
+      ref = [-1, 1];
+      for (i = 0, len = ref.length; i < len; i++) {
+        ear_signature = ref[i];
+        ctx.save(); // ear transform
+        ctx.beginPath();
+        head_rotation_angle = this.smoothed_facing_x * turn_limit * -1;
+        ear_x = Math.sin(ear_spacing * ear_signature - head_rotation_angle) * ear_rotation_radius * -1;
+        ctx.translate(ear_x, -this.height / 6);
+        ctx.rotate(-Math.min(TAU / 6, Math.max(-TAU / 6, this.vx / 3 + ear_signature * TAU / 20)));
+        ctx.scale(1, 3);
+        ctx.arc(0, -this.height / 9, 1, 0, TAU, false); // ear
+        ctx.fill();
+        ctx.restore(); // end ear transform
+      }
+      ctx.save(); // head clip
+      ctx.beginPath();
+      draw_head_arc();
+      ctx.clip();
+      ctx.beginPath();
+      eye_radius = 1;
+      eye_y = -1;
+      eye_spacing = 1; // radians
+      ctx.fillStyle = this.eye_color;
+      ref1 = [-1, 1];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        eye_signature = ref1[j];
+        // 3D projection in one axis
+        head_rotation_angle = this.smoothed_facing_x * turn_limit * -1;
+        eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius;
+        back_of_head = Math.cos(eye_spacing * eye_signature - head_rotation_angle) < 0;
+        // continue if back_of_head # don't draw eyes on the back of the head
+        if (back_of_head) {
+          // non-physical kludge to make the eyes transition away when going behind the head
+          eye_x += Math.cos(eye_spacing * eye_signature - head_rotation_angle) * head_radius * eye_signature * -1;
+        }
+        ctx.beginPath();
+        ctx.arc(eye_x, eye_y, eye_radius, 0, TAU);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.restore(); // end head clip
       ctx.fill();
-      ctx.restore(); // end ear transform
-      ctx.restore(); // end head transform
       ctx.fillStyle = this.body_color;
       ctx.beginPath();
-      ctx.arc(-this.smoothed_facing_x * this.width / 2, 0, this.height / 5, 0, TAU, false); // tail
-      ctx.fill();
-      ctx.restore(); // end body center transform
+      ctx.restore(); // end head transform
+      ctx.restore(); // end body transform
     }
 
   };
