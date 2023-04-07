@@ -835,16 +835,23 @@ module.exports = class Player extends SimpleActor
 			# ctx.strokeStyle = "hsla(#{hair_index / @hairs.length * 360}, 100%, 50%, 0.5)"
 			ctx.stroke()
 		
-		# limbs
-		for segment_name, segment of @structure.segments
-			ctx.beginPath()
-			ctx.moveTo(segment.a.x, segment.a.y)
-			ctx.lineTo(segment.b.x, segment.b.y)
-			ctx.lineWidth = 3
-			ctx.lineCap = "round"
-			ctx.strokeStyle = skin_color
-			ctx.stroke()
-		
+		# (most) limbs
+		in_front_of_dress_segment_names = ["upper right arm", "lower right arm"]
+		behind_dress_segment_names = Object.keys(@structure.segments).filter((segment_name)=>
+			not in_front_of_dress_segment_names.includes(segment_name)
+		)
+		draw_limbs = (segment_names)=>
+			for segment_name in segment_names
+				segment = @structure.segments[segment_name]
+				ctx.beginPath()
+				ctx.moveTo(segment.a.x, segment.a.y)
+				ctx.lineTo(segment.b.x, segment.b.y)
+				ctx.lineWidth = 3
+				ctx.lineCap = "round"
+				ctx.strokeStyle = skin_color
+				ctx.stroke()
+		draw_limbs(behind_dress_segment_names)
+
 		# dress
 		ctx.beginPath()
 		ctx.save()
@@ -879,6 +886,9 @@ module.exports = class Player extends SimpleActor
 		ctx.fill()
 		ctx.restore()
 		
+		# front arm
+		draw_limbs(in_front_of_dress_segment_names)
+
 		head_radius_y = 5.5
 		head_radius_x = head_radius_y*0.9
 		hair_radius = head_radius_y
