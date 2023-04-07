@@ -106,10 +106,15 @@ module.exports = class Rabbit extends SimpleActor
 		draw_head_arc()
 		ctx.fill() # head
 		# ctx.rotate(Math.sin(performance.now()/1000))
+		turn_limit = TAU/5 # radians, TAU/4 = head facing completely sideways, only one eye visible
+		ear_spacing = TAU/12 # radians
+		ear_rotation_radius = head_radius * 0.8
 		for ear_signature in [-1, 1]
 			ctx.save() # ear transform
 			ctx.beginPath()
-			ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
+			head_rotation_angle = @smoothed_facing_x * turn_limit * -1
+			ear_x = Math.sin(ear_spacing * ear_signature - head_rotation_angle) * ear_rotation_radius * -1
+			ctx.translate(ear_x,-@height/6)
 			ctx.rotate(-Math.min(TAU/6, Math.max(-TAU/6, @vx/3 + ear_signature * TAU/20)))
 			ctx.scale(1, 3)
 			ctx.arc(0,-@height/9,1,0,TAU,false) # ear
@@ -123,7 +128,6 @@ module.exports = class Rabbit extends SimpleActor
 		eye_radius = 1
 		eye_y = -1
 		eye_spacing = 1 # radians
-		turn_limit = TAU/5 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = @eye_color
 		for eye_signature in [-1, 1]
 			# 3D projection in one axis
