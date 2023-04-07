@@ -893,16 +893,11 @@ module.exports = class Player extends SimpleActor
 		ctx.arc(0, 0, head_radius_y, 0, TAU)
 		ctx.fillStyle = skin_color
 		ctx.fill()
-		ctx.restore()
-		# top of hair
-		ctx.beginPath()
-		ctx.arc(0, 0, hair_radius, 0, TAU/2)
-		ctx.fillStyle = hair_color
-		ctx.fill()
 		# eyes
-		# TODO: refactor to use the same scaled arc as the head; hair can go after the eyes
-		ctx.arc(0, 0, head_radius_x, 0, TAU)
 		ctx.clip()
+		# reverse the scale so that the eyes are the same size regardless of head size
+		ctx.scale(head_radius_y/head_radius_x, 1)
+		eye_radius = 1
 		eye_spacing = 0.6 # radians
 		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
 		ctx.fillStyle = eye_color
@@ -911,8 +906,15 @@ module.exports = class Player extends SimpleActor
 			head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
 			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius_x
 			ctx.beginPath()
-			ctx.arc(eye_x, -1, 1, 0, TAU)
+			ctx.arc(eye_x, -1, eye_radius, 0, TAU)
 			ctx.fill()
+		# /eyes
+		ctx.restore()
+		# top of hair
+		ctx.beginPath()
+		ctx.arc(0, 0, hair_radius, 0, TAU/2)
+		ctx.fillStyle = hair_color
+		ctx.fill()
 		# /head
 		ctx.restore()
 
