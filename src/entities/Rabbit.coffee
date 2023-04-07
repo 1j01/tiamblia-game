@@ -75,7 +75,7 @@ module.exports = class Rabbit extends SimpleActor
 		@structure.points.body.y = @height
 		return
 	
-	draw: (ctx, view)->
+	draw: (ctx)->
 		ctx.save() # body center transform
 		ctx.translate(@width/2,@height)
 		
@@ -100,9 +100,22 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.translate(@smoothed_facing_x*@width/3,-@height/3)
 		ctx.beginPath()
 		head_radius = @height/3
-		ctx.arc(0,0,head_radius,TAU*0.45,TAU*1.05,false) # head
+		draw_head_arc = ->
+			ctx.arc(0,0,head_radius,TAU*0.45,TAU*1.05,false)
+		draw_head_arc()
+		ctx.fill() # head
+		ctx.save() # ear transform
+		ctx.beginPath()
+		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
+		# ctx.rotate(Math.sin(performance.now()/1000))
+		ctx.rotate(-Math.min(TAU/6, Math.max(-TAU/6, @vx/3)))
+		ctx.scale(1, 3)
+		ctx.arc(0,-@height/9,1,0,TAU,false) # ear
 		ctx.fill()
+		ctx.restore() # end ear transform
 		ctx.save() # head clip
+		ctx.beginPath()
+		draw_head_arc()
 		ctx.clip()
 		ctx.beginPath()
 		eye_radius = 1
@@ -127,21 +140,6 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fill()
 		ctx.fillStyle=@body_color
 		ctx.beginPath()
-		ctx.save() # ear transform and above-eyes clip
-		above_eyes_y = eye_y - eye_radius
-		ctx.rect(-@width*5,above_eyes_y-@height*10,@width*10,@height*10)
-		# ctx.lineWidth = 1 / view.scale
-		# ctx.strokeStyle = "#F0F"
-		# ctx.stroke()
-		ctx.clip()
-		ctx.beginPath()
-		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
-		# ctx.rotate(Math.sin(performance.now()/1000))
-		ctx.rotate(-Math.min(TAU/6, Math.max(-TAU/6, @vx/3)))
-		ctx.scale(1, 3)
-		ctx.arc(0,-@height/9,1,0,TAU,false) # ear
-		ctx.fill()
-		ctx.restore() # end ear transform and above-eyes clip
 		ctx.restore() # end head transform
 		ctx.restore() # end body center transform
 		return
