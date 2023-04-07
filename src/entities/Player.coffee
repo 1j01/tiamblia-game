@@ -417,7 +417,9 @@ module.exports = class Player extends SimpleActor
 					new_pose = @structure.getPose()
 		else
 			prevent_idle()
-			new_pose = Player.poses["Jumping"] ? Player.poses["Stand"] ? @structure.getPose()
+			slowing = Math.sign(@move_x) is -Math.sign(@vx) # note the minus sign
+			new_pose = if slowing then Player.poses["Jumping Back"]
+			new_pose ?= Player.poses["Jumping"] ? Player.poses["Stand"] ? @structure.getPose()
 		
 		# Make sure to avoid mutating the pose data,
 		# since new_pose may be a reference to a pose in Player.poses!
