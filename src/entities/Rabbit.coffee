@@ -76,8 +76,9 @@ module.exports = class Rabbit extends SimpleActor
 		return
 	
 	draw: (ctx)->
-		ctx.save() # body center transform
-		ctx.translate(@width/2,@height)
+		ctx.save() # body transform
+		# ctx.translate(@width/2,@height)
+		ctx.translate(0,@height)
 		
 		# for cute hopping, rotate based on the angle of movement
 		if @vx isnt 0
@@ -142,5 +143,5 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.fillStyle=@body_color
 		ctx.beginPath()
 		ctx.restore() # end head transform
-		ctx.restore() # end body center transform
+		ctx.restore() # end body transform
 		return
