@@ -104,18 +104,16 @@ module.exports = class Rabbit extends SimpleActor
 			ctx.arc(0,0,head_radius,TAU*0.45,TAU*1.05,false)
 		draw_head_arc()
 		ctx.fill() # head
-		ctx.save() # base-of-ear transform
-		ctx.beginPath()
-		ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
 		# ctx.rotate(Math.sin(performance.now()/1000))
 		for ear_signature in [-1, 1]
-			ctx.save()
+			ctx.save() # ear transform
+			ctx.beginPath()
+			ctx.translate(-@smoothed_facing_x*@width/9,-@height/6)
 			ctx.rotate(-Math.min(TAU/6, Math.max(-TAU/6, @vx/3 + ear_signature * TAU/20)))
 			ctx.scale(1, 3)
 			ctx.arc(0,-@height/9,1,0,TAU,false) # ear
 			ctx.fill()
-			ctx.restore()
-		ctx.restore() # end base-of-ear transform
+			ctx.restore() # end ear transform
 		ctx.save() # head clip
 		ctx.beginPath()
 		draw_head_arc()
