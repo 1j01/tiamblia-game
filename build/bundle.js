@@ -1224,7 +1224,14 @@ options["Clear Auto-Save"] = async function() {
   try {
     default_file_handle = (await idb_keyval.get("tiamblia.default_world_file_handle"));
     if (default_file_handle) {
-      await verify_permission(default_file_handle, false);
+      if (!(await verify_permission(default_file_handle, false))) {
+        // This maybe doesn't fit with the spirit of a "Cancel" button...
+        // location.reload()
+        // I could simplify the UI by not clearing the auto-save if the user doesn't have permission to load the default world.
+        // But it's a little weird since you don't need permission, if there's no file handle. It CAN just reload the page.
+        alert("Auto-save cleared. If you want to get it back, edit something. If you want to load the default world, refresh the page.");
+        return;
+      }
       file = (await default_file_handle.getFile());
       json = (await file.text());
       load_from_json(json);
@@ -1340,6 +1347,9 @@ file_save_as = async function() {
           }
         ]
       }));
+      if (!(await verify_permission(file_handle, true))) {
+        return;
+      }
       writable = (await file_handle.createWritable());
       await writable.write(json);
       await writable.close();
@@ -1365,6 +1375,9 @@ file_save = async function() {
   if (file_handle != null) {
     json = JSON.stringify(world.toJSON(), null, "\t");
     try {
+      if (!(await verify_permission(file_handle, true))) {
+        return;
+      }
       writable = (await file_handle.createWritable());
       await writable.write(json);
       await writable.close();
@@ -3826,7 +3839,7 @@ module.exports = Player = (function() {
     }
 
     step(world, view, mouse) {
-      var a_world, aim_angle, angle, arm_angle, arm_extension, arm_span, arrow, arrow_angle, arrow_index, b_world, bow, bow_angle, c_world, c_world_soon, center, crouch, distance_from_shoulder, distance_from_shoulder_soon, down, draw_back_distance, draw_bow, draw_to, dx, dx_soon, dy, dy_soon, elbow_x, elbow_y, factor, fan_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hand, hand_world, hand_world_soon, hand_x, hand_y, head, head_x_before_posing, head_y_before_posing, hold_offset, index, j, l, left, len, len1, lerp_factor, lower_body_pose, lower_point_names, max_draw_distance, max_y_diff, meta_lerp_factor, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, moving, moving_towards_item, neck, new_head_x, new_head_y, new_pose, offset_angle, offset_distance, other_idle_animation, pick_up_any, pick_up_distance_threshold, point, point_name, pose_elbow, pose_hand, pose_primary_shoulder, pose_secondary_shoulder, pose_shoulder, pose_shoulder_world, pose_shoulder_world_soon, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, reach_distance, reach_point_local, reach_point_world, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, right, search_result, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, squat_factor, sternum, subtle_idle_animation, target_lerp_factor, transition_duration, up, upper_body_pose, within_reach, x, y;
+      var a_world, aim_angle, angle, arm_angle, arm_extension, arm_span, arrow, arrow_angle, arrow_index, b_world, bow, bow_angle, c_world, c_world_soon, center, crouch, distance_from_shoulder, distance_from_shoulder_soon, down, draw_back_distance, draw_bow, draw_to, dx, dx_soon, dy, dy_soon, elbow_x, elbow_y, factor, fan_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hand, hand_world, hand_world_soon, hand_x, hand_y, head, head_x_before_posing, head_y_before_posing, hold_offset, index, j, l, left, len, len1, lerp_factor, lower_body_pose, lower_point_names, max_draw_distance, max_y_diff, meta_lerp_factor, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, moving, moving_towards_item, neck, new_head_x, new_head_y, new_pose, offset_angle, offset_distance, other_idle_animation, pick_up_any, pick_up_distance_threshold, point, point_name, pose_elbow, pose_hand, pose_primary_shoulder, pose_secondary_shoulder, pose_shoulder, pose_shoulder_world, pose_shoulder_world_soon, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, reach_distance, reach_point_local, reach_point_world, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, right, search_result, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, slowing, squat_factor, sternum, subtle_idle_animation, target_lerp_factor, transition_duration, up, upper_body_pose, within_reach, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
       
@@ -4059,7 +4072,11 @@ module.exports = Player = (function() {
         }
       } else {
         prevent_idle();
-        new_pose = (ref5 = (ref6 = Player.poses["Jumping"]) != null ? ref6 : Player.poses["Stand"]) != null ? ref5 : this.structure.getPose();
+        slowing = Math.sign(this.move_x) === -Math.sign(this.vx); // note the minus sign
+        new_pose = slowing ? Player.poses["Jumping Back"] : void 0;
+        if (new_pose == null) {
+          new_pose = (ref5 = (ref6 = Player.poses["Jumping"]) != null ? ref6 : Player.poses["Stand"]) != null ? ref5 : this.structure.getPose();
+        }
       }
       
       // Make sure to avoid mutating the pose data,
