@@ -41,6 +41,7 @@ tiamblia_folder.add(options, "Auto-spawn entities").onChange (value) ->
 	return
 
 file_handle = null
+default_file_handle = null
 
 # Verify the user has granted permission to read or write to the file, if
 # permission hasn't been granted, request permission.
@@ -65,9 +66,9 @@ clear_auto_save = ->
 	return unless confirm("Are you sure you want to reload the default world?")
 	localStorage.removeItem("Skele2D World")
 	file_handle = null
-	await idb_keyval.del("tiamblia.file_handle")
+	# don't await! requestPermission() can't be called in a promise chain.
+	idb_keyval.del("tiamblia.file_handle")
 	try
-		default_file_handle = await idb_keyval.get("tiamblia.default_world_file_handle")
 		if default_file_handle
 			unless await verify_permission(default_file_handle, false)
 				# This maybe doesn't fit with the spirit of a "Cancel" button...
@@ -92,6 +93,10 @@ clear_auto_save = ->
 idb_keyval.get("tiamblia.file_handle").then (value) ->
 	file_handle = value
 	return
+idb_keyval.get("tiamblia.default_world_file_handle").then (value) ->
+	default_file_handle = value
+	return
+
 load_from_json = (json)->
 	try
 		parsed = JSON.parse(json)
@@ -112,6 +117,7 @@ store_file_handle = (file_handle) ->
 	idb_keyval.set("tiamblia.file_handle", file_handle)
 	# Maybe I should rename this file to be less generic
 	if file_handle.name is "world.json"
+		default_file_handle = file_handle
 		idb_keyval.set("tiamblia.default_world_file_handle", file_handle)
 	return
 file_open = ->
