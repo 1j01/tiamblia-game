@@ -96,11 +96,30 @@ module.exports = class Rabbit extends SimpleActor
 		ctx.save() # head transform
 		ctx.translate(@smoothed_facing_x*@width/3,-@height/3)
 		ctx.beginPath()
-		ctx.arc(0,0,@height/3,TAU*0.45,TAU*1.05,false) # head
+		head_radius = @height/3
+		ctx.arc(0,0,head_radius,TAU*0.45,TAU*1.05,false) # head
 		ctx.fill()
-		ctx.fillStyle=@eye_color
+		ctx.save() # head clip
+		ctx.clip()
 		ctx.beginPath()
-		ctx.arc(0,0,1,0,TAU,false) # eye
+		eye_radius = 1
+		eye_spacing = 1 # radians
+		turn_limit = TAU/5 # radians, TAU/4 = head facing completely sideways, only one eye visible
+		ctx.fillStyle = @eye_color
+		for eye_signature in [-1, 1]
+			# 3D projection in one axis
+			head_rotation_angle = @smoothed_facing_x * turn_limit * -1
+			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius
+			back_of_head = Math.cos(eye_spacing * eye_signature - head_rotation_angle) < 0
+			# continue if back_of_head # don't draw eyes on the back of the head
+			if back_of_head
+				# non-physical kludge to make the eyes transition away when going behind the head
+				eye_x += Math.cos(eye_spacing * eye_signature - head_rotation_angle) * head_radius * eye_signature * -1
+			ctx.beginPath()
+			ctx.arc(eye_x, -1, eye_radius, 0, TAU)
+			ctx.fill()
+		ctx.beginPath()
+		ctx.restore() # end head clip
 		ctx.fill()
 		ctx.fillStyle=@body_color
 		ctx.beginPath()
