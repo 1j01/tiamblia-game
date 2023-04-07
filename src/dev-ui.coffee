@@ -193,7 +193,7 @@ icons =
 	open: 53
 	save: 22
 	save_as: 22.2 # ...see hack below
-	revert: 76
+	revert: 76.2
 
 add_button = (folder, name, icon, callback)->
 	button_controller = folder.add({[name]: callback}, name)
@@ -203,6 +203,10 @@ add_button = (folder, name, icon, callback)->
 		icon = 22
 		img.style.transform = "scale(0.8) translate(-2px, -2px)"
 		img.style.filter = "drop-shadow(3px 3px 0px hsl(200, 80%, 40%)"
+	if icon is 76.2
+		# re-colorization for revert icon
+		icon = 76
+		img.style.filter = "hue-rotate(180deg)"
 	img.src = "icons/png/#{icon}.png"
 	img.style.marginRight = "5px"
 	img.style.marginLeft = "70px"
