@@ -204,10 +204,10 @@ add_button = (folder, name, icon, callback)->
 		img.style.transform = "scale(0.8) translate(-2px, -2px)"
 		img.style.filter = "drop-shadow(3px 3px 0px hsl(200, 80%, 40%)"
 	img.src = "icons/png/#{icon}.png"
-	img.style.float = "left"
 	img.style.marginRight = "5px"
-	img.style.marginLeft = "5px"
+	img.style.marginLeft = "70px"
 	button_controller.$name.prepend(img)
+	button_controller.$name.style.textAlign = "left"
 	return
 
 add_button(skele2d_folder, "Clear Auto-Save", icons.revert, clear_auto_save)
