@@ -633,6 +633,34 @@ module.exports = class Player extends SimpleActor
 			if prime_bow
 				prevent_idle()
 				bow_angle = aim_angle
+
+				# Adjust shoulders: they need to be wider (further out) when aiming downwards
+				# because the character is facing the camera in that case.
+				primary_shoulder_dx = @structure.points["right shoulder"].x - @structure.points["sternum"].x
+				primary_shoulder_dy = @structure.points["right shoulder"].y - @structure.points["sternum"].y
+				secondary_shoulder_dx = @structure.points["left shoulder"].x - @structure.points["sternum"].x
+				secondary_shoulder_dy = @structure.points["left shoulder"].y - @structure.points["sternum"].y
+				primary_shoulder_dist = Math.hypot(primary_shoulder_dx, primary_shoulder_dy)
+				secondary_shoulder_dist = Math.hypot(secondary_shoulder_dx, secondary_shoulder_dy)
+				primary_shoulder_dist = Math.max(primary_shoulder_dist, 1)
+				secondary_shoulder_dist = Math.max(secondary_shoulder_dist, 1)
+				wide_shoulder_dist = 4
+				# up and down
+				# widening_factor = Math.abs(Math.sin(aim_angle))
+				# just down
+				widening_factor = Math.max(0, Math.sin(aim_angle))
+				new_primary_shoulder_dist = primary_shoulder_dist + (wide_shoulder_dist - primary_shoulder_dist) * widening_factor
+				new_secondary_shoulder_dist = secondary_shoulder_dist + (wide_shoulder_dist - secondary_shoulder_dist) * widening_factor
+				primary_shoulder_dx *= new_primary_shoulder_dist / primary_shoulder_dist
+				primary_shoulder_dy *= new_primary_shoulder_dist / primary_shoulder_dist
+				secondary_shoulder_dx *= new_secondary_shoulder_dist / secondary_shoulder_dist
+				secondary_shoulder_dy *= new_secondary_shoulder_dist / secondary_shoulder_dist
+				@structure.points["right shoulder"].x = @structure.points["sternum"].x + primary_shoulder_dx
+				@structure.points["right shoulder"].y = @structure.points["sternum"].y + primary_shoulder_dy
+				@structure.points["left shoulder"].x = @structure.points["sternum"].x + secondary_shoulder_dx
+				@structure.points["left shoulder"].y = @structure.points["sternum"].y + secondary_shoulder_dy
+
+				# Move arms to aim
 				primary_hand.x = sternum.x + @bow_drawn_to * Math.cos(aim_angle)
 				primary_hand.y = sternum.y + @bow_drawn_to * Math.sin(aim_angle)
 				# primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle)
@@ -657,6 +685,7 @@ module.exports = class Player extends SimpleActor
 				secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle)
 				secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle)
 				secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle)
+
 				# make head look along aim path
 				angle = (aim_angle - TAU/4) %% TAU
 				@upper_body_facing_x = if angle < TAU/2 then -1 else 1
