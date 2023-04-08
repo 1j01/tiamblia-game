@@ -910,11 +910,12 @@ module.exports = class Player extends SimpleActor
 			ctx.stroke()
 		
 		# (most) limbs
-		in_front_of_dress_segment_names = ["upper right arm", "lower right arm"]
+		# some limbs are drawn later, in front of the dress and head
+		in_front_segment_names = ["upper right arm", "lower right arm"]
 		if @aiming_bow
-			in_front_of_dress_segment_names.push("upper left arm", "lower left arm")
+			in_front_segment_names.push("upper left arm", "lower left arm")
 		behind_dress_segment_names = Object.keys(@structure.segments).filter((segment_name)=>
-			not in_front_of_dress_segment_names.includes(segment_name)
+			not in_front_segment_names.includes(segment_name)
 		)
 		draw_limbs = (segment_names)=>
 			for segment_name in segment_names
@@ -926,7 +927,7 @@ module.exports = class Player extends SimpleActor
 				ctx.lineCap = "round"
 				ctx.strokeStyle = skin_color
 				# debug:
-				# ctx.strokeStyle = if segment_names is in_front_of_dress_segment_names then "yellow" else skin_color
+				# ctx.strokeStyle = if segment_names is in_front_segment_names then "yellow" else skin_color
 				ctx.stroke()
 		draw_limbs(behind_dress_segment_names)
 
@@ -964,9 +965,6 @@ module.exports = class Player extends SimpleActor
 		ctx.fill()
 		ctx.restore()
 		
-		# front arm
-		draw_limbs(in_front_of_dress_segment_names)
-
 		head_radius_y = 5.5
 		head_radius_x = head_radius_y*0.9
 		hair_radius = head_radius_y
@@ -1006,6 +1004,9 @@ module.exports = class Player extends SimpleActor
 		ctx.fill()
 		# /head and top of hair
 		ctx.restore()
+
+		# arm(s) in front of dress/head
+		draw_limbs(in_front_segment_names)
 
 		# debug draw
 		# show the ground angle
