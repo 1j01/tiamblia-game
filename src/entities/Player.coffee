@@ -648,7 +648,9 @@ module.exports = class Player extends SimpleActor
 				# up and down
 				# widening_factor = Math.abs(Math.sin(aim_angle))
 				# just down
-				widening_factor = Math.max(0, Math.sin(aim_angle))
+				# widening_factor = Math.max(0, Math.sin(aim_angle))
+				# always
+				widening_factor = 1
 				new_primary_shoulder_dist = primary_shoulder_dist + (wide_shoulder_dist - primary_shoulder_dist) * widening_factor
 				new_secondary_shoulder_dist = secondary_shoulder_dist + (wide_shoulder_dist - secondary_shoulder_dist) * widening_factor
 				primary_shoulder_dx *= new_primary_shoulder_dist / primary_shoulder_dist
