@@ -698,9 +698,13 @@ module.exports = class Player extends SimpleActor
 				new_neck_x = sternum.x + 2 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
 				new_neck_y = sternum.y + 2 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
 				# don't want the neck to move that much, so bring it back towards the pose
+				# 0 = neck is completely straight, following the head (unnatural but not painful looking)
+				# 1 = neck can be bent to painful-looking angles when looking up
+				# in between = neck curves between the head and shoulders
+				neck_lerp_factor = 0.3
 				pose_neck = new_pose.points.neck
-				new_neck_x += (pose_neck.x - new_neck_x) * 0.3
-				new_neck_y += (pose_neck.y - new_neck_y) * 0.3
+				new_neck_x += (pose_neck.x - new_neck_x) * neck_lerp_factor
+				new_neck_y += (pose_neck.y - new_neck_y) * neck_lerp_factor
 
 				# This is a little hairy.
 				# lerp_factor = 1 - 0.3 # 0.3 is the lerp factor used for the rest of the pose
