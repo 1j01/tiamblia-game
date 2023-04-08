@@ -154,6 +154,7 @@ module.exports = class Player extends SimpleActor
 		# It looks very silly if the player flips around completely while riding a horse, just to aim,
 		# but when not riding, it looks a bit better to flip wholly around.
 		@smoothed_facing_x_for_eyes = @upper_body_facing_x = @lower_body_facing_x = @facing_x = 1
+		@looking_y = 0
 		@landing_momentum = 0 # for bending knees when landing
 
 		@hairs = (({x: 0, y: 0, vx: 0, vy: 0} for [0..4]) for [0..5])
@@ -587,6 +588,7 @@ module.exports = class Player extends SimpleActor
 		
 		@upper_body_facing_x = @facing_x
 		@lower_body_facing_x = @facing_x
+		@looking_y = 0
 
 		if prime_bow
 			# Restore head position, in order to do linear interpolation.
@@ -701,6 +703,7 @@ module.exports = class Player extends SimpleActor
 				# which should be discrete.
 				# TODO: refactor this code, probably get rid of `angle` above, replace it with a sin/cos check
 				@upper_body_facing_x = Math.cos(aim_angle)
+				@looking_y = -Math.sin(aim_angle)*2
 
 				# Make head look along aim path
 				# TODO: account for the player's torso angle.
@@ -991,8 +994,8 @@ module.exports = class Player extends SimpleActor
 		# reverse the scale so that the eyes are the same size regardless of head proportions
 		ctx.scale(head_radius_y/head_radius_x, 1)
 		# eyes
-		looking_y = Math.sin(performance.now()/1000)
-		eye_y = looking_y
+		# eye_y = @looking_y
+		eye_y = @looking_y-1
 		eye_radius = 1
 		eye_spacing = 0.6 # radians
 		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
@@ -1009,7 +1012,8 @@ module.exports = class Player extends SimpleActor
 		# top of hair
 		ctx.beginPath()
 		ctx.arc(0, 0, hair_radius, 0, TAU/2)
-		ctx.scale(1, -0.3-looking_y/5)
+		# ctx.scale(1, -0.3-@looking_y/5)
+		ctx.scale(1, 0.01-@looking_y/5) # can't scale by 0 or it breaks
 		ctx.arc(0, 0, hair_radius, TAU/2, TAU)
 		ctx.fillStyle = hair_color
 		ctx.fill()
