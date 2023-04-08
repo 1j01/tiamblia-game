@@ -703,7 +703,10 @@ module.exports = class Player extends SimpleActor
 				# which should be discrete.
 				# TODO: refactor this code, probably get rid of `angle` above, replace it with a sin/cos check
 				@upper_body_facing_x = Math.cos(aim_angle)
-				@looking_y = -Math.sin(aim_angle)*2
+				# The head should start tilting up or down at approximately 1/8th of a turn,
+				# when the neck starts to re-center.
+				# Within the 1/4 turn ranges centered left and right, the head should be level.
+				@looking_y = -Math.sin(aim_angle) ** 4 * Math.sign(Math.sin(aim_angle)) * 2
 
 				# Make head look along aim path
 				# TODO: account for the player's torso angle.
