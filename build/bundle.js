@@ -58,7 +58,7 @@ module.exports = World = (function() {
     }
 
     fromJSON(def) {
-      var arrow_def, average_x, average_y, dot_or_bracket, ent_def, entity, i, i1, id, j, j1, k, k1, key, l, l1, len, len1, len10, len11, len12, len13, len14, len15, len16, len17, len18, len19, len2, len3, len4, len5, len6, len7, len8, len9, m, n, o, p, point_def, point_name, prop, q, r, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref2, ref20, ref21, ref22, ref23, ref24, ref25, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, search_object, to_hex_if_hsl, top_key, top_value, u, upgrading_from_version, v, w, x, y, z;
+      var arrow_def, average_x, average_y, dot_or_bracket, ent_def, entity, i, i1, id, j, j1, k, k1, key, l, l1, len, len1, len10, len11, len12, len13, len14, len15, len16, len17, len18, len19, len2, len20, len3, len4, len5, len6, len7, len8, len9, m, m1, n, n1, o, o1, p, p1, point_def, point_name, prop, q, r, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref2, ref20, ref21, ref22, ref23, ref24, ref25, ref26, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, search_object, to_hex_if_hsl, top_key, top_value, u, upgrading_from_version, v, z;
       // ------------- DON'T PANIC -------------
       // File format versioning is easy!
       // The long comments below and error handling are to help you learn.
@@ -337,8 +337,8 @@ module.exports = World = (function() {
         // Remove cruft from serialization
         // GrassyTerrain: grass_tiles Map is derived state.
         // Previously it was serialized as an empty object, now it's omitted.
-        for (w = 0, len12 = ref17.length; w < len12; w++) {
-          ent_def = ref17[w];
+        for (z = 0, len12 = ref17.length; z < len12; z++) {
+          ent_def = ref17[z];
           if ((ref18 = ent_def._class_) === "GrassyTerrain" || ref18 === "LushGrass" || ref18 === "SavannaGrass") {
             delete ent_def.grass_tiles;
           }
@@ -347,8 +347,8 @@ module.exports = World = (function() {
         // Water: waves was renamed waves_y, but most files have the new property already.
         // (waves_y has been, since its introduction, created automatically.)
         // Water: ccw, min_x, max_x, min_y, max_y are all derived from the polygon
-        for (x = 0, len13 = ref19.length; x < len13; x++) {
-          ent_def = ref19[x];
+        for (i1 = 0, len13 = ref19.length; i1 < len13; i1++) {
+          ent_def = ref19[i1];
           if (!(ent_def._class_ === "Water")) {
             continue;
           }
@@ -371,8 +371,8 @@ module.exports = World = (function() {
         // Maybe 'p' meant "positive(/negative)"? or "pointing", as in a facing direction?
         // I copied this code from an era where I used single-letter variable names.
         // Those were the days... where I can't understand my code from.
-        for (y = 0, len14 = ref20.length; y < len14; y++) {
-          ent_def = ref20[y];
+        for (j1 = 0, len14 = ref20.length; j1 < len14; j1++) {
+          ent_def = ref20[j1];
           if (!(ent_def._class_ === "Deer")) {
             continue;
           }
@@ -390,8 +390,8 @@ module.exports = World = (function() {
         def.formatVersion = 12;
         ref21 = def.entities;
         // Deer: dir is removed in favor of move_x from SimpleActor
-        for (z = 0, len15 = ref21.length; z < len15; z++) {
-          ent_def = ref21[z];
+        for (k1 = 0, len15 = ref21.length; k1 < len15; k1++) {
+          ent_def = ref21[k1];
           if (!(ent_def._class_ === "Deer")) {
             continue;
           }
@@ -405,8 +405,8 @@ module.exports = World = (function() {
         def.formatVersion = 13;
         ref22 = def.entities;
         // Deer: xp -> x_prev, t -> idle_timer, lr -> leg_rotation
-        for (i1 = 0, len16 = ref22.length; i1 < len16; i1++) {
-          ent_def = ref22[i1];
+        for (l1 = 0, len16 = ref22.length; l1 < len16; l1++) {
+          ent_def = ref22[l1];
           if (!(ent_def._class_ === "Deer")) {
             continue;
           }
@@ -428,8 +428,8 @@ module.exports = World = (function() {
         def.formatVersion = 14;
         ref23 = def.entities;
         // Player: real_facing_x -> upper_body_facing_x and lower_body_facing_x, prev_real_facing_x -> prev_upper_body_prev_facing_x
-        for (j1 = 0, len17 = ref23.length; j1 < len17; j1++) {
-          ent_def = ref23[j1];
+        for (m1 = 0, len17 = ref23.length; m1 < len17; m1++) {
+          ent_def = ref23[m1];
           if (!(ent_def._class_ === "Player")) {
             continue;
           }
@@ -444,6 +444,19 @@ module.exports = World = (function() {
             ent_def.prev_upper_body_facing_x = ent_def.prev_real_facing_x;
           }
           delete ent_def.prev_real_facing_x;
+        }
+      }
+      if (def.formatVersion === 14) {
+        def.formatVersion = 15;
+        ref24 = def.entities;
+        // Player: done away with prev_upper_body_facing_x, facing_turn_timer
+        for (n1 = 0, len18 = ref24.length; n1 < len18; n1++) {
+          ent_def = ref24[n1];
+          if (!(ent_def._class_ === "Player")) {
+            continue;
+          }
+          delete ent_def.prev_upper_body_facing_x;
+          delete ent_def.facing_turn_timer;
         }
       }
       // TODO: remove more cruft from serialization
@@ -506,9 +519,9 @@ module.exports = World = (function() {
       if (!(def.entities instanceof Array)) {
         throw new Error(`Expected entities to be an array, got ${def.entities}`);
       }
-      ref24 = def.entities;
-      for (i = k1 = 0, len18 = ref24.length; k1 < len18; i = ++k1) {
-        ent_def = ref24[i];
+      ref25 = def.entities;
+      for (i = o1 = 0, len19 = ref25.length; o1 < len19; i = ++o1) {
+        ent_def = ref25[i];
         if (typeof ent_def._class_ !== "string") {
           throw new Error(`Expected entities[${i}]._class_ to be a string, got ${ent_def._class_}`);
         }
@@ -567,18 +580,18 @@ module.exports = World = (function() {
       
       // Initialize the world
       this.entities = (function() {
-        var l1, len19, ref25, results;
-        ref25 = def.entities;
+        var len20, p1, ref26, results;
+        ref26 = def.entities;
         results = [];
-        for (l1 = 0, len19 = ref25.length; l1 < len19; l1++) {
-          ent_def = ref25[l1];
+        for (p1 = 0, len20 = ref26.length; p1 < len20; p1++) {
+          ent_def = ref26[p1];
           results.push(Entity.fromJSON(ent_def));
         }
         return results;
       })();
-      ref25 = this.entities;
-      for (l1 = 0, len19 = ref25.length; l1 < len19; l1++) {
-        entity = ref25[l1];
+      ref26 = this.entities;
+      for (p1 = 0, len20 = ref26.length; p1 < len20; p1++) {
+        entity = ref26[p1];
         entity.resolveReferences(this);
       }
     }
@@ -614,6 +627,53 @@ module.exports = World = (function() {
     drawBackground(ctx, view) {
       ctx.fillStyle = "#32C8FF";
       ctx.fillRect(0, 0, view.width, view.height);
+      if (!this.bg) {
+        this.bg = document.createElement("canvas");
+        this.bg.width = 5000;
+        this.bg.height = 800;
+        this.drawMountains(this.bg.getContext("2d"));
+      }
+      ctx.drawImage(this.bg, (-view.center_x - 5000 / 2) / 2, 500 - view.center_y / 5);
+    }
+
+    drawMountains(ctx) {
+      var green, h, i, results, w, x, y;
+      green = false;
+      if (green) {
+        ctx.fillStyle = `hsla(155,${90 - (Math.random() * 6)}%,${59 - (Math.random() * 6)}%,1)`;
+      } else {
+        ctx.fillStyle = `hsla(205,${90 - (Math.random() * 6)}%,${69 - (Math.random() * 6)}%,1)`;
+      }
+      ctx.fillRect(0, 100, ctx.canvas.width, ctx.canvas.height);
+      i = 0;
+      results = [];
+      while (i < 3) {
+        //ctx.globalAlpha=0.4
+        //y=ctx.canvas.height-(3-i)*100-200
+        if (green) {
+          ctx.fillStyle = `hsla(155,${80 - (i * 10) - (Math.random() * 6)}%,${65 - (i * 0) - (Math.random() * 6)}%,1)`;
+        } else {
+          ctx.fillStyle = `hsla(205,${80 - (i * 10) - (Math.random() * 6)}%,${65 - (i * 0) - (Math.random() * 6)}%,1)`;
+        }
+        x = -Math.random() * 50;
+        while (x < ctx.canvas.width) {
+          y = i * 100 + 100;
+          w = ((Math.random() * 50 + 50) * i + 10) * 5;
+          h = (Math.random() * 50 * i + 10 + w / 2) / 2;
+          if (Math.random() < 0.2) {
+            // if Math.random() < 0.2
+            // 	#ctx.fillStyle="hsla(155,"+(80-i*10-Math.random()*6)+"%,"+(65-i*0-Math.random()*6)+"%,1)"
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + w, y);
+            ctx.lineTo(x + w / 2, y - h);
+            ctx.fill();
+          }
+          x += w * Math.random();
+        }
+        results.push(i += 0.1);
+      }
+      return results;
     }
 
     draw(ctx, view) {
@@ -1017,7 +1077,7 @@ module.exports = World = (function() {
 
   World.format = "Tiamblia World";
 
-  World.formatVersion = 14;
+  World.formatVersion = 15;
 
   bucket_width = 100;
 
@@ -1119,7 +1179,7 @@ window.create_arrow_volley = function({x = 0, y = 0, angle_min = -Math.PI * 3 / 
 /***/ 100:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var BreadcrumbsController, Controller, Entity, GUI, LinkButtonController, editor, entity_folder, file_handle, file_open, file_save, file_save_as, gui, idb_keyval, inspect_entity, last_selected_entity, last_undoable_time, load_from_json, ms_between_undos, ms_idle_before_saving, name, old_Controller_setValue, option_names_to_keys, options, property_inspector_exclusions, ref, save_timeout, skele2d_folder, storage_key, store_file_handle, style_button_as_link, tiamblia_folder, update_property_inspector, verify_permission, world,
+var BreadcrumbsController, Controller, Entity, GUI, LinkButtonController, add_button, clear_auto_save, editor, entity_folder, file_handle, file_open, file_save, file_save_as, gui, icons, idb_keyval, inspect_entity, last_selected_entity, last_undoable_time, load_from_json, ms_between_undos, ms_idle_before_saving, name, old_Controller_setValue, option_names_to_keys, options, property_inspector_exclusions, ref, save_timeout, skele2d_folder, storage_key, store_file_handle, style_button_as_link, tiamblia_folder, update_property_inspector, verify_permission, world,
   indexOf = [].indexOf;
 
 ({Entity} = __webpack_require__(505));
@@ -1213,7 +1273,7 @@ verify_permission = async function(file_handle, with_write) {
   return false;
 };
 
-options["Clear Auto-Save"] = async function() {
+clear_auto_save = async function() {
   var default_file_handle, exception, file, json;
   if (!confirm("Are you sure you want to reload the default world?")) {
     return;
@@ -1245,8 +1305,6 @@ options["Clear Auto-Save"] = async function() {
     alert(`Cleared Skele2D World, but failed to load default world:\n\n${exception}\n\nRefresh the page to start over.`);
   }
 };
-
-skele2d_folder.add(options, "Clear Auto-Save");
 
 idb_keyval.get("tiamblia.file_handle").then(function(value) {
   file_handle = value;
@@ -1404,17 +1462,44 @@ addEventListener("keydown", function(event) {
   }
 });
 
-options["Load World"] = file_open;
+icons = {
+  open: 53,
+  save: 22,
+  save_as: 22.2, // ...see hack below
+  revert: 76.2
+};
 
-skele2d_folder.add(options, "Load World");
+add_button = function(folder, name, icon, callback) {
+  var button_controller, img;
+  button_controller = folder.add({
+    [name]: callback
+  }, name);
+  img = document.createElement("img");
+  if (icon === 22.2) {
+    // stupid fake save as icon
+    icon = 22;
+    img.style.transform = "scale(0.8) translate(-2px, -2px)";
+    img.style.filter = "drop-shadow(3px 3px 0px hsl(200, 80%, 40%)";
+  }
+  if (icon === 76.2) {
+    // re-colorization for revert icon
+    icon = 76;
+    img.style.filter = "hue-rotate(180deg)";
+  }
+  img.src = `icons/png/${icon}.png`;
+  img.style.marginRight = "5px";
+  img.style.marginLeft = "70px";
+  button_controller.$name.prepend(img);
+  button_controller.$name.style.textAlign = "left";
+};
 
-options["Save World"] = file_save;
+add_button(skele2d_folder, "Clear Auto-Save", icons.revert, clear_auto_save);
 
-skele2d_folder.add(options, "Save World");
+add_button(skele2d_folder, "Load World", icons.open, file_open);
 
-options["Save World As"] = file_save_as;
+add_button(skele2d_folder, "Save World", icons.save, file_save);
 
-skele2d_folder.add(options, "Save World As");
+add_button(skele2d_folder, "Save World As", icons.save_as, file_save_as);
 
 last_selected_entity = null;
 
@@ -3741,11 +3826,18 @@ module.exports = Player = (function() {
       this.other_idle_animation_position = 0;
       this.idle_animation = null;
       this.idle_timer = 0;
-      // @upper_body_facing_x switches while aiming backwards, then reverts to facing_x if you stop aiming
-      // @lower_body_facing_x also switches while aiming backwards except if you're riding a mount.
-      // It looks very silly if the player flips around completely while riding a horse, just to aim,
-      // but when not riding, it looks a bit better to flip wholly around.
+      // Upper and lower body facing directions are separate because when aiming backwards,
+      // it looks very silly if the player flips around completely while riding a horse,
+      // as if switching to sitting backwards just to aim,
+      // but when not riding, it may look a bit better to flip wholly around.
+      // @lower_body_facing_x switches while aiming backwards except if you're riding a mount.
+      // @upper_body_facing_x is actually a continuous value while aiming.
+      // @smoothed_facing_x_for_eyes is an interpolated version of @upper_body_facing_x.
+      // (TODO: rename @smoothed_facing_x_for_eyes to @smoothed_upper_body_facing_x,
+      // because it's also used for the hair. Or perhaps @looking_x to match @looking_y.
+      // Or maybe they could be @head_facing_x and @head_facing_y.)
       this.smoothed_facing_x_for_eyes = this.upper_body_facing_x = this.lower_body_facing_x = this.facing_x = 1;
+      this.looking_y = 0;
       this.landing_momentum = 0; // for bending knees when landing
       this.hairs = (function() {
         var j, results;
@@ -3839,7 +3931,7 @@ module.exports = Player = (function() {
     }
 
     step(world, view, mouse) {
-      var a_world, aim_angle, angle, arm_angle, arm_extension, arm_span, arrow, arrow_angle, arrow_index, b_world, bow, bow_angle, c_world, c_world_soon, center, crouch, distance_from_shoulder, distance_from_shoulder_soon, down, draw_back_distance, draw_bow, draw_to, dx, dx_soon, dy, dy_soon, elbow_x, elbow_y, factor, fan_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hand, hand_world, hand_world_soon, hand_x, hand_y, head, head_x_before_posing, head_y_before_posing, hold_offset, index, j, l, left, len, len1, lerp_factor, lower_body_pose, lower_point_names, max_draw_distance, max_y_diff, meta_lerp_factor, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, moving, moving_towards_item, neck, new_head_x, new_head_y, new_pose, offset_angle, offset_distance, other_idle_animation, pick_up_any, pick_up_distance_threshold, point, point_name, pose_elbow, pose_hand, pose_primary_shoulder, pose_secondary_shoulder, pose_shoulder, pose_shoulder_world, pose_shoulder_world_soon, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, prime_bow, reach_distance, reach_point_local, reach_point_world, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, right, search_result, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, slowing, squat_factor, sternum, subtle_idle_animation, target_lerp_factor, transition_duration, up, upper_body_pose, within_reach, x, y;
+      var a_world, aim_angle, angle, arm_angle, arm_extension, arm_span, arrow, arrow_angle, arrow_index, b_world, bow, bow_angle, bow_index, c_world, c_world_soon, center, crouch, distance_from_shoulder, distance_from_shoulder_soon, down, draw_back_distance, draw_bow, draw_to, dx, dx_soon, dy, dy_soon, elbow_x, elbow_y, factor, fan_angle, force, from_point_in_world, gamepad, gamepad_draw_bow, gamepad_prime_bow, gravity, ground_angle, hand, hand_world, hand_world_soon, hand_x, hand_y, head, head_x_before_posing, head_y_before_posing, hold_offset, index, j, l, left, len, len1, lerp_factor, lower_body_pose, lower_point_names, max_draw_distance, max_y_diff, more_submerged, mount_dismount, mouse_draw_bow, mouse_in_world, mouse_prime_bow, moving, moving_towards_item, neck, neck_lerp_factor, new_head_x, new_head_y, new_neck_x, new_neck_y, new_pose, new_primary_shoulder_dist, new_secondary_shoulder_dist, offset_angle, offset_distance, other_idle_animation, pick_up_any, pick_up_distance_threshold, player_index, point, point_name, pose_elbow, pose_hand, pose_neck, pose_primary_shoulder, pose_secondary_shoulder, pose_shoulder, pose_shoulder_world, pose_shoulder_world_soon, prevent_idle, primary_elbow, primary_hand, primary_hand_in_arrow_space, primary_hand_in_bow_space, primary_shoulder, primary_shoulder_dist, primary_shoulder_dx, primary_shoulder_dy, prime_bow, reach_distance, reach_point_local, reach_point_world, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, right, search_result, secondary_elbow, secondary_hand, secondary_hand_in_arrow_space, secondary_hand_in_bow_space, secondary_shoulder, secondary_shoulder_dist, secondary_shoulder_dx, secondary_shoulder_dy, slowing, squat_factor, sternum, subtle_idle_animation, up, upper_body_pose, wide_shoulder_dist, widening_factor, within_reach, x, y;
       ({sternum} = this.structure.points);
       from_point_in_world = this.toWorld(sternum);
       
@@ -3895,6 +3987,7 @@ module.exports = Player = (function() {
       // Note: You're allowed to prime and draw the bow without an arrow.
       prime_bow = this.holding_bow && (mouse_prime_bow || gamepad_prime_bow);
       draw_bow = prime_bow && (mouse_draw_bow || gamepad_draw_bow);
+      this.aiming_bow = prime_bow; // for drawing
       crouch = down && this.grounded && !this.riding;
       // TODO: configurable controls
       this.move_x = right - left;
@@ -4179,6 +4272,8 @@ module.exports = Player = (function() {
       secondary_hand = this.structure.points["left hand"];
       primary_elbow = this.structure.points["right elbow"];
       secondary_elbow = this.structure.points["left elbow"];
+      primary_shoulder = this.structure.points["right shoulder"];
+      secondary_shoulder = this.structure.points["left shoulder"];
       // Make hand reach for items
       if (this.reaching_for_entity) {
         hand = this.reaching_with_secondary_hand ? secondary_hand : primary_hand;
@@ -4254,6 +4349,7 @@ module.exports = Player = (function() {
       this.structure.setPose(Pose.lerp(this.structure.getPose(), new_pose, 0.3));
       this.upper_body_facing_x = this.facing_x;
       this.lower_body_facing_x = this.facing_x;
+      this.looking_y = 0;
       if (prime_bow) {
         // Restore head position, in order to do linear interpolation.
         // In this state, the head is not controlled by the pose, but by the bow aiming.
@@ -4292,50 +4388,100 @@ module.exports = Player = (function() {
         if (prime_bow) {
           prevent_idle();
           bow_angle = aim_angle;
+          // Adjust shoulders: they need to be wider (further out) when aiming downwards
+          // because the character is facing the camera in that case.
+          primary_shoulder_dx = this.structure.points["right shoulder"].x - this.structure.points["sternum"].x;
+          primary_shoulder_dy = this.structure.points["right shoulder"].y - this.structure.points["sternum"].y;
+          secondary_shoulder_dx = this.structure.points["left shoulder"].x - this.structure.points["sternum"].x;
+          secondary_shoulder_dy = this.structure.points["left shoulder"].y - this.structure.points["sternum"].y;
+          primary_shoulder_dist = Math.hypot(primary_shoulder_dx, primary_shoulder_dy);
+          secondary_shoulder_dist = Math.hypot(secondary_shoulder_dx, secondary_shoulder_dy);
+          primary_shoulder_dist = Math.max(primary_shoulder_dist, 1);
+          secondary_shoulder_dist = Math.max(secondary_shoulder_dist, 1);
+          wide_shoulder_dist = 4;
+          // when aiming up or down
+          // widening_factor = Math.abs(Math.sin(aim_angle))
+          // when aiming down
+          // widening_factor = Math.max(0, Math.sin(aim_angle))
+          // always
+          widening_factor = 1;
+          new_primary_shoulder_dist = primary_shoulder_dist + (wide_shoulder_dist - primary_shoulder_dist) * widening_factor;
+          new_secondary_shoulder_dist = secondary_shoulder_dist + (wide_shoulder_dist - secondary_shoulder_dist) * widening_factor;
+          primary_shoulder_dx *= new_primary_shoulder_dist / primary_shoulder_dist;
+          primary_shoulder_dy *= new_primary_shoulder_dist / primary_shoulder_dist;
+          secondary_shoulder_dx *= new_secondary_shoulder_dist / secondary_shoulder_dist;
+          secondary_shoulder_dy *= new_secondary_shoulder_dist / secondary_shoulder_dist;
+          // Moving y causes a problem where the shoulders "swing" when flipping facing direction
+          // TODO: account for the player's torso angle. I think it would be best if the shoulders
+          // were pushed out perpendicular to the torso, but right now it's in the global horizontal.
+          this.structure.points["right shoulder"].x = this.structure.points["sternum"].x + primary_shoulder_dx;
+          // @structure.points["right shoulder"].y = @structure.points["sternum"].y + primary_shoulder_dy
+          this.structure.points["left shoulder"].x = this.structure.points["sternum"].x + secondary_shoulder_dx;
+          // @structure.points["left shoulder"].y = @structure.points["sternum"].y + secondary_shoulder_dy
+
+          // Move arms to aim
           primary_hand.x = sternum.x + this.bow_drawn_to * Math.cos(aim_angle);
           primary_hand.y = sternum.y + this.bow_drawn_to * Math.sin(aim_angle);
-          primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle);
-          primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle);
+          // primary_elbow.x = sternum.x + 5 * Math.cos(aim_angle)
+          // primary_elbow.y = sternum.y + 5 * Math.sin(aim_angle)
+          // Place the elbow at the midpoint between the hand and the shoulder
+          primary_elbow.x = (primary_hand.x + primary_shoulder.x) / 2;
+          primary_elbow.y = (primary_hand.y + primary_shoulder.y) / 2;
+          // "Then offset it to keep the segments the right length"
+          // We don't actually want this, because the arm should bend in 3D space,
+          // and basically just stay straight in 2D!
+          // arm_angle = Math.atan2(primary_hand.y - primary_shoulder.y, primary_hand.x - primary_shoulder.x)
+          // arm_extension = Math.hypot(primary_hand.x - primary_shoulder.x, primary_hand.y - primary_shoulder.y)
+          // offset_angle = arm_angle + TAU/4
+          // offset_distance = Math.abs(arm_span - arm_extension)
+          // if Math.sin(offset_angle) < 0
+          // 	offset_angle += TAU/2
+          // primary_elbow.x += Math.cos(offset_angle) * offset_distance
+          // primary_elbow.y += Math.sin(offset_angle) * offset_distance
+
           // primary_elbow.y = sternum.y - 3
           secondary_hand.x = sternum.x + arm_span * Math.cos(aim_angle);
           secondary_hand.y = sternum.y + arm_span * Math.sin(aim_angle);
           secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle);
           secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle);
-          // make head look along aim path
+          // Update facing directions
+          // TODO: account for the player's torso angle.
           angle = modulo(aim_angle - TAU / 4, TAU);
           this.upper_body_facing_x = angle < TAU / 2 ? -1 : 1;
           if (!this.riding) {
             this.lower_body_facing_x = this.upper_body_facing_x;
           }
+          // This can actually be a continuous value, which makes it look better.
+          // I'm not changing this above because it would affect the @lower_body_facing_x,
+          // which should be discrete.
+          // TODO: refactor this code, probably get rid of `angle` above, replace it with a sin/cos check
+          this.upper_body_facing_x = Math.cos(aim_angle);
+          // The head should start tilting up or down at approximately 1/8th of a turn,
+          // when the neck starts to re-center.
+          // Within the 1/4 turn ranges centered left and right, the head should be level.
+          this.looking_y = -(Math.sin(aim_angle) ** 4) * Math.sign(Math.sin(aim_angle)) * 2;
+          // Make head look along aim path
+          // TODO: account for the player's torso angle.
+          angle = Math.sin(aim_angle * 2) * TAU / 8;
+          angle = modulo(angle - TAU / 4, TAU);
           ({head, neck} = this.structure.points);
-          new_head_x = neck.x + 5 * Math.cos(angle + (angle < TAU / 2 ? TAU / 2 : 0));
-          new_head_y = neck.y + 5 * Math.sin(angle + (angle < TAU / 2 ? TAU / 2 : 0));
-          // This is a little hairy.
-          // lerp_factor = 1 - 0.3 # 0.3 is the lerp factor used for the rest of the pose
-          // We want to use a slower lerp when the head is flipping from one side to the other
-          // at the threshold when you aim upwards.
-          // We need to move the head quickly when the body/neck moves vertically,
-          // such as when crouching, or when starting priming the bow while riding a horse.
-          // Otherwise the neck will stretch or look weird.
-          // However, just changing the lerp factor temporarily still lets the
-          // neck stretch, temporarily, during the transition. @FIXME
-          if (this.facing_turn_timer == null) {
-            this.facing_turn_timer = 0;
-          }
-          transition_duration = 50;
-          if (this.prev_upper_body_facing_x !== this.upper_body_facing_x) {
-            this.facing_turn_timer = transition_duration;
-          }
-          this.facing_turn_timer -= 1;
-          lerp_factor = 1; //- 0.3
-          if (this.facing_turn_timer > 0) {
-            target_lerp_factor = 0.001;
-            // lerp the lerp factor so there's not a sudden jump at the end of the timer
-            meta_lerp_factor = this.facing_turn_timer / transition_duration;
-            lerp_factor += (target_lerp_factor - lerp_factor) * meta_lerp_factor;
-          }
+          new_head_x = sternum.x + 7 * Math.cos(angle + (angle < TAU / 2 ? TAU / 2 : 0));
+          new_head_y = sternum.y + 7 * Math.sin(angle + (angle < TAU / 2 ? TAU / 2 : 0));
+          new_neck_x = sternum.x + 2 * Math.cos(angle + (angle < TAU / 2 ? TAU / 2 : 0));
+          new_neck_y = sternum.y + 2 * Math.sin(angle + (angle < TAU / 2 ? TAU / 2 : 0));
+          // don't want the neck to move that much, so bring it back towards the pose
+          // 0 = neck is completely straight, following the head (unnatural but not painful looking)
+          // 1 = neck can be bent to painful-looking angles when looking up
+          // in between = neck curves between the head and shoulders
+          neck_lerp_factor = 0.3;
+          pose_neck = new_pose.points.neck;
+          new_neck_x += (pose_neck.x - new_neck_x) * neck_lerp_factor;
+          new_neck_y += (pose_neck.y - new_neck_y) * neck_lerp_factor;
+          lerp_factor = 1;
           head.x += (new_head_x - head.x) * lerp_factor;
           head.y += (new_head_y - head.y) * lerp_factor;
+          neck.x += (new_neck_x - neck.x) * lerp_factor;
+          neck.y += (new_neck_y - neck.y) * lerp_factor;
           if (this.holding_arrows.length > 1) {
             // drop extra arrows
             this.holding_arrows.length = 1;
@@ -4353,6 +4499,23 @@ module.exports = Player = (function() {
         } else {
           bow.structure.points.serving.x = bow.structure.points.grip.x - bow.fistmele * Math.cos(bow_angle);
           bow.structure.points.serving.y = bow.structure.points.grip.y - bow.fistmele * Math.sin(bow_angle);
+        }
+        
+        // sort bow in front or behind player
+        bow_index = the_world.entities.indexOf(bow);
+        player_index = the_world.entities.indexOf(this);
+        if (prime_bow) {
+          if (bow_index < player_index) {
+            the_world.entities.splice(bow_index, 1);
+            player_index = the_world.entities.indexOf(this);
+            the_world.entities.splice(player_index + 1, 0, bow);
+          }
+        } else {
+          if (bow_index > player_index) {
+            the_world.entities.splice(bow_index, 1);
+            player_index = the_world.entities.indexOf(this);
+            the_world.entities.splice(player_index, 0, bow);
+          }
         }
       }
       ref11 = this.holding_arrows;
@@ -4403,7 +4566,6 @@ module.exports = Player = (function() {
       // Hair physics
       this.simulate_hair(world);
       this.smoothed_facing_x_for_eyes += (this.upper_body_facing_x - this.smoothed_facing_x_for_eyes) / 5;
-      this.prev_upper_body_facing_x = this.upper_body_facing_x;
     }
 
     simulate_hair(world) {
@@ -4486,7 +4648,7 @@ module.exports = Player = (function() {
     }
 
     draw(ctx, view) {
-      var dress_color, eye_color, eye_radius, eye_signature, eye_spacing, eye_x, hair_color, hair_index, hair_points, hair_radius, head, head_radius_x, head_radius_y, head_rotation_angle, j, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, m, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, ref3, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, segment, segment_name, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
+      var behind_dress_segment_names, draw_limbs, dress_color, eye_color, eye_radius, eye_signature, eye_spacing, eye_x, eye_y, hair_color, hair_index, hair_points, hair_radius, head, head_radius_x, head_radius_y, head_rotation_angle, in_front_segment_names, j, l, left_knee, left_leg_angle, left_shoulder, left_shoulder_angle, len, len1, len2, local_point, m, max_cos, max_cos_shoulder_angle, max_shoulder_cos, max_sin, min_cos, min_cos_shoulder_angle, min_shoulder_cos, min_sin, pelvis, point, ref, ref1, ref2, right_knee, right_leg_angle, right_shoulder, right_shoulder_angle, shoulder_distance, skin_color, sternum, torso_angle, torso_length, turn_limit;
       ({
         head,
         sternum,
@@ -4538,20 +4700,35 @@ module.exports = Player = (function() {
         // ctx.strokeStyle = "hsla(#{hair_index / @hairs.length * 360}, 100%, 50%, 0.5)"
         ctx.stroke();
       }
-      ref2 = this.structure.segments;
       
-      // limbs
-      for (segment_name in ref2) {
-        segment = ref2[segment_name];
-        ctx.beginPath();
-        ctx.moveTo(segment.a.x, segment.a.y);
-        ctx.lineTo(segment.b.x, segment.b.y);
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = skin_color;
-        ctx.stroke();
+      // (most) limbs
+      // some limbs are drawn later, in front of the dress and head
+      in_front_segment_names = ["upper right arm", "lower right arm"];
+      if (this.aiming_bow) {
+        in_front_segment_names.push("upper left arm", "lower left arm");
       }
-      
+      behind_dress_segment_names = Object.keys(this.structure.segments).filter((segment_name) => {
+        return !in_front_segment_names.includes(segment_name);
+      });
+      draw_limbs = (segment_names) => {
+        var len2, m, results, segment, segment_name;
+        results = [];
+        for (m = 0, len2 = segment_names.length; m < len2; m++) {
+          segment_name = segment_names[m];
+          segment = this.structure.segments[segment_name];
+          ctx.beginPath();
+          ctx.moveTo(segment.a.x, segment.a.y);
+          ctx.lineTo(segment.b.x, segment.b.y);
+          ctx.lineWidth = 3;
+          ctx.lineCap = "round";
+          ctx.strokeStyle = skin_color;
+          // debug:
+          // ctx.strokeStyle = if segment_names is in_front_segment_names then "yellow" else skin_color
+          results.push(ctx.stroke());
+        }
+        return results;
+      };
+      draw_limbs(behind_dress_segment_names);
       // dress
       ctx.beginPath();
       ctx.save();
@@ -4593,6 +4770,15 @@ module.exports = Player = (function() {
       ctx.save();
       ctx.translate(head.x, head.y);
       ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU / 4);
+      // BACK of top of hair
+      ctx.beginPath();
+      ctx.arc(0, 0, hair_radius, 0, TAU / 2);
+      ctx.save();
+      ctx.scale(1, 0.5);
+      ctx.arc(0, 0, hair_radius, TAU / 2, TAU);
+      ctx.restore();
+      ctx.fillStyle = hair_color;
+      ctx.fill();
       // head ellipse
       ctx.save();
       ctx.scale(head_radius_x / head_radius_y, 1);
@@ -4605,18 +4791,20 @@ module.exports = Player = (function() {
       // reverse the scale so that the eyes are the same size regardless of head proportions
       ctx.scale(head_radius_y / head_radius_x, 1);
       // eyes
+      // eye_y = @looking_y
+      eye_y = this.looking_y - 1;
       eye_radius = 1;
       eye_spacing = 0.6; // radians
       turn_limit = TAU / 8; // radians, TAU/4 = head facing completely sideways, only one eye visible
       ctx.fillStyle = eye_color;
-      ref3 = [-1, 1];
-      for (m = 0, len2 = ref3.length; m < len2; m++) {
-        eye_signature = ref3[m];
+      ref2 = [-1, 1];
+      for (m = 0, len2 = ref2.length; m < len2; m++) {
+        eye_signature = ref2[m];
         // 3D projection in one axis
         head_rotation_angle = this.smoothed_facing_x_for_eyes * turn_limit;
         eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius_x;
         ctx.beginPath();
-        ctx.arc(eye_x, -1, eye_radius, 0, TAU);
+        ctx.arc(eye_x, eye_y, eye_radius, 0, TAU);
         ctx.fill();
       }
       // /head ellipse clip
@@ -4624,10 +4812,15 @@ module.exports = Player = (function() {
       // top of hair
       ctx.beginPath();
       ctx.arc(0, 0, hair_radius, 0, TAU / 2);
+      // ctx.scale(1, -0.3-@looking_y/5)
+      ctx.scale(1, 0.01 - this.looking_y / 5); // can't scale by 0 or it breaks
+      ctx.arc(0, 0, hair_radius, TAU / 2, TAU);
       ctx.fillStyle = hair_color;
       ctx.fill();
       // /head and top of hair
       ctx.restore();
+      // arm(s) in front of dress/head
+      draw_limbs(in_front_segment_names);
     }
 
   };
@@ -7172,9 +7365,9 @@ relative_sorts = [
   // It looks best holding the arrow in front of the bow.
   [c(Arrow),
   c(Player)],
+  // Player now manually sorts Bow in relation to itself (when holding it)
   // [c(Player), c(Bow)] # can look better in some cases, but not while aiming or turning
-  [c(Bow),
-  c(Player)],
+  // [c(Bow), c(Player)]
   [c(Arrow),
   c(Bow)],
   // Water is transparent, and it should discolor any entities submerged in it.
