@@ -970,6 +970,15 @@ module.exports = class Player extends SimpleActor
 		ctx.save()
 		ctx.translate(head.x, head.y)
 		ctx.rotate(Math.atan2(head.y - sternum.y, head.x - sternum.x) - TAU/4)
+		# BACK of top of hair
+		ctx.beginPath()
+		ctx.arc(0, 0, hair_radius, 0, TAU/2)
+		ctx.save()
+		ctx.scale(1, 0.5)
+		ctx.arc(0, 0, hair_radius, TAU/2, TAU)
+		ctx.restore()
+		ctx.fillStyle = hair_color
+		ctx.fill()
 		# head ellipse
 		ctx.save()
 		ctx.scale(head_radius_x/head_radius_y, 1)
@@ -982,6 +991,8 @@ module.exports = class Player extends SimpleActor
 		# reverse the scale so that the eyes are the same size regardless of head proportions
 		ctx.scale(head_radius_y/head_radius_x, 1)
 		# eyes
+		looking_y = Math.sin(performance.now()/1000)
+		eye_y = looking_y
 		eye_radius = 1
 		eye_spacing = 0.6 # radians
 		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
@@ -991,13 +1002,15 @@ module.exports = class Player extends SimpleActor
 			head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
 			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius_x
 			ctx.beginPath()
-			ctx.arc(eye_x, -1, eye_radius, 0, TAU)
+			ctx.arc(eye_x, eye_y, eye_radius, 0, TAU)
 			ctx.fill()
 		# /head ellipse clip
 		ctx.restore()
 		# top of hair
 		ctx.beginPath()
 		ctx.arc(0, 0, hair_radius, 0, TAU/2)
+		ctx.scale(1, -0.3-looking_y/5)
+		ctx.arc(0, 0, hair_radius, TAU/2, TAU)
 		ctx.fillStyle = hair_color
 		ctx.fill()
 		# /head and top of hair
