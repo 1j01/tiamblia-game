@@ -657,10 +657,13 @@ module.exports = class Player extends SimpleActor
 				primary_shoulder_dy *= new_primary_shoulder_dist / primary_shoulder_dist
 				secondary_shoulder_dx *= new_secondary_shoulder_dist / secondary_shoulder_dist
 				secondary_shoulder_dy *= new_secondary_shoulder_dist / secondary_shoulder_dist
+				# Moving y causes a problem where the shoulders "swing" when flipping facing direction
+				# TODO: account for the player's torso angle. I think it would be best if the shoulders
+				# were pushed out perpendicular to the torso, but right now it's in the global horizontal.
 				@structure.points["right shoulder"].x = @structure.points["sternum"].x + primary_shoulder_dx
-				@structure.points["right shoulder"].y = @structure.points["sternum"].y + primary_shoulder_dy
+				# @structure.points["right shoulder"].y = @structure.points["sternum"].y + primary_shoulder_dy
 				@structure.points["left shoulder"].x = @structure.points["sternum"].x + secondary_shoulder_dx
-				@structure.points["left shoulder"].y = @structure.points["sternum"].y + secondary_shoulder_dy
+				# @structure.points["left shoulder"].y = @structure.points["sternum"].y + secondary_shoulder_dy
 
 				# Move arms to aim
 				primary_hand.x = sternum.x + @bow_drawn_to * Math.cos(aim_angle)
