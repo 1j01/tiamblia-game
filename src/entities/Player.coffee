@@ -149,10 +149,16 @@ module.exports = class Player extends SimpleActor
 		@other_idle_animation_position = 0
 		@idle_animation = null
 		@idle_timer = 0
-		# @upper_body_facing_x switches while aiming backwards, then reverts to facing_x if you stop aiming
-		# @lower_body_facing_x also switches while aiming backwards except if you're riding a mount.
-		# It looks very silly if the player flips around completely while riding a horse, just to aim,
-		# but when not riding, it looks a bit better to flip wholly around.
+		# Upper and lower body facing directions are separate because when aiming backwards,
+		# it looks very silly if the player flips around completely while riding a horse,
+		# as if switching to sitting backwards just to aim,
+		# but when not riding, it may look a bit better to flip wholly around.
+		# @lower_body_facing_x switches while aiming backwards except if you're riding a mount.
+		# @upper_body_facing_x is actually a continuous value while aiming.
+		# @smoothed_facing_x_for_eyes is an interpolated version of @upper_body_facing_x.
+		# (TODO: rename @smoothed_facing_x_for_eyes to @smoothed_upper_body_facing_x,
+		# because it's also used for the hair. Or perhaps @looking_x to match @looking_y.
+		# Or maybe they could be @head_facing_x and @head_facing_y.)
 		@smoothed_facing_x_for_eyes = @upper_body_facing_x = @lower_body_facing_x = @facing_x = 1
 		@looking_y = 0
 		@landing_momentum = 0 # for bending knees when landing
