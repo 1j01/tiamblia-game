@@ -645,9 +645,9 @@ module.exports = class Player extends SimpleActor
 				primary_shoulder_dist = Math.max(primary_shoulder_dist, 1)
 				secondary_shoulder_dist = Math.max(secondary_shoulder_dist, 1)
 				wide_shoulder_dist = 4
-				# up and down
+				# when aiming up or down
 				# widening_factor = Math.abs(Math.sin(aim_angle))
-				# just down
+				# when aiming down
 				# widening_factor = Math.max(0, Math.sin(aim_angle))
 				# always
 				widening_factor = 1
@@ -692,11 +692,18 @@ module.exports = class Player extends SimpleActor
 				secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle)
 
 				# Update facing directions
+				# TODO: account for the player's torso angle.
 				angle = (aim_angle - TAU/4) %% TAU
 				@upper_body_facing_x = if angle < TAU/2 then -1 else 1
 				@lower_body_facing_x = @upper_body_facing_x unless @riding
+				# This can actually be a continuous value, which makes it look better.
+				# I'm not changing this above because it would affect the @lower_body_facing_x,
+				# which should be discrete.
+				# TODO: refactor this code, probably get rid of `angle` above, replace it with a sin/cos check
+				@upper_body_facing_x = Math.cos(aim_angle)
 
 				# Make head look along aim path
+				# TODO: account for the player's torso angle.
 				angle = Math.sin(aim_angle * 2) * TAU/8
 				angle = (angle - TAU/4) %% TAU
 
