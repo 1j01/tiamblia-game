@@ -693,8 +693,15 @@ module.exports = class Player extends SimpleActor
 				@upper_body_facing_x = if angle < TAU/2 then -1 else 1
 				@lower_body_facing_x = @upper_body_facing_x unless @riding
 				{head, neck} = @structure.points
-				new_head_x = neck.x + 5 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
-				new_head_y = neck.y + 5 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
+				new_head_x = sternum.x + 7 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
+				new_head_y = sternum.y + 7 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
+				new_neck_x = sternum.x + 2 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
+				new_neck_y = sternum.y + 2 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
+				# don't want the neck to move that much, so bring it back towards the pose
+				pose_neck = new_pose.points.neck
+				new_neck_x += (pose_neck.x - new_neck_x) * 0.3
+				new_neck_y += (pose_neck.y - new_neck_y) * 0.3
+
 				# This is a little hairy.
 				# lerp_factor = 1 - 0.3 # 0.3 is the lerp factor used for the rest of the pose
 				# We want to use a slower lerp when the head is flipping from one side to the other
@@ -717,6 +724,8 @@ module.exports = class Player extends SimpleActor
 					lerp_factor += (target_lerp_factor - lerp_factor) * meta_lerp_factor
 				head.x += (new_head_x - head.x) * lerp_factor
 				head.y += (new_head_y - head.y) * lerp_factor
+				neck.x += (new_neck_x - neck.x) * lerp_factor
+				neck.y += (new_neck_y - neck.y) * lerp_factor
 				# drop extra arrows
 				@holding_arrows.length = 1 if @holding_arrows.length > 1
 			else
