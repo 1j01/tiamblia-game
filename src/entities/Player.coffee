@@ -729,6 +729,7 @@ module.exports = class Player extends SimpleActor
 				# drop extra arrows
 				@holding_arrows.length = 1 if @holding_arrows.length > 1
 			else
+				@facing_turn_timer = 0
 				bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x)
 			
 			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
