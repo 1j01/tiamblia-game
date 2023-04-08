@@ -22,7 +22,7 @@ module.exports = class World
 		@derived_colliders = []
 	
 	@format: "Tiamblia World"
-	@formatVersion: 14
+	@formatVersion: 15
 	toJSON: ->
 		format: World.format
 		formatVersion: World.formatVersion
@@ -258,6 +258,12 @@ module.exports = class World
 				delete ent_def.real_facing_x
 				ent_def.prev_upper_body_facing_x = ent_def.prev_real_facing_x if ent_def.prev_real_facing_x?
 				delete ent_def.prev_real_facing_x
+		if def.formatVersion is 14
+			def.formatVersion = 15
+			# Player: done away with prev_upper_body_facing_x, facing_turn_timer
+			for ent_def in def.entities when ent_def._class_ is "Player"
+				delete ent_def.prev_upper_body_facing_x
+				delete ent_def.facing_turn_timer
 
 		# TODO: remove more cruft from serialization
 		# can't do this until we own Terrain, right now it's part of Skele2D.

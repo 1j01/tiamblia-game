@@ -688,10 +688,15 @@ module.exports = class Player extends SimpleActor
 				secondary_elbow.x = sternum.x + 15 * Math.cos(aim_angle)
 				secondary_elbow.y = sternum.y + 15 * Math.sin(aim_angle)
 
-				# make head look along aim path
+				# Update facing directions
 				angle = (aim_angle - TAU/4) %% TAU
 				@upper_body_facing_x = if angle < TAU/2 then -1 else 1
 				@lower_body_facing_x = @upper_body_facing_x unless @riding
+
+				# Make head look along aim path
+				angle = Math.sin(aim_angle * 2) * TAU/8
+				angle = (angle - TAU/4) %% TAU
+
 				{head, neck} = @structure.points
 				new_head_x = sternum.x + 7 * Math.cos(angle + if angle < TAU/2 then TAU/2 else 0)
 				new_head_y = sternum.y + 7 * Math.sin(angle + if angle < TAU/2 then TAU/2 else 0)
@@ -706,26 +711,7 @@ module.exports = class Player extends SimpleActor
 				new_neck_x += (pose_neck.x - new_neck_x) * neck_lerp_factor
 				new_neck_y += (pose_neck.y - new_neck_y) * neck_lerp_factor
 
-				# This is a little hairy.
-				# lerp_factor = 1 - 0.3 # 0.3 is the lerp factor used for the rest of the pose
-				# We want to use a slower lerp when the head is flipping from one side to the other
-				# at the threshold when you aim upwards.
-				# We need to move the head quickly when the body/neck moves vertically,
-				# such as when crouching, or when starting priming the bow while riding a horse.
-				# Otherwise the neck will stretch or look weird.
-				# However, just changing the lerp factor temporarily still lets the
-				# neck stretch, temporarily, during the transition. @FIXME
-				@facing_turn_timer ?= 0
-				transition_duration = 50
-				if @prev_upper_body_facing_x != @upper_body_facing_x
-					@facing_turn_timer = transition_duration
-				@facing_turn_timer -= 1
-				lerp_factor = 1 #- 0.3
-				if @facing_turn_timer > 0
-					target_lerp_factor = 0.001
-					# lerp the lerp factor so there's not a sudden jump at the end of the timer
-					meta_lerp_factor = @facing_turn_timer / transition_duration
-					lerp_factor += (target_lerp_factor - lerp_factor) * meta_lerp_factor
+				lerp_factor = 1
 				head.x += (new_head_x - head.x) * lerp_factor
 				head.y += (new_head_y - head.y) * lerp_factor
 				neck.x += (new_neck_x - neck.x) * lerp_factor
@@ -733,7 +719,6 @@ module.exports = class Player extends SimpleActor
 				# drop extra arrows
 				@holding_arrows.length = 1 if @holding_arrows.length > 1
 			else
-				@facing_turn_timer = 0
 				bow_angle = Math.atan2(secondary_hand.y - secondary_elbow.y, secondary_hand.x - secondary_elbow.x)
 			
 			primary_hand_in_bow_space = bow.fromWorld(@toWorld(primary_hand))
@@ -807,8 +792,6 @@ module.exports = class Player extends SimpleActor
 		@simulate_hair(world)
 
 		@smoothed_facing_x_for_eyes += (@upper_body_facing_x - @smoothed_facing_x_for_eyes) / 5
-
-		@prev_upper_body_facing_x = @upper_body_facing_x
 
 		return
 
