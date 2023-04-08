@@ -258,6 +258,8 @@ module.exports = class Player extends SimpleActor
 		# Note: You're allowed to prime and draw the bow without an arrow.
 		prime_bow = @holding_bow and (mouse_prime_bow or gamepad_prime_bow)
 		draw_bow = prime_bow and (mouse_draw_bow or gamepad_draw_bow)
+
+		@aiming_bow = prime_bow # for drawing
 		
 		crouch = down and @grounded and not @riding
 
@@ -869,6 +871,8 @@ module.exports = class Player extends SimpleActor
 		
 		# (most) limbs
 		in_front_of_dress_segment_names = ["upper right arm", "lower right arm"]
+		if @aiming_bow
+			in_front_of_dress_segment_names.push("upper left arm", "lower left arm")
 		behind_dress_segment_names = Object.keys(@structure.segments).filter((segment_name)=>
 			not in_front_of_dress_segment_names.includes(segment_name)
 		)
