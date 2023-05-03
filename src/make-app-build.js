@@ -3,6 +3,7 @@ const fs = require("fs");
 const glob = require("glob");
 const source_globs = [
 	"index.html",
+	"*favicon*",
 	"icons/**",
 	"lib/**",
 	"build/**",
