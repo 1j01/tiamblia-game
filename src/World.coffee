@@ -417,6 +417,10 @@ module.exports = class World
 				x += w * Math.random()
 			i += 0.1
 	
+	pixiUpdate: (stage, ticker)->
+		for entity in @entities
+			entity.pixiUpdate?(stage, ticker)
+
 	draw: (ctx, view)->
 		# ctx.fillStyle = "#32C8FF"
 		# {x, y} = view.toWorld({x: 0, y: 0})

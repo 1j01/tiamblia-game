@@ -4,6 +4,7 @@ Math.seedrandom("A world")
 {View, Mouse, Editor, Entity, Terrain} = require "skele2d"
 Stats = require "stats.js"
 {gui, update_property_inspector, configure_property_inspector} = require "./dev-ui.coffee"
+PIXI = require "pixi.js"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -14,6 +15,7 @@ require "./arrow-test.coffee"
 require "./entities/GeneticPlant.coffee"
 require "./entities/CactusTree.coffee"
 require "./entities/Caterpillar.coffee"
+require "./entities/Snake.coffee"
 SavannaGrass = require "./entities/terrain/SavannaGrass.coffee"
 require "./entities/terrain/LushGrass.coffee"
 require "./entities/terrain/Rock.coffee"
@@ -54,7 +56,26 @@ terrain.generate()
 
 bottom_of_world = terrain.toWorld(terrain.structure.bbox_max).y
 
+bg_canvas = document.createElement("canvas")
+bg_canvas.style.position = "absolute"
+bg_canvas.style.top = "0"
+bg_canvas.style.left = "0"
+document.body.appendChild(bg_canvas)
+bg_ctx = bg_canvas.getContext("2d")
+
+app = new PIXI.Application(resizeTo: window, backgroundAlpha: 0)
+document.body.appendChild(app.view)
+app.view.style.position = "absolute"
+app.view.style.top = "0"
+app.view.style.left = "0"
+# for PixiJS Devtools
+globalThis.__PIXI_APP__ = app
+
+
 canvas = document.createElement("canvas")
+canvas.style.position = "absolute"
+canvas.style.top = "0"
+canvas.style.left = "0"
 document.body.appendChild(canvas)
 ctx = canvas.getContext("2d")
 
@@ -104,12 +125,20 @@ setInterval ->
 
 redraw = ->
 
-	world.drawBackground(ctx, view)
+	world.drawBackground(bg_ctx, view)
 	ctx.save()
 	ctx.translate(canvas.width / 2, canvas.height / 2)
 	ctx.scale(view.scale, view.scale)
 	ctx.translate(-view.center_x, -view.center_y)
 	
+	# align PIXI scene to the CanvasRenderingContext2D scene
+	app.stage.position.x = -view.center_x * view.scale + canvas.width / 2
+	app.stage.position.y = -view.center_y * view.scale + canvas.height / 2
+	app.stage.scale.x = view.scale
+	app.stage.scale.y = view.scale
+
+	# Note: this doesn't actually cause PIXI to redraw.
+	world.pixiUpdate(app.stage, app.ticker)
 	world.draw(ctx, view)
 	editor.draw(ctx, view) if editor.editing
 
@@ -197,17 +226,74 @@ Object.defineProperty(window, "the_player", get: =>
 )
 # You can set a "watch" in the Firefox debugger to `window.do_a_redraw()`
 # and then see how entities are changed while stepping through simulation code.
-# (This trick doesn't work in Chrome, as of 2023. The canvas doesn't update.)
+# (In Chrome this doesn't work, the canvas doesn't update, as of 2023.)
+# Note: this doesn't currently cause PIXI to redraw, only the CanvasRenderingContext2D.
 window.do_a_redraw = redraw
 
-gamepad_start_prev = false
+# Set up entity previews in entities bar for entities that use PIXI rendering.
+# Skele2D works with CanvasRenderingContext2D, so we need to create a PIXI canvas
+# and draw it to the preview canvas.
+# This could probably reuse a PIXI.Renderer and PIXI.Container, but maybe not the main ones.
+# It doesn't matter until there are a lot of entities.
+Entity::draw = (ctx, view, world)->
+	if @pixiUpdate and view.is_preview
+		# Create PIXI canvas for preview
+		@$_preview_pixi_renderer ?= new PIXI.Renderer(
+			width: view.width
+			height: view.height
+			backgroundAlpha: 0
+			antialias: yes
+			resolution: 1
+		)
+		@$_preview_pixi_stage ?= new PIXI.Container()
+		@$_preview_pixi_stage.x = -view.center_x * view.scale + view.width / 2
+		@$_preview_pixi_stage.y = -view.center_y * view.scale + view.height / 2
+		@$_preview_pixi_stage.scale.x = view.scale
+		@$_preview_pixi_stage.scale.y = view.scale
+
+		# Dummy ticker
+		@$_preview_pixi_ticker = new PIXI.Ticker()
+		@$_preview_pixi_ticker.autoStart = false
+		@$_preview_pixi_ticker.stop()
+
+		@pixiUpdate(@$_preview_pixi_stage, @$_preview_pixi_ticker)
+		
+		@$_preview_pixi_renderer.render(@$_preview_pixi_stage)
+
+		# Undo view transform since we're handling the transform with PIXI.
+		ctx.setTransform(1, 0, 0, 1, 0, 0)
+
+		# Draw PIXI canvas to preview canvas
+		ctx.drawImage(@$_preview_pixi_renderer.view, 0, 0)
+	return
+
+# This is a temporary holdover until I make Skele2D call a destroy() method on entities.
+# I can also probably find some cleaner patterns for cleaning up PIXI stuff.
+# This is my first time using PIXI.
+# Skele2D sets `destroyed` to true when you delete an entity in the editor.
+# Hm, it doesn't when you undo/redo, though, so I have to handle that separately, using `old_entities_list`.
+Object.defineProperty Entity::, "destroyed",
+	configurable: yes
+	get: ->
+		return @$_destroyed
+	set: (value)->
+		@$_destroyed = value
+		if value
+			@destroy?()
+		return
+
 
 stats = new Stats
 stats.showPanel(0)
 
+gamepad_start_prev = false
+
 terrain_optimized = false
 
-do animate = ->
+old_entities_list = []
+
+# do animate = ->
+app.ticker.add ->
 	return if window.CRASHED
 	show_stats = (try localStorage["tiamblia.show_stats"]) is "true"
 	if show_stats
@@ -215,7 +301,7 @@ do animate = ->
 	else
 		stats.dom.remove()
 	stats.begin()
-	requestAnimationFrame(animate)
+	# requestAnimationFrame(animate)
 	Math.seedrandom(performance.now())
 
 	unless gui._hidden
@@ -264,8 +350,11 @@ do animate = ->
 
 	canvas.width = innerWidth unless canvas.width is innerWidth
 	canvas.height = innerHeight unless canvas.height is innerHeight
+	bg_canvas.width = innerWidth unless bg_canvas.width is innerWidth
+	bg_canvas.height = innerHeight unless bg_canvas.height is innerHeight
 	
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
+	bg_ctx.clearRect(0, 0, bg_canvas.width, bg_canvas.height) # not necessary as long as it's opaque, but can avoid confusion in case of errors
 	
 	for gamepad in (try navigator.getGamepads()) ? [] when gamepad
 		if gamepad.buttons[9].pressed and not gamepad_start_prev
@@ -326,6 +415,14 @@ do animate = ->
 	redraw()
 
 	editor.updateGUI()
+
+	# Destroy entities that were removed from the world.
+	# This handles undo/redo and delete, although I also have a destroyed setter which handles delete.
+	# TODO: make Skele2D call a destroy method on entities when they're removed from the world.
+	for entity in old_entities_list
+		if entity not in world.entities
+			entity.destroy?()
+	old_entities_list = [...world.entities]
 	
 	# So that the editor will give new random entities each time you pull one into the world
 	# (given that some entities use seedrandom, and fix the seed)
