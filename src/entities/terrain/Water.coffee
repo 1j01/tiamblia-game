@@ -1,15 +1,6 @@
 Terrain = require("../abstract/Terrain.coffee")
 {addEntityClass} = require("skele2d")
-{distanceToLineSegment} = require("skele2d").helpers
-
-closestPointOnLineSegment = (point, a, b)->
-	# https://stackoverflow.com/a/3122532/2624876
-	a_to_p = {x: point.x - a.x, y: point.y - a.y}
-	a_to_b = {x: b.x - a.x, y: b.y - a.y}
-	atb2 = a_to_b.x**2 + a_to_b.y**2
-	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
-	t = atp_dot_atb / atb2
-	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
+{distanceToLineSegment, closestPointOnInfiniteLine} = require("skele2d").helpers
 
 module.exports = class Water extends Terrain
 	addEntityClass(@)
@@ -117,7 +108,8 @@ module.exports = class Water extends Terrain
 							closest_distance = dist
 							closest_segment = segment
 					if closest_segment
-						closest_point = closestPointOnLineSegment(bubble, closest_segment.a, closest_segment.b)
+						# Should this use closestPointOnLineSegment?
+						closest_point = closestPointOnInfiniteLine(bubble, closest_segment.a, closest_segment.b)
 						bubble.x = closest_point.x
 						if bubble.y < @min_y
 							closest_point.y += (@waves_y[waves_x] ? 0)

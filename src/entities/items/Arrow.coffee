@@ -1,17 +1,7 @@
 Entity = require "../abstract/Entity.coffee"
 {addEntityClass} = require "skele2d"
-{lineSegmentsIntersect, distanceToLineSegment} = require("skele2d").helpers
+{lineSegmentsIntersect} = require("skele2d").helpers
 TAU = Math.PI * 2
-
-closestPointOnLineSegment = (point, a, b)->
-	# https://stackoverflow.com/a/3122532/2624876
-	a_to_p = {x: point.x - a.x, y: point.y - a.y}
-	a_to_b = {x: b.x - a.x, y: b.y - a.y}
-	atb2 = a_to_b.x**2 + a_to_b.y**2
-	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
-	t = atp_dot_atb / atb2
-	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
-
 
 debug_drawings = new Map # Arrow to function(ctx)
 

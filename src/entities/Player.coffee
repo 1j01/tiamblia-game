@@ -6,7 +6,7 @@ Arrow = require "./items/Arrow.coffee"
 Deer = require "./Deer.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
-{distance} = require("skele2d").helpers
+{distance, closestPointOnLineSegment} = require("skele2d").helpers
 PIXI = require "pixi.js-legacy"
 TAU = Math.PI * 2
 
@@ -21,18 +21,6 @@ should_use_pixi = ->
 		localStorage["tiamblia.player_use_pixi"] is "true"
 	catch e
 		false
-
-# Actually treat it as a segment, not an infinite line
-# unlike copies of this function in other files
-closestPointOnLineSegment = (point, a, b)->
-	# https://stackoverflow.com/a/3122532/2624876
-	a_to_p = {x: point.x - a.x, y: point.y - a.y}
-	a_to_b = {x: b.x - a.x, y: b.y - a.y}
-	atb2 = a_to_b.x**2 + a_to_b.y**2
-	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
-	t = atp_dot_atb / atb2
-	t = Math.max(0, Math.min(1, t))
-	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
 
 gamepad_aiming = false
 gamepad_detect_threshold = 0.5 # axis value (not a deadzone! just switching from mouse to gamepad)

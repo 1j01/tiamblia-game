@@ -1,20 +1,8 @@
 
 Entity = require "./entities/abstract/Entity.coffee"
 Terrain = require "./entities/abstract/Terrain.coffee"
-{distanceToLineSegment} = require("skele2d").helpers
+{distanceToLineSegment, closestPointOnLineSegment} = require("skele2d").helpers
 hsl_to_rgb_hex = require "./hsl-to-rgb-hex.js"
-
-# Actually treat it as a segment, not an infinite line
-# unlike copies of this function in some other files
-closestPointOnLineSegment = (point, a, b)->
-	# https://stackoverflow.com/a/3122532/2624876
-	a_to_p = {x: point.x - a.x, y: point.y - a.y}
-	a_to_b = {x: b.x - a.x, y: b.y - a.y}
-	atb2 = a_to_b.x**2 + a_to_b.y**2
-	atp_dot_atb = a_to_p.x*a_to_b.x + a_to_p.y*a_to_b.y
-	t = atp_dot_atb / atb2
-	t = Math.max(0, Math.min(1, t))
-	return {x: a.x + a_to_b.x*t, y: a.y + a_to_b.y*t}
 
 module.exports = class World
 	constructor: ->
