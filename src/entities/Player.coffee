@@ -7,7 +7,20 @@ Deer = require "./Deer.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
 {distance} = require("skele2d").helpers
+PIXI = require "pixi.js"
 TAU = Math.PI * 2
+
+# TODO: optimize PIXI rendering of Player by avoiding clear() every frame
+# e.g. move points instead of re-creating the geometry; could also use transforms more
+# Could maybe use a mask for the hair, for the concave shape,
+# and maybe even draw it as a thick line cap, since the line cap seems more circular?
+# is line rendering more efficient or would it be the same to bump up the number of points in the circle?
+# Should test performance by making many players.
+should_use_pixi = ->
+	try
+		localStorage["tiamblia.player_use_pixi"] is "true"
+	catch e
+		false
 
 # Actually treat it as a segment, not an infinite line
 # unlike copies of this function in other files
@@ -203,7 +216,7 @@ module.exports = class Player extends SimpleActor
 		_recursive_refs_ = []
 		store_refs = (obj, key_path=[])->
 			obj_def = if obj instanceof Array then [] else {}
-			for k, v of obj when k not in serialization_exclusions
+			for k, v of obj when k not in serialization_exclusions and not k.startsWith("$_")
 				if typeof v is "object" and v
 					if v instanceof Entity
 						_recursive_refs_.push([[...key_path, k], v.id])
@@ -879,9 +892,61 @@ module.exports = class Player extends SimpleActor
 
 			@hair_initialized = true
 
+	pixiUpdate: (stage, ticker)->
+		if not should_use_pixi()
+			return
+		if @$_container
+			return
+
+		@$_container = new PIXI.Container()
+		stage.addChild(@$_container)
+
+		@$_hairGraphics = new PIXI.Graphics()
+		@$_container.addChild(@$_hairGraphics)
+
+		@$_limbsBehindGraphics = new PIXI.Graphics()
+		@$_container.addChild(@$_limbsBehindGraphics)
+
+		@$_dressGraphics = new PIXI.Graphics()
+		@$_container.addChild(@$_dressGraphics)
+
+		@$_headGraphics = new PIXI.Graphics()
+		@$_container.addChild(@$_headGraphics)
+		@$_eyeGraphics = new PIXI.Graphics()
+		@$_headGraphics.addChild(@$_eyeGraphics)
+		@$_eyeGraphics.mask = new PIXI.Graphics()
+		@$_headGraphics.addChild(@$_eyeGraphics.mask)
+
+		@$_limbsFrontGraphics = new PIXI.Graphics()
+		@$_container.addChild(@$_limbsFrontGraphics)
+
+		@$_ticker = ticker
+		@$_ticker.add @$_tick = (delta)=>
+			if not should_use_pixi()
+				@cleanup_pixi()
+				return
+			# console.log("using pixi drawing for Player")
+			# Initialize hair if needed
+			# if view.is_preview or not @hair_initialized
+			if not @hair_initialized
+				@simulate_hair()
+				# if not view.is_preview
+				# 	@hair_initialized = false # so it will move when you drag the entity
+			# Update graphics
+			@drawStuff()
+			return
+		# For preview in entities sidebar
+		@$_tick(0)
 		return
 
+
 	draw: (ctx, view)->
+		if should_use_pixi()
+			# super needed for the preview in the entities sidebar; Entity::draw is monkey-patched to provide PIXI support in main.coffee
+			return super(ctx, view)
+		# console.log("using canvas drawing for Player")
+		ctx.save()
+		# ctx.translate(20, 0) # offset to compare with pixi
 		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
 		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
 		# or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
@@ -1040,4 +1105,161 @@ module.exports = class Player extends SimpleActor
 		# ctx.strokeStyle = "red"
 		# ctx.stroke()
 
+		ctx.restore()
+
+	drawStuff: ->
+		{head, sternum, pelvis, "left knee": left_knee, "right knee": right_knee, "left shoulder": left_shoulder, "right shoulder": right_shoulder} = @structure.points
+		# ^that's kinda ugly, should we just name segments and points with underscores instead of spaces?
+		# or should I just alias structure.points as a one-char-var and do p["left shoulder"]? that could work, but I would still use {}= when I could honestly, so...
+		
+		# Colors
+		skin_color = 0x6B422C
+		hair_color = 0x000000
+		eye_color = 0x000000
+		dress_color = 0xAAFFFF
+
+		@$_container.x = @x
+		@$_container.y = @y
+
+		# Draw trailing hair
+		@$_hairGraphics.clear()
+		@$_hairGraphics.lineStyle({ width: 2, color: hair_color, cap: PIXI.LINE_CAP.ROUND, join: PIXI.LINE_JOIN.ROUND })
+		for hair_points, hair_index in @hairs
+			local_point = @fromWorld(hair_points[0])
+			@$_hairGraphics.moveTo(local_point.x, local_point.y)
+			for point in hair_points[1...]
+				local_point = @fromWorld(point)
+				@$_hairGraphics.lineTo(local_point.x, local_point.y)
+
+		# Draw limbs
+		in_front_segment_names = ["upper right arm", "lower right arm"]
+		if @aiming_bow
+			in_front_segment_names.push("upper left arm", "lower left arm")
+		behind_dress_segment_names = Object.keys(@structure.segments).filter((segment_name)=>
+			not in_front_segment_names.includes(segment_name)
+		)
+		draw_limbs = (graphics, segment_names)=>
+			graphics.clear()
+			graphics.lineStyle({ width: 3, color: skin_color, cap: PIXI.LINE_CAP.ROUND, join: PIXI.LINE_JOIN.ROUND })
+			for segment_name in segment_names
+				segment = @structure.segments[segment_name]
+				graphics.moveTo(segment.a.x, segment.a.y)
+				graphics.lineTo(segment.b.x, segment.b.y)
+
+		# Draw limbs behind dress
+		draw_limbs(@$_limbsBehindGraphics, behind_dress_segment_names)
+
+		# Draw dress
+		
+		torso_angle = Math.atan2(pelvis.y - sternum.y, pelvis.x - sternum.x) - TAU/4
+		torso_length = distance(pelvis, sternum)
+		@$_dressGraphics.clear()
+		@$_dressGraphics.rotation = torso_angle
+		@$_dressGraphics.x = sternum.x
+		@$_dressGraphics.y = sternum.y
+
+		@$_dressGraphics.beginFill(dress_color)
+
+		left_leg_angle = Math.atan2(left_knee.y - pelvis.y, left_knee.x - pelvis.x) - torso_angle
+		right_leg_angle = Math.atan2(right_knee.y - pelvis.y, right_knee.x - pelvis.x) - torso_angle
+		left_shoulder_angle = Math.atan2(left_shoulder.y - sternum.y, left_shoulder.x - sternum.x) - torso_angle
+		right_shoulder_angle = Math.atan2(right_shoulder.y - sternum.y, right_shoulder.x - sternum.x) - torso_angle
+		shoulder_distance = distance(left_shoulder, sternum)
+		min_shoulder_cos = Math.min(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle))
+		max_shoulder_cos = Math.max(Math.cos(left_shoulder_angle), Math.cos(right_shoulder_angle))
+		if Math.cos(left_shoulder_angle) < Math.cos(right_shoulder_angle)
+			min_cos_shoulder_angle = left_shoulder_angle
+			max_cos_shoulder_angle = right_shoulder_angle
+		else
+			min_cos_shoulder_angle = right_shoulder_angle
+			max_cos_shoulder_angle = left_shoulder_angle
+		@$_dressGraphics.moveTo(-2 + Math.min(0, 1 * min_shoulder_cos), Math.sin(min_cos_shoulder_angle) * shoulder_distance - 1.5)
+		@$_dressGraphics.lineTo(+2 + Math.max(0, 1 * max_shoulder_cos), Math.sin(max_cos_shoulder_angle) * shoulder_distance - 1.5)
+		min_cos = Math.min(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
+		max_cos = Math.max(Math.cos(left_leg_angle), Math.cos(right_leg_angle))
+		min_sin = Math.min(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
+		max_sin = Math.max(Math.sin(left_leg_angle), Math.sin(right_leg_angle))
+		@$_dressGraphics.lineTo(+4 + Math.max(0, 1 * max_cos), torso_length/2)
+		@$_dressGraphics.lineTo(+4 + Math.max(0, 9 * max_cos), torso_length + Math.max(5, 7 * max_sin))
+		@$_dressGraphics.lineTo(-4 + Math.min(0, 9 * min_cos), torso_length + Math.max(5, 7 * max_sin))
+		@$_dressGraphics.lineTo(-4 + Math.min(0, 1 * min_cos), torso_length/2)
+
+		@$_dressGraphics.closePath()
+		@$_dressGraphics.endFill()
+
+		# Draw head and top of hair
+		@$_headGraphics.clear()
+		@$_headGraphics.rotation = Math.atan2(head.y - sternum.y, head.x - sternum.x) + TAU/4
+		@$_headGraphics.x = head.x
+		@$_headGraphics.y = head.y
+		head_radius_y = 5.5
+		head_radius_x = head_radius_y * 0.9
+		hair_radius = head_radius_y
+
+		# Back of top of hair
+		@$_headGraphics.beginFill(hair_color)
+		@$_headGraphics.drawEllipse(0, 0, hair_radius, hair_radius / 2)
+		@$_headGraphics.endFill()
+
+		# Head
+		@$_headGraphics.beginFill(skin_color)
+		@$_headGraphics.drawEllipse(0, 0, head_radius_x, head_radius_y)
+		@$_headGraphics.endFill()
+
+		# Top of hair
+		@$_headGraphics.beginFill(hair_color)
+		@$_headGraphics.arc(0, 0, hair_radius, -TAU / 2, 0)
+		# PIXI doesn't support ellipse arcs (or transforming sub-paths)
+		# so we have to draw the half-ellipse manually as a bezier curve
+		hairline_scale_y = 0.01-@looking_y/5
+		w = hair_radius * 2
+		h = hair_radius * 2 * hairline_scale_y
+		height_two_thirds = h * 2 / 3
+		width_half = w / 2
+		# @$_headGraphics.moveTo(-width_half, 0) # breaks the concave case, but useful to see the bezier curve isolated
+		@$_headGraphics.bezierCurveTo(
+			+width_half, +height_two_thirds,
+			-width_half, +height_two_thirds,
+			-width_half, 0
+		)
+		@$_headGraphics.closePath()
+		@$_headGraphics.endFill()
+
+		# Draw eyes
+		@$_eyeGraphics.mask.clear()
+		@$_eyeGraphics.mask.beginFill(0xFFFFFF)
+		@$_eyeGraphics.mask.drawEllipse(0, 0, head_radius_x, head_radius_y)
+		@$_eyeGraphics.mask.endFill()
+
+		@$_eyeGraphics.clear()
+		@$_eyeGraphics.beginFill(eye_color)
+		eye_y = @looking_y-1
+		eye_radius = 1
+		eye_spacing = 0.6 # radians
+		turn_limit = TAU/8 # radians, TAU/4 = head facing completely sideways, only one eye visible
+		head_rotation_angle = @smoothed_facing_x_for_eyes * turn_limit
+		for eye_signature in [-1, 1]
+			# 3D projection in one axis
+			eye_x = Math.sin(eye_spacing * eye_signature - head_rotation_angle) * head_radius_x
+			@$_eyeGraphics.drawCircle(-eye_x, -eye_y, eye_radius)
+		@$_eyeGraphics.endFill()
+
+		# Draw limbs in front of dress
+		# (This doesn't really need to be later in the function when using PIXI. Only the child order matters.)
+		draw_limbs(@$_limbsFrontGraphics, in_front_segment_names)
+
+		return
+
+	cleanup_pixi: ->
+		@$_container?.destroy(yes)
+		@$_container = null
+		if @$_ticker
+			@$_ticker.remove(@$_tick)
+			@$_ticker = null
+			@$_tick = null
+		return
+
+	destroy: ->
+		@cleanup_pixi()
+		# super()?
 		return

@@ -63,7 +63,7 @@ bg_canvas.style.left = "0"
 document.body.appendChild(bg_canvas)
 bg_ctx = bg_canvas.getContext("2d")
 
-app = new PIXI.Application(resizeTo: window, backgroundAlpha: 0)
+app = new PIXI.Application(resizeTo: window, backgroundAlpha: 0, antialias: yes)
 document.body.appendChild(app.view)
 app.view.style.position = "absolute"
 app.view.style.top = "0"

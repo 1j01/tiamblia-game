@@ -18,6 +18,7 @@ option_names_to_keys = {
 	"Debug Terrain class": "tiamblia.debug_terrain"
 	"Show collision buckets": "tiamblia.show_collision_buckets"
 	"Show hit tested buckets": "tiamblia.count_hit_tests"
+	"Player: use PIXI rendering": "tiamblia.player_use_pixi"
 	"Show point names": "Skele2D show names"
 	"Show point indices": "Skele2D show indices"
 	"Allow posing animatable entities in world": "Skele2D allow posing animatable entities in world"
