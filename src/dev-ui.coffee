@@ -111,7 +111,7 @@ load_from_json = (json)->
 	return true
 store_file_handle = (file_handle) ->
 	idb_keyval.set("tiamblia.file_handle", file_handle)
-	# Maybe I should rename this file to be less generic
+	# Maybe I should rename this file to be less generic... https://github.com/1j01/skele2d/issues/36
 	if file_handle.name is "world.json"
 		idb_keyval.set("tiamblia.default_world_file_handle", file_handle)
 	return
