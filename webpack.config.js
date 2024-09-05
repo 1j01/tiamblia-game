@@ -12,6 +12,7 @@ const config = {
     publicPath: '/build/',
     hashFunction: 'xxhash64',
   },
+  devtool: 'eval-source-map', // TODO: only in dev; use 'source-map' in prod
   devServer: {
     static: {
       directory: path.resolve(__dirname, ""),
