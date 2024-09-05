@@ -238,7 +238,7 @@ window.do_a_redraw = redraw
 Entity::draw = (ctx, view, world)->
 	if @pixiUpdate and view.is_preview
 		# Create PIXI canvas for preview
-		@$_preview_pixi_renderer ?= new PIXI.Renderer(
+		@$_preview_pixi_renderer ?= PIXI.autoDetectRenderer(
 			width: view.width
 			height: view.height
 			backgroundAlpha: 0
