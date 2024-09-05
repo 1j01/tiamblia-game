@@ -1,7 +1,7 @@
 Entity = require("./abstract/Entity.coffee")
 {addEntityClass} = require("skele2d")
 {distanceToLineSegment, closestPointOnLineSegment} = require("skele2d").helpers
-PIXI = require("pixi.js")
+PIXI = require "pixi.js-legacy"
 TAU = Math.PI * 2
 
 

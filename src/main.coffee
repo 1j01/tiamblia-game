@@ -4,7 +4,7 @@ Math.seedrandom("A world")
 {View, Mouse, Editor, Entity, Terrain} = require "skele2d"
 Stats = require "stats.js"
 {gui, update_property_inspector, configure_property_inspector} = require "./dev-ui.coffee"
-PIXI = require "pixi.js"
+PIXI = require "pixi.js-legacy"
 World = require "./World.coffee"
 keyboard = require "./keyboard.coffee"
 sort_entities = require "./sort-entities.coffee"
@@ -63,7 +63,7 @@ bg_canvas.style.left = "0"
 document.body.appendChild(bg_canvas)
 bg_ctx = bg_canvas.getContext("2d")
 
-app = new PIXI.Application(resizeTo: window, backgroundAlpha: 0, antialias: yes)
+app = new PIXI.Application(resizeTo: window, backgroundAlpha: 0, antialias: yes, hello: yes)
 document.body.appendChild(app.view)
 app.view.style.position = "absolute"
 app.view.style.top = "0"

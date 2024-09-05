@@ -7,7 +7,7 @@ Deer = require "./Deer.coffee"
 keyboard = require "../keyboard.coffee"
 {addEntityClass} = require "skele2d"
 {distance} = require("skele2d").helpers
-PIXI = require "pixi.js"
+PIXI = require "pixi.js-legacy"
 TAU = Math.PI * 2
 
 # TODO: optimize PIXI rendering of Player by avoiding clear() every frame
