@@ -267,21 +267,6 @@ Entity::draw = (ctx, view, world)->
 		ctx.drawImage(@$_preview_pixi_renderer.view, 0, 0)
 	return
 
-# This is a temporary holdover until I make Skele2D call a destroy() method on entities.
-# I can also probably find some cleaner patterns for cleaning up PIXI stuff.
-# This is my first time using PIXI.
-# Skele2D sets `destroyed` to true when you delete an entity in the editor.
-# Hm, it doesn't when you undo/redo, though, so I have to handle that separately, using `old_entities_list`.
-Object.defineProperty Entity::, "destroyed",
-	configurable: yes
-	get: ->
-		return @$_destroyed
-	set: (value)->
-		@$_destroyed = value
-		if value
-			@destroy?()
-		return
-
 
 stats = new Stats
 stats.showPanel(0)
@@ -289,8 +274,6 @@ stats.showPanel(0)
 gamepad_start_prev = false
 
 terrain_optimized = false
-
-old_entities_list = []
 
 # do animate = ->
 app.ticker.add ->
@@ -415,14 +398,6 @@ app.ticker.add ->
 	redraw()
 
 	editor.updateGUI()
-
-	# Destroy entities that were removed from the world.
-	# This handles undo/redo and delete, although I also have a destroyed setter which handles delete.
-	# TODO: make Skele2D call a destroy method on entities when they're removed from the world.
-	for entity in old_entities_list
-		if entity not in world.entities
-			entity.destroy?()
-	old_entities_list = [...world.entities]
 	
 	# So that the editor will give new random entities each time you pull one into the world
 	# (given that some entities use seedrandom, and fix the seed)
